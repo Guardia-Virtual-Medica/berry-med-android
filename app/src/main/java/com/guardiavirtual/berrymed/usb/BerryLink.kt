@@ -10,8 +10,10 @@ import java.io.IOException
 
 /**
  * Abre la plaqueta, manda la secuencia de arranque y lee tramas.
- * Si el puerto abre y no aparecen cabeceras 55 AA, o si después se queda muda
- * 20 s, corta la alimentación con el relé. Si el cable desaparece, no lo toca.
+ * Si el puerto de ST abre y no aparecen cabeceras 55 AA, o si después se queda
+ * muda 20 s, corta la alimentación con el relé. Si el cable desaparece, no lo
+ * toca. Un puerto de otro fabricante que no contesta no es la plaqueta: queda
+ * para el termómetro y no dispara el relé.
  */
 class BerryLink(
     private val hub: UsbHub,
@@ -28,6 +30,8 @@ class BerryLink(
     private val writeLock = Any()
     @Volatile var nibpRunning: Boolean = false
     private var nibpStartedAt: Long = 0L
+    private var appliedStartup: List<Pair<Int, Int>> = emptyList()
+    private var lastPowerCycleAt: Long = 0L
 
     fun lastDataAgeSeconds(): Double? {
         val stamp = lastDataAtNano
@@ -37,10 +41,6 @@ class BerryLink(
 
     fun run() {
         while (running) {
-            if (!hub.ensurePermissions()) {
-                sleep(1_000)
-                continue
-            }
             when (val found = acquire()) {
                 is Acquire.Ready -> {
                     try {
@@ -89,7 +89,7 @@ class BerryLink(
     }
 
     private fun acquire(): Acquire {
-        val drivers = hub.serialDrivers()
+        val drivers = hub.berryCandidates()
         if (drivers.isEmpty()) {
             connected = false
             return Acquire.None
@@ -118,16 +118,28 @@ class BerryLink(
         return try {
             val early = readUntil(handle, 400) { bytes -> hasHeader(bytes) || isThermometer(bytes) }
             if (isThermometer(early)) {
+                hub.markNotBerry(id)
                 release(handle)
                 return Probe.Skip
             }
-            handle.write(Pm6750Protocol.startupBytes(tuning(), log))
+            val tune = tuning()
+            val startup = Pm6750Protocol.buildStartupCommands(tune, log)
+            handle.write(Pm6750Protocol.startupBytes(tune))
             val sawHeader = hasHeader(early) || hasHeader(readUntil(handle, 5_000) { hasHeader(it) })
             if (!sawHeader) {
-                log("[USB] ${driver.device.deviceName} abierto sin cabecera 55 AA")
                 release(handle)
-                return Probe.Mute
+                if (muteMeansHungBerry(driver.device.vendorId)) {
+                    log("[USB] ${driver.device.deviceName} abierto sin cabecera 55 AA")
+                    return Probe.Mute
+                }
+                hub.markNotBerry(id)
+                log(
+                    "[USB] ${driver.device.deviceName} no es la plaqueta " +
+                        "(%04X:%04X); queda para el termómetro".format(driver.device.vendorId, driver.device.productId),
+                )
+                return Probe.Skip
             }
+            appliedStartup = startup
             parser.resetData()
             connected = true
             log("[USB] Plaqueta en ${driver.device.deviceName}")
@@ -186,6 +198,7 @@ class BerryLink(
                 }
                 parser.addData(buffer.copyOf(count))
                 checkNibpTimeout()
+                applyTuningIfChanged()
             }
             return End.Stopped
         } finally {
@@ -199,8 +212,25 @@ class BerryLink(
             log("[WATCHDOG] $reason. No hay relé: no se corta la alimentación.")
             return
         }
+        val now = System.nanoTime()
+        if (!relayCooldownOver(lastPowerCycleAt, now)) {
+            val seconds = (now - lastPowerCycleAt) / 1_000_000_000L
+            log("[WATCHDOG] $reason. El último corte fue hace $seconds s: se espera para no cortarla mientras arranca.")
+            return
+        }
         log("[WATCHDOG] $reason. Corte de 12 V durante 5 s.")
+        lastPowerCycleAt = now
         if (!relay.restart()) log("[WATCHDOG] El relé no respondió. No se hizo el corte.")
+    }
+
+    /** La ganancia y el modo se aplican apenas se guardan, sin esperar a reconectar. */
+    private fun applyTuningIfChanged() {
+        val tune = tuning()
+        val wanted = Pm6750Protocol.buildStartupCommands(tune)
+        if (wanted == appliedStartup) return
+        write(Pm6750Protocol.startupBytes(tune, log))
+        appliedStartup = wanted
+        log("[USB] Ganancia y modo de ECG actualizados")
     }
 
     private fun checkNibpTimeout() {
@@ -223,13 +253,17 @@ class BerryLink(
     }
 
     private fun release(handle: SerialHandle) {
+        // Primero se baja `connected`: con la plaqueta arriba el termómetro
+        // puede tomar cualquier puerto libre, y éste se libera recién abajo.
+        if (current === handle) {
+            current = null
+            connected = false
+        }
         try {
             handle.close()
         } catch (_: Exception) {
         }
         hub.unmark(handle.device.deviceId)
-        if (current === handle) current = null
-        connected = false
     }
 
     private sealed class Acquire {
@@ -247,6 +281,15 @@ class BerryLink(
 
     companion object {
         const val SILENCE_SECONDS = 20.0
+
+        /** Entre un corte y el siguiente, para que el PM6750 tenga tiempo de arrancar. */
+        const val RELAY_COOLDOWN_NANOS = 60L * 1_000_000_000L
+
+        fun relayCooldownOver(lastCutAt: Long, now: Long): Boolean =
+            lastCutAt == 0L || now - lastCutAt >= RELAY_COOLDOWN_NANOS
+
+        /** Sólo un puerto de ST mudo es la plaqueta trabada. Otro mudo es el termómetro esperando. */
+        fun muteMeansHungBerry(vendorId: Int): Boolean = vendorId == UsbHub.STM32_VENDOR
 
         fun hasHeader(bytes: ByteArray): Boolean {
             for (i in 0 until bytes.size - 1) {

@@ -2,6 +2,7 @@
 package com.guardiavirtual.berrymed.service
 
 import android.content.Context
+import android.hardware.usb.UsbDevice
 import android.util.Log
 import com.guardiavirtual.berrymed.config.BerryConfig
 import com.guardiavirtual.berrymed.config.ConfigStore
@@ -35,7 +36,7 @@ class TotemRuntime(context: Context) {
     private val hub = UsbHub(appContext)
     private val relay = UsbRelay(hub)
     private val berry = BerryLink(hub, relay, parser, { config.tuning() }, ::log)
-    private val thermo = ThermometerLink(hub, ::log)
+    private val thermo = ThermometerLink(hub, { berry.connected }, ::log)
     private val poster = MetricsPoster()
     private val sessionLock = Any()
 
@@ -45,7 +46,7 @@ class TotemRuntime(context: Context) {
     @Volatile var lastPost: String = "Todavía no se envió"
     @Volatile var pusherUp: Boolean = false
 
-    var onNotification: (text: String, berryUp: Boolean) -> Unit = { _, _ -> }
+    var onNotification: (text: String) -> Unit = {}
 
     private val pusher = SessionPusher(::log, object : SessionPusher.Listener {
         override fun onStart() = startSession()
@@ -74,16 +75,41 @@ class TotemRuntime(context: Context) {
         thread(name = "berry-usb", isDaemon = true) { berry.run() }
         thread(name = "berry-thermo", isDaemon = true) { thermo.run() }
         thread(name = "berry-post", isDaemon = true) { postLoop() }
+        thread(name = "berry-watch", isDaemon = true) { watchLoop() }
     }
 
     fun requestUsbPermissionAgain() {
         hub.forgetAsked()
     }
 
+    fun onUsbPermission(device: UsbDevice?, granted: Boolean) {
+        if (device != null) {
+            hub.onPermissionResult(device, granted)
+            log("[USB] Permiso ${if (granted) "aceptado" else "rechazado"} para ${device.deviceName}")
+        }
+        publish()
+    }
+
+    /**
+     * Lo que tiene que seguir andando aunque un POST tarde: los pedidos de
+     * permiso USB, la reconexión de Pusher y la pantalla.
+     */
+    private fun watchLoop() {
+        while (true) {
+            try {
+                hub.requestMissingPermissions()
+                pusher.keepAlive()
+                publish()
+            } catch (error: Exception) {
+                log("[WATCH] $error")
+            }
+            sleep(1_000)
+        }
+    }
+
     private fun postLoop() {
         while (true) {
             try {
-                publish()
                 if (sessionActive && sessionExpired(sessionActive, sessionStartNano, System.nanoTime(), config.maxSessionMinutes)) {
                     stopSession("sin stop tras ${config.maxSessionMinutes} min")
                 }
@@ -155,7 +181,13 @@ class TotemRuntime(context: Context) {
             "Último dato: hace ${"%.1f".format(Locale("es"), age)} s"
         }
         val others = buildString {
-            append(if (thermo.connected) "Termómetro conectado. " else "Termómetro sin conectar. ")
+            append(
+                when {
+                    !thermo.connected -> "Termómetro sin conectar. "
+                    thermo.measured -> "Termómetro conectado. "
+                    else -> "Termómetro conectado, sin mediciones todavía. "
+                },
+            )
             append(if (relay.plugged()) "Relé presente. " else "Relé sin conectar. ")
             append(if (active) "La sesión está enviando." else "La sesión está detenida.")
             val missing = config.missingFields()
@@ -175,7 +207,7 @@ class TotemRuntime(context: Context) {
             lastPost = lastPost,
             notification = notification,
         )
-        onNotification(notification, berryUp)
+        onNotification(notification)
     }
 
     private fun log(message: String) {

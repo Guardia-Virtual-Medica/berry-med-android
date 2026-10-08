@@ -177,6 +177,15 @@
                 app:strokeColor="@color/vital_dim" />
         </LinearLayout>
 
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:lineSpacingExtra="3dp"
+            android:text="@string/help_usb_default"
+            android:textColor="@color/vital_dim"
+            android:textSize="14sp" />
+
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
