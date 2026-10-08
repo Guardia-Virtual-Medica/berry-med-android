@@ -1,199 +1,230 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 package com.guardiavirtual.berrymed.ui
 
 import android.Manifest
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.hardware.usb.UsbDevice
-import android.hardware.usb.UsbManager
 import android.net.Uri
 import android.os.Build
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.IntentFilter
 import android.os.Bundle
-import android.os.PowerManager
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
-import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
+import android.text.Editable
+import android.text.TextWatcher
+import android.graphics.Typeface
+import android.view.View
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.chip.Chip
+import com.google.android.material.chip.ChipGroup
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.lifecycleScope
-import com.guardiavirtual.berrymed.config.ConfigStore
-import com.guardiavirtual.berrymed.config.TotemConfig
+import com.guardiavirtual.berrymed.BerryMedApp
+import com.guardiavirtual.berrymed.R
+import com.guardiavirtual.berrymed.config.BerryConfig
+import com.guardiavirtual.berrymed.config.buildMetricsUrl
 import com.guardiavirtual.berrymed.databinding.ActivityMainBinding
 import com.guardiavirtual.berrymed.service.MonitorService
-import com.guardiavirtual.berrymed.service.MonitorState
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
+import com.guardiavirtual.berrymed.service.TotemState
+import kotlinx.coroutines.runBlocking
+import kotlin.concurrent.thread
 
 class MainActivity : AppCompatActivity() {
-
     private lateinit var binding: ActivityMainBinding
-    private lateinit var configStore: ConfigStore
-    private lateinit var usbManager: UsbManager
-
-    private val usbPermissionReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == ACTION_USB_PERMISSION) {
-                startService(
-                    Intent(this@MainActivity, MonitorService::class.java)
-                        .setAction(MonitorService.ACTION_USB_CHANGED),
-                )
-            }
+    private var step = 0
+    private val handler = Handler(Looper.getMainLooper())
+    private val tick = object : Runnable {
+        override fun run() {
+            if (::binding.isInitialized) render(runtime().state.value)
+            handler.postDelayed(this, 500)
         }
-    }
-
-    private val permissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions(),
-    ) { _ ->
-        requestUsbPermissionsForAll()
-        startMonitor()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        configStore = ConfigStore(this)
-        usbManager = getSystemService(USB_SERVICE) as UsbManager
-
-        lifecycleScope.launch {
-            configStore.configFlow.collectLatest { cfg -> bindConfigToForm(cfg) }
+        ContextCompat.startForegroundService(this, Intent(this, MonitorService::class.java))
+        if (Build.VERSION.SDK_INT >= 33) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
         }
-        lifecycleScope.launch {
-            MonitorState.state.collectLatest { state -> bindState(state) }
+        showStep(0)
+        val watcher = object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = preview()
+            override fun afterTextChanged(s: Editable?) = Unit
         }
+        binding.apiUrl.addTextChangedListener(watcher)
+        binding.totemId.addTextChangedListener(watcher)
+        binding.nextButton.setOnClickListener { advance() }
+        binding.backButton.setOnClickListener {
+            clearMessage()
+            showStep(step - 1)
+        }
+        binding.saveButton.setOnClickListener { save() }
+        binding.batteryButton.setOnClickListener { askBatteryExemption() }
+        binding.usbButton.setOnClickListener { runtime().requestUsbPermissionAgain() }
+        thread(name = "berry-config-load") {
+            val saved = runBlocking { runtime().store.load() }
+            handler.post { fill(saved) }
+        }
+    }
 
-        binding.btnSave.setOnClickListener {
-            lifecycleScope.launch {
-                val cfg = readConfigFromForm()
-                configStore.save(cfg)
-                Toast.makeText(this@MainActivity, "Configuración guardada", Toast.LENGTH_SHORT).show()
-                startService(
-                    Intent(this@MainActivity, MonitorService::class.java)
-                        .setAction(MonitorService.ACTION_RELOAD_CONFIG),
-                )
+    override fun onStart() {
+        super.onStart()
+        handler.post(tick)
+    }
+
+    override fun onStop() {
+        handler.removeCallbacks(tick)
+        super.onStop()
+    }
+
+    private fun runtime() = (application as BerryMedApp).runtime
+
+    private fun fill(config: BerryConfig) {
+        binding.apiUrl.setText(config.apiBaseUrl)
+        binding.totemId.setText(config.totemId)
+        binding.apiUser.setText(config.apiUsername)
+        binding.apiPassword.setText(config.apiPassword)
+        binding.pusherKey.setText(config.pusherKey)
+        binding.pusherCluster.setText(config.pusherCluster)
+        binding.channel.setText(config.publicChannel)
+        binding.startEvent.setText(config.startEventName)
+        binding.stopEvent.setText(config.stopEventName)
+        binding.maxMinutes.setText(config.maxSessionMinutes.toString())
+        binding.nibpTarget.setText(config.nibpTargetPressureMmhg)
+        select(binding.ecgGain, GAIN_VALUES, config.ecgGain)
+        select(binding.ecgMode, MODE_VALUES, config.ecgMode)
+        select(binding.respGain, GAIN_VALUES, config.respGain)
+        select(binding.nibpMode, NIBP_VALUES, config.nibpMode)
+        preview()
+    }
+
+    private fun advance() {
+        val missing = missingField(step)
+        if (missing != null) {
+            binding.formMessage.setText(missing)
+            binding.formMessage.setTextColor(getColor(R.color.warn))
+            return
+        }
+        clearMessage()
+        showStep(step + 1)
+    }
+
+    private fun showStep(index: Int) {
+        step = index.coerceIn(0, 2)
+        binding.steps.displayedChild = step
+        binding.backButton.visibility = if (step == 0) View.GONE else View.VISIBLE
+        binding.nextButton.visibility = if (step == 2) View.GONE else View.VISIBLE
+        binding.saveButton.visibility = if (step == 2) View.VISIBLE else View.GONE
+        val labels = listOf(binding.stepDestination, binding.stepOrders, binding.stepDevice)
+        labels.forEachIndexed { i, label ->
+            val current = i == step
+            label.setTextColor(getColor(if (current) R.color.signal else R.color.ink_soft))
+            label.setTypeface(null, if (current) Typeface.BOLD else Typeface.NORMAL)
+        }
+    }
+
+    private fun missingField(index: Int): Int? = when (index) {
+        0 -> when {
+            binding.apiUrl.text.isNullOrBlank() -> R.string.missing_api
+            binding.totemId.text.isNullOrBlank() -> R.string.missing_totem
+            binding.apiUser.text.isNullOrBlank() -> R.string.missing_user
+            binding.apiPassword.text.isNullOrBlank() -> R.string.missing_password
+            else -> null
+        }
+        1 -> when {
+            binding.pusherKey.text.isNullOrBlank() -> R.string.missing_pusher
+            binding.channel.text.isNullOrBlank() -> R.string.missing_channel
+            else -> null
+        }
+        else -> null
+    }
+
+    private fun clearMessage() {
+        binding.formMessage.text = ""
+    }
+
+    private fun save() {
+        val config = readForm()
+        binding.formMessage.setTextColor(getColor(R.color.ink))
+        binding.formMessage.setText(R.string.saving)
+        thread(name = "berry-config-save") {
+            runBlocking { runtime().store.save(config) }
+            handler.post {
+                binding.formMessage.setTextColor(getColor(R.color.signal))
+                binding.formMessage.setText(R.string.saved)
             }
         }
-        binding.btnStartService.setOnClickListener { ensurePermissionsAndStart() }
-        binding.btnBattery.setOnClickListener { requestBatteryExemption() }
-
-        ensurePermissionsAndStart()
-        handleUsbIntent(intent)
-        registerReceiver(usbPermissionReceiver, IntentFilter(ACTION_USB_PERMISSION), RECEIVER_NOT_EXPORTED)
     }
 
-    override fun onDestroy() {
-        unregisterReceiver(usbPermissionReceiver)
-        super.onDestroy()
-    }
-
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        handleUsbIntent(intent)
-    }
-
-    private fun handleUsbIntent(intent: Intent?) {
-        val device = intent?.getParcelableExtra<UsbDevice>(UsbManager.EXTRA_DEVICE) ?: return
-        requestUsbPermission(device)
-    }
-
-    private fun ensurePermissionsAndStart() {
-        val needed = mutableListOf<String>()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-            != PackageManager.PERMISSION_GRANTED
-        ) {
-            needed.add(Manifest.permission.POST_NOTIFICATIONS)
-        }
-        if (needed.isEmpty()) {
-            requestUsbPermissionsForAll()
-            startMonitor()
-        } else {
-            permissionLauncher.launch(needed.toTypedArray())
-        }
-    }
-
-    private fun requestUsbPermissionsForAll() {
-        usbManager.deviceList.values.forEach { requestUsbPermission(it) }
-    }
-
-    private fun requestUsbPermission(device: UsbDevice) {
-        if (usbManager.hasPermission(device)) return
-        val pi = android.app.PendingIntent.getBroadcast(
-            this,
-            device.deviceId,
-            Intent(ACTION_USB_PERMISSION),
-            android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE,
-        )
-        usbManager.requestPermission(device, pi)
-    }
-
-    private fun startMonitor() {
-        MonitorService.start(this)
-    }
-
-    private fun requestBatteryExemption() {
-        val pm = getSystemService(POWER_SERVICE) as PowerManager
-        if (!pm.isIgnoringBatteryOptimizations(packageName)) {
-            startActivity(
-                Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                    data = Uri.parse("package:$packageName")
-                },
-            )
-        }
-    }
-
-    private fun bindConfigToForm(cfg: TotemConfig) {
-        binding.inputApiBase.setText(cfg.apiBaseUrl)
-        binding.inputTotemId.setText(cfg.totemId)
-        binding.inputApiEndpoint.setText(cfg.apiEndpoint)
-        binding.inputApiUser.setText(cfg.apiUsername)
-        binding.inputApiPass.setText(cfg.apiPassword)
-        binding.inputPusherKey.setText(cfg.pusherKey)
-        binding.inputPusherCluster.setText(cfg.pusherCluster)
-        binding.inputChannel.setText(cfg.publicChannel)
-        binding.inputStartEvent.setText(cfg.startEventName)
-        binding.inputStopEvent.setText(cfg.stopEventName)
-        binding.inputMaxSession.setText(cfg.maxSessionMinutes.toString())
-        binding.inputEcgGain.setText(cfg.ecgGain)
-        binding.inputEcgMode.setText(cfg.ecgMode)
-        binding.checkboxTherm.isChecked = cfg.thermometerEnabled
-        binding.textMetricsPreview.text = cfg.metricsUrl().ifBlank { "—" }
-    }
-
-    private fun readConfigFromForm(): TotemConfig = TotemConfig(
-        apiBaseUrl = binding.inputApiBase.text?.toString().orEmpty(),
-        totemId = binding.inputTotemId.text?.toString().orEmpty(),
-        apiEndpoint = binding.inputApiEndpoint.text?.toString().orEmpty().ifBlank { "metrics" },
-        apiUsername = binding.inputApiUser.text?.toString().orEmpty(),
-        apiPassword = binding.inputApiPass.text?.toString().orEmpty(),
-        pusherKey = binding.inputPusherKey.text?.toString().orEmpty(),
-        pusherCluster = binding.inputPusherCluster.text?.toString().orEmpty().ifBlank { "us2" },
-        publicChannel = binding.inputChannel.text?.toString().orEmpty(),
-        startEventName = binding.inputStartEvent.text?.toString().orEmpty().ifBlank { "start-monitoring" },
-        stopEventName = binding.inputStopEvent.text?.toString().orEmpty().ifBlank { "stop-monitoring" },
-        maxSessionMinutes = binding.inputMaxSession.text?.toString()?.toIntOrNull() ?: 30,
-        ecgGain = binding.inputEcgGain.text?.toString().orEmpty().ifBlank { "x1" },
-        ecgMode = binding.inputEcgMode.text?.toString().orEmpty().ifBlank { "monitor" },
-        thermometerEnabled = binding.checkboxTherm.isChecked,
+    private fun readForm(): BerryConfig = BerryConfig(
+        apiBaseUrl = binding.apiUrl.text?.toString()?.trim().orEmpty(),
+        totemId = binding.totemId.text?.toString()?.trim().orEmpty(),
+        apiUsername = binding.apiUser.text?.toString()?.trim().orEmpty(),
+        apiPassword = binding.apiPassword.text?.toString()?.trim().orEmpty(),
+        pusherKey = binding.pusherKey.text?.toString()?.trim().orEmpty(),
+        pusherCluster = binding.pusherCluster.text?.toString()?.trim().orEmpty().ifBlank { "us2" },
+        publicChannel = binding.channel.text?.toString()?.trim().orEmpty(),
+        startEventName = binding.startEvent.text?.toString()?.trim().orEmpty().ifBlank { "start-monitoring" },
+        stopEventName = binding.stopEvent.text?.toString()?.trim().orEmpty().ifBlank { "stop-monitoring" },
+        ecgGain = value(binding.ecgGain, GAIN_VALUES),
+        ecgMode = value(binding.ecgMode, MODE_VALUES),
+        respGain = value(binding.respGain, GAIN_VALUES),
+        nibpMode = value(binding.nibpMode, NIBP_VALUES),
+        nibpTargetPressureMmhg = binding.nibpTarget.text?.toString()?.trim().orEmpty(),
+        maxSessionMinutes = binding.maxMinutes.text?.toString()?.trim()?.toIntOrNull() ?: 30,
     )
 
-    private fun bindState(state: com.guardiavirtual.berrymed.service.MonitorUiState) {
-        binding.textStatus.text = state.statusLine
-        binding.textBerry.text = if (state.berryConnected) "Conectada" else "Desconectada"
-        binding.textTherm.text = if (state.thermConnected) "Conectado" else "Desconectado"
-        binding.textRelay.text = if (state.relayPresent) "Presente" else "No detectado"
-        binding.textPusher.text = if (state.pusherConnected) "Conectado" else "Desconectado"
-        binding.textSession.text = if (state.sessionActive) "Activa" else "Inactiva"
-        binding.textVitals.text = buildString {
-            append("FC ${state.vitals.heartRate}  FR ${state.vitals.respRate}\n")
-            append("SpO₂/pulso ${state.vitals.spo2Pulse}\n")
-            append("Temp ${state.vitals.temperature}  PA ${state.vitals.nibp}")
+    private fun preview() {
+        val base = binding.apiUrl.text?.toString()?.trim().orEmpty()
+        val totem = binding.totemId.text?.toString()?.trim().orEmpty()
+        binding.urlPreview.text = if (base.isBlank() || totem.isBlank()) {
+            getString(R.string.url_preview_empty)
+        } else {
+            buildMetricsUrl(base, totem)
         }
+    }
+
+    private fun render(state: TotemState) {
+        paint(binding.heartRate, state.heartRate)
+        paint(binding.spo2Pulse, state.spo2Pulse)
+        paint(binding.respRate, state.respRate)
+        paint(binding.temperature, state.temperature)
+        paint(binding.nibp, state.nibp)
+        binding.statusParagraph.text = state.paragraph
+        binding.lastPost.text = state.lastPost
+    }
+
+    private fun paint(view: TextView, value: String) {
+        view.text = value
+        val empty = value == "—" || value == "-" || value == "- -" || value == "- - /- -"
+        view.setTextColor(getColor(if (empty) R.color.vital_dim else R.color.vital_on))
+    }
+
+    private fun askBatteryExemption() {
+        val intent = Intent(
+            Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+            Uri.parse("package:$packageName"),
+        )
+        startActivity(intent)
+    }
+
+    private fun select(group: ChipGroup, values: Array<String>, selected: String) {
+        val index = values.indexOf(selected).coerceAtLeast(0)
+        (group.getChildAt(index) as? Chip)?.isChecked = true
+    }
+
+    private fun value(group: ChipGroup, values: Array<String>): String {
+        val checked = group.checkedChipId
+        val index = (0 until group.childCount).indexOfFirst { group.getChildAt(it).id == checked }
+        return values.getOrElse(index) { values.first() }
     }
 
     companion object {
-        const val ACTION_USB_PERMISSION = "com.guardiavirtual.berrymed.USB_PERMISSION"
+        private val GAIN_VALUES = arrayOf("x0.25", "x0.5", "x1", "x2")
+        private val MODE_VALUES = arrayOf("operacion", "monitor", "diagnostico")
+        private val NIBP_VALUES = arrayOf("adulto", "nino", "neonato")
     }
 }

@@ -1,53 +1,469 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:background="@color/monitor"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:paddingStart="24dp"
+        android:paddingTop="28dp"
+        android:paddingEnd="24dp"
+        android:paddingBottom="32dp">
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/config_title"
-            android:textSize="20sp"
-            android:textStyle="bold" />
+            android:text="@string/screen_title"
+            android:textColor="@color/vital_on"
+            android:textSize="32sp" />
 
-        <EditText android:id="@+id/inputApiBase" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="API URL (base)" android:inputType="textUri" />
-        <EditText android:id="@+id/inputTotemId" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Totem ID" />
-        <EditText android:id="@+id/inputApiEndpoint" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="API endpoint (metrics)" />
-        <TextView android:id="@+id/textMetricsPreview" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="12sp" />
-        <EditText android:id="@+id/inputApiUser" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="API usuario" />
-        <EditText android:id="@+id/inputApiPass" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="API contraseña" android:inputType="textPassword" />
-        <EditText android:id="@+id/inputPusherKey" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Pusher key" />
-        <EditText android:id="@+id/inputPusherCluster" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Pusher cluster (us2)" />
-        <EditText android:id="@+id/inputChannel" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Canal público" />
-        <EditText android:id="@+id/inputStartEvent" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Evento start" />
-        <EditText android:id="@+id/inputStopEvent" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Evento stop" />
-        <EditText android:id="@+id/inputMaxSession" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Max sesión (min, 0=off)" android:inputType="number" />
-        <EditText android:id="@+id/inputEcgGain" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="ECG gain (x1)" />
-        <EditText android:id="@+id/inputEcgMode" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="ECG mode (monitor)" />
-        <CheckBox android:id="@+id/checkboxTherm" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Termómetro USB IR" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:lineSpacingExtra="3dp"
+            android:text="@string/screen_subtitle"
+            android:textColor="@color/vital_dim"
+            android:textSize="16sp" />
 
-        <Button android:id="@+id/btnSave" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/save_config" />
-        <Button android:id="@+id/btnStartService" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/start_service" />
-        <Button android:id="@+id/btnBattery" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/battery_exemption" />
+        <GridLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:columnCount="3">
 
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="@string/status_title" android:textStyle="bold" />
-        <TextView android:id="@+id/textStatus" android:layout_width="match_parent" android:layout_height="wrap_content" />
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Plaqueta:" />
-        <TextView android:id="@+id/textBerry" android:layout_width="match_parent" android:layout_height="wrap_content" />
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Termómetro:" />
-        <TextView android:id="@+id/textTherm" android:layout_width="match_parent" android:layout_height="wrap_content" />
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Relé:" />
-        <TextView android:id="@+id/textRelay" android:layout_width="match_parent" android:layout_height="wrap_content" />
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Pusher:" />
-        <TextView android:id="@+id/textPusher" android:layout_width="match_parent" android:layout_height="wrap_content" />
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Sesión:" />
-        <TextView android:id="@+id/textSession" android:layout_width="match_parent" android:layout_height="wrap_content" />
-        <TextView android:id="@+id/textVitals" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:fontFamily="monospace" />
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:orientation="vertical"
+                android:paddingEnd="12dp"
+                android:paddingBottom="16dp">
+
+                <TextView style="@style/VitalLabel" android:text="@string/label_hr" />
+                <TextView android:id="@+id/heartRate" style="@style/VitalValue" android:text="—" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:orientation="vertical"
+                android:paddingEnd="12dp"
+                android:paddingBottom="16dp">
+
+                <TextView style="@style/VitalLabel" android:text="@string/label_spo2" />
+                <TextView android:id="@+id/spo2Pulse" style="@style/VitalValue" android:text="—" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:orientation="vertical"
+                android:paddingBottom="16dp">
+
+                <TextView style="@style/VitalLabel" android:text="@string/label_resp" />
+                <TextView android:id="@+id/respRate" style="@style/VitalValue" android:text="—" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:orientation="vertical"
+                android:paddingEnd="12dp">
+
+                <TextView style="@style/VitalLabel" android:text="@string/label_temp" />
+                <TextView android:id="@+id/temperature" style="@style/VitalValue" android:text="—" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:orientation="vertical"
+                android:paddingEnd="12dp">
+
+                <TextView style="@style/VitalLabel" android:text="@string/label_nibp" />
+                <TextView android:id="@+id/nibp" style="@style/VitalValue" android:text="—" />
+            </LinearLayout>
+        </GridLayout>
+
+        <TextView
+            android:id="@+id/statusParagraph"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:lineSpacingExtra="4dp"
+            android:textColor="@color/vital_on"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/lastPost"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textColor="@color/vital_dim"
+            android:textSize="15sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/usbButton"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="1"
+                android:text="@string/usb_permission"
+                android:textColor="@color/vital_on"
+                app:strokeColor="@color/vital_dim" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/batteryButton"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/battery"
+                android:textColor="@color/vital_on"
+                app:strokeColor="@color/vital_dim" />
+        </LinearLayout>
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:background="@color/paper"
+                android:orientation="vertical"
+                android:padding="20dp"
+                android:theme="@style/ThemeOverlay.BerryMed.Form"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintWidth_max="680dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/stepDestination"
+                        style="@style/StepLabel"
+                        android:text="@string/step_destination"
+                        android:textColor="@color/signal" />
+
+                    <TextView
+                        android:id="@+id/stepOrders"
+                        style="@style/StepLabel"
+                        android:text="@string/step_orders"
+                        android:textColor="@color/ink_soft" />
+
+                    <TextView
+                        android:id="@+id/stepDevice"
+                        style="@style/StepLabel"
+                        android:text="@string/step_device"
+                        android:textColor="@color/ink_soft" />
+                </LinearLayout>
+
+                <ViewFlipper
+                    android:id="@+id/steps"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:measureAllChildren="false">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <TextView style="@style/FormTitle" android:layout_marginTop="8dp" android:text="@string/section_destination" />
+                        <TextView style="@style/Help" android:text="@string/help_destination" />
+
+                        <com.google.android.material.textfield.TextInputLayout style="@style/Field" android:hint="@string/hint_api">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/apiUrl"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="textUri"
+                                android:singleLine="true" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.textfield.TextInputLayout style="@style/Field" android:hint="@string/hint_totem">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/totemId"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="text"
+                                android:singleLine="true" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.textfield.TextInputLayout style="@style/Field" android:hint="@string/hint_user">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/apiUser"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="text"
+                                android:singleLine="true" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Field"
+                            android:hint="@string/hint_password"
+                            app:endIconMode="password_toggle">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/apiPassword"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="textPassword"
+                                android:singleLine="true" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <TextView
+                            android:id="@+id/urlPreview"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:text="@string/url_preview_empty"
+                            android:textColor="@color/ink"
+                            android:textSize="15sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <TextView style="@style/FormTitle" android:layout_marginTop="8dp" android:text="@string/section_orders" />
+                        <TextView style="@style/Help" android:text="@string/help_orders" />
+
+                        <com.google.android.material.textfield.TextInputLayout style="@style/Field" android:hint="@string/hint_pusher">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/pusherKey"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="text"
+                                android:singleLine="true" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.textfield.TextInputLayout style="@style/Field" android:hint="@string/hint_channel">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/channel"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="text"
+                                android:singleLine="true" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <TextView style="@style/Help" android:layout_marginTop="16dp" android:text="@string/help_known_values" />
+
+                        <com.google.android.material.textfield.TextInputLayout style="@style/Field" android:hint="@string/hint_cluster">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/pusherCluster"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="text"
+                                android:singleLine="true"
+                                android:text="us2" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.textfield.TextInputLayout style="@style/Field" android:hint="@string/hint_start">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/startEvent"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="text"
+                                android:singleLine="true"
+                                android:text="start-monitoring" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.textfield.TextInputLayout style="@style/Field" android:hint="@string/hint_stop">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/stopEvent"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="text"
+                                android:singleLine="true"
+                                android:text="stop-monitoring" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Field"
+                            android:hint="@string/hint_minutes"
+                            app:helperText="@string/help_minutes">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/maxMinutes"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="number"
+                                android:singleLine="true"
+                                android:text="30" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <TextView style="@style/FormTitle" android:layout_marginTop="8dp" android:text="@string/section_device" />
+                        <TextView style="@style/Help" android:text="@string/help_device" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:text="@string/label_ecg_gain"
+                            android:textColor="@color/ink"
+                            android:textSize="15sp" />
+
+                        <com.google.android.material.chip.ChipGroup
+                            android:id="@+id/ecgGain"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            app:selectionRequired="true"
+                            app:singleSelection="true">
+
+                            <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="x0.25" />
+                            <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="x0.5" />
+                            <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="true" android:text="x1" />
+                            <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="x2" />
+                        </com.google.android.material.chip.ChipGroup>
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:text="@string/label_ecg_mode"
+                            android:textColor="@color/ink"
+                            android:textSize="15sp" />
+
+                        <com.google.android.material.chip.ChipGroup
+                            android:id="@+id/ecgMode"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            app:selectionRequired="true"
+                            app:singleSelection="true">
+
+                            <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Operación" />
+                            <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="true" android:text="Monitor" />
+                            <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Diagnóstico" />
+                        </com.google.android.material.chip.ChipGroup>
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:text="@string/label_resp_gain"
+                            android:textColor="@color/ink"
+                            android:textSize="15sp" />
+
+                        <com.google.android.material.chip.ChipGroup
+                            android:id="@+id/respGain"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            app:selectionRequired="true"
+                            app:singleSelection="true">
+
+                            <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="x0.25" />
+                            <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="x0.5" />
+                            <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="true" android:text="x1" />
+                            <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="x2" />
+                        </com.google.android.material.chip.ChipGroup>
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:text="@string/label_nibp_mode"
+                            android:textColor="@color/ink"
+                            android:textSize="15sp" />
+
+                        <com.google.android.material.chip.ChipGroup
+                            android:id="@+id/nibpMode"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            app:selectionRequired="true"
+                            app:singleSelection="true">
+
+                            <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="true" android:text="Adulto" />
+                            <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Niño" />
+                            <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Neonato" />
+                        </com.google.android.material.chip.ChipGroup>
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Field"
+                            android:hint="@string/hint_nibp_target"
+                            app:helperText="@string/help_nibp_target">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/nibpTarget"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="number"
+                                android:singleLine="true" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
+                </ViewFlipper>
+
+                <TextView
+                    android:id="@+id/formMessage"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:textColor="@color/ink"
+                    android:textSize="15sp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/backButton"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:text="@string/back"
+                        android:visibility="gone" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/nextButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/next"
+                        android:textColor="@color/vital_on"
+                        app:backgroundTint="@color/signal" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/saveButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/save"
+                        android:textColor="@color/vital_on"
+                        android:visibility="gone"
+                        app:backgroundTint="@color/signal" />
+                </LinearLayout>
+            </LinearLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
     </LinearLayout>
 </ScrollView>

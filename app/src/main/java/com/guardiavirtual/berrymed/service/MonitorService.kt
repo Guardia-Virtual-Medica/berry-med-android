@@ -1,183 +1,120 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 package com.guardiavirtual.berrymed.service
 
-import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.ServiceInfo
+import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import com.guardiavirtual.berrymed.BerryMedApp
 import com.guardiavirtual.berrymed.R
-import com.guardiavirtual.berrymed.config.ConfigStore
-import com.guardiavirtual.berrymed.config.TotemConfig
-import com.guardiavirtual.berrymed.net.MetricsPoster
-import com.guardiavirtual.berrymed.net.PusherSessionController
-import com.guardiavirtual.berrymed.protocol.BmDataParser
 import com.guardiavirtual.berrymed.ui.MainActivity
-import com.guardiavirtual.berrymed.usb.UsbOrchestrator
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
+import com.guardiavirtual.berrymed.usb.UsbHub
 
 class MonitorService : Service() {
-
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private lateinit var configStore: ConfigStore
-    private val parser = BmDataParser()
-    private lateinit var usb: UsbOrchestrator
-    private val poster = MetricsPoster()
-    private lateinit var pusher: PusherSessionController
-
-    @Volatile private var config: TotemConfig = TotemConfig()
-    @Volatile private var sending = false
-    private var sessionStartedNs: Long = 0
-    private var usbJob: Job? = null
-    private var postJob: Job? = null
-
-    override fun onCreate() {
-        super.onCreate()
-        configStore = ConfigStore(this)
-        usb = UsbOrchestrator(this, parser) { line ->
-            MonitorState.update { it.copy(statusLine = line) }
-        }
-        pusher = PusherSessionController(
-            onStart = { handleStart() },
-            onStop = { handleStop("evento stop") },
-            onBloodPressure = { handleBloodPressure() },
-        )
-        startForeground(NOTIFICATION_ID, buildNotification("Berry Med activo"))
-        scope.launch {
-            configStore.configFlow.collect { cfg ->
-                config = cfg
-                usb.updateConfig(cfg)
-                if (cfg.isConfigured()) {
-                    pusher.connect(cfg)
-                }
-            }
-        }
-        usbJob = scope.launch { usbLoop() }
-        postJob = scope.launch { postLoop() }
-        scope.launch {
-            while (isActive) {
-                MonitorState.update {
-                    it.copy(
-                        berryConnected = usb.berryReader?.isConnected == true,
-                        thermConnected = usb.thermometerReader != null,
-                        relayPresent = usb.relay.isPresent,
-                        pusherConnected = pusher.connected,
-                        sessionActive = sending,
-                        vitals = parser.vitalSigns.copy(),
-                    )
-                }
-                delay(500)
-            }
+    private var wakeLock: PowerManager.WakeLock? = null
+    private var lastNotification = ""
+    private var lastBerryUp = false
+    private val permissionReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            runtime().publish()
         }
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        when (intent?.action) {
-            ACTION_USB_CHANGED -> usb.refreshDevices()
-            ACTION_RELOAD_CONFIG -> scope.launch {
-                config = configStore.configFlow.first()
-                usb.updateConfig(config)
-                if (config.isConfigured()) pusher.connect(config)
-            }
+    override fun onCreate() {
+        super.onCreate()
+        createChannel()
+        showNotification("Esperando la plaqueta", berryUp = false)
+        acquireWakeLock()
+        val filter = IntentFilter(UsbHub.ACTION_USB_PERMISSION)
+        if (Build.VERSION.SDK_INT >= 33) {
+            registerReceiver(permissionReceiver, filter, RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(permissionReceiver, filter)
         }
+        val runtime = runtime()
+        runtime.onNotification = { text, berryUp -> showNotification(text, berryUp) }
+        runtime.start()
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        runtime().start()
         return START_STICKY
     }
 
     override fun onDestroy() {
-        usb.disconnectAll()
-        pusher.disconnect()
-        scope.cancel()
+        try {
+            unregisterReceiver(permissionReceiver)
+        } catch (_: Exception) {
+        }
+        wakeLock?.let { if (it.isHeld) it.release() }
         super.onDestroy()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    private suspend fun usbLoop() {
-        while (true) {
-            usb.refreshDevices()
-            if (usb.berryReader?.isConnected != true) {
-                MonitorState.update { it.copy(statusLine = "Esperando plaqueta USB…") }
-            }
-            delay(5000)
-        }
-    }
+    private fun runtime(): TotemRuntime = (application as BerryMedApp).runtime
 
-    private suspend fun postLoop() {
-        while (true) {
-            delay(1000)
-            if (!sending) continue
-            if (sessionExpired()) {
-                handleStop("sin stop tras ${config.maxSessionMinutes} min")
-                continue
-            }
-            val data = parser.takePayload()
-            poster.post(config, data, usb.thermometerReader)
-        }
-    }
-
-    private fun handleStart() {
-        resetSessionState()
-        sessionStartedNs = System.nanoTime()
-        sending = true
-        MonitorState.update { it.copy(sessionActive = true, statusLine = "Sesión activa — enviando métricas") }
-    }
-
-    private fun handleStop(reason: String) {
-        sending = false
-        sessionStartedNs = 0
-        resetSessionState()
-        MonitorState.update { it.copy(sessionActive = false, statusLine = "Sesión detenida ($reason)") }
-    }
-
-    private fun handleBloodPressure() {
-        parser.resetNibp()
-        usb.berryReader?.startNibp()
-    }
-
-    private fun resetSessionState() {
-        usb.berryReader?.resetState()
-        parser.resetData()
-        usb.thermometerReader?.resetLatest()
-    }
-
-    private fun sessionExpired(): Boolean {
-        if (config.maxSessionMinutes <= 0 || sessionStartedNs == 0L) return false
-        val maxNs = config.maxSessionMinutes * 60L * 1_000_000_000L
-        return System.nanoTime() - sessionStartedNs >= maxNs
-    }
-
-    private fun buildNotification(text: String): Notification {
-        val pending = PendingIntent.getActivity(
-            this,
-            0,
-            Intent(this, MainActivity::class.java),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-        return NotificationCompat.Builder(this, BerryMedApp.CHANNEL_ID)
+    private fun showNotification(text: String, berryUp: Boolean) {
+        if (text == lastNotification && berryUp == lastBerryUp) return
+        lastNotification = text
+        lastBerryUp = berryUp
+        val notification = NotificationCompat.Builder(this, CHANNEL)
+            .setSmallIcon(R.drawable.ic_stat)
             .setContentTitle(getString(R.string.app_name))
             .setContentText(text)
-            .setSmallIcon(R.drawable.ic_notification)
-            .setContentIntent(pending)
             .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setContentIntent(
+                PendingIntent.getActivity(
+                    this,
+                    0,
+                    Intent(this, MainActivity::class.java),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                ),
+            )
             .build()
+        if (Build.VERSION.SDK_INT >= 29) {
+            val preferred = if (berryUp) {
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
+            } else {
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+            }
+            try {
+                startForeground(NOTIFICATION_ID, notification, preferred)
+            } catch (_: SecurityException) {
+                startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+            }
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
+    }
+
+    private fun createChannel() {
+        if (Build.VERSION.SDK_INT < 26) return
+        val channel = NotificationChannel(CHANNEL, "Tótem Berry", NotificationManager.IMPORTANCE_LOW)
+        channel.setShowBadge(false)
+        getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+    }
+
+    private fun acquireWakeLock() {
+        val power = getSystemService(PowerManager::class.java)
+        val lock = power.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "berrymed:totem")
+        lock.setReferenceCounted(false)
+        lock.acquire()
+        wakeLock = lock
     }
 
     companion object {
-        const val ACTION_USB_CHANGED = "com.guardiavirtual.berrymed.USB_CHANGED"
-        const val ACTION_RELOAD_CONFIG = "com.guardiavirtual.berrymed.RELOAD_CONFIG"
-        private const val NOTIFICATION_ID = 1001
-
-        fun start(context: android.content.Context) {
-            context.startForegroundService(Intent(context, MonitorService::class.java))
-        }
+        private const val CHANNEL = "berrymed"
+        private const val NOTIFICATION_ID = 1
     }
 }
