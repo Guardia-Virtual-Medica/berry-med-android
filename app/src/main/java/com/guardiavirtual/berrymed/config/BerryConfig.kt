@@ -34,7 +34,11 @@ data class BerryConfig(
         return buildMetricsUrl(apiBaseUrl, totemId, apiEndpoint)
     }
 
-    fun pusherReady(): Boolean = pusherKey.isBlank().not() && publicChannel.isBlank().not()
+    fun pusherReady(): Boolean = pusherKey.isNotBlank() && publicChannel.isNotBlank() && channelIsPublic()
+
+    /** La librería tira una excepción al suscribirse a un canal privado o de presencia sin autenticación. */
+    fun channelIsPublic(): Boolean =
+        !publicChannel.startsWith("private-") && !publicChannel.startsWith("presence-")
 
     fun postReady(): Boolean =
         metricsUrl() != null && apiUsername.isNotBlank() && apiPassword.isNotBlank()
@@ -47,6 +51,7 @@ data class BerryConfig(
         if (apiPassword.isBlank()) missing += "contraseña"
         if (pusherKey.isBlank()) missing += "clave de Pusher"
         if (publicChannel.isBlank()) missing += "canal"
+        if (!channelIsPublic()) missing += "un canal público (sin private- ni presence-)"
         return missing
     }
 }

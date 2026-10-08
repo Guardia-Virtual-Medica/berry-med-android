@@ -34,6 +34,8 @@ class BerryLink(
     private var lastPowerCycleAt: Long = 0L
     private var lastPowerCheckAt: Long = 0L
     private var powerCheckLogged = false
+    private var stSeenAt: Long = System.nanoTime()
+    private var absentCutAt: Long = 0L
     private val openFailures = HashMap<Int, Int>()
 
     fun lastDataAgeSeconds(): Double? {
@@ -92,10 +94,13 @@ class BerryLink(
     }
 
     private fun acquire(): Acquire {
+        val now = System.nanoTime()
         if (hub.stPresent()) {
+            stSeenAt = now
             powerCheckLogged = false
         } else {
             ensurePowerOn()
+            cutIfLongAbsent(now)
         }
         val drivers = hub.berryCandidates()
         openFailures.keys.retainAll(drivers.map { it.device.deviceId }.toSet())
@@ -247,6 +252,18 @@ class BerryLink(
         powerCheckLogged = true
     }
 
+    /**
+     * Una plaqueta con 12 V que no llega a enumerar (pasa tras una baja de
+     * tensión) no aparece nunca en el USB, y sólo un corte la recupera. Si
+     * no hay ningún dispositivo de ST hace [ABSENT_BEFORE_CUT_NANOS] se corta,
+     * y mientras siga sin aparecer, como mucho cada [ABSENT_CUT_EVERY_NANOS].
+     */
+    private fun cutIfLongAbsent(now: Long) {
+        if (!absentCutDue(stSeenAt, absentCutAt, now)) return
+        absentCutAt = now
+        powerCycle("la plaqueta no aparece en el USB hace ${(now - stSeenAt) / 60_000_000_000L} min")
+    }
+
     private fun powerCycle(reason: String) {
         if (!relay.plugged()) {
             log("[WATCHDOG] $reason. No hay relé: no se corta la alimentación.")
@@ -334,6 +351,14 @@ class BerryLink(
 
         /** Fallos seguidos al abrir un puerto de ST antes de tratarlo como plaqueta trabada. */
         const val OPEN_FAILURES_BEFORE_CUT = 3
+
+        const val ABSENT_BEFORE_CUT_NANOS = 3L * 60L * 1_000_000_000L
+        const val ABSENT_CUT_EVERY_NANOS = 30L * 60L * 1_000_000_000L
+
+        fun absentCutDue(seenAt: Long, lastAbsentCutAt: Long, now: Long): Boolean {
+            if (now - seenAt < ABSENT_BEFORE_CUT_NANOS) return false
+            return lastAbsentCutAt == 0L || now - lastAbsentCutAt >= ABSENT_CUT_EVERY_NANOS
+        }
 
         fun relayCooldownOver(lastCutAt: Long, now: Long): Boolean =
             lastCutAt == 0L || now - lastCutAt >= RELAY_COOLDOWN_NANOS

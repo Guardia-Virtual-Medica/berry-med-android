@@ -11,11 +11,11 @@ Pusher no transporta las mediciones. La tablet se suscribe al canal público y e
 - La plaqueta se reconoce porque manda tramas `55 AA` a 115200 baudios. Es un STM32 VCP (`0483`). El relé es el HID `16C0:05DF`.
 - El termómetro manda una línea JSON con `valor_temperatura_ir` sólo cuando alguien mide, así que no se lo reconoce por lo que transmite: toma el puerto serie que no es la plaqueta y lo deja abierto esperando. Un puerto de ST nunca va al termómetro.
 
-Si el puerto de ST abre y no llegan tramas, si no abre tres veces seguidas, o si la plaqueta se queda muda 20 segundos, la app corta los 12 V durante 5 segundos con el relé y vuelve a conectar. Entre un corte y el siguiente espera al menos un minuto, para no cortarla mientras arranca. Si se desenchufa el cable, o si el que no contesta es otro puerto, no toca el relé. Si un corte no repuso la alimentación (falló el relé o la app se cerró en medio), mientras no aparezca la plaqueta se le pide al relé una vez por minuto que deje pasar los 12 V.
+Si el puerto de ST abre y no llegan tramas, si no abre tres veces seguidas, o si la plaqueta se queda muda 20 segundos, la app corta los 12 V durante 5 segundos con el relé y vuelve a conectar. Entre un corte y el siguiente espera al menos un minuto, para no cortarla mientras arranca. Si se desenchufa el cable, o si el que no contesta es otro puerto, no toca el relé. Si un corte no repuso la alimentación (falló el relé o la app se cerró en medio), mientras no aparezca la plaqueta se le pide al relé una vez por minuto que deje pasar los 12 V. Si la plaqueta no aparece en el USB durante 3 minutos (puede pasar que tenga alimentación y no llegue a enumerar), se corta igual, y mientras siga sin aparecer como mucho cada 30 minutos: con el relé enchufado y la plaqueta apagada a propósito, el relé conmuta cada media hora. El relé recibe 8 bytes `[comando, relé, 0…]`, que es lo que llega al dispositivo cuando el exe manda sus 9 con el report ID 0, y cada cambio se confirma leyendo su estado.
 
 ## Configuración
 
-En la pantalla van la URL base, el tótem, el usuario y la contraseña, la clave y el cluster de Pusher, el canal público y los nombres de los eventos de inicio y fin. También la ganancia y el modo de ECG, la ganancia de respiración y el modo de presión. Se guardan en el dispositivo.
+En la pantalla van la URL base, el tótem, el usuario y la contraseña, la clave y el cluster de Pusher, el canal público y los nombres de los eventos de inicio y fin. Un canal `private-` o `presence-` no se conecta: la app no autentica canales y la pantalla lo marca como dato faltante. También la ganancia y el modo de ECG, la ganancia de respiración y el modo de presión. Se guardan en el dispositivo.
 
 La sesión se corta sola a los 30 minutos si no llega el evento de fin. `0` desactiva ese tope.
 
@@ -31,7 +31,7 @@ La configuración queda guardada en la tablet y el servicio arranca solo al ence
 4. **Instalar siempre un APK firmado con la misma clave.** Si cambia la clave hay que desinstalar, y eso borra la configuración.
 5. **Probarlo**: reiniciar la tablet con todo enchufado y, con la sesión andando, forzar un corte del relé. En los dos casos la plaqueta tiene que volver sola, sin tocar la pantalla.
 
-Si Pusher se cae, la librería reintenta unos 85 segundos y se rinde. Treinta segundos después la app le pide otra tanda de intentos, y así mientras no haya conexión.
+Si Pusher se cae, la librería reintenta unos 85 segundos y se rinde. Treinta segundos después la app le pide otra tanda de intentos, y así mientras no haya conexión. Si queda más de 5 minutos conectando sin respuesta (una red que acepta la conexión y no contesta), se arma un cliente nuevo; cada vez espera el doble, hasta una hora.
 
 El servicio corre siempre como `connectedDevice`. `dataSync` no sirve: en Android 15 no puede arrancar al encender la tablet y tiene un tope de 6 horas por día.
 

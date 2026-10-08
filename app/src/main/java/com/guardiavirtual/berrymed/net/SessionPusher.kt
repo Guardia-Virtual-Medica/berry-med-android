@@ -17,8 +17,12 @@ import com.pusher.client.connection.ConnectionStateChange
  * DISCONNECTED para siempre. Con la tablet sola eso es un tótem que no recibe
  * más el inicio de sesión, así que [keepAlive] le vuelve a pedir `connect()`
  * al mismo cliente, que arranca otra tanda de intentos y re-suscribe el canal.
- * No se arma un cliente nuevo: desconectar uno que está entre reintentos lo
- * deja trabado en DISCONNECTING con sus dos hilos vivos.
+ * No se arma un cliente nuevo para eso: desconectar uno que está entre
+ * reintentos lo deja trabado en DISCONNECTING con sus dos hilos vivos.
+ *
+ * El único caso en que sí se rearma es un cliente trabado en CONNECTING (la red
+ * acepta la conexión y nunca contesta el TLS): ahí la librería no tiene timeout.
+ * Como ese cliente se pierde, cada rearmado espera el doble que el anterior.
  */
 class SessionPusher(
     private val log: (String) -> Unit,
@@ -33,7 +37,9 @@ class SessionPusher(
 
     @Volatile private var client: Pusher? = null
     private var identity: String? = null
-    private val watchdog = ReconnectTimer(RETRY_NANOS)
+    private var applied: BerryConfig? = null
+    private val gaveUp = ReconnectTimer(RETRY_NANOS)
+    private val stuck = ReconnectTimer(STUCK_NANOS, maxNanos = STUCK_MAX_NANOS)
 
     @Synchronized
     fun apply(config: BerryConfig) {
@@ -47,13 +53,43 @@ class SessionPusher(
         if (next == identity && client != null) return
         stop()
         identity = next
+        applied = null
+        if (!config.channelIsPublic()) {
+            log("[PUSHER] El canal tiene que ser público. Esta app no autentica canales privados.")
+        }
         if (!config.pusherReady()) {
             listener.onConnection(false)
             return
         }
-        if (config.publicChannel.startsWith("private-") || config.publicChannel.startsWith("presence-")) {
-            log("[PUSHER] El canal tiene que ser público. Esta app no autentica canales privados.")
+        applied = config
+        connectSafely(config)
+    }
+
+    /** Se llama seguido. Vuelve a intentar si la librería se rindió o si quedó trabada conectando. */
+    @Synchronized
+    fun keepAlive(now: Long = System.nanoTime()) {
+        val pusher = client ?: return
+        val state = pusher.connection.state
+        if (gaveUp.due(now) && state == ConnectionState.DISCONNECTED) {
+            log("[PUSHER] Desconectado hace más de ${RETRY_NANOS / 1_000_000_000L} s; se vuelve a conectar")
+            pusher.connect()
+            return
         }
+        if (stuck.due(now) && state == ConnectionState.CONNECTING) {
+            val config = applied ?: return
+            log("[PUSHER] Trabado conectando; se arma un cliente nuevo")
+            disconnectClient(resetTimers = false)
+            connectSafely(config)
+        }
+    }
+
+    @Synchronized
+    fun stop() {
+        disconnectClient(resetTimers = true)
+        listener.onConnection(false)
+    }
+
+    private fun connectSafely(config: BerryConfig) {
         try {
             connect(config)
         } catch (error: Exception) {
@@ -65,40 +101,34 @@ class SessionPusher(
         }
     }
 
-    /** Se llama seguido. Si la librería se rindió hace [RETRY_NANOS], le pide otra tanda de intentos. */
-    @Synchronized
-    fun keepAlive(now: Long = System.nanoTime()) {
-        val pusher = client ?: return
-        if (!watchdog.due(now)) return
-        if (pusher.connection.state != ConnectionState.DISCONNECTED) return
-        log("[PUSHER] Desconectado hace más de ${RETRY_NANOS / 1_000_000_000L} s; se vuelve a conectar")
-        pusher.connect()
-    }
-
-    @Synchronized
-    fun stop() {
-        disconnectClient()
-        listener.onConnection(false)
-    }
-
     private fun connect(config: BerryConfig) {
         val cluster = config.pusherCluster.ifBlank { "us2" }
         val options = PusherOptions().setCluster(cluster).setUseTLS(true)
         val pusher = Pusher(config.pusherKey, options)
         var bound = false
         client = pusher
-        watchdog.reset()
         pusher.connect(object : ConnectionEventListener {
             override fun onConnectionStateChange(change: ConnectionStateChange) {
-                // Un cliente viejo que termina de cerrarse no pisa el estado del nuevo.
-                if (client !== pusher) return
-                val up = change.currentState == ConnectionState.CONNECTED
-                watchdog.onState(gaveUp = change.currentState == ConnectionState.DISCONNECTED, now = System.nanoTime())
-                listener.onConnection(up)
-                log("[PUSHER] ${change.currentState}")
-                if (up && !bound) {
-                    bind(pusher, config)
-                    bound = true
+                // Corre en un hilo de la librería: una excepción acá cierra la app.
+                try {
+                    if (client !== pusher) {
+                        // Un cliente reemplazado que igual terminó de conectar queda
+                        // abierto para siempre si nadie lo cierra.
+                        if (change.currentState == ConnectionState.CONNECTED) pusher.disconnect()
+                        return
+                    }
+                    val state = change.currentState
+                    val now = System.nanoTime()
+                    gaveUp.onState(down = state == ConnectionState.DISCONNECTED, now = now)
+                    stuck.onState(down = state == ConnectionState.CONNECTING, now = now)
+                    listener.onConnection(state == ConnectionState.CONNECTED)
+                    log("[PUSHER] $state")
+                    if (state == ConnectionState.CONNECTED && !bound) {
+                        bind(pusher, config)
+                        bound = true
+                    }
+                } catch (error: Exception) {
+                    log("[PUSHER] Error al procesar el cambio de estado: $error")
                 }
             }
 
@@ -109,10 +139,11 @@ class SessionPusher(
         log("[PUSHER] Suscripción pedida en ${config.publicChannel}")
     }
 
-    private fun disconnectClient() {
+    private fun disconnectClient(resetTimers: Boolean) {
         val old = client
         client = null
-        watchdog.reset()
+        gaveUp.reset()
+        if (resetTimers) stuck.reset()
         try {
             old?.disconnect()
         } catch (_: Exception) {
@@ -145,21 +176,28 @@ class SessionPusher(
 
         /** Desde que la librería se rinde. Igual a su espera más larga entre intentos. */
         const val RETRY_NANOS = 30L * 1_000_000_000L
+
+        /** En CONNECTING más que esto es una red que no contesta, no un intento lento. */
+        const val STUCK_NANOS = 5L * 60L * 1_000_000_000L
+        const val STUCK_MAX_NANOS = 60L * 60L * 1_000_000_000L
     }
 }
 
 /**
- * Cuánto hace que la librería de Pusher se rindió (DISCONNECTED). Mientras
- * reintenta sola no cuenta. [due] avisa una vez por intervalo, así un corte
- * largo de red da una tanda de intentos cada tanto y no una por vuelta.
+ * Cuánto hace que la conexión está en un estado malo. [due] avisa una vez por
+ * intervalo, así un corte largo da un intento cada tanto y no uno por vuelta.
+ * Con [maxNanos] mayor que [baseNanos] el intervalo se duplica en cada aviso
+ * hasta ese tope, y vuelve al inicio cuando el estado malo termina.
  */
-class ReconnectTimer(private val afterNanos: Long) {
+class ReconnectTimer(private val baseNanos: Long, private val maxNanos: Long = baseNanos) {
     private var downSince: Long? = null
+    private var intervalNanos = baseNanos
 
     @Synchronized
-    fun onState(gaveUp: Boolean, now: Long) {
-        if (!gaveUp) {
+    fun onState(down: Boolean, now: Long) {
+        if (!down) {
             downSince = null
+            intervalNanos = baseNanos
             return
         }
         if (downSince == null) downSince = now
@@ -168,13 +206,15 @@ class ReconnectTimer(private val afterNanos: Long) {
     @Synchronized
     fun due(now: Long): Boolean {
         val since = downSince ?: return false
-        if (now - since < afterNanos) return false
+        if (now - since < intervalNanos) return false
         downSince = now
+        intervalNanos = minOf(intervalNanos * 2, maxNanos)
         return true
     }
 
     @Synchronized
     fun reset() {
         downSince = null
+        intervalNanos = baseNanos
     }
 }

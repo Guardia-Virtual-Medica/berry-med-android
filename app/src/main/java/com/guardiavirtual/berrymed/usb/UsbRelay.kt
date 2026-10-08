@@ -7,7 +7,13 @@ import java.io.Closeable
 
 /**
  * USBRelay2 (VID 16C0, PID 05DF). El contacto es NC: ON corta los 12 V de la
- * plaqueta y OFF los devuelve. El mismo reporte de 9 bytes que usa el exe.
+ * plaqueta y OFF los devuelve.
+ *
+ * El exe arma 9 bytes con un report ID 0 adelante, pero Windows saca ese byte
+ * antes de mandarlo: al relé le llegan 8, `[cmd, relé, 0…]`. Acá no hay quien
+ * lo saque, así que se mandan los 8 directamente; con el 0 adelante el relé lo
+ * toma como comando desconocido, lo ignora y la transferencia igual sale bien.
+ * Cada cambio se confirma leyendo el estado (byte 7, un bit por relé).
  */
 class UsbRelay(private val hub: UsbHub) : Closeable {
     private var connection: UsbDeviceConnection? = null
@@ -63,18 +69,14 @@ class UsbRelay(private val hub: UsbHub) : Closeable {
     }
 
     private fun setRelay(link: UsbDeviceConnection, relay: Int, enabled: Boolean): Boolean {
-        val command: Byte = if (enabled) 0xFF.toByte() else 0xFD.toByte()
-        val withId = byteArrayOf(0, command, relay.toByte(), 0, 0, 0, 0, 0, 0)
-        if (feature(link, withId) >= 0) return true
-        val withoutId = byteArrayOf(command, relay.toByte(), 0, 0, 0, 0, 0, 0)
-        return feature(link, withoutId) >= 0
+        if (feature(link, command(relay, enabled)) < 0) return false
+        val status = readStatus(link) ?: return true
+        return relayIsOn(status, relay) == enabled
     }
 
     private fun readStatus(link: UsbDeviceConnection): ByteArray? {
-        val report = ByteArray(9)
-        if (fetch(link, report) >= 0) return report
-        val shorter = ByteArray(8)
-        return if (fetch(link, shorter) >= 0) shorter else null
+        val report = ByteArray(REPORT_SIZE)
+        return if (fetch(link, report) >= REPORT_SIZE) report else null
     }
 
     private fun feature(link: UsbDeviceConnection, report: ByteArray): Int =
@@ -95,5 +97,18 @@ class UsbRelay(private val hub: UsbHub) : Closeable {
     companion object {
         const val POWER_OFF_MS = 5_000L
         private const val RESTORE_ATTEMPTS = 3
+        private const val REPORT_SIZE = 8
+
+        /** ON (0xFF) o OFF (0xFD) para un relé, tal como llega al dispositivo. */
+        fun command(relay: Int, enabled: Boolean): ByteArray {
+            val report = ByteArray(REPORT_SIZE)
+            report[0] = if (enabled) 0xFF.toByte() else 0xFD.toByte()
+            report[1] = relay.toByte()
+            return report
+        }
+
+        /** Byte 7 del estado: bit 0 el relé 1, bit 1 el relé 2. */
+        fun relayIsOn(status: ByteArray, relay: Int): Boolean =
+            (status[7].toInt() shr (relay - 1)) and 1 == 1
     }
 }

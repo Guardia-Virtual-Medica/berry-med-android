@@ -2,6 +2,7 @@
 package com.guardiavirtual.berrymed.usb
 
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -90,6 +91,36 @@ class UsbRolesTest {
         assertTrue(BerryLink.relayCooldownOver(lastCutAt = 0L, now = 5 * second))
         assertFalse(BerryLink.relayCooldownOver(lastCutAt = 100 * second, now = 159 * second))
         assertTrue(BerryLink.relayCooldownOver(lastCutAt = 100 * second, now = 160 * second))
+    }
+
+    @Test
+    fun theRelayGetsEightBytesWithTheCommandFirst() {
+        val on = UsbRelay.command(relay = 1, enabled = true)
+        val off = UsbRelay.command(relay = 1, enabled = false)
+        assertEquals(8, on.size)
+        assertEquals(0xFF.toByte(), on[0])
+        assertEquals(1.toByte(), on[1])
+        assertEquals(0xFD.toByte(), off[0])
+    }
+
+    @Test
+    fun theRelayStateIsOneBitPerRelayInTheLastByte() {
+        val status = byteArrayOf(0x42, 0x41, 0x42, 0x43, 0x44, 0, 0, 0b01)
+        assertTrue(UsbRelay.relayIsOn(status, relay = 1))
+        assertFalse(UsbRelay.relayIsOn(status, relay = 2))
+        status[7] = 0b10
+        assertFalse(UsbRelay.relayIsOn(status, relay = 1))
+        assertTrue(UsbRelay.relayIsOn(status, relay = 2))
+    }
+
+    @Test
+    fun aBoardMissingFromTheBusIsCutAfterThreeMinutesThenEveryHalfHour() {
+        val minute = 60 * second
+        assertFalse(BerryLink.absentCutDue(seenAt = 0, lastAbsentCutAt = 0, now = 2 * minute))
+        assertTrue(BerryLink.absentCutDue(seenAt = 0, lastAbsentCutAt = 0, now = 3 * minute))
+        assertFalse(BerryLink.absentCutDue(seenAt = 0, lastAbsentCutAt = 3 * minute, now = 32 * minute))
+        assertTrue(BerryLink.absentCutDue(seenAt = 0, lastAbsentCutAt = 3 * minute, now = 33 * minute))
+        assertFalse(BerryLink.absentCutDue(seenAt = 40 * minute, lastAbsentCutAt = 3 * minute, now = 41 * minute))
     }
 
     @Test
