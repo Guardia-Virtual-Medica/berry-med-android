@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/config_title"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <EditText android:id="@+id/inputApiBase" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="API URL (base)" android:inputType="textUri" />
+        <EditText android:id="@+id/inputTotemId" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Totem ID" />
+        <EditText android:id="@+id/inputApiEndpoint" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="API endpoint (metrics)" />
+        <TextView android:id="@+id/textMetricsPreview" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="12sp" />
+        <EditText android:id="@+id/inputApiUser" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="API usuario" />
+        <EditText android:id="@+id/inputApiPass" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="API contraseña" android:inputType="textPassword" />
+        <EditText android:id="@+id/inputPusherKey" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Pusher key" />
+        <EditText android:id="@+id/inputPusherCluster" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Pusher cluster (us2)" />
+        <EditText android:id="@+id/inputChannel" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Canal público" />
+        <EditText android:id="@+id/inputStartEvent" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Evento start" />
+        <EditText android:id="@+id/inputStopEvent" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Evento stop" />
+        <EditText android:id="@+id/inputMaxSession" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Max sesión (min, 0=off)" android:inputType="number" />
+        <EditText android:id="@+id/inputEcgGain" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="ECG gain (x1)" />
+        <EditText android:id="@+id/inputEcgMode" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="ECG mode (monitor)" />
+        <CheckBox android:id="@+id/checkboxTherm" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Termómetro USB IR" />
+
+        <Button android:id="@+id/btnSave" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/save_config" />
+        <Button android:id="@+id/btnStartService" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/start_service" />
+        <Button android:id="@+id/btnBattery" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/battery_exemption" />
+
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="@string/status_title" android:textStyle="bold" />
+        <TextView android:id="@+id/textStatus" android:layout_width="match_parent" android:layout_height="wrap_content" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Plaqueta:" />
+        <TextView android:id="@+id/textBerry" android:layout_width="match_parent" android:layout_height="wrap_content" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Termómetro:" />
+        <TextView android:id="@+id/textTherm" android:layout_width="match_parent" android:layout_height="wrap_content" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Relé:" />
+        <TextView android:id="@+id/textRelay" android:layout_width="match_parent" android:layout_height="wrap_content" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Pusher:" />
+        <TextView android:id="@+id/textPusher" android:layout_width="match_parent" android:layout_height="wrap_content" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Sesión:" />
+        <TextView android:id="@+id/textSession" android:layout_width="match_parent" android:layout_height="wrap_content" />
+        <TextView android:id="@+id/textVitals" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:fontFamily="monospace" />
+    </LinearLayout>
+</ScrollView>

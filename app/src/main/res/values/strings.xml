@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Berry Med</string>
+    <string name="config_title">Configuración del tótem</string>
+    <string name="status_title">Estado</string>
+    <string name="save_config">Guardar configuración</string>
+    <string name="start_service">Iniciar monitoreo</string>
+    <string name="battery_exemption">Excluir de optimización de batería</string>
+</resources>
