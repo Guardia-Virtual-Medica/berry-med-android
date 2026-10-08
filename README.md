@@ -15,13 +15,48 @@ App Android para tablet tótem: reemplaza `berry-monitor.exe` leyendo la plaquet
 3. Escucha Pusher: `start-monitoring`, `stop-monitoring`, `start-blood-pressure`.
 4. Con sesión activa, `POST` cada 1 s a `{API_URL}/{TOTEM_ID}/metrics` con Basic Auth.
 
-## Build
+## Compilar el APK
 
-Abrir en Android Studio o:
+Hace falta **JDK 17** y el **Android SDK** (API 35). Lo más simple es instalar [Android Studio](https://developer.android.com/studio): trae el JDK y el SDK.
+
+### Desde Android Studio
+
+1. Clonar el repo y abrirlo con **File → Open**.
+2. Esperar a que Gradle sincronice. Si pide instalar el SDK o el build-tools, aceptarlo.
+3. **Build → Build Bundle(s) / APK(s) → Build APK(s)**.
+
+El APK de debug queda en:
+
+```
+app/build/outputs/apk/debug/app-debug.apk
+```
+
+### Desde la terminal
+
+Con Android Studio ya instalado, el SDK suele estar en `~/Library/Android/sdk` (macOS). Si Gradle no lo encuentra, crear `local.properties` en la raíz del repo (ese archivo no se commitea):
+
+```properties
+sdk.dir=/Users/TU_USUARIO/Library/Android/sdk
+```
+
+En Linux o Windows, `sdk.dir` apunta a la carpeta del SDK de esa máquina. También sirve exportar `ANDROID_HOME` con esa misma ruta.
+
+Compilar:
 
 ```bash
 ./gradlew :app:assembleDebug
-./gradlew :app:testDebugUnitTest
+```
+
+Instalarlo en la tablet conectada por USB (con depuración USB activada):
+
+```bash
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+Los tests del parser no necesitan el SDK de Android:
+
+```bash
+./gradlew :core:test
 ```
 
 ## Licencia
