@@ -149,27 +149,31 @@ class TotemRuntime(context: Context) {
             else -> "Plaqueta conectada, sesión detenida"
         }
         val age = berry.lastDataAgeSeconds()
-        val paragraph = buildString {
-            append(if (berryUp) "La plaqueta está conectada. " else "La plaqueta no está conectada. ")
-            if (age != null) append("Último dato hace ${"%.1f".format(Locale("es"), age)} s. ")
+        val lastData = if (age == null) {
+            "Último dato: sin datos"
+        } else {
+            "Último dato: hace ${"%.1f".format(Locale("es"), age)} s"
+        }
+        val others = buildString {
             append(if (thermo.connected) "Termómetro conectado. " else "Termómetro sin conectar. ")
             append(if (relay.plugged()) "Relé presente. " else "Relé sin conectar. ")
-            append(if (pusherUp) "Pusher conectado. " else "Pusher sin conectar. ")
             append(if (active) "La sesión está enviando." else "La sesión está detenida.")
             val missing = config.missingFields()
             if (missing.isNotEmpty()) append(" Falta configurar: ${missing.joinToString(", ")}.")
             if (hub.permissionMissing()) append(" Falta aceptar el permiso USB.")
         }
         state.value = TotemState(
-            paragraph = paragraph,
             heartRate = display(vitals.heartRate),
             respRate = display(vitals.respRate),
             spo2Pulse = display(vitals.spo2Pulse),
             temperature = if (seen || thermo.latest() != null) temperature else "—",
             nibp = display(vitals.nibp),
+            berryUp = berryUp,
+            lastData = lastData,
+            pusherUp = pusherUp,
+            others = others,
             lastPost = lastPost,
             notification = notification,
-            berryUp = berryUp,
         )
         onNotification(notification, berryUp)
     }

@@ -11,6 +11,7 @@ import android.os.Looper
 import android.provider.Settings
 import android.text.Editable
 import android.text.TextWatcher
+import android.content.res.ColorStateList
 import android.graphics.Typeface
 import android.view.View
 import android.widget.TextView
@@ -60,6 +61,12 @@ class MainActivity : AppCompatActivity() {
         binding.backButton.setOnClickListener {
             clearMessage()
             showStep(step - 1)
+        }
+        listOf(binding.stepDestination, binding.stepOrders, binding.stepDevice).forEachIndexed { index, label ->
+            label.setOnClickListener {
+                clearMessage()
+                showStep(index)
+            }
         }
         binding.saveButton.setOnClickListener { save() }
         binding.batteryButton.setOnClickListener { askBatteryExemption() }
@@ -147,6 +154,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun save() {
+        val blocked = (0..1).firstNotNullOfOrNull { index ->
+            missingField(index)?.let { index to it }
+        }
+        if (blocked != null) {
+            showStep(blocked.first)
+            binding.formMessage.setText(blocked.second)
+            binding.formMessage.setTextColor(getColor(R.color.warn))
+            return
+        }
         val config = readForm()
         binding.formMessage.setTextColor(getColor(R.color.ink))
         binding.formMessage.setText(R.string.saving)
@@ -193,7 +209,17 @@ class MainActivity : AppCompatActivity() {
         paint(binding.respRate, state.respRate)
         paint(binding.temperature, state.temperature)
         paint(binding.nibp, state.nibp)
-        binding.statusParagraph.text = state.paragraph
+        binding.berryStatus.text = if (state.berryUp) "Plaqueta funcional" else "Plaqueta sin conectar"
+        binding.berryDot.backgroundTintList = ColorStateList.valueOf(
+            getColor(if (state.berryUp) R.color.status_live else R.color.vital_dim),
+        )
+        binding.lastData.text = state.lastData
+        binding.pusherStatus.text = if (state.pusherUp) {
+            "Comunicación con Pusher: OK"
+        } else {
+            "Comunicación con Pusher: sin conexión"
+        }
+        binding.otherStatus.text = state.others
         binding.lastPost.text = state.lastPost
     }
 

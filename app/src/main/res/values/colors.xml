@@ -6,6 +6,7 @@
     <color name="paper">#E4EEF1</color>
     <color name="ink">#16303A</color>
     <color name="signal">#1F6F62</color>
+    <color name="status_live">#3DDC97</color>
     <color name="line">#244255</color>
     <color name="ink_soft">#5E7278</color>
     <color name="warn">#8C3A2F</color>
