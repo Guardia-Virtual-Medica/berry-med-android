@@ -41,9 +41,27 @@ class UsbRolesTest {
         val requests = PermissionRequests(retryAfterNanos = 300 * second)
         requests.shouldAsk(7, now = 0)
         requests.shouldAsk(8, now = 0)
-        requests.retain(setOf(8))
+        requests.observe(setOf(8), now = second)
         assertTrue(requests.shouldAsk(7, now = second))
         assertFalse(requests.shouldAsk(8, now = second))
+    }
+
+    @Test
+    fun aNewDeviceGetsAMomentForTheDefaultGrantBeforeAsking() {
+        val requests = PermissionRequests(retryAfterNanos = 300 * second, graceNanos = 3 * second)
+        requests.observe(setOf(7), now = 10 * second)
+        assertFalse(requests.shouldAsk(7, now = 11 * second))
+        assertTrue(requests.shouldAsk(7, now = 13 * second))
+    }
+
+    @Test
+    fun aDeviceThatComesBackStartsItsWaitAgain() {
+        val requests = PermissionRequests(retryAfterNanos = 300 * second, graceNanos = 3 * second)
+        requests.observe(setOf(7), now = 0)
+        requests.observe(emptySet(), now = 5 * second)
+        requests.observe(setOf(7), now = 6 * second)
+        assertFalse(requests.shouldAsk(7, now = 7 * second))
+        assertTrue(requests.shouldAsk(7, now = 9 * second))
     }
 
     @Test

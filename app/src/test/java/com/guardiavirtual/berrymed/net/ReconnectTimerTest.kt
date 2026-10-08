@@ -9,38 +9,38 @@ class ReconnectTimerTest {
     private val second = 1_000_000_000L
 
     @Test
-    fun aConnectedClientIsNeverKicked() {
-        val timer = ReconnectTimer(afterNanos = 60 * second)
-        timer.onState(connected = true, now = 0)
+    fun aClientThatIsStillTryingIsLeftAlone() {
+        val timer = ReconnectTimer(afterNanos = 30 * second)
+        timer.onState(gaveUp = false, now = 0)
         assertFalse(timer.due(now = 3_600 * second))
     }
 
     @Test
-    fun aClientDownForAMinuteIsKickedOncePerMinute() {
-        val timer = ReconnectTimer(afterNanos = 60 * second)
-        timer.onState(connected = false, now = 0)
-        assertFalse(timer.due(now = 59 * second))
-        assertTrue(timer.due(now = 60 * second))
-        assertFalse(timer.due(now = 61 * second))
-        assertTrue(timer.due(now = 120 * second))
-    }
-
-    @Test
-    fun repeatedDownStatesDoNotRestartTheCount() {
-        val timer = ReconnectTimer(afterNanos = 60 * second)
-        timer.onState(connected = false, now = 0)
-        timer.onState(connected = false, now = 30 * second)
+    fun aClientThatGaveUpIsKickedOncePerInterval() {
+        val timer = ReconnectTimer(afterNanos = 30 * second)
+        timer.onState(gaveUp = true, now = 0)
+        assertFalse(timer.due(now = 29 * second))
+        assertTrue(timer.due(now = 30 * second))
+        assertFalse(timer.due(now = 31 * second))
         assertTrue(timer.due(now = 60 * second))
     }
 
     @Test
-    fun comingBackOrResettingClearsTheCount() {
-        val timer = ReconnectTimer(afterNanos = 60 * second)
-        timer.onState(connected = false, now = 0)
-        timer.onState(connected = true, now = 30 * second)
+    fun repeatedGiveUpsDoNotRestartTheCount() {
+        val timer = ReconnectTimer(afterNanos = 30 * second)
+        timer.onState(gaveUp = true, now = 0)
+        timer.onState(gaveUp = true, now = 20 * second)
+        assertTrue(timer.due(now = 30 * second))
+    }
+
+    @Test
+    fun tryingAgainOrResettingClearsTheCount() {
+        val timer = ReconnectTimer(afterNanos = 30 * second)
+        timer.onState(gaveUp = true, now = 0)
+        timer.onState(gaveUp = false, now = 10 * second)
         assertFalse(timer.due(now = 120 * second))
 
-        timer.onState(connected = false, now = 130 * second)
+        timer.onState(gaveUp = true, now = 130 * second)
         timer.reset()
         assertFalse(timer.due(now = 500 * second))
     }

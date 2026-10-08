@@ -13,10 +13,12 @@ import com.pusher.client.connection.ConnectionStateChange
 /**
  * Se suscribe al canal público y sólo escucha órdenes. Las mediciones no viajan por acá.
  *
- * La librería deja de reintentar después de 6 intentos (unos 85 s) y queda
- * desconectada para siempre. Con la tablet sola eso es un tótem que no recibe
- * más el inicio de sesión, así que [keepAlive] arma un cliente nuevo si pasa
- * [RETRY_NANOS] sin conexión.
+ * La librería deja de reintentar después de 6 intentos (unos 85 s) y queda en
+ * DISCONNECTED para siempre. Con la tablet sola eso es un tótem que no recibe
+ * más el inicio de sesión, así que [keepAlive] le vuelve a pedir `connect()`
+ * al mismo cliente, que arranca otra tanda de intentos y re-suscribe el canal.
+ * No se arma un cliente nuevo: desconectar uno que está entre reintentos lo
+ * deja trabado en DISCONNECTING con sus dos hilos vivos.
  */
 class SessionPusher(
     private val log: (String) -> Unit,
@@ -31,7 +33,6 @@ class SessionPusher(
 
     @Volatile private var client: Pusher? = null
     private var identity: String? = null
-    private var applied: BerryConfig? = null
     private val watchdog = ReconnectTimer(RETRY_NANOS)
 
     @Synchronized
@@ -46,7 +47,6 @@ class SessionPusher(
         if (next == identity && client != null) return
         stop()
         identity = next
-        applied = config
         if (!config.pusherReady()) {
             listener.onConnection(false)
             return
@@ -54,18 +54,25 @@ class SessionPusher(
         if (config.publicChannel.startsWith("private-") || config.publicChannel.startsWith("presence-")) {
             log("[PUSHER] El canal tiene que ser público. Esta app no autentica canales privados.")
         }
-        connect(config)
+        try {
+            connect(config)
+        } catch (error: Exception) {
+            // Una clave o un cluster con caracteres inválidos rompen la URL del
+            // websocket. Sin esto el tótem se cerraba en cada arranque.
+            log("[PUSHER] No se pudo armar la conexión: $error")
+            client = null
+            listener.onConnection(false)
+        }
     }
 
-    /** Se llama seguido. Si hace rato que no hay conexión, arranca de cero. */
+    /** Se llama seguido. Si la librería se rindió hace [RETRY_NANOS], le pide otra tanda de intentos. */
     @Synchronized
     fun keepAlive(now: Long = System.nanoTime()) {
-        val config = applied ?: return
-        if (client == null) return
+        val pusher = client ?: return
         if (!watchdog.due(now)) return
-        log("[PUSHER] Sin conexión hace más de ${RETRY_NANOS / 1_000_000_000L} s; se vuelve a conectar")
-        disconnectClient()
-        connect(config)
+        if (pusher.connection.state != ConnectionState.DISCONNECTED) return
+        log("[PUSHER] Desconectado hace más de ${RETRY_NANOS / 1_000_000_000L} s; se vuelve a conectar")
+        pusher.connect()
     }
 
     @Synchronized
@@ -80,13 +87,13 @@ class SessionPusher(
         val pusher = Pusher(config.pusherKey, options)
         var bound = false
         client = pusher
-        watchdog.onState(connected = false, now = System.nanoTime())
+        watchdog.reset()
         pusher.connect(object : ConnectionEventListener {
             override fun onConnectionStateChange(change: ConnectionStateChange) {
                 // Un cliente viejo que termina de cerrarse no pisa el estado del nuevo.
                 if (client !== pusher) return
                 val up = change.currentState == ConnectionState.CONNECTED
-                watchdog.onState(up, System.nanoTime())
+                watchdog.onState(gaveUp = change.currentState == ConnectionState.DISCONNECTED, now = System.nanoTime())
                 listener.onConnection(up)
                 log("[PUSHER] ${change.currentState}")
                 if (up && !bound) {
@@ -116,13 +123,16 @@ class SessionPusher(
         val channel = pusher.subscribe(config.publicChannel)
         val start = config.startEventName.ifBlank { "start-monitoring" }
         val stop = config.stopEventName.ifBlank { "stop-monitoring" }
-        channel.bind(start, event { listener.onStart() })
-        channel.bind(stop, event { listener.onStop() })
-        channel.bind(BLOOD_PRESSURE, event { listener.onBloodPressure() })
+        channel.bind(start, event(pusher) { listener.onStart() })
+        channel.bind(stop, event(pusher) { listener.onStop() })
+        channel.bind(BLOOD_PRESSURE, event(pusher) { listener.onBloodPressure() })
         log("[PUSHER] Escuchando $start, $stop y $BLOOD_PRESSURE")
     }
 
-    private fun event(block: () -> Unit) = SubscriptionEventListener { _: PusherEvent ->
+    private fun event(pusher: Pusher, block: () -> Unit) = SubscriptionEventListener { _: PusherEvent ->
+        // Un cliente reemplazado al cambiar la configuración puede terminar de
+        // conectar igual; sus órdenes no cuentan.
+        if (client !== pusher) return@SubscriptionEventListener
         try {
             block()
         } catch (error: Exception) {
@@ -133,21 +143,22 @@ class SessionPusher(
     companion object {
         const val BLOOD_PRESSURE = "start-blood-pressure"
 
-        /** Más que lo que tarda la librería en agotar sus propios reintentos. */
-        const val RETRY_NANOS = 60L * 1_000_000_000L
+        /** Desde que la librería se rinde. Igual a su espera más larga entre intentos. */
+        const val RETRY_NANOS = 30L * 1_000_000_000L
     }
 }
 
 /**
- * Cuánto hace que Pusher no está conectado. [due] avisa una vez por intervalo,
- * así un corte largo de red da un intento por minuto y no uno por vuelta.
+ * Cuánto hace que la librería de Pusher se rindió (DISCONNECTED). Mientras
+ * reintenta sola no cuenta. [due] avisa una vez por intervalo, así un corte
+ * largo de red da una tanda de intentos cada tanto y no una por vuelta.
  */
 class ReconnectTimer(private val afterNanos: Long) {
     private var downSince: Long? = null
 
     @Synchronized
-    fun onState(connected: Boolean, now: Long) {
-        if (connected) {
+    fun onState(gaveUp: Boolean, now: Long) {
+        if (!gaveUp) {
             downSince = null
             return
         }

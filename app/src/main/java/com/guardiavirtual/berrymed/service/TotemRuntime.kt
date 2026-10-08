@@ -96,14 +96,19 @@ class TotemRuntime(context: Context) {
      */
     private fun watchLoop() {
         while (true) {
-            try {
-                hub.requestMissingPermissions()
-                pusher.keepAlive()
-                publish()
-            } catch (error: Exception) {
-                log("[WATCH] $error")
-            }
+            guarded("permisos USB") { hub.requestMissingPermissions() }
+            guarded("Pusher") { pusher.keepAlive() }
+            guarded("pantalla") { publish() }
             sleep(1_000)
+        }
+    }
+
+    /** Una tarea que falla no frena a las otras del mismo hilo. */
+    private fun guarded(task: String, block: () -> Unit) {
+        try {
+            block()
+        } catch (error: Exception) {
+            log("[WATCH] Falló $task: $error")
         }
     }
 
@@ -192,7 +197,7 @@ class TotemRuntime(context: Context) {
             append(if (active) "La sesión está enviando." else "La sesión está detenida.")
             val missing = config.missingFields()
             if (missing.isNotEmpty()) append(" Falta configurar: ${missing.joinToString(", ")}.")
-            if (hub.permissionMissing()) append(" Falta aceptar el permiso USB.")
+            if (hub.permissionMissing()) append(" Falta aceptar el permiso USB: tocá «Pedir permiso USB».")
         }
         state.value = TotemState(
             heartRate = display(vitals.heartRate),

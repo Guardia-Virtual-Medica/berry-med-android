@@ -32,6 +32,9 @@ class BerryLink(
     private var nibpStartedAt: Long = 0L
     private var appliedStartup: List<Pair<Int, Int>> = emptyList()
     private var lastPowerCycleAt: Long = 0L
+    private var lastPowerCheckAt: Long = 0L
+    private var powerCheckLogged = false
+    private val openFailures = HashMap<Int, Int>()
 
     fun lastDataAgeSeconds(): Double? {
         val stamp = lastDataAtNano
@@ -89,7 +92,13 @@ class BerryLink(
     }
 
     private fun acquire(): Acquire {
+        if (hub.stPresent()) {
+            powerCheckLogged = false
+        } else {
+            ensurePowerOn()
+        }
         val drivers = hub.berryCandidates()
+        openFailures.keys.retainAll(drivers.map { it.device.deviceId }.toSet())
         if (drivers.isEmpty()) {
             connected = false
             return Acquire.None
@@ -113,8 +122,9 @@ class BerryLink(
         val handle = hub.open(driver)
         if (handle == null) {
             hub.unmark(id)
-            return Probe.Skip
+            return openFailed(driver)
         }
+        openFailures.remove(id)
         return try {
             val early = readUntil(handle, 400) { bytes -> hasHeader(bytes) || isThermometer(bytes) }
             if (isThermometer(early)) {
@@ -207,6 +217,36 @@ class BerryLink(
         }
     }
 
+    /**
+     * Un puerto de ST que sigue enumerado pero no abre, varias veces seguidas,
+     * es la plaqueta trabada sin contestar ni la configuración del puerto.
+     * Uno de otro fabricante, o un fallo suelto, no corta nada.
+     */
+    private fun openFailed(driver: UsbSerialDriver): Probe {
+        val device = driver.device
+        if (!muteMeansHungBerry(device.vendorId)) return Probe.Skip
+        val failures = (openFailures[device.deviceId] ?: 0) + 1
+        openFailures[device.deviceId] = failures
+        log("[USB] ${device.deviceName} no abre ($failures)")
+        if (failures < OPEN_FAILURES_BEFORE_CUT || !hub.isPresent(device)) return Probe.Skip
+        return Probe.Mute
+    }
+
+    /**
+     * Si un corte anterior no repuso los 12 V (falló el relé, o la app se
+     * cerró en medio del corte), la plaqueta no vuelve a aparecer y nada
+     * más lo arreglaría. Una vez por minuto, mientras no esté, se le pide al
+     * relé que deje pasar la alimentación. Si ya pasaba, no cambia nada.
+     */
+    private fun ensurePowerOn() {
+        val now = System.nanoTime()
+        if (lastPowerCheckAt != 0L && now - lastPowerCheckAt < RELAY_COOLDOWN_NANOS) return
+        lastPowerCheckAt = now
+        if (!relay.ensurePowerOn() || powerCheckLogged) return
+        log("[WATCHDOG] No aparece la plaqueta: el relé deja pasar los 12 V")
+        powerCheckLogged = true
+    }
+
     private fun powerCycle(reason: String) {
         if (!relay.plugged()) {
             log("[WATCHDOG] $reason. No hay relé: no se corta la alimentación.")
@@ -220,7 +260,12 @@ class BerryLink(
         }
         log("[WATCHDOG] $reason. Corte de 12 V durante 5 s.")
         lastPowerCycleAt = now
-        if (!relay.restart()) log("[WATCHDOG] El relé no respondió. No se hizo el corte.")
+        when (relay.restart()) {
+            UsbRelay.Restart.Restored -> Unit
+            UsbRelay.Restart.NotCut -> log("[WATCHDOG] El relé no respondió. No se hizo el corte.")
+            UsbRelay.Restart.PowerNotRestored ->
+                log("[WATCHDOG] Se cortó pero el relé no devolvió los 12 V. Se reintenta mientras no aparezca la plaqueta.")
+        }
     }
 
     /** La ganancia y el modo se aplican apenas se guardan, sin esperar a reconectar. */
@@ -228,7 +273,7 @@ class BerryLink(
         val tune = tuning()
         val wanted = Pm6750Protocol.buildStartupCommands(tune)
         if (wanted == appliedStartup) return
-        write(Pm6750Protocol.startupBytes(tune, log))
+        if (!write(Pm6750Protocol.startupBytes(tune, log))) return
         appliedStartup = wanted
         log("[USB] Ganancia y modo de ECG actualizados")
     }
@@ -241,13 +286,15 @@ class BerryLink(
         }
     }
 
-    private fun write(bytes: ByteArray) {
+    private fun write(bytes: ByteArray): Boolean {
         synchronized(writeLock) {
-            val port = current?.port ?: return
-            try {
+            val port = current?.port ?: return false
+            return try {
                 port.write(bytes, 1_000)
+                true
             } catch (error: Exception) {
                 log("[USB] No se pudo escribir: $error")
+                false
             }
         }
     }
@@ -284,6 +331,9 @@ class BerryLink(
 
         /** Entre un corte y el siguiente, para que el PM6750 tenga tiempo de arrancar. */
         const val RELAY_COOLDOWN_NANOS = 60L * 1_000_000_000L
+
+        /** Fallos seguidos al abrir un puerto de ST antes de tratarlo como plaqueta trabada. */
+        const val OPEN_FAILURES_BEFORE_CUT = 3
 
         fun relayCooldownOver(lastCutAt: Long, now: Long): Boolean =
             lastCutAt == 0L || now - lastCutAt >= RELAY_COOLDOWN_NANOS

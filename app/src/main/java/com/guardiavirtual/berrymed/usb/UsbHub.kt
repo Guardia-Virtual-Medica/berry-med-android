@@ -22,7 +22,7 @@ class UsbHub(context: Context) {
     val manager: UsbManager = appContext.getSystemService(Context.USB_SERVICE) as UsbManager
     private val busy = HashSet<Int>()
     private val notBerry = HashSet<Int>()
-    private val requests = PermissionRequests(PERMISSION_RETRY_NANOS)
+    private val requests = PermissionRequests(PERMISSION_RETRY_NANOS, PERMISSION_GRACE_NANOS)
 
     fun permissionIntent(): PendingIntent {
         val flags = PendingIntent.FLAG_UPDATE_CURRENT or
@@ -39,7 +39,7 @@ class UsbHub(context: Context) {
     fun requestMissingPermissions() {
         val devices = totemDevices()
         val now = System.nanoTime()
-        requests.retain(devices.map { it.deviceId }.toSet())
+        requests.observe(devices.map { it.deviceId }.toSet(), now)
         synchronized(notBerry) { notBerry.retainAll(manager.deviceList.values.map { it.deviceId }.toSet()) }
         for (device in devices) {
             if (manager.hasPermission(device)) continue
@@ -92,6 +92,9 @@ class UsbHub(context: Context) {
         manager.deviceList.values.firstOrNull { isRelay(it) && manager.hasPermission(it) }
 
     fun relayPlugged(): Boolean = manager.deviceList.values.any { isRelay(it) }
+
+    /** Si hay algún dispositivo de ST enchufado, con o sin permiso: la plaqueta tiene alimentación. */
+    fun stPresent(): Boolean = manager.deviceList.values.any { it.vendorId == STM32_VENDOR }
 
     fun isPresent(device: UsbDevice): Boolean =
         manager.deviceList.values.any { it.deviceId == device.deviceId }
@@ -146,6 +149,13 @@ class UsbHub(context: Context) {
         /** Si alguien rechaza o cierra el pedido de permiso, se vuelve a pedir pasado este tiempo. */
         private const val PERMISSION_RETRY_NANOS = 5L * 60L * 1_000_000_000L
 
+        /**
+         * Android agrega el dispositivo a la lista un instante antes de darle
+         * el permiso a la app predeterminada. Pedirlo en ese hueco deja un
+         * diálogo de más en pantalla.
+         */
+        private const val PERMISSION_GRACE_NANOS = 3L * 1_000_000_000L
+
         fun isRelay(device: UsbDevice): Boolean =
             device.vendorId == RELAY_VENDOR && device.productId == RELAY_PRODUCT
 
@@ -166,14 +176,22 @@ class UsbHub(context: Context) {
 /**
  * Qué dispositivos ya tienen un pedido de permiso en pantalla y cuáles lo
  * rechazaron hace poco. Así no se apilan diálogos con la tablet sola, y un
- * rechazo se vuelve a pedir más tarde en vez de no pedirse nunca.
+ * rechazo se vuelve a pedir más tarde en vez de no pedirse nunca. Un pedido
+ * sin respuesta (diálogo tapado por otra pantalla) espera al botón "Pedir
+ * permiso USB": volver a pedirlo solo apilaría diálogos.
  */
-class PermissionRequests(private val retryAfterNanos: Long) {
+class PermissionRequests(
+    private val retryAfterNanos: Long,
+    private val graceNanos: Long = 0L,
+) {
     private val pending = HashSet<Int>()
     private val deniedAt = HashMap<Int, Long>()
+    private val firstSeen = HashMap<Int, Long>()
 
     @Synchronized
     fun shouldAsk(deviceId: Int, now: Long): Boolean {
+        val seen = firstSeen.getOrPut(deviceId) { now }
+        if (now - seen < graceNanos) return false
         if (deviceId in pending) return false
         val denied = deniedAt[deviceId]
         if (denied != null && now - denied < retryAfterNanos) return false
@@ -198,8 +216,11 @@ class PermissionRequests(private val retryAfterNanos: Long) {
         deniedAt.clear()
     }
 
+    /** Anota los dispositivos que aparecieron y olvida los que se fueron. */
     @Synchronized
-    fun retain(present: Set<Int>) {
+    fun observe(present: Set<Int>, now: Long) {
+        for (deviceId in present) firstSeen.putIfAbsent(deviceId, now)
+        firstSeen.keys.retainAll(present)
         pending.retainAll(present)
         deniedAt.keys.retainAll(present)
     }

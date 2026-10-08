@@ -15,15 +15,36 @@ class UsbRelay(private val hub: UsbHub) : Closeable {
     private var interfaceNumber: Int = 0
     private val lock = Any()
 
+    enum class Restart { NotCut, Restored, PowerNotRestored }
+
     fun plugged(): Boolean = hub.relayPlugged()
 
-    fun restart(): Boolean = synchronized(lock) {
+    fun restart(): Restart = synchronized(lock) {
+        val device = hub.relayDevice() ?: return Restart.NotCut
+        val link = connectionFor(device) ?: return Restart.NotCut
+        if (readStatus(link) == null) return Restart.NotCut
+        if (!setRelay(link, relay = 1, enabled = true)) return Restart.NotCut
+        Thread.sleep(POWER_OFF_MS)
+        if (restorePower(link)) Restart.Restored else Restart.PowerNotRestored
+    }
+
+    /**
+     * Deja pasar los 12 V. Es idempotente: sirve para reponer la alimentación
+     * si un corte anterior no terminó, porque falló el relé o porque la app se
+     * cerró en medio de los 5 s.
+     */
+    fun ensurePowerOn(): Boolean = synchronized(lock) {
         val device = hub.relayDevice() ?: return false
         val link = connectionFor(device) ?: return false
-        if (readStatus(link) == null) return false
-        if (!setRelay(link, relay = 1, enabled = true)) return false
-        Thread.sleep(POWER_OFF_MS)
-        setRelay(link, relay = 1, enabled = false)
+        restorePower(link)
+    }
+
+    private fun restorePower(link: UsbDeviceConnection): Boolean {
+        repeat(RESTORE_ATTEMPTS) { attempt ->
+            if (setRelay(link, relay = 1, enabled = false)) return true
+            if (attempt < RESTORE_ATTEMPTS - 1) Thread.sleep(500)
+        }
+        return false
     }
 
     private fun connectionFor(device: UsbDevice): UsbDeviceConnection? {
@@ -73,5 +94,6 @@ class UsbRelay(private val hub: UsbHub) : Closeable {
 
     companion object {
         const val POWER_OFF_MS = 5_000L
+        private const val RESTORE_ATTEMPTS = 3
     }
 }

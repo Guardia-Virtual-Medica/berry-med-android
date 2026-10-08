@@ -11,7 +11,7 @@ Pusher no transporta las mediciones. La tablet se suscribe al canal público y e
 - La plaqueta se reconoce porque manda tramas `55 AA` a 115200 baudios. Es un STM32 VCP (`0483`). El relé es el HID `16C0:05DF`.
 - El termómetro manda una línea JSON con `valor_temperatura_ir` sólo cuando alguien mide, así que no se lo reconoce por lo que transmite: toma el puerto serie que no es la plaqueta y lo deja abierto esperando. Un puerto de ST nunca va al termómetro.
 
-Si el puerto de ST abre y no llegan tramas, o si la plaqueta se queda muda 20 segundos, la app corta los 12 V durante 5 segundos con el relé y vuelve a conectar. Entre un corte y el siguiente espera al menos un minuto, para no cortarla mientras arranca. Si se desenchufa el cable, o si el que no contesta es otro puerto, no toca el relé.
+Si el puerto de ST abre y no llegan tramas, si no abre tres veces seguidas, o si la plaqueta se queda muda 20 segundos, la app corta los 12 V durante 5 segundos con el relé y vuelve a conectar. Entre un corte y el siguiente espera al menos un minuto, para no cortarla mientras arranca. Si se desenchufa el cable, o si el que no contesta es otro puerto, no toca el relé. Si un corte no repuso la alimentación (falló el relé o la app se cerró en medio), mientras no aparezca la plaqueta se le pide al relé una vez por minuto que deje pasar los 12 V.
 
 ## Configuración
 
@@ -25,13 +25,13 @@ La ganancia y el modo de ECG se mandan a la plaqueta apenas se guardan, sin reco
 
 La configuración queda guardada en la tablet y el servicio arranca solo al encenderla y después de instalar una versión nueva. Para que no haga falta tocar nada más:
 
-1. **Permiso USB con "Usar de forma predeterminada".** Android da el permiso por cada conexión del dispositivo: después de un reinicio o de un corte del relé la plaqueta vuelve como un dispositivo nuevo. Al aceptar el permiso de la plaqueta, el termómetro y el relé, marcar esa casilla. Así Android abre la app y le da el permiso solo cada vez que aparecen. Si alguien rechaza o cierra el pedido, la app lo vuelve a pedir a los 5 minutos. Un dispositivo sin permiso no frena a los demás.
+1. **Permiso USB con "Usar de forma predeterminada".** Android da el permiso por cada conexión del dispositivo: después de un reinicio o de un corte del relé la plaqueta vuelve como un dispositivo nuevo. Al aceptar el permiso de la plaqueta, el termómetro y el relé, marcar esa casilla. Así Android abre la app y le da el permiso solo cada vez que aparecen. Si alguien rechaza o cierra el pedido, la app lo vuelve a pedir a los 5 minutos. Si el pedido quedó tapado por otra pantalla sin respuesta, no se repite solo (apilaría diálogos): la pantalla dice "Falta aceptar el permiso USB" y se resuelve con **Pedir permiso USB**. Un dispositivo sin permiso no frena a los demás. Con la casilla marcada, Android además abre la app cada vez que el dispositivo aparece, también después de cada corte del relé: la tablet tiene que ser sólo para el tótem.
 2. **"Evitar que se duerma"** en la pantalla, para excluir la app de la optimización de batería. Algunas marcas tienen además su propia lista de apps que se duermen: sacarla de ahí también.
 3. **Sin bloqueo con PIN, patrón ni contraseña.** Con bloqueo seguro Android no avisa el encendido hasta que alguien desbloquea, y la app no arranca.
 4. **Instalar siempre un APK firmado con la misma clave.** Si cambia la clave hay que desinstalar, y eso borra la configuración.
 5. **Probarlo**: reiniciar la tablet con todo enchufado y, con la sesión andando, forzar un corte del relé. En los dos casos la plaqueta tiene que volver sola, sin tocar la pantalla.
 
-Si Pusher se cae, la librería reintenta unos 85 segundos y se rinde. La app vuelve a conectar sola una vez por minuto mientras no haya conexión.
+Si Pusher se cae, la librería reintenta unos 85 segundos y se rinde. Treinta segundos después la app le pide otra tanda de intentos, y así mientras no haya conexión.
 
 El servicio corre siempre como `connectedDevice`. `dataSync` no sirve: en Android 15 no puede arrancar al encender la tablet y tiene un tope de 6 horas por día.
 

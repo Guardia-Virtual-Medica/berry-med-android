@@ -11,9 +11,18 @@
     <usb-device vendor-id="5824" product-id="1503" />
     <!-- Plaqueta PM6750 (STM32 VCP, 0483) -->
     <usb-device vendor-id="1155" />
-    <!-- Adaptadores serie: WCH CH34x/CH9102 (1A86), Silicon Labs CP210x (10C4), FTDI (0403), Espressif (303A) -->
+    <!--
+        Adaptadores serie y placas que puede traer el termómetro: WCH CH34x/CH9102 (1A86),
+        Silicon Labs CP210x (10C4), FTDI (0403), Espressif (303A), Prolific (067B),
+        Arduino (2341, 2A03), Raspberry Pi RP2040 (2E8A), Microchip (04D8).
+    -->
     <usb-device vendor-id="6790" />
     <usb-device vendor-id="4292" />
     <usb-device vendor-id="1027" />
     <usb-device vendor-id="12346" />
+    <usb-device vendor-id="1659" />
+    <usb-device vendor-id="9025" />
+    <usb-device vendor-id="10755" />
+    <usb-device vendor-id="11914" />
+    <usb-device vendor-id="1240" />
 </resources>
