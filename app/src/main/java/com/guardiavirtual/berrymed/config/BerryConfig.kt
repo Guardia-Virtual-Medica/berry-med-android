@@ -30,11 +30,15 @@ data class BerryConfig(
     )
 
     fun metricsUrl(): String? {
-        if (apiBaseUrl.isBlank() || totemId.isBlank()) return null
+        if (apiBaseUrl.isBlank() || totemId.isBlank() || !hasWebScheme(apiBaseUrl)) return null
         return buildMetricsUrl(apiBaseUrl, totemId, apiEndpoint)
     }
 
-    fun pusherReady(): Boolean = pusherKey.isBlank().not() && publicChannel.isBlank().not()
+    fun pusherReady(): Boolean = pusherKey.isNotBlank() && publicChannel.isNotBlank() && channelIsPublic()
+
+    /** La librería tira una excepción al suscribirse a un canal privado o de presencia sin autenticación. */
+    fun channelIsPublic(): Boolean =
+        !publicChannel.startsWith("private-") && !publicChannel.startsWith("presence-")
 
     fun postReady(): Boolean =
         metricsUrl() != null && apiUsername.isNotBlank() && apiPassword.isNotBlank()
@@ -42,13 +46,21 @@ data class BerryConfig(
     fun missingFields(): List<String> {
         val missing = ArrayList<String>()
         if (apiBaseUrl.isBlank()) missing += "URL de la API"
+        if (apiBaseUrl.isNotBlank() && !hasWebScheme(apiBaseUrl)) missing += "URL de la API que empiece con https://"
         if (totemId.isBlank()) missing += "tótem"
         if (apiUsername.isBlank()) missing += "usuario"
         if (apiPassword.isBlank()) missing += "contraseña"
         if (pusherKey.isBlank()) missing += "clave de Pusher"
         if (publicChannel.isBlank()) missing += "canal"
+        if (!channelIsPublic()) missing += "un canal público (sin private- ni presence-)"
         return missing
     }
+}
+
+/** Sin http:// o https:// el POST no puede armar la dirección y no sale nunca. */
+fun hasWebScheme(url: String): Boolean {
+    val clean = url.trim().lowercase()
+    return clean.startsWith("https://") || clean.startsWith("http://")
 }
 
 fun buildMetricsUrl(base: String, totemId: String, endpoint: String = "metrics"): String {

@@ -2,6 +2,7 @@
 package com.guardiavirtual.berrymed.ui
 
 import android.Manifest
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -11,6 +12,8 @@ import android.os.Looper
 import android.provider.Settings
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
+import android.content.res.ColorStateList
 import android.graphics.Typeface
 import android.view.View
 import android.widget.TextView
@@ -23,8 +26,10 @@ import com.guardiavirtual.berrymed.BerryMedApp
 import com.guardiavirtual.berrymed.R
 import com.guardiavirtual.berrymed.config.BerryConfig
 import com.guardiavirtual.berrymed.config.buildMetricsUrl
+import com.guardiavirtual.berrymed.config.hasWebScheme
 import com.guardiavirtual.berrymed.databinding.ActivityMainBinding
 import com.guardiavirtual.berrymed.service.MonitorService
+import com.guardiavirtual.berrymed.service.TotemRuntime
 import com.guardiavirtual.berrymed.service.TotemState
 import kotlinx.coroutines.runBlocking
 import kotlin.concurrent.thread
@@ -61,12 +66,29 @@ class MainActivity : AppCompatActivity() {
             clearMessage()
             showStep(step - 1)
         }
+        listOf(binding.stepDestination, binding.stepOrders, binding.stepDevice).forEachIndexed { index, label ->
+            label.setOnClickListener {
+                clearMessage()
+                showStep(index)
+            }
+        }
         binding.saveButton.setOnClickListener { save() }
         binding.batteryButton.setOnClickListener { askBatteryExemption() }
         binding.usbButton.setOnClickListener { runtime().requestUsbPermissionAgain() }
         thread(name = "berry-config-load") {
-            val saved = runBlocking { runtime().store.load() }
-            handler.post { fill(saved) }
+            val saved = try {
+                runBlocking { runtime().store.load() }
+            } catch (error: Exception) {
+                Log.e(TotemRuntime.TAG, "[CONFIG] No se pudo leer la configuración: $error")
+                null
+            }
+            handler.post {
+                fill(saved ?: BerryConfig())
+                if (saved == null) {
+                    binding.formMessage.setTextColor(getColor(R.color.warn))
+                    binding.formMessage.setText(R.string.load_failed)
+                }
+            }
         }
     }
 
@@ -129,6 +151,7 @@ class MainActivity : AppCompatActivity() {
     private fun missingField(index: Int): Int? = when (index) {
         0 -> when {
             binding.apiUrl.text.isNullOrBlank() -> R.string.missing_api
+            !hasWebScheme(binding.apiUrl.text.toString()) -> R.string.missing_scheme
             binding.totemId.text.isNullOrBlank() -> R.string.missing_totem
             binding.apiUser.text.isNullOrBlank() -> R.string.missing_user
             binding.apiPassword.text.isNullOrBlank() -> R.string.missing_password
@@ -147,14 +170,29 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun save() {
+        val blocked = (0..1).firstNotNullOfOrNull { index ->
+            missingField(index)?.let { index to it }
+        }
+        if (blocked != null) {
+            showStep(blocked.first)
+            binding.formMessage.setText(blocked.second)
+            binding.formMessage.setTextColor(getColor(R.color.warn))
+            return
+        }
         val config = readForm()
         binding.formMessage.setTextColor(getColor(R.color.ink))
         binding.formMessage.setText(R.string.saving)
         thread(name = "berry-config-save") {
-            runBlocking { runtime().store.save(config) }
+            val saved = try {
+                runBlocking { runtime().store.save(config) }
+                true
+            } catch (error: Exception) {
+                Log.e(TotemRuntime.TAG, "[CONFIG] No se pudo guardar la configuración: $error")
+                false
+            }
             handler.post {
-                binding.formMessage.setTextColor(getColor(R.color.signal))
-                binding.formMessage.setText(R.string.saved)
+                binding.formMessage.setTextColor(getColor(if (saved) R.color.signal else R.color.warn))
+                binding.formMessage.setText(if (saved) R.string.saved else R.string.save_failed)
             }
         }
     }
@@ -193,7 +231,17 @@ class MainActivity : AppCompatActivity() {
         paint(binding.respRate, state.respRate)
         paint(binding.temperature, state.temperature)
         paint(binding.nibp, state.nibp)
-        binding.statusParagraph.text = state.paragraph
+        binding.berryStatus.text = if (state.berryUp) "Plaqueta funcional" else "Plaqueta sin conectar"
+        binding.berryDot.backgroundTintList = ColorStateList.valueOf(
+            getColor(if (state.berryUp) R.color.status_live else R.color.vital_dim),
+        )
+        binding.lastData.text = state.lastData
+        binding.pusherStatus.text = if (state.pusherUp) {
+            "Comunicación con Pusher: OK"
+        } else {
+            "Comunicación con Pusher: sin conexión"
+        }
+        binding.otherStatus.text = state.others
         binding.lastPost.text = state.lastPost
     }
 
@@ -203,12 +251,22 @@ class MainActivity : AppCompatActivity() {
         view.setTextColor(getColor(if (empty) R.color.vital_dim else R.color.vital_on))
     }
 
+    /** Algunas tablets no tienen el diálogo directo: se va a la lista general, y si tampoco está, se avisa. */
     private fun askBatteryExemption() {
-        val intent = Intent(
+        val direct = Intent(
             Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
             Uri.parse("package:$packageName"),
         )
-        startActivity(intent)
+        val list = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+        for (intent in listOf(direct, list)) {
+            try {
+                startActivity(intent)
+                return
+            } catch (_: ActivityNotFoundException) {
+            }
+        }
+        binding.formMessage.setTextColor(getColor(R.color.warn))
+        binding.formMessage.setText(R.string.battery_unavailable)
     }
 
     private fun select(group: ChipGroup, values: Array<String>, selected: String) {

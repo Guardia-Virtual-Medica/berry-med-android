@@ -12,12 +12,17 @@ import com.hoho.android.usbserial.driver.UsbSerialDriver
 import com.hoho.android.usbserial.driver.UsbSerialPort
 import com.hoho.android.usbserial.driver.UsbSerialProber
 
-/** Dispositivos USB del tótem: puertos serie y el relé, con un permiso por dispositivo. */
+/**
+ * Dispositivos USB del tótem: puertos serie y el relé, con un permiso por dispositivo.
+ * También lleva qué puertos ya se probaron y no son la plaqueta: ésos quedan
+ * para el termómetro, que sólo habla cuando alguien mide.
+ */
 class UsbHub(context: Context) {
     private val appContext = context.applicationContext
     val manager: UsbManager = appContext.getSystemService(Context.USB_SERVICE) as UsbManager
     private val busy = HashSet<Int>()
-    private val asked = HashSet<Int>()
+    private val notBerry = HashSet<Int>()
+    private val requests = PermissionRequests(PERMISSION_GRACE_NANOS)
 
     fun permissionIntent(): PendingIntent {
         val flags = PendingIntent.FLAG_UPDATE_CURRENT or
@@ -26,27 +31,30 @@ class UsbHub(context: Context) {
         return PendingIntent.getBroadcast(appContext, 0, intent, flags)
     }
 
-    /** Pide permiso una vez por dispositivo. Devuelve false si todavía falta alguno. */
-    fun ensurePermissions(): Boolean {
-        var ready = true
-        for (device in manager.deviceList.values) {
-            if (manager.hasPermission(device)) {
-                synchronized(asked) { asked.remove(device.deviceId) }
-                continue
+    /**
+     * Pide permiso a los dispositivos del tótem que no lo tienen. No bloquea:
+     * lo que ya tiene permiso se usa igual, y un dispositivo ajeno al tótem
+     * (un teclado, un lector) no se pide ni frena a los demás.
+     */
+    fun requestMissingPermissions() {
+        val devices = totemDevices()
+        val now = System.nanoTime()
+        requests.observe(devices.map { it.deviceId }.toSet(), now)
+        synchronized(notBerry) { notBerry.retainAll(manager.deviceList.values.map { it.deviceId }.toSet()) }
+        for (device in devices) {
+            if (manager.hasPermission(device)) continue
+            if (requests.shouldAsk(device.deviceId, now)) {
+                manager.requestPermission(device, permissionIntent())
             }
-            ready = false
-            val firstTime = synchronized(asked) { asked.add(device.deviceId) }
-            if (firstTime) manager.requestPermission(device, permissionIntent())
         }
-        return ready
     }
 
     fun forgetAsked() {
-        synchronized(asked) { asked.clear() }
-        ensurePermissions()
+        requests.forget()
+        requestMissingPermissions()
     }
 
-    fun permissionMissing(): Boolean = manager.deviceList.values.any { !manager.hasPermission(it) }
+    fun permissionMissing(): Boolean = totemDevices().any { !manager.hasPermission(it) }
 
     fun mark(deviceId: Int): Boolean = synchronized(busy) { busy.add(deviceId) }
 
@@ -54,10 +62,25 @@ class UsbHub(context: Context) {
         synchronized(busy) { busy.remove(deviceId) }
     }
 
-    fun serialDrivers(): List<UsbSerialDriver> {
-        return UsbSerialProber.getDefaultProber().findAllDrivers(manager).filter { driver ->
-            val device = driver.device
-            !isRelay(device) && manager.hasPermission(device) && synchronized(busy) { device.deviceId !in busy }
+    fun markNotBerry(deviceId: Int) {
+        synchronized(notBerry) { notBerry.add(deviceId) }
+    }
+
+    fun clearNotBerry(deviceId: Int) {
+        synchronized(notBerry) { notBerry.remove(deviceId) }
+    }
+
+    /** Puertos que todavía pueden ser la plaqueta. */
+    fun berryCandidates(): List<UsbSerialDriver> {
+        val excluded = synchronized(notBerry) { notBerry.toSet() }
+        return serialDrivers().filter { it.device.deviceId !in excluded }
+    }
+
+    /** Puertos que el termómetro puede tomar. Ver [thermometerMayTake]. */
+    fun thermometerCandidates(berryUp: Boolean): List<UsbSerialDriver> {
+        val excluded = synchronized(notBerry) { notBerry.toSet() }
+        return serialDrivers().filter { driver ->
+            thermometerMayTake(driver.device.vendorId, driver.device.deviceId in excluded, berryUp)
         }
     }
 
@@ -65,6 +88,14 @@ class UsbHub(context: Context) {
         manager.deviceList.values.firstOrNull { isRelay(it) && manager.hasPermission(it) }
 
     fun relayPlugged(): Boolean = manager.deviceList.values.any { isRelay(it) }
+
+    /**
+     * Si hay un puerto serie de ST enchufado, con o sin permiso: la plaqueta
+     * tiene alimentación y enumeró. Un ST que no es puerto serie (por ejemplo
+     * el bootloader DFU tras una baja de tensión) no cuenta: ése necesita el corte.
+     */
+    fun stPresent(): Boolean =
+        UsbSerialProber.getDefaultProber().findAllDrivers(manager).any { it.device.vendorId == STM32_VENDOR }
 
     fun isPresent(device: UsbDevice): Boolean =
         manager.deviceList.values.any { it.deviceId == device.deviceId }
@@ -93,14 +124,82 @@ class UsbHub(context: Context) {
         }
     }
 
+    private fun serialDrivers(): List<UsbSerialDriver> {
+        return UsbSerialProber.getDefaultProber().findAllDrivers(manager).filter { driver ->
+            val device = driver.device
+            !isRelay(device) && manager.hasPermission(device) && synchronized(busy) { device.deviceId !in busy }
+        }
+    }
+
+    /** Los puertos serie y el relé, con o sin permiso. Lo demás no es del tótem. */
+    private fun totemDevices(): List<UsbDevice> {
+        val serial = UsbSerialProber.getDefaultProber().findAllDrivers(manager).map { it.device }
+        val relays = manager.deviceList.values.filter { isRelay(it) }
+        return (serial + relays).distinctBy { it.deviceId }
+    }
+
     companion object {
         const val ACTION_USB_PERMISSION = "com.guardiavirtual.berrymed.USB_PERMISSION"
         const val BAUD = 115200
         const val RELAY_VENDOR = 0x16C0
         const val RELAY_PRODUCT = 0x05DF
 
+        /** El PM6750 es un STM32 VCP. Un puerto de ST mudo es la plaqueta trabada. */
+        const val STM32_VENDOR = 0x0483
+
+        /**
+         * Android agrega el dispositivo a la lista un instante antes de darle
+         * el permiso a la app predeterminada. Pedirlo en ese hueco deja un
+         * diálogo de más en pantalla.
+         */
+        private const val PERMISSION_GRACE_NANOS = 3L * 1_000_000_000L
+
         fun isRelay(device: UsbDevice): Boolean =
             device.vendorId == RELAY_VENDOR && device.productId == RELAY_PRODUCT
+
+        /**
+         * El termómetro sólo manda una línea cuando alguien mide, así que no se
+         * lo puede reconocer por lo que transmite. Toma un puerto que ya se
+         * probó y no es la plaqueta, o cualquiera mientras la plaqueta está
+         * conectada, porque hay una sola. Nunca uno de ST: ése es la plaqueta,
+         * aunque esté muda, y tiene que quedar libre para el corte del relé.
+         */
+        fun thermometerMayTake(vendorId: Int, provenNotBerry: Boolean, berryUp: Boolean): Boolean {
+            if (vendorId == STM32_VENDOR) return false
+            return provenNotBerry || berryUp
+        }
+    }
+}
+
+/**
+ * A qué dispositivos ya se les pidió permiso. Cada dispositivo se pide una sola
+ * vez: el diálogo aparece arriba de Chrome, que tiene la plataforma médica, y
+ * repetirlo solo la taparía una y otra vez. Un rechazo o un diálogo sin
+ * respuesta esperan al botón "Pedir permiso USB". Un dispositivo que vuelve a
+ * aparecer (otro deviceId, por ejemplo tras un corte del relé) se pide de nuevo.
+ */
+class PermissionRequests(private val graceNanos: Long = 0L) {
+    private val asked = HashSet<Int>()
+    private val firstSeen = HashMap<Int, Long>()
+
+    @Synchronized
+    fun shouldAsk(deviceId: Int, now: Long): Boolean {
+        val seen = firstSeen.getOrPut(deviceId) { now }
+        if (now - seen < graceNanos) return false
+        return asked.add(deviceId)
+    }
+
+    @Synchronized
+    fun forget() {
+        asked.clear()
+    }
+
+    /** Anota los dispositivos que aparecieron y olvida los que se fueron. */
+    @Synchronized
+    fun observe(present: Set<Int>, now: Long) {
+        for (deviceId in present) firstSeen.putIfAbsent(deviceId, now)
+        firstSeen.keys.retainAll(present)
+        asked.retainAll(present)
     }
 }
 

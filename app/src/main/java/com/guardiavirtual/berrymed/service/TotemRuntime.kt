@@ -2,6 +2,7 @@
 package com.guardiavirtual.berrymed.service
 
 import android.content.Context
+import android.hardware.usb.UsbDevice
 import android.util.Log
 import com.guardiavirtual.berrymed.config.BerryConfig
 import com.guardiavirtual.berrymed.config.ConfigStore
@@ -35,7 +36,7 @@ class TotemRuntime(context: Context) {
     private val hub = UsbHub(appContext)
     private val relay = UsbRelay(hub)
     private val berry = BerryLink(hub, relay, parser, { config.tuning() }, ::log)
-    private val thermo = ThermometerLink(hub, ::log)
+    private val thermo = ThermometerLink(hub, { berry.connected }, ::log)
     private val poster = MetricsPoster()
     private val sessionLock = Any()
 
@@ -45,14 +46,14 @@ class TotemRuntime(context: Context) {
     @Volatile var lastPost: String = "Todavía no se envió"
     @Volatile var pusherUp: Boolean = false
 
-    var onNotification: (text: String, berryUp: Boolean) -> Unit = { _, _ -> }
+    var onNotification: (text: String) -> Unit = {}
 
     private val pusher = SessionPusher(::log, object : SessionPusher.Listener {
         override fun onStart() = startSession()
         override fun onStop() = stopSession("evento stop")
         override fun onBloodPressure() {
-            parser.resetNibp()
-            berry.startNibp()
+            // Sólo si arrancó: un pedido rechazado no borra la presión que se está mostrando.
+            if (berry.startNibp()) parser.resetNibp()
         }
         override fun onConnection(connected: Boolean) {
             pusherUp = connected
@@ -74,19 +75,46 @@ class TotemRuntime(context: Context) {
         thread(name = "berry-usb", isDaemon = true) { berry.run() }
         thread(name = "berry-thermo", isDaemon = true) { thermo.run() }
         thread(name = "berry-post", isDaemon = true) { postLoop() }
+        thread(name = "berry-watch", isDaemon = true) { watchLoop() }
     }
 
     fun requestUsbPermissionAgain() {
         hub.forgetAsked()
     }
 
+    fun onUsbPermission(device: UsbDevice?, granted: Boolean) {
+        if (device != null) {
+            log("[USB] Permiso ${if (granted) "aceptado" else "rechazado"} para ${device.deviceName}")
+        }
+        publish()
+    }
+
+    /**
+     * Lo que tiene que seguir andando aunque un POST tarde: los pedidos de
+     * permiso USB, la reconexión de Pusher y la pantalla.
+     */
+    private fun watchLoop() {
+        while (true) {
+            guarded("permisos USB") { hub.requestMissingPermissions() }
+            guarded("Pusher") { pusher.keepAlive() }
+            guarded("pantalla") { publish() }
+            sleep(1_000)
+        }
+    }
+
+    /** Una tarea que falla no frena a las otras del mismo hilo. */
+    private fun guarded(task: String, block: () -> Unit) {
+        try {
+            block()
+        } catch (error: Exception) {
+            log("[WATCH] Falló $task: $error")
+        }
+    }
+
     private fun postLoop() {
         while (true) {
             try {
-                publish()
-                if (sessionActive && sessionExpired(sessionActive, sessionStartNano, System.nanoTime(), config.maxSessionMinutes)) {
-                    stopSession("sin stop tras ${config.maxSessionMinutes} min")
-                }
+                stopSessionIfExpired()
                 val window = synchronized(sessionLock) {
                     if (!sessionActive) null else parser.takePayload()
                 }
@@ -105,7 +133,7 @@ class TotemRuntime(context: Context) {
                 }
             } catch (error: Exception) {
                 log("[DATA] Error en el envío: $error")
-                lastPost = "Error al enviar"
+                lastPost = "Error al enviar: ${error.message ?: error.javaClass.simpleName}"
             }
             sleep(1_000)
         }
@@ -123,8 +151,17 @@ class TotemRuntime(context: Context) {
         publish()
     }
 
-    private fun stopSession(reason: String) {
+    /** Se mira dentro del lock: un inicio que llega justo antes no se corta. */
+    private fun stopSessionIfExpired() {
+        val minutes = config.maxSessionMinutes
+        stopSession("sin stop tras $minutes min") {
+            sessionExpired(sessionActive, sessionStartNano, System.nanoTime(), minutes)
+        }
+    }
+
+    private fun stopSession(reason: String, stillDue: () -> Boolean = { true }) {
         synchronized(sessionLock) {
+            if (!stillDue()) return
             sessionActive = false
             sessionStartNano = 0L
             berry.stopNibp()
@@ -149,29 +186,39 @@ class TotemRuntime(context: Context) {
             else -> "Plaqueta conectada, sesión detenida"
         }
         val age = berry.lastDataAgeSeconds()
-        val paragraph = buildString {
-            append(if (berryUp) "La plaqueta está conectada. " else "La plaqueta no está conectada. ")
-            if (age != null) append("Último dato hace ${"%.1f".format(Locale("es"), age)} s. ")
-            append(if (thermo.connected) "Termómetro conectado. " else "Termómetro sin conectar. ")
+        val lastData = if (age == null) {
+            "Último dato: sin datos"
+        } else {
+            "Último dato: hace ${"%.1f".format(Locale("es"), age)} s"
+        }
+        val others = buildString {
+            append(
+                when {
+                    !thermo.connected -> "Termómetro sin conectar. "
+                    thermo.measured -> "Termómetro conectado. "
+                    else -> "Termómetro conectado, sin mediciones todavía. "
+                },
+            )
             append(if (relay.plugged()) "Relé presente. " else "Relé sin conectar. ")
-            append(if (pusherUp) "Pusher conectado. " else "Pusher sin conectar. ")
             append(if (active) "La sesión está enviando." else "La sesión está detenida.")
             val missing = config.missingFields()
             if (missing.isNotEmpty()) append(" Falta configurar: ${missing.joinToString(", ")}.")
-            if (hub.permissionMissing()) append(" Falta aceptar el permiso USB.")
+            if (hub.permissionMissing()) append(" Falta aceptar el permiso USB: tocá «Pedir permiso USB».")
         }
         state.value = TotemState(
-            paragraph = paragraph,
             heartRate = display(vitals.heartRate),
             respRate = display(vitals.respRate),
             spo2Pulse = display(vitals.spo2Pulse),
             temperature = if (seen || thermo.latest() != null) temperature else "—",
             nibp = display(vitals.nibp),
+            berryUp = berryUp,
+            lastData = lastData,
+            pusherUp = pusherUp,
+            others = others,
             lastPost = lastPost,
             notification = notification,
-            berryUp = berryUp,
         )
-        onNotification(notification, berryUp)
+        onNotification(notification)
     }
 
     private fun log(message: String) {

@@ -72,6 +72,24 @@ class ProtocolTest {
     }
 
     @Test
+    fun aHeaderAtTheVeryEndOfARead() {
+        val parser = BmDataParser()
+        val good = frame(0xFE, intArrayOf(42))
+        parser.addData(byteArrayOf(0x12, 0x34) + good.copyOfRange(0, 2))
+        parser.addData(good.copyOfRange(2, good.size))
+        assertEquals(listOf(42), parser.takePayload().spo2)
+    }
+
+    @Test
+    fun aShortEcgParamsFrameLeavesNoHalfWrittenValue() {
+        val parser = BmDataParser()
+        parser.addData(frame(0x02, intArrayOf(0x28, 86, 18, 6, 0x01)))
+        parser.addData(frame(0x02, intArrayOf(0x28)))
+        assertEquals("86", parser.peekVitals().heartRate)
+        assertEquals("18", parser.peekVitals().respRate)
+    }
+
+    @Test
     fun spo2ErrorDoesNotEraseAGoodPulse() {
         val parser = BmDataParser()
         parser.addData(frame(0x04, intArrayOf(0x00, 127, 72)))
@@ -136,6 +154,10 @@ class ProtocolTest {
     @Test
     fun thermometerOverridesBerryTemperature() {
         assertNull(parseThermometerLine("ruido"))
+        assertEquals(ThermoReading(36.5, "C"), parseThermometerLine("""{"valor_temperatura_ir": "36.5", "unit": "C"}"""))
+        assertEquals(ThermoReading(36.6, "C"), parseThermometerLine("""{"unit": "C", "valor_temperatura_ir": 36.6}"""))
+        assertNull(parseThermometerLine("""{"valor_temperatura_ir": "3, "unit": "C"}"""))
+        assertNull(parseThermometerLine("""{"valor_temperatura_ir": "36,5", "unit": "C"}"""))
         val celsius = parseThermometerLine("""{"valor_temperatura_ir": 36.6, "unit": "C"}""")
         assertEquals(ThermoReading(36.6, "C"), celsius)
         val vitals = VitalSigns(temperature = "22.2")
@@ -163,6 +185,21 @@ class ProtocolTest {
         assertTrue(json.contains("\"V\":[111]"))
         assertTrue(json.contains("\"st\":0.06"))
         assertTrue(json.contains("\"hrv\":\"normal\""))
+    }
+
+    @Test
+    fun theEnvelopeStaysValidJsonWithControlCharacters() {
+        val window = SampleWindow(
+            spo2 = emptyList(),
+            ecg = emptyMap(),
+            ecgPeaks = emptyList(),
+            ecgInfo = EcgInfo(hrv = "a\tb\rc"),
+            resp = emptyList(),
+            vitalSigns = VitalSigns(),
+        )
+        val json = metricsEnvelope(0, window)
+        assertTrue(json.contains("\"hrv\":\"a\\u0009b\\u000dc\""))
+        assertFalse(json.any { it < ' ' })
     }
 
     @Test

@@ -7,13 +7,19 @@ import com.guardiavirtual.berrymed.protocol.applyThermometer
 import com.guardiavirtual.berrymed.protocol.parseThermometerLine
 import java.io.IOException
 
-/** Termómetro infrarrojo en otro puerto serie. Cada línea es un JSON con la lectura. */
+/**
+ * Termómetro infrarrojo en otro puerto serie. Cada línea es un JSON con la lectura,
+ * y sólo llega cuando alguien mide: el puerto se deja abierto esperando, como
+ * hace el monitor de Windows. Qué puerto puede tomar lo decide [UsbHub.thermometerCandidates].
+ */
 class ThermometerLink(
     private val hub: UsbHub,
+    private val berryUp: () -> Boolean,
     private val log: (String) -> Unit,
 ) {
     @Volatile var running: Boolean = true
     @Volatile var connected: Boolean = false
+    @Volatile var measured: Boolean = false
     private var latest: ThermoReading? = null
     private val lock = Any()
 
@@ -32,31 +38,38 @@ class ThermometerLink(
 
     fun run() {
         while (running) {
-            if (!hub.ensurePermissions()) {
-                sleep(1_000)
-                continue
-            }
-            val handle = acquire()
-            if (handle == null) {
-                sleep(2_000)
-                continue
-            }
+            // Una excepción que escape mata este hilo y, en Android, la app entera.
             try {
-                readLines(handle)
-            } finally {
-                connected = false
-                try {
-                    handle.close()
-                } catch (_: Exception) {
-                }
-                hub.unmark(handle.device.deviceId)
+                connectAndRead()
+            } catch (error: Exception) {
+                log("[THERM] Error inesperado: $error")
+                sleep(2_000)
             }
-            if (running) sleep(2_000)
         }
     }
 
+    private fun connectAndRead() {
+        val handle = acquire()
+        if (handle == null) {
+            sleep(2_000)
+            return
+        }
+        try {
+            readLines(handle)
+        } finally {
+            connected = false
+            measured = false
+            try {
+                handle.close()
+            } catch (_: Exception) {
+            }
+            hub.unmark(handle.device.deviceId)
+        }
+        if (running) sleep(2_000)
+    }
+
     private fun acquire(): SerialHandle? {
-        for (driver in hub.serialDrivers()) {
+        for (driver in hub.thermometerCandidates(berryUp())) {
             val id = driver.device.deviceId
             if (!hub.mark(id)) continue
             val handle = hub.open(driver)
@@ -64,25 +77,9 @@ class ThermometerLink(
                 hub.unmark(id)
                 continue
             }
-            try {
-                val sample = BerryLink.readUntil(handle, 800) { BerryLink.isThermometer(it) }
-                if (!BerryLink.isThermometer(sample)) {
-                    handle.close()
-                    hub.unmark(id)
-                    continue
-                }
-                ingest(String(sample, Charsets.UTF_8))
-                connected = true
-                log("[THERM] Conectado en ${driver.device.deviceName}")
-                return handle
-            } catch (error: Exception) {
-                log("[THERM] No se pudo abrir ${driver.device.deviceName}: $error")
-                try {
-                    handle.close()
-                } catch (_: Exception) {
-                }
-                hub.unmark(id)
-            }
+            connected = true
+            log("[THERM] Esperando mediciones en ${driver.device.deviceName}")
+            return handle
         }
         return null
     }
@@ -91,13 +88,27 @@ class ThermometerLink(
         val pending = StringBuilder()
         val buffer = ByteArray(256)
         while (running && hub.isPresent(handle.device)) {
+            val readStartedAt = System.nanoTime()
             val count = try {
                 handle.read(buffer, 500)
             } catch (_: IOException) {
                 break
             }
-            if (count <= 0) continue
-            pending.append(String(buffer, 0, count, Charsets.UTF_8))
+            if (count <= 0) {
+                // Un endpoint trabado puede devolver 0 sin esperar: sin esto el hilo gira sin pausa.
+                if (System.nanoTime() - readStartedAt < BerryLink.EMPTY_READ_PAUSE_MS * 1_000_000L) {
+                    sleep(BerryLink.EMPTY_READ_PAUSE_MS)
+                }
+                continue
+            }
+            val chunk = buffer.copyOf(count)
+            if (BerryLink.hasHeader(chunk)) {
+                // Tramas 55 AA: es una plaqueta. Se le devuelve a BerryLink.
+                log("[THERM] ${handle.device.deviceName} manda tramas de la plaqueta; se libera")
+                hub.clearNotBerry(handle.device.deviceId)
+                break
+            }
+            pending.append(String(chunk, Charsets.UTF_8))
             ingest(pending)
             if (pending.length > 4_096) pending.delete(0, pending.length - 256)
         }
@@ -114,13 +125,11 @@ class ThermometerLink(
         }
     }
 
-    private fun ingest(text: String) {
-        text.lineSequence().forEach(::store)
-    }
-
     private fun store(line: String) {
         val reading = parseThermometerLine(line) ?: return
         synchronized(lock) { latest = reading }
+        if (!measured) log("[THERM] Primera medición: ${reading.value} ${reading.unit}")
+        measured = true
     }
 
     private fun sleep(ms: Long) {

@@ -22,15 +22,6 @@
             android:textColor="@color/vital_on"
             android:textSize="32sp" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:lineSpacingExtra="3dp"
-            android:text="@string/screen_subtitle"
-            android:textColor="@color/vital_dim"
-            android:textSize="16sp" />
-
         <GridLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -95,12 +86,58 @@
             </LinearLayout>
         </GridLayout>
 
-        <TextView
-            android:id="@+id/statusParagraph"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:lineSpacingExtra="4dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <View
+                android:id="@+id/berryDot"
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/status_dot" />
+
+            <TextView
+                android:id="@+id/berryStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/vital_on"
+                android:textSize="16sp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/lastData"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textColor="@color/vital_on"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/pusherStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textColor="@color/vital_on"
+            android:textSize="16sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Otros datos"
+            android:textColor="@color/vital_dim"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/otherStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:lineSpacingExtra="3dp"
             android:textColor="@color/vital_on"
             android:textSize="16sp" />
 
@@ -139,6 +176,15 @@
                 android:textColor="@color/vital_on"
                 app:strokeColor="@color/vital_dim" />
         </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:lineSpacingExtra="3dp"
+            android:text="@string/help_usb_default"
+            android:textColor="@color/vital_dim"
+            android:textSize="14sp" />
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"

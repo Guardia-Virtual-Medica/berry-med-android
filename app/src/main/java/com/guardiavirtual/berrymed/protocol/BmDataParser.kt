@@ -36,6 +36,11 @@ class BmDataParser {
                     raw += last
                     break
                 }
+                if (start + 2 >= raw.size) {
+                    // La cabecera llegó al final de esta lectura: el largo viene en la próxima.
+                    dropUntil(start)
+                    break
+                }
                 val n = raw[start + 2]
                 if (n < 3) {
                     raw.removeAt(start)
@@ -93,6 +98,11 @@ class BmDataParser {
         vitals = VitalSigns()
     }
 
+    /** Descarta sólo los bytes sin procesar; los signos y las ondas quedan. */
+    fun dropPending() = synchronized(lock) {
+        raw.clear()
+    }
+
     fun resetNibp() = synchronized(lock) {
         vitals.nibp = NO_PAIR
     }
@@ -126,9 +136,13 @@ class BmDataParser {
                 }
             }
             0x02 -> {
-                vitals.heartRate = formatCount(frame[5])
-                vitals.respRate = formatCount(frame[6])
-                ecgInfo = decodeEcgInfo(frame)
+                // Se lee todo antes de asignar: una trama corta no deja un dato a medias.
+                val heartRate = frame[5]
+                val respRate = frame[6]
+                val info = decodeEcgInfo(frame)
+                vitals.heartRate = formatCount(heartRate)
+                vitals.respRate = formatCount(respRate)
+                ecgInfo = info
             }
             0x03 -> {
                 val sys = frame[6]
