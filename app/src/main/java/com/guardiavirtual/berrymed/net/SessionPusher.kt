@@ -2,6 +2,7 @@
 package com.guardiavirtual.berrymed.net
 
 import com.guardiavirtual.berrymed.config.BerryConfig
+import com.guardiavirtual.berrymed.config.Environment
 import com.pusher.client.Pusher
 import com.pusher.client.PusherOptions
 import com.pusher.client.channel.PusherEvent
@@ -102,7 +103,7 @@ class SessionPusher(
     }
 
     private fun connect(config: BerryConfig) {
-        val cluster = config.pusherCluster.ifBlank { "us2" }
+        val cluster = config.pusherCluster.ifBlank { Environment.fromKey(config.environment).pusherCluster }
         val options = PusherOptions().setCluster(cluster).setUseTLS(true)
         val pusher = Pusher(config.pusherKey, options)
         var bound = false

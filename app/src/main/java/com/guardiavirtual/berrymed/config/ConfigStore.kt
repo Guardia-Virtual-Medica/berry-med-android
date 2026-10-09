@@ -68,15 +68,26 @@ class ConfigStore(private val context: Context) {
     }
 
     /** Lo que nunca se guardó, o lo anterior al selector, toma el valor del entorno. */
-    private fun Preferences.toConfig(environment: Environment, keepAddresses: Boolean): BerryConfig = BerryConfig(
+    private fun Preferences.toConfig(environment: Environment, keepAddresses: Boolean): BerryConfig {
+        val pusherKey = this[PUSHER_KEY]?.takeIf { keepAddresses } ?: environment.pusherKey
+        val cluster = this[CLUSTER]?.takeIf { keepAddresses } ?: environment.pusherCluster
+        return toConfig(environment, keepAddresses, pusherKey, Environment.clusterFor(pusherKey, cluster))
+    }
+
+    private fun Preferences.toConfig(
+        environment: Environment,
+        keepAddresses: Boolean,
+        pusherKey: String,
+        pusherCluster: String,
+    ): BerryConfig = BerryConfig(
         environment = environment.key,
         apiBaseUrl = this[API_URL]?.takeIf { keepAddresses } ?: environment.apiBaseUrl,
         totemId = this[TOTEM].orEmpty(),
         apiEndpoint = this[ENDPOINT] ?: "metrics",
         apiUsername = this[USER].orEmpty(),
         apiPassword = this[PASSWORD].orEmpty(),
-        pusherKey = this[PUSHER_KEY]?.takeIf { keepAddresses } ?: environment.pusherKey,
-        pusherCluster = this[CLUSTER]?.takeIf { keepAddresses } ?: environment.pusherCluster,
+        pusherKey = pusherKey,
+        pusherCluster = pusherCluster,
         publicChannel = this[CHANNEL].orEmpty(),
         startEventName = this[START] ?: "start-monitoring",
         stopEventName = this[STOP] ?: "stop-monitoring",

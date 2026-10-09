@@ -59,7 +59,7 @@ En la pantalla de Berry Med, en tres pasos:
 
   | Entorno | URL base | Clave de Pusher | Cluster |
   |---|---|---|---|
-  | Producción | `https://portal.ondoctor365.com/api/v1/webhooks/totem` | `b5b07bcf4eb9935b29c7` | `us2` |
+  | Producción | `https://portal.ondoctor365.com/api/v1/webhooks/totem` | `b5b07bcf4eb9935b29c7` | `sa1` |
   | Dev | `https://portal-dev.ondoctor365.com/api/v1/webhooks/totem` | `adac7a549b509b95c930` | `us2` |
 
   La URL base tiene que empezar con `https://` y no terminar en `/metrics`; la pantalla muestra cómo queda armada. La ruta `medical_devices` del `readme.txt` del exe es de la plataforma anterior. OnDoctor no pide usuario ni contraseña para recibir mediciones, así que el `POST` va sin autenticación.

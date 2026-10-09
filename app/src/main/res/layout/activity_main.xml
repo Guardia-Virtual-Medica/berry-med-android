@@ -331,8 +331,7 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:inputType="text"
-                                android:singleLine="true"
-                                android:text="us2" />
+                                android:singleLine="true" />
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <com.google.android.material.textfield.TextInputLayout style="@style/Field" android:hint="@string/hint_start">

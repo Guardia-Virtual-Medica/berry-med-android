@@ -231,12 +231,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun readForm(): BerryConfig {
         val totemId = binding.totemId.text?.toString()?.trim().orEmpty()
+        val environment = Environment.fromKey(value(binding.environment, ENVIRONMENT_VALUES))
         return BerryConfig(
-            environment = value(binding.environment, ENVIRONMENT_VALUES),
+            environment = environment.key,
             apiBaseUrl = binding.apiUrl.text?.toString()?.trim().orEmpty(),
             totemId = totemId,
             pusherKey = binding.pusherKey.text?.toString()?.trim().orEmpty(),
-            pusherCluster = binding.pusherCluster.text?.toString()?.trim().orEmpty().ifBlank { "us2" },
+            pusherCluster = binding.pusherCluster.text?.toString()?.trim().orEmpty().ifBlank { environment.pusherCluster },
             publicChannel = binding.channel.text?.toString()?.trim().orEmpty().ifBlank { defaultChannel(totemId) },
             startEventName = binding.startEvent.text?.toString()?.trim().orEmpty().ifBlank { "start-monitoring" },
             stopEventName = binding.stopEvent.text?.toString()?.trim().orEmpty().ifBlank { "stop-monitoring" },
