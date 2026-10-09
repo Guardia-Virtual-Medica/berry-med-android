@@ -22,7 +22,7 @@ class UsbHub(context: Context) {
     val manager: UsbManager = appContext.getSystemService(Context.USB_SERVICE) as UsbManager
     private val busy = HashSet<Int>()
     private val notBerry = HashSet<Int>()
-    private val requests = PermissionRequests(PERMISSION_RETRY_NANOS, PERMISSION_GRACE_NANOS)
+    private val requests = PermissionRequests(PERMISSION_GRACE_NANOS)
 
     fun permissionIntent(): PendingIntent {
         val flags = PendingIntent.FLAG_UPDATE_CURRENT or
@@ -47,10 +47,6 @@ class UsbHub(context: Context) {
                 manager.requestPermission(device, permissionIntent())
             }
         }
-    }
-
-    fun onPermissionResult(device: UsbDevice, granted: Boolean) {
-        requests.answered(device.deviceId, granted, System.nanoTime())
     }
 
     fun forgetAsked() {
@@ -151,9 +147,6 @@ class UsbHub(context: Context) {
         /** El PM6750 es un STM32 VCP. Un puerto de ST mudo es la plaqueta trabada. */
         const val STM32_VENDOR = 0x0483
 
-        /** Si alguien rechaza o cierra el pedido de permiso, se vuelve a pedir pasado este tiempo. */
-        private const val PERMISSION_RETRY_NANOS = 5L * 60L * 1_000_000_000L
-
         /**
          * Android agrega el dispositivo a la lista un instante antes de darle
          * el permiso a la app predeterminada. Pedirlo en ese hueco deja un
@@ -179,46 +172,26 @@ class UsbHub(context: Context) {
 }
 
 /**
- * Qué dispositivos ya tienen un pedido de permiso en pantalla y cuáles lo
- * rechazaron hace poco. Así no se apilan diálogos con la tablet sola, y un
- * rechazo se vuelve a pedir más tarde en vez de no pedirse nunca. Un pedido
- * sin respuesta (diálogo tapado por otra pantalla) espera al botón "Pedir
- * permiso USB": volver a pedirlo solo apilaría diálogos.
+ * A qué dispositivos ya se les pidió permiso. Cada dispositivo se pide una sola
+ * vez: el diálogo aparece arriba de Chrome, que tiene la plataforma médica, y
+ * repetirlo solo la taparía una y otra vez. Un rechazo o un diálogo sin
+ * respuesta esperan al botón "Pedir permiso USB". Un dispositivo que vuelve a
+ * aparecer (otro deviceId, por ejemplo tras un corte del relé) se pide de nuevo.
  */
-class PermissionRequests(
-    private val retryAfterNanos: Long,
-    private val graceNanos: Long = 0L,
-) {
-    private val pending = HashSet<Int>()
-    private val deniedAt = HashMap<Int, Long>()
+class PermissionRequests(private val graceNanos: Long = 0L) {
+    private val asked = HashSet<Int>()
     private val firstSeen = HashMap<Int, Long>()
 
     @Synchronized
     fun shouldAsk(deviceId: Int, now: Long): Boolean {
         val seen = firstSeen.getOrPut(deviceId) { now }
         if (now - seen < graceNanos) return false
-        if (deviceId in pending) return false
-        val denied = deniedAt[deviceId]
-        if (denied != null && now - denied < retryAfterNanos) return false
-        deniedAt.remove(deviceId)
-        pending += deviceId
-        return true
-    }
-
-    @Synchronized
-    fun answered(deviceId: Int, granted: Boolean, now: Long) {
-        pending -= deviceId
-        if (granted) {
-            deniedAt.remove(deviceId)
-            return
-        }
-        deniedAt[deviceId] = now
+        return asked.add(deviceId)
     }
 
     @Synchronized
     fun forget() {
-        pending.clear()
-        deniedAt.clear()
+        asked.clear()
     }
 
     /** Anota los dispositivos que aparecieron y olvida los que se fueron. */
@@ -226,8 +199,7 @@ class PermissionRequests(
     fun observe(present: Set<Int>, now: Long) {
         for (deviceId in present) firstSeen.putIfAbsent(deviceId, now)
         firstSeen.keys.retainAll(present)
-        pending.retainAll(present)
-        deniedAt.keys.retainAll(present)
+        asked.retainAll(present)
     }
 }
 

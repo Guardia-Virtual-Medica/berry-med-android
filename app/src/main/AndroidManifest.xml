@@ -33,6 +33,19 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+
+        <!--
+            Lo que Android abre al conectar un dispositivo del tótem. Sin pantalla y
+            en su propia tarea: se cierra enseguida y Chrome queda adelante.
+        -->
+        <activity
+            android:name=".usb.UsbAttachActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.NoDisplay">
             <intent-filter>
                 <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
             </intent-filter>

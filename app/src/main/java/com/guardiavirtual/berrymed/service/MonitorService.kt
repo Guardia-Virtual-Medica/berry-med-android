@@ -17,6 +17,7 @@ import android.os.IBinder
 import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import androidx.core.content.IntentCompat
 import com.guardiavirtual.berrymed.BerryMedApp
 import com.guardiavirtual.berrymed.R
@@ -45,11 +46,7 @@ class MonitorService : Service() {
         showNotification("Esperando la plaqueta")
         acquireWakeLock()
         val filter = IntentFilter(UsbHub.ACTION_USB_PERMISSION)
-        if (Build.VERSION.SDK_INT >= 33) {
-            registerReceiver(permissionReceiver, filter, RECEIVER_NOT_EXPORTED)
-        } else {
-            registerReceiver(permissionReceiver, filter)
-        }
+        ContextCompat.registerReceiver(this, permissionReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
         val runtime = runtime()
         runtime.onNotification = { text -> showNotification(text) }
         runtime.start()

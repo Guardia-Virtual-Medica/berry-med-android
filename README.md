@@ -23,13 +23,18 @@ La ganancia y el modo de ECG se mandan a la plaqueta apenas se guardan, sin reco
 
 ## Dejar la tablet sola
 
-La configuración queda guardada en la tablet y el servicio arranca solo al encenderla y después de instalar una versión nueva. Para que no haga falta tocar nada más:
+Adelante va Chrome con la plataforma médica; Berry Med trabaja en segundo plano. Al encender la tablet arranca sólo el servicio, sin abrir ninguna pantalla, y también después de instalar una versión nueva. La pantalla de Berry Med se abre a mano para configurar o ver el estado. La configuración queda guardada en la tablet.
 
-1. **Permiso USB con "Usar de forma predeterminada".** Android da el permiso por cada conexión del dispositivo: después de un reinicio o de un corte del relé la plaqueta vuelve como un dispositivo nuevo. Al aceptar el permiso de la plaqueta, el termómetro y el relé, marcar esa casilla. Así Android abre la app y le da el permiso solo cada vez que aparecen. Si alguien rechaza o cierra el pedido, la app lo vuelve a pedir a los 5 minutos. Si el pedido quedó tapado por otra pantalla sin respuesta, no se repite solo (apilaría diálogos): la pantalla dice "Falta aceptar el permiso USB" y se resuelve con **Pedir permiso USB**. Un dispositivo sin permiso no frena a los demás. Con la casilla marcada, Android además abre la app cada vez que el dispositivo aparece, también después de cada corte del relé: la tablet tiene que ser sólo para el tótem.
-2. **"Evitar que se duerma"** en la pantalla, para excluir la app de la optimización de batería. Algunas marcas tienen además su propia lista de apps que se duermen: sacarla de ahí también.
+Para que no haga falta tocar nada más:
+
+0. **Abrir Berry Med una vez después de instalarla.** Android no le avisa el encendido a una app que nunca se abrió.
+1. **Permiso USB con "Usar de forma predeterminada".** Android da el permiso por cada conexión del dispositivo: después de un reinicio o de un corte del relé la plaqueta vuelve como un dispositivo nuevo. Al aceptar el permiso de la plaqueta, el termómetro y el relé, marcar esa casilla. Así Android le da el permiso solo cada vez que aparecen. Para eso abre una pantalla de Berry Med que no muestra nada y se cierra enseguida: Chrome queda adelante. Sin la casilla, cada reinicio o corte del relé muestra un pedido de permiso arriba de Chrome.
+
+   Cada dispositivo se pide una sola vez, para no tapar Chrome una y otra vez. Si alguien rechaza o cierra el pedido, o queda tapado sin respuesta, la pantalla de Berry Med dice "Falta aceptar el permiso USB" y se resuelve con **Pedir permiso USB**. Un dispositivo sin permiso no frena a los demás.
+2. **"Evitar que se duerma"** en la pantalla, para excluir la app de la optimización de batería. Con Chrome adelante es imprescindible: si Android cierra el servicio, sólo puede volver a ponerlo en primer plano si la app está excluida. Algunas marcas tienen además su propia lista de apps que se duermen: sacarla de ahí también.
 3. **Sin bloqueo con PIN, patrón ni contraseña.** Con bloqueo seguro Android no avisa el encendido hasta que alguien desbloquea, y la app no arranca.
 4. **Instalar siempre un APK firmado con la misma clave.** Si cambia la clave hay que desinstalar, y eso borra la configuración.
-5. **Probarlo**: reiniciar la tablet con todo enchufado y, con la sesión andando, forzar un corte del relé. En los dos casos la plaqueta tiene que volver sola, sin tocar la pantalla.
+5. **Probarlo con Chrome adelante**: reiniciar la tablet con todo enchufado y, con la sesión andando, forzar un corte del relé. En los dos casos la plaqueta tiene que volver sola, sin tocar la pantalla y sin que Chrome quede tapado.
 
 Si Pusher se cae, la librería reintenta unos 85 segundos y se rinde. Treinta segundos después la app le pide otra tanda de intentos, y así mientras no haya conexión. Si queda más de 5 minutos conectando sin respuesta (una red que acepta la conexión y no contesta), se arma un cliente nuevo; cada vez espera el doble, hasta una hora.
 

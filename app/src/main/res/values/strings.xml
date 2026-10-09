@@ -52,5 +52,5 @@
     <string name="battery">Evitar que se duerma</string>
     <string name="battery_unavailable">Esta tablet no tiene el ajuste de batería. Buscalo a mano en Ajustes, Batería.</string>
     <string name="usb_permission">Pedir permiso USB</string>
-    <string name="help_usb_default">Al aceptar el permiso USB, marcá «Usar de forma predeterminada» para la plaqueta, el termómetro y el relé. Si no, Android lo vuelve a pedir después de cada reinicio o corte del relé.</string>
+    <string name="help_usb_default">Al aceptar el permiso USB, marcá «Usar de forma predeterminada» para la plaqueta, el termómetro y el relé. Si no, Android lo vuelve a pedir arriba de Chrome después de cada reinicio o corte del relé.</string>
 </resources>

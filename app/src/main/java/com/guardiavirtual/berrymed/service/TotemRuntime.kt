@@ -84,7 +84,6 @@ class TotemRuntime(context: Context) {
 
     fun onUsbPermission(device: UsbDevice?, granted: Boolean) {
         if (device != null) {
-            hub.onPermissionResult(device, granted)
             log("[USB] Permiso ${if (granted) "aceptado" else "rechazado"} para ${device.deviceName}")
         }
         publish()
