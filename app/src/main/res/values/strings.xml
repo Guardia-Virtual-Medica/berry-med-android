@@ -34,7 +34,7 @@
     <string name="environment_dev">Dev</string>
     <string name="help_from_environment">Viene del entorno elegido. Cambiala sólo si te indicaron otra.</string>
     <string name="help_channel">Se arma con el identificador del tótem. Tiene que ser público.</string>
-    <string name="help_cluster">Viene del entorno elegido: sa1 en Producción, us2 en Dev.</string>
+    <string name="help_cluster">Por defecto sa1. Cambialo sólo si te indicaron otro.</string>
     <string-array name="pusher_clusters">
         <item>us2</item>
         <item>sa1</item>

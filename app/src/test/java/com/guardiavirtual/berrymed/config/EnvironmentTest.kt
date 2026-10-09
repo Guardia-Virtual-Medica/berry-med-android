@@ -13,7 +13,7 @@ class EnvironmentTest {
         assertEquals("https://portal-dev.ondoctor365.com/api/v1/webhooks/totem", Environment.Dev.apiBaseUrl)
         assertEquals("adac7a549b509b95c930", Environment.Dev.pusherKey)
         assertEquals("sa1", Environment.Prod.pusherCluster)
-        assertEquals("us2", Environment.Dev.pusherCluster)
+        assertEquals("sa1", Environment.Dev.pusherCluster)
     }
 
     @Test

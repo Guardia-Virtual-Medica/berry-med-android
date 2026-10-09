@@ -60,10 +60,10 @@ En la pantalla de Berry Med, en tres pasos:
   | Entorno | URL base | Clave de Pusher | Cluster |
   |---|---|---|---|
   | Producción | `https://portal.ondoctor365.com/api/v1/webhooks/totem` | `b5b07bcf4eb9935b29c7` | `sa1` |
-  | Dev | `https://portal-dev.ondoctor365.com/api/v1/webhooks/totem` | `adac7a549b509b95c930` | `us2` |
+  | Dev | `https://portal-dev.ondoctor365.com/api/v1/webhooks/totem` | `adac7a549b509b95c930` | `sa1` |
 
   La URL base tiene que empezar con `https://` y no terminar en `/metrics`; la pantalla muestra cómo queda armada. La ruta `medical_devices` del `readme.txt` del exe es de la plataforma anterior. OnDoctor no pide usuario ni contraseña para recibir mediciones, así que el `POST` va sin autenticación.
-- **Órdenes**: la clave de Pusher (viene del entorno), el cluster (un desplegable, `us2` o `sa1`; también viene del entorno), el canal, los nombres de los eventos de inicio y fin, y los minutos máximos de una consulta (30 por defecto, `0` sin tope). El canal se arma solo como `totem.<external_id>` con el identificador de Destino, y lo sigue mientras nadie lo cambie a mano. Tiene que ser público: un canal `private-` o `presence-` no se conecta y la pantalla lo marca. La clave del exe viejo es de otra plataforma y no recibe las órdenes de OnDoctor.
+- **Órdenes**: la clave de Pusher (viene del entorno), el cluster (un desplegable, `us2` o `sa1`; por defecto `sa1`), el canal, los nombres de los eventos de inicio y fin, y los minutos máximos de una consulta (30 por defecto, `0` sin tope). El canal se arma solo como `totem.<external_id>` con el identificador de Destino, y lo sigue mientras nadie lo cambie a mano. Tiene que ser público: un canal `private-` o `presence-` no se conecta y la pantalla lo marca. La clave del exe viejo es de otra plataforma y no recibe las órdenes de OnDoctor.
 - **Plaqueta**: la ganancia y el modo de ECG, la ganancia de respiración, el modo de presión y la presión de inflado. La ganancia y el modo se aplican apenas se guardan, sin reconectar.
 
 Todo queda guardado en la tablet. La pantalla también muestra los signos vitales, si la plaqueta está funcional, el último dato, la conexión con Pusher, el termómetro, el relé y el resultado del último envío.

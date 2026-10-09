@@ -21,7 +21,7 @@ enum class Environment(
         key = "dev",
         apiBaseUrl = "https://portal-dev.ondoctor365.com/api/v1/webhooks/totem",
         pusherKey = "adac7a549b509b95c930",
-        pusherCluster = "us2",
+        pusherCluster = "sa1",
     ),
     ;
 
