@@ -15,13 +15,13 @@ enum class Environment(
         key = "prod",
         apiBaseUrl = "https://portal.ondoctor365.com/api/v1/webhooks/totem",
         pusherKey = "b5b07bcf4eb9935b29c7",
-        pusherCluster = "us2",
+        pusherCluster = "sa1",
     ),
     Dev(
         key = "dev",
         apiBaseUrl = "https://portal-dev.ondoctor365.com/api/v1/webhooks/totem",
         pusherKey = "adac7a549b509b95c930",
-        pusherCluster = "us2",
+        pusherCluster = "sa1",
     ),
     ;
 

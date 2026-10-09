@@ -34,6 +34,11 @@
     <string name="environment_dev">Dev</string>
     <string name="help_from_environment">Viene del entorno elegido. Cambiala sólo si te indicaron otra.</string>
     <string name="help_channel">Se arma con el identificador del tótem. Tiene que ser público.</string>
+    <string name="help_cluster">Por defecto sa1. Cambialo sólo si te indicaron otro.</string>
+    <string-array name="pusher_clusters">
+        <item>us2</item>
+        <item>sa1</item>
+    </string-array>
     <string name="help_known_values">Estos valores ya vienen cargados. Cambialos solo si te indicaron otros.</string>
     <string name="help_device">Si nadie te indicó otra cosa, dejá la ganancia en x1 y el modo en Monitor.</string>
     <string name="help_nibp_target">Opcional. Si lo dejás vacío, el equipo usa su presión de inflado.</string>

@@ -312,6 +312,21 @@
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:hint="@string/hint_cluster"
+                            app:helperText="@string/help_cluster">
+                            <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                                android:id="@+id/pusherCluster"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="none"
+                                app:simpleItems="@array/pusher_clusters" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.textfield.TextInputLayout
                             style="@style/Field"
                             android:hint="@string/hint_channel"
                             app:helperText="@string/help_channel">
@@ -324,16 +339,6 @@
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <TextView style="@style/Help" android:layout_marginTop="16dp" android:text="@string/help_known_values" />
-
-                        <com.google.android.material.textfield.TextInputLayout style="@style/Field" android:hint="@string/hint_cluster">
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/pusherCluster"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:inputType="text"
-                                android:singleLine="true"
-                                android:text="us2" />
-                        </com.google.android.material.textfield.TextInputLayout>
 
                         <com.google.android.material.textfield.TextInputLayout style="@style/Field" android:hint="@string/hint_start">
                             <com.google.android.material.textfield.TextInputEditText
