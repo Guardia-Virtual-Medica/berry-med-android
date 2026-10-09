@@ -78,9 +78,15 @@ class MainActivity : AppCompatActivity() {
                 runBlocking { runtime().store.load() }
             } catch (error: Exception) {
                 Log.e(TotemRuntime.TAG, "[CONFIG] No se pudo leer la configuración: $error")
-                BerryConfig()
+                null
             }
-            handler.post { fill(saved) }
+            handler.post {
+                fill(saved ?: BerryConfig())
+                if (saved == null) {
+                    binding.formMessage.setTextColor(getColor(R.color.warn))
+                    binding.formMessage.setText(R.string.load_failed)
+                }
+            }
         }
     }
 

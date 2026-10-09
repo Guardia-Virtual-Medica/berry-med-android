@@ -93,8 +93,13 @@ class UsbHub(context: Context) {
 
     fun relayPlugged(): Boolean = manager.deviceList.values.any { isRelay(it) }
 
-    /** Si hay algún dispositivo de ST enchufado, con o sin permiso: la plaqueta tiene alimentación. */
-    fun stPresent(): Boolean = manager.deviceList.values.any { it.vendorId == STM32_VENDOR }
+    /**
+     * Si hay un puerto serie de ST enchufado, con o sin permiso: la plaqueta
+     * tiene alimentación y enumeró. Un ST que no es puerto serie (por ejemplo
+     * el bootloader DFU tras una baja de tensión) no cuenta: ése necesita el corte.
+     */
+    fun stPresent(): Boolean =
+        UsbSerialProber.getDefaultProber().findAllDrivers(manager).any { it.device.vendorId == STM32_VENDOR }
 
     fun isPresent(device: UsbDevice): Boolean =
         manager.deviceList.values.any { it.deviceId == device.deviceId }

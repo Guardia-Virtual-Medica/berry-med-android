@@ -47,6 +47,7 @@
     <string name="saving">Guardando…</string>
     <string name="saved">Configuración guardada. El tótem la usa desde ahora.</string>
     <string name="save_failed">No se pudo guardar la configuración. Probá de nuevo.</string>
+    <string name="load_failed">No se pudo leer la configuración guardada. Revisá los datos antes de guardar.</string>
     <string name="battery">Evitar que se duerma</string>
     <string name="usb_permission">Pedir permiso USB</string>
     <string name="help_usb_default">Al aceptar el permiso USB, marcá «Usar de forma predeterminada» para la plaqueta, el termómetro y el relé. Si no, Android lo vuelve a pedir después de cada reinicio o corte del relé.</string>
