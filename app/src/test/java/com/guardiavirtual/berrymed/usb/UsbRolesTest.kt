@@ -124,6 +124,14 @@ class UsbRolesTest {
     }
 
     @Test
+    fun aPressureMeasurementThatStopsReportingIsOver() {
+        assertFalse(BerryLink.nibpWentQuiet(startedAt = 0, lastFrameAt = 0, now = 14 * second))
+        assertTrue(BerryLink.nibpWentQuiet(startedAt = 0, lastFrameAt = 0, now = 16 * second))
+        assertFalse(BerryLink.nibpWentQuiet(startedAt = 0, lastFrameAt = 40 * second, now = 50 * second))
+        assertTrue(BerryLink.nibpWentQuiet(startedAt = 0, lastFrameAt = 40 * second, now = 56 * second))
+    }
+
+    @Test
     fun berryFramesAreToldApartFromThermometerText() {
         val line = """{"valor_temperatura_ir": 36.6, "unit": "C"}""".toByteArray()
         assertFalse(BerryLink.hasHeader(line))

@@ -30,7 +30,8 @@ class BerryLink(
     @Volatile private var current: SerialHandle? = null
     private val writeLock = Any()
     @Volatile var nibpRunning: Boolean = false
-    private var nibpStartedAt: Long = 0L
+    @Volatile private var nibpStartedAt: Long = 0L
+    @Volatile private var lastNibpFrameAt: Long = 0L
     private var appliedStartup: List<Pair<Int, Int>> = emptyList()
     private var lastPowerCycleAt: Long = 0L
     private var lastPowerCheckAt: Long = 0L
@@ -82,28 +83,35 @@ class BerryLink(
         write(Pm6750Protocol.nibpStop())
     }
 
-    fun startNibp() {
+    /** Devuelve true si la medición arrancó. */
+    fun startNibp(): Boolean {
         synchronized(writeLock) {
             val port = current?.port
             if (port == null || nibpRunning) {
                 log("[USB] NIBP no disponible")
-                return
+                return false
             }
-            try {
+            return try {
                 for ((a1, a2) in Pm6750Protocol.buildNibpCommands(tuning(), log)) {
                     port.write(Pm6750Protocol.buildCommand(a1, a2), 1_000)
                 }
-                nibpRunning = true
+                // Las marcas antes que la bandera: el hilo de lectura mira la bandera y después las marcas.
                 nibpStartedAt = System.nanoTime()
+                lastNibpFrameAt = 0L
+                nibpRunning = true
                 log("[USB] Medición de presión iniciada")
+                true
             } catch (error: Exception) {
                 log("[USB] No se pudo iniciar la presión: $error")
+                false
             }
         }
     }
 
     fun onNibpStatus(status: Int) {
-        if (!nibpRunning || !Pm6750Protocol.nibpIsTerminal(status)) return
+        if (!nibpRunning) return
+        lastNibpFrameAt = System.nanoTime()
+        if (!Pm6750Protocol.nibpIsTerminal(status)) return
         log("[USB] Presión terminada, status=0x%02X".format(status))
         stopNibp()
     }
@@ -289,16 +297,16 @@ class BerryLink(
         }
     }
 
-    /**
-     * Devuelve false sólo si el enfriamiento no dejó cortar, para que quien
-     * llama pueda reintentar enseguida. Sin relé, o con el relé sin permiso,
-     * devuelve true: reintentar no cambiaría nada hasta que alguien lo resuelva.
-     */
     /** Un endpoint trabado puede devolver 0 sin esperar: sin esto el hilo gira sin pausa. */
     private fun pauseIfReadReturnedAtOnce(startedAt: Long) {
         if (System.nanoTime() - startedAt < EMPTY_READ_PAUSE_MS * 1_000_000L) sleep(EMPTY_READ_PAUSE_MS)
     }
 
+    /**
+     * Devuelve false sólo si el enfriamiento no dejó cortar, para que quien
+     * llama pueda reintentar enseguida. Sin relé, o con el relé sin permiso,
+     * devuelve true: reintentar no cambiaría nada hasta que alguien lo resuelva.
+     */
     private fun powerCycle(reason: String): Boolean {
         if (!relay.plugged()) {
             log("[WATCHDOG] $reason. No hay relé: no se corta la alimentación.")
@@ -331,10 +339,21 @@ class BerryLink(
         log("[USB] Ganancia y modo de ECG actualizados")
     }
 
+    /**
+     * El módulo manda el estado de la presión dos veces por segundo mientras
+     * mide y se calla al terminar. Un final que no figura entre los terminales
+     * (error, interferencia, sin resultado) se nota porque deja de llegar.
+     */
     private fun checkNibpTimeout() {
         if (!nibpRunning) return
-        if (System.nanoTime() - nibpStartedAt > NIBP_TIMEOUT_NANOS) {
+        val now = System.nanoTime()
+        if (now - nibpStartedAt > NIBP_TIMEOUT_NANOS) {
             log("[NIBP] Timeout sin cierre")
+            stopNibp()
+            return
+        }
+        if (nibpWentQuiet(nibpStartedAt, lastNibpFrameAt, now)) {
+            log("[NIBP] El equipo dejó de informar la presión; se da por terminada")
             stopNibp()
         }
     }
@@ -392,6 +411,12 @@ class BerryLink(
         const val NIBP_TIMEOUT_NANOS = 180L * 1_000_000_000L
 
         const val EMPTY_READ_PAUSE_MS = 50L
+
+        /** Sin estado de presión durante este tiempo, la medición terminó (en la captura llega dos veces por segundo). */
+        const val NIBP_QUIET_NANOS = 15L * 1_000_000_000L
+
+        fun nibpWentQuiet(startedAt: Long, lastFrameAt: Long, now: Long): Boolean =
+            now - maxOf(startedAt, lastFrameAt) > NIBP_QUIET_NANOS
 
         /** Fallos seguidos al abrir un puerto de ST antes de tratarlo como plaqueta trabada. */
         const val OPEN_FAILURES_BEFORE_CUT = 3

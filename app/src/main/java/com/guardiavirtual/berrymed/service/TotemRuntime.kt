@@ -52,8 +52,8 @@ class TotemRuntime(context: Context) {
         override fun onStart() = startSession()
         override fun onStop() = stopSession("evento stop")
         override fun onBloodPressure() {
-            parser.resetNibp()
-            berry.startNibp()
+            // Sólo si arrancó: un pedido rechazado no borra la presión que se está mostrando.
+            if (berry.startNibp()) parser.resetNibp()
         }
         override fun onConnection(connected: Boolean) {
             pusherUp = connected

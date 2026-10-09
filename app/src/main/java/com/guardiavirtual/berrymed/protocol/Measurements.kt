@@ -50,8 +50,8 @@ fun isValidSample(window: SampleWindow): Boolean {
 
 fun parseThermometerLine(line: String): ThermoReading? {
     // El valor puede venir como número o entre comillas; el monitor de Windows acepta las dos.
-    val value = Regex(""""valor_temperatura_ir"\s*:\s*"?(-?[0-9]+(?:\.[0-9]+)?)"?""")
-        .find(line)?.groupValues?.get(1)?.toDoubleOrNull() ?: return null
+    val value = Regex(""""valor_temperatura_ir"\s*:\s*("?)(-?[0-9]+(?:\.[0-9]+)?)\1\s*[,}]""")
+        .find(line)?.groupValues?.get(2)?.toDoubleOrNull() ?: return null
     val unit = Regex(""""unit"\s*:\s*"([^"]+)"""")
         .find(line)?.groupValues?.get(1)?.uppercase(Locale.US) ?: return null
     return ThermoReading(value, unit)

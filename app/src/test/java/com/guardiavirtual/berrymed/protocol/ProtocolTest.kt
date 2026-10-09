@@ -155,6 +155,9 @@ class ProtocolTest {
     fun thermometerOverridesBerryTemperature() {
         assertNull(parseThermometerLine("ruido"))
         assertEquals(ThermoReading(36.5, "C"), parseThermometerLine("""{"valor_temperatura_ir": "36.5", "unit": "C"}"""))
+        assertEquals(ThermoReading(36.6, "C"), parseThermometerLine("""{"unit": "C", "valor_temperatura_ir": 36.6}"""))
+        assertNull(parseThermometerLine("""{"valor_temperatura_ir": "3, "unit": "C"}"""))
+        assertNull(parseThermometerLine("""{"valor_temperatura_ir": "36,5", "unit": "C"}"""))
         val celsius = parseThermometerLine("""{"valor_temperatura_ir": 36.6, "unit": "C"}""")
         assertEquals(ThermoReading(36.6, "C"), celsius)
         val vitals = VitalSigns(temperature = "22.2")
