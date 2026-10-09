@@ -55,8 +55,15 @@ Entre un corte del relé y el siguiente pasa como mínimo un minuto, para no cor
 
 En la pantalla de Berry Med, en tres pasos:
 
-- **Destino**: la URL base de la API, el identificador del tótem, el usuario y la contraseña. La URL base es sólo la dirección del servicio, por ejemplo `https://api.ejemplo.com/api/v1/medical_devices`, y tiene que empezar con `https://`. No pegar la URL completa con `/metrics` del `readme.txt` del exe: quedaría duplicada. La pantalla muestra cómo queda armada.
-- **Órdenes**: la clave y el cluster de Pusher, el canal, los nombres de los eventos de inicio y fin, y los minutos máximos de una consulta (30 por defecto, `0` sin tope). El canal tiene que ser público: un canal `private-` o `presence-` no se conecta y la pantalla lo marca.
+- **Destino**: el entorno de OnDoctor, el identificador del tótem (su `external_id`) y la URL base de la API. Elegir el entorno completa la URL base, la clave y el cluster de Pusher; se pueden cambiar a mano antes de guardar:
+
+  | Entorno | URL base | Clave de Pusher | Cluster |
+  |---|---|---|---|
+  | Producción | `https://portal.ondoctor365.com/api/v1/webhooks/totem` | `b5b07bcf4eb9935b29c7` | `us2` |
+  | Dev | `https://portal-dev.ondoctor365.com/api/v1/webhooks/totem` | `adac7a549b509b95c930` | `us2` |
+
+  La URL base tiene que empezar con `https://` y no terminar en `/metrics`; la pantalla muestra cómo queda armada. La ruta `medical_devices` del `readme.txt` del exe es de la plataforma anterior. OnDoctor no pide usuario ni contraseña para recibir mediciones, así que el `POST` va sin autenticación.
+- **Órdenes**: la clave y el cluster de Pusher (vienen del entorno), el canal, los nombres de los eventos de inicio y fin, y los minutos máximos de una consulta (30 por defecto, `0` sin tope). El canal se arma solo como `totem.<external_id>` con el identificador de Destino, y lo sigue mientras nadie lo cambie a mano. Tiene que ser público: un canal `private-` o `presence-` no se conecta y la pantalla lo marca. La clave del exe viejo es de otra plataforma y no recibe las órdenes de OnDoctor.
 - **Plaqueta**: la ganancia y el modo de ECG, la ganancia de respiración, el modo de presión y la presión de inflado. La ganancia y el modo se aplican apenas se guardan, sin reconectar.
 
 Todo queda guardado en la tablet. La pantalla también muestra los signos vitales, si la plaqueta está funcional, el último dato, la conexión con Pusher, el termómetro, el relé y el resultado del último envío.

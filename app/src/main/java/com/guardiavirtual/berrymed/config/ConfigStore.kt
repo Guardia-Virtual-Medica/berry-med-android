@@ -39,6 +39,7 @@ class ConfigStore(private val context: Context) {
 
     suspend fun save(config: BerryConfig) {
         context.store.edit { prefs ->
+            prefs[ENVIRONMENT] = config.environment
             prefs[API_URL] = config.apiBaseUrl
             prefs[TOTEM] = config.totemId
             prefs[ENDPOINT] = config.apiEndpoint
@@ -58,14 +59,24 @@ class ConfigStore(private val context: Context) {
         }
     }
 
-    private fun Preferences.toConfig(): BerryConfig = BerryConfig(
-        apiBaseUrl = this[API_URL].orEmpty(),
+    private fun Preferences.toConfig(): BerryConfig {
+        val saved = this[ENVIRONMENT]
+        if (saved != null) return toConfig(Environment.fromKey(saved), keepAddresses = true)
+        // Guardada antes del selector: la dirección y la clave se cargaban a mano y
+        // ahí estaban los errores. Se toman las del entorno que corresponde.
+        return toConfig(Environment.guess(this[API_URL]), keepAddresses = false)
+    }
+
+    /** Lo que nunca se guardó, o lo anterior al selector, toma el valor del entorno. */
+    private fun Preferences.toConfig(environment: Environment, keepAddresses: Boolean): BerryConfig = BerryConfig(
+        environment = environment.key,
+        apiBaseUrl = this[API_URL]?.takeIf { keepAddresses } ?: environment.apiBaseUrl,
         totemId = this[TOTEM].orEmpty(),
         apiEndpoint = this[ENDPOINT] ?: "metrics",
         apiUsername = this[USER].orEmpty(),
         apiPassword = this[PASSWORD].orEmpty(),
-        pusherKey = this[PUSHER_KEY].orEmpty(),
-        pusherCluster = this[CLUSTER] ?: "us2",
+        pusherKey = this[PUSHER_KEY]?.takeIf { keepAddresses } ?: environment.pusherKey,
+        pusherCluster = this[CLUSTER]?.takeIf { keepAddresses } ?: environment.pusherCluster,
         publicChannel = this[CHANNEL].orEmpty(),
         startEventName = this[START] ?: "start-monitoring",
         stopEventName = this[STOP] ?: "stop-monitoring",
@@ -78,6 +89,7 @@ class ConfigStore(private val context: Context) {
     )
 
     companion object {
+        private val ENVIRONMENT = stringPreferencesKey("environment")
         private val API_URL = stringPreferencesKey("api_url")
         private val TOTEM = stringPreferencesKey("totem_id")
         private val ENDPOINT = stringPreferencesKey("api_endpoint")

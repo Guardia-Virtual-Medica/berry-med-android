@@ -4,13 +4,14 @@ package com.guardiavirtual.berrymed.config
 import com.guardiavirtual.berrymed.protocol.DeviceTuning
 
 data class BerryConfig(
-    val apiBaseUrl: String = "",
+    val environment: String = Environment.Prod.key,
+    val apiBaseUrl: String = Environment.Prod.apiBaseUrl,
     val totemId: String = "",
     val apiEndpoint: String = "metrics",
     val apiUsername: String = "",
     val apiPassword: String = "",
-    val pusherKey: String = "",
-    val pusherCluster: String = "us2",
+    val pusherKey: String = Environment.Prod.pusherKey,
+    val pusherCluster: String = Environment.Prod.pusherCluster,
     val publicChannel: String = "",
     val startEventName: String = "start-monitoring",
     val stopEventName: String = "stop-monitoring",
@@ -40,16 +41,14 @@ data class BerryConfig(
     fun channelIsPublic(): Boolean =
         !publicChannel.startsWith("private-") && !publicChannel.startsWith("presence-")
 
-    fun postReady(): Boolean =
-        metricsUrl() != null && apiUsername.isNotBlank() && apiPassword.isNotBlank()
+    /** OnDoctor no pide usuario ni contraseña: si están vacíos, el POST va sin autenticación. */
+    fun postReady(): Boolean = metricsUrl() != null
 
     fun missingFields(): List<String> {
         val missing = ArrayList<String>()
         if (apiBaseUrl.isBlank()) missing += "URL de la API"
         if (apiBaseUrl.isNotBlank() && !hasWebScheme(apiBaseUrl)) missing += "URL de la API que empiece con https://"
         if (totemId.isBlank()) missing += "tótem"
-        if (apiUsername.isBlank()) missing += "usuario"
-        if (apiPassword.isBlank()) missing += "contraseña"
         if (pusherKey.isBlank()) missing += "clave de Pusher"
         if (publicChannel.isBlank()) missing += "canal"
         if (!channelIsPublic()) missing += "un canal público (sin private- ni presence-)"
