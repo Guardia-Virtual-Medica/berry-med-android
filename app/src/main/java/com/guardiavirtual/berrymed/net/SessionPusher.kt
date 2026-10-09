@@ -106,8 +106,12 @@ class SessionPusher(
         val cluster = config.pusherCluster.ifBlank { Environment.fromKey(config.environment).pusherCluster }
         val options = PusherOptions().setCluster(cluster).setUseTLS(true)
         val pusher = Pusher(config.pusherKey, options)
-        var bound = false
         client = pusher
+        // Se suscribe antes de conectar: la librería manda la suscripción al
+        // conectar y la repite sola en cada reconexión. Suscribirse desde el
+        // aviso de CONNECTED a veces la mandaba dos veces, según qué aviso
+        // corriera primero, y Pusher respondía "Existing subscription".
+        bind(pusher, config)
         pusher.connect(object : ConnectionEventListener {
             override fun onConnectionStateChange(change: ConnectionStateChange) {
                 // Corre en un hilo de la librería: una excepción acá cierra la app.
@@ -124,10 +128,6 @@ class SessionPusher(
                     stuck.onState(down = state == ConnectionState.CONNECTING, now = now)
                     listener.onConnection(state == ConnectionState.CONNECTED)
                     log("[PUSHER] $state")
-                    if (state == ConnectionState.CONNECTED && !bound) {
-                        bind(pusher, config)
-                        bound = true
-                    }
                 } catch (error: Exception) {
                     log("[PUSHER] Error al procesar el cambio de estado: $error")
                 }
