@@ -189,6 +189,7 @@ class BerryLink(
         lastDataAtNano = silentSince
         try {
             while (running) {
+                val readStartedAt = System.nanoTime()
                 val count = try {
                     handle.read(buffer, 300)
                 } catch (error: IOException) {
@@ -218,6 +219,7 @@ class BerryLink(
                         return End.Silence
                     }
                     checkNibpTimeout()
+                    pauseIfReadReturnedAtOnce(readStartedAt)
                     continue
                 }
                 silentSince = System.nanoTime()
@@ -229,8 +231,9 @@ class BerryLink(
                 try {
                     parser.addData(buffer.copyOf(count))
                 } catch (error: Exception) {
+                    // Se pierden los bytes pendientes, no la presión ni los signos ya medidos.
                     log("[USB] Trama descartada: $error")
-                    parser.resetData()
+                    parser.dropPending()
                 }
                 checkNibpTimeout()
                 applyTuningIfChanged()
@@ -291,6 +294,11 @@ class BerryLink(
      * llama pueda reintentar enseguida. Sin relé, o con el relé sin permiso,
      * devuelve true: reintentar no cambiaría nada hasta que alguien lo resuelva.
      */
+    /** Un endpoint trabado puede devolver 0 sin esperar: sin esto el hilo gira sin pausa. */
+    private fun pauseIfReadReturnedAtOnce(startedAt: Long) {
+        if (System.nanoTime() - startedAt < EMPTY_READ_PAUSE_MS * 1_000_000L) sleep(EMPTY_READ_PAUSE_MS)
+    }
+
     private fun powerCycle(reason: String): Boolean {
         if (!relay.plugged()) {
             log("[WATCHDOG] $reason. No hay relé: no se corta la alimentación.")
@@ -325,7 +333,7 @@ class BerryLink(
 
     private fun checkNibpTimeout() {
         if (!nibpRunning) return
-        if (System.nanoTime() - nibpStartedAt > 90L * 1_000_000_000L) {
+        if (System.nanoTime() - nibpStartedAt > NIBP_TIMEOUT_NANOS) {
             log("[NIBP] Timeout sin cierre")
             stopNibp()
         }
@@ -376,6 +384,14 @@ class BerryLink(
 
         /** Entre un corte y el siguiente, para que el PM6750 tenga tiempo de arrancar. */
         const val RELAY_COOLDOWN_NANOS = 60L * 1_000_000_000L
+
+        /**
+         * Una medición de presión dura unos 40 s; con reinflado puede pasar de
+         * 90. Recién a los 3 minutos se da por colgada y se desinfla el manguito.
+         */
+        const val NIBP_TIMEOUT_NANOS = 180L * 1_000_000_000L
+
+        const val EMPTY_READ_PAUSE_MS = 50L
 
         /** Fallos seguidos al abrir un puerto de ST antes de tratarlo como plaqueta trabada. */
         const val OPEN_FAILURES_BEFORE_CUT = 3

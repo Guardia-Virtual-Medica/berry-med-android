@@ -88,12 +88,19 @@ class ThermometerLink(
         val pending = StringBuilder()
         val buffer = ByteArray(256)
         while (running && hub.isPresent(handle.device)) {
+            val readStartedAt = System.nanoTime()
             val count = try {
                 handle.read(buffer, 500)
             } catch (_: IOException) {
                 break
             }
-            if (count <= 0) continue
+            if (count <= 0) {
+                // Un endpoint trabado puede devolver 0 sin esperar: sin esto el hilo gira sin pausa.
+                if (System.nanoTime() - readStartedAt < BerryLink.EMPTY_READ_PAUSE_MS * 1_000_000L) {
+                    sleep(BerryLink.EMPTY_READ_PAUSE_MS)
+                }
+                continue
+            }
             val chunk = buffer.copyOf(count)
             if (BerryLink.hasHeader(chunk)) {
                 // Tramas 55 AA: es una plaqueta. Se le devuelve a BerryLink.

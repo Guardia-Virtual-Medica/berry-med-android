@@ -14,7 +14,11 @@ sealed class PostOutcome {
     data class Failed(val message: String) : PostOutcome()
 }
 
-/** POST de métricas. Tres intentos; un código distinto de 200 descarta el paquete. */
+/**
+ * POST de métricas. Hasta tres intentos, igual que el monitor de Windows: un
+ * error de red espera medio segundo y un código distinto de 200 reintenta
+ * enseguida. Después el paquete se descarta y el siguiente lleva datos nuevos.
+ */
 class MetricsPoster {
     private val client = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)

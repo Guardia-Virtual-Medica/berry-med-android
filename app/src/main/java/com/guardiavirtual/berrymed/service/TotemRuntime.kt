@@ -115,9 +115,7 @@ class TotemRuntime(context: Context) {
     private fun postLoop() {
         while (true) {
             try {
-                if (sessionActive && sessionExpired(sessionActive, sessionStartNano, System.nanoTime(), config.maxSessionMinutes)) {
-                    stopSession("sin stop tras ${config.maxSessionMinutes} min")
-                }
+                stopSessionIfExpired()
                 val window = synchronized(sessionLock) {
                     if (!sessionActive) null else parser.takePayload()
                 }
@@ -154,8 +152,17 @@ class TotemRuntime(context: Context) {
         publish()
     }
 
-    private fun stopSession(reason: String) {
+    /** Se mira dentro del lock: un inicio que llega justo antes no se corta. */
+    private fun stopSessionIfExpired() {
+        val minutes = config.maxSessionMinutes
+        stopSession("sin stop tras $minutes min") {
+            sessionExpired(sessionActive, sessionStartNano, System.nanoTime(), minutes)
+        }
+    }
+
+    private fun stopSession(reason: String, stillDue: () -> Boolean = { true }) {
         synchronized(sessionLock) {
+            if (!stillDue()) return
             sessionActive = false
             sessionStartNano = 0L
             berry.stopNibp()
