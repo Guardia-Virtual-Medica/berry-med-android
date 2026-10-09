@@ -12,8 +12,9 @@ import java.io.IOException
  * Abre la plaqueta, manda la secuencia de arranque y lee tramas.
  * Si el puerto de ST abre y no aparecen cabeceras 55 AA, o si después se queda
  * muda 20 s, corta la alimentación con el relé. Si el cable desaparece, no lo
- * toca. Un puerto de otro fabricante que no contesta no es la plaqueta: queda
- * para el termómetro y no dispara el relé.
+ * toca enseguida: sólo si la plaqueta no vuelve a aparecer en 3 minutos. Un
+ * puerto de otro fabricante que no contesta no es la plaqueta: queda para el
+ * termómetro y no dispara el relé.
  */
 class BerryLink(
     private val hub: UsbHub,
@@ -55,6 +56,8 @@ class BerryLink(
                         }
                     } finally {
                         release(found.handle)
+                        // Mientras leía, acquire() no corrió: la plaqueta se vio hasta recién.
+                        stSeenAt = System.nanoTime()
                     }
                 }
                 Acquire.None -> sleep(5_000)
@@ -260,20 +263,23 @@ class BerryLink(
      */
     private fun cutIfLongAbsent(now: Long) {
         if (!absentCutDue(stSeenAt, absentCutAt, now)) return
-        absentCutAt = now
-        powerCycle("la plaqueta no aparece en el USB hace ${(now - stSeenAt) / 60_000_000_000L} min")
+        // Si el enfriamiento no dejó cortar, el turno no se gasta: se reintenta en la vuelta siguiente.
+        if (powerCycle("la plaqueta no aparece en el USB hace ${(now - stSeenAt) / 60_000_000_000L} min")) {
+            absentCutAt = now
+        }
     }
 
-    private fun powerCycle(reason: String) {
+    /** Devuelve true si se le pidió el corte al relé, salga bien o no. */
+    private fun powerCycle(reason: String): Boolean {
         if (!relay.plugged()) {
             log("[WATCHDOG] $reason. No hay relé: no se corta la alimentación.")
-            return
+            return true
         }
         val now = System.nanoTime()
         if (!relayCooldownOver(lastPowerCycleAt, now)) {
             val seconds = (now - lastPowerCycleAt) / 1_000_000_000L
             log("[WATCHDOG] $reason. El último corte fue hace $seconds s: se espera para no cortarla mientras arranca.")
-            return
+            return false
         }
         log("[WATCHDOG] $reason. Corte de 12 V durante 5 s.")
         lastPowerCycleAt = now
@@ -283,6 +289,7 @@ class BerryLink(
             UsbRelay.Restart.PowerNotRestored ->
                 log("[WATCHDOG] Se cortó pero el relé no devolvió los 12 V. Se reintenta mientras no aparezca la plaqueta.")
         }
+        return true
     }
 
     /** La ganancia y el modo se aplican apenas se guardan, sin esperar a reconectar. */
