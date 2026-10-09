@@ -40,13 +40,6 @@ class EnvironmentTest {
     }
 
     @Test
-    fun aKnownPusherKeyAlwaysGetsItsCluster() {
-        assertEquals("sa1", Environment.clusterFor("b5b07bcf4eb9935b29c7", "us2"))
-        assertEquals("us2", Environment.clusterFor("adac7a549b509b95c930", "sa1"))
-        assertEquals("eu", Environment.clusterFor("otra-clave", "eu"))
-    }
-
-    @Test
     fun theChannelFollowsTheTotemId() {
         assertEquals("totem.b81e485b", defaultChannel(" b81e485b "))
         assertEquals("", defaultChannel(""))

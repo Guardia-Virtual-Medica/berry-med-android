@@ -28,14 +28,6 @@ enum class Environment(
     companion object {
         fun fromKey(key: String?): Environment = entries.firstOrNull { it.key == key } ?: Prod
 
-        /**
-         * Una app de Pusher vive en un solo cluster: con la clave de un entorno
-         * conocido, el cluster es el de ese entorno. Corrige el us2 que la 1.1.0
-         * guardaba para producción.
-         */
-        fun clusterFor(pusherKey: String, cluster: String): String =
-            entries.firstOrNull { it.pusherKey == pusherKey.trim() }?.pusherCluster ?: cluster
-
         /** Una configuración guardada antes del selector no tiene entorno: se deduce de su dirección. */
         fun guess(apiBaseUrl: String?): Environment =
             if (apiBaseUrl.orEmpty().lowercase().contains("portal-dev.")) Dev else Prod

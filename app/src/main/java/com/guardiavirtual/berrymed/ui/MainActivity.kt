@@ -117,7 +117,7 @@ class MainActivity : AppCompatActivity() {
         binding.apiUrl.setText(config.apiBaseUrl)
         binding.totemId.setText(config.totemId)
         binding.pusherKey.setText(config.pusherKey)
-        binding.pusherCluster.setText(config.pusherCluster)
+        binding.pusherCluster.setText(config.pusherCluster, false)
         binding.channel.setText(config.publicChannel)
         binding.startEvent.setText(config.startEventName)
         binding.stopEvent.setText(config.stopEventName)
@@ -136,7 +136,7 @@ class MainActivity : AppCompatActivity() {
         val environment = Environment.fromKey(value(binding.environment, ENVIRONMENT_VALUES))
         binding.apiUrl.setText(environment.apiBaseUrl)
         binding.pusherKey.setText(environment.pusherKey)
-        binding.pusherCluster.setText(environment.pusherCluster)
+        binding.pusherCluster.setText(environment.pusherCluster, false)
     }
 
     /** El canal sigue al identificador del tótem mientras nadie lo haya cambiado a mano. */
