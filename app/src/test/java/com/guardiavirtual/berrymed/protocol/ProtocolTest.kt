@@ -72,6 +72,15 @@ class ProtocolTest {
     }
 
     @Test
+    fun aHeaderAtTheVeryEndOfARead() {
+        val parser = BmDataParser()
+        val good = frame(0xFE, intArrayOf(42))
+        parser.addData(byteArrayOf(0x12, 0x34) + good.copyOfRange(0, 2))
+        parser.addData(good.copyOfRange(2, good.size))
+        assertEquals(listOf(42), parser.takePayload().spo2)
+    }
+
+    @Test
     fun spo2ErrorDoesNotEraseAGoodPulse() {
         val parser = BmDataParser()
         parser.addData(frame(0x04, intArrayOf(0x00, 127, 72)))

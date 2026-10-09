@@ -38,24 +38,34 @@ class ThermometerLink(
 
     fun run() {
         while (running) {
-            val handle = acquire()
-            if (handle == null) {
-                sleep(2_000)
-                continue
-            }
+            // Una excepción que escape mata este hilo y, en Android, la app entera.
             try {
-                readLines(handle)
-            } finally {
-                connected = false
-                measured = false
-                try {
-                    handle.close()
-                } catch (_: Exception) {
-                }
-                hub.unmark(handle.device.deviceId)
+                connectAndRead()
+            } catch (error: Exception) {
+                log("[THERM] Error inesperado: $error")
+                sleep(2_000)
             }
-            if (running) sleep(2_000)
         }
+    }
+
+    private fun connectAndRead() {
+        val handle = acquire()
+        if (handle == null) {
+            sleep(2_000)
+            return
+        }
+        try {
+            readLines(handle)
+        } finally {
+            connected = false
+            measured = false
+            try {
+                handle.close()
+            } catch (_: Exception) {
+            }
+            hub.unmark(handle.device.deviceId)
+        }
+        if (running) sleep(2_000)
     }
 
     private fun acquire(): SerialHandle? {

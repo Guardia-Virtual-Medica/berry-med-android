@@ -36,6 +36,11 @@ class BmDataParser {
                     raw += last
                     break
                 }
+                if (start + 2 >= raw.size) {
+                    // La cabecera llegó al final de esta lectura: el largo viene en la próxima.
+                    dropUntil(start)
+                    break
+                }
                 val n = raw[start + 2]
                 if (n < 3) {
                     raw.removeAt(start)

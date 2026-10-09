@@ -47,23 +47,33 @@ class BerryLink(
 
     fun run() {
         while (running) {
-            when (val found = acquire()) {
-                is Acquire.Ready -> {
-                    try {
-                        when (readLoop(found.handle)) {
-                            End.UsbLost -> sleep(2_000)
-                            End.Silence, End.Stopped -> Unit
-                        }
-                    } finally {
-                        release(found.handle)
-                        // Mientras leía, acquire() no corrió: la plaqueta se vio hasta recién,
-                        // y si vuelve a faltar merece un corte a los 3 minutos, no a los 30.
-                        stSeenAt = System.nanoTime()
-                        absentCutAt = 0L
-                    }
-                }
-                Acquire.None -> sleep(5_000)
+            // Una excepción que escape mata este hilo y, en Android, la app entera.
+            try {
+                connectAndRead()
+            } catch (error: Exception) {
+                log("[USB] Error inesperado: $error")
+                sleep(2_000)
             }
+        }
+    }
+
+    private fun connectAndRead() {
+        when (val found = acquire()) {
+            is Acquire.Ready -> {
+                try {
+                    when (readLoop(found.handle)) {
+                        End.UsbLost -> sleep(2_000)
+                        End.Silence, End.Stopped -> Unit
+                    }
+                } finally {
+                    release(found.handle)
+                    // Mientras leía, acquire() no corrió: la plaqueta se vio hasta recién,
+                    // y si vuelve a faltar merece un corte a los 3 minutos, no a los 30.
+                    stSeenAt = System.nanoTime()
+                    absentCutAt = 0L
+                }
+            }
+            Acquire.None -> sleep(5_000)
         }
     }
 
@@ -216,7 +226,12 @@ class BerryLink(
                     log("[USB] Volvieron los datos")
                     warned = false
                 }
-                parser.addData(buffer.copyOf(count))
+                try {
+                    parser.addData(buffer.copyOf(count))
+                } catch (error: Exception) {
+                    log("[USB] Trama descartada: $error")
+                    parser.resetData()
+                }
                 checkNibpTimeout()
                 applyTuningIfChanged()
             }
