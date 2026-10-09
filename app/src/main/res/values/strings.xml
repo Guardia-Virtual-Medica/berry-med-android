@@ -38,6 +38,7 @@
     <string name="next">Siguiente</string>
     <string name="back">Atrás</string>
     <string name="missing_api">Falta la dirección del servicio.</string>
+    <string name="missing_scheme">La dirección tiene que empezar con https://</string>
     <string name="missing_totem">Falta el identificador del tótem.</string>
     <string name="missing_user">Falta el usuario.</string>
     <string name="missing_password">Falta la contraseña.</string>
@@ -49,6 +50,7 @@
     <string name="save_failed">No se pudo guardar la configuración. Probá de nuevo.</string>
     <string name="load_failed">No se pudo leer la configuración guardada. Revisá los datos antes de guardar.</string>
     <string name="battery">Evitar que se duerma</string>
+    <string name="battery_unavailable">Esta tablet no tiene el ajuste de batería. Buscalo a mano en Ajustes, Batería.</string>
     <string name="usb_permission">Pedir permiso USB</string>
     <string name="help_usb_default">Al aceptar el permiso USB, marcá «Usar de forma predeterminada» para la plaqueta, el termómetro y el relé. Si no, Android lo vuelve a pedir después de cada reinicio o corte del relé.</string>
 </resources>

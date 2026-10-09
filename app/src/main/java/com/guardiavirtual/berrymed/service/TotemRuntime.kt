@@ -134,7 +134,7 @@ class TotemRuntime(context: Context) {
                 }
             } catch (error: Exception) {
                 log("[DATA] Error en el envío: $error")
-                lastPost = "Error al enviar"
+                lastPost = "Error al enviar: ${error.message ?: error.javaClass.simpleName}"
             }
             sleep(1_000)
         }

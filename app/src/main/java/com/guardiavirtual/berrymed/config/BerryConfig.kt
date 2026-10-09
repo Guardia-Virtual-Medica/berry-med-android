@@ -30,7 +30,7 @@ data class BerryConfig(
     )
 
     fun metricsUrl(): String? {
-        if (apiBaseUrl.isBlank() || totemId.isBlank()) return null
+        if (apiBaseUrl.isBlank() || totemId.isBlank() || !hasWebScheme(apiBaseUrl)) return null
         return buildMetricsUrl(apiBaseUrl, totemId, apiEndpoint)
     }
 
@@ -46,6 +46,7 @@ data class BerryConfig(
     fun missingFields(): List<String> {
         val missing = ArrayList<String>()
         if (apiBaseUrl.isBlank()) missing += "URL de la API"
+        if (apiBaseUrl.isNotBlank() && !hasWebScheme(apiBaseUrl)) missing += "URL de la API que empiece con https://"
         if (totemId.isBlank()) missing += "tótem"
         if (apiUsername.isBlank()) missing += "usuario"
         if (apiPassword.isBlank()) missing += "contraseña"
@@ -54,6 +55,12 @@ data class BerryConfig(
         if (!channelIsPublic()) missing += "un canal público (sin private- ni presence-)"
         return missing
     }
+}
+
+/** Sin http:// o https:// el POST no puede armar la dirección y no sale nunca. */
+fun hasWebScheme(url: String): Boolean {
+    val clean = url.trim().lowercase()
+    return clean.startsWith("https://") || clean.startsWith("http://")
 }
 
 fun buildMetricsUrl(base: String, totemId: String, endpoint: String = "metrics"): String {

@@ -2,6 +2,7 @@
 package com.guardiavirtual.berrymed.ui
 
 import android.Manifest
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -25,6 +26,7 @@ import com.guardiavirtual.berrymed.BerryMedApp
 import com.guardiavirtual.berrymed.R
 import com.guardiavirtual.berrymed.config.BerryConfig
 import com.guardiavirtual.berrymed.config.buildMetricsUrl
+import com.guardiavirtual.berrymed.config.hasWebScheme
 import com.guardiavirtual.berrymed.databinding.ActivityMainBinding
 import com.guardiavirtual.berrymed.service.MonitorService
 import com.guardiavirtual.berrymed.service.TotemRuntime
@@ -149,6 +151,7 @@ class MainActivity : AppCompatActivity() {
     private fun missingField(index: Int): Int? = when (index) {
         0 -> when {
             binding.apiUrl.text.isNullOrBlank() -> R.string.missing_api
+            !hasWebScheme(binding.apiUrl.text.toString()) -> R.string.missing_scheme
             binding.totemId.text.isNullOrBlank() -> R.string.missing_totem
             binding.apiUser.text.isNullOrBlank() -> R.string.missing_user
             binding.apiPassword.text.isNullOrBlank() -> R.string.missing_password
@@ -248,12 +251,22 @@ class MainActivity : AppCompatActivity() {
         view.setTextColor(getColor(if (empty) R.color.vital_dim else R.color.vital_on))
     }
 
+    /** Algunas tablets no tienen el diálogo directo: se va a la lista general, y si tampoco está, se avisa. */
     private fun askBatteryExemption() {
-        val intent = Intent(
+        val direct = Intent(
             Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
             Uri.parse("package:$packageName"),
         )
-        startActivity(intent)
+        val list = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+        for (intent in listOf(direct, list)) {
+            try {
+                startActivity(intent)
+                return
+            } catch (_: ActivityNotFoundException) {
+            }
+        }
+        binding.formMessage.setTextColor(getColor(R.color.warn))
+        binding.formMessage.setText(R.string.battery_unavailable)
     }
 
     private fun select(group: ChipGroup, values: Array<String>, selected: String) {

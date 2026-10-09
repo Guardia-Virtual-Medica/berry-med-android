@@ -15,6 +15,15 @@ class BerryConfigTest {
     }
 
     @Test
+    fun aUrlWithoutSchemeIsNotPostedAndTheScreenSaysWhy() {
+        val config = BerryConfig(apiBaseUrl = "api.ejemplo.com/v1", totemId = "t1", apiUsername = "u", apiPassword = "p")
+        assertFalse(config.postReady())
+        assertTrue(config.missingFields().any { "https://" in it })
+        assertTrue(config.copy(apiBaseUrl = " HTTPS://api.ejemplo.com/v1").postReady())
+        assertTrue(config.copy(apiBaseUrl = "http://10.0.0.5/v1").postReady())
+    }
+
+    @Test
     fun aPrivateOrPresenceChannelIsNotConnectedAndTheScreenSaysWhy() {
         for (channel in listOf("private-totem.01", "presence-totem.01")) {
             val config = ready.copy(publicChannel = channel)
