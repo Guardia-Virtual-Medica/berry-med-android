@@ -124,11 +124,14 @@ class UsbRolesTest {
     }
 
     @Test
+    fun aPressureThatTakesLongToStartInflatingIsNotCut() {
+        assertFalse(BerryLink.nibpWentQuiet(lastFrameAt = 0, now = 170 * second))
+    }
+
+    @Test
     fun aPressureMeasurementThatStopsReportingIsOver() {
-        assertFalse(BerryLink.nibpWentQuiet(startedAt = 0, lastFrameAt = 0, now = 14 * second))
-        assertTrue(BerryLink.nibpWentQuiet(startedAt = 0, lastFrameAt = 0, now = 16 * second))
-        assertFalse(BerryLink.nibpWentQuiet(startedAt = 0, lastFrameAt = 40 * second, now = 50 * second))
-        assertTrue(BerryLink.nibpWentQuiet(startedAt = 0, lastFrameAt = 40 * second, now = 56 * second))
+        assertFalse(BerryLink.nibpWentQuiet(lastFrameAt = 40 * second, now = 69 * second))
+        assertTrue(BerryLink.nibpWentQuiet(lastFrameAt = 40 * second, now = 71 * second))
     }
 
     @Test

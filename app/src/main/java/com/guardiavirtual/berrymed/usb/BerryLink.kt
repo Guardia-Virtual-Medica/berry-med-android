@@ -343,6 +343,8 @@ class BerryLink(
      * El módulo manda el estado de la presión dos veces por segundo mientras
      * mide y se calla al terminar. Un final que no figura entre los terminales
      * (error, interferencia, sin resultado) se nota porque deja de llegar.
+     * Antes del primer estado no se mide el silencio: el equipo a veces tarda
+     * en empezar a inflar, y ahí sólo corre el tope de [NIBP_TIMEOUT_NANOS].
      */
     private fun checkNibpTimeout() {
         if (!nibpRunning) return
@@ -352,7 +354,7 @@ class BerryLink(
             stopNibp()
             return
         }
-        if (nibpWentQuiet(nibpStartedAt, lastNibpFrameAt, now)) {
+        if (nibpWentQuiet(lastNibpFrameAt, now)) {
             log("[NIBP] El equipo dejó de informar la presión; se da por terminada")
             stopNibp()
         }
@@ -405,18 +407,20 @@ class BerryLink(
         const val RELAY_COOLDOWN_NANOS = 60L * 1_000_000_000L
 
         /**
-         * Una medición de presión dura unos 40 s; con reinflado puede pasar de
-         * 90. Recién a los 3 minutos se da por colgada y se desinfla el manguito.
+         * Una medición puede tardar bastante más de 40 s, contando lo que
+         * demora en empezar a inflar y un reinflado. Recién a los 3 minutos
+         * se da por colgada y se desinfla el manguito.
          */
         const val NIBP_TIMEOUT_NANOS = 180L * 1_000_000_000L
 
         const val EMPTY_READ_PAUSE_MS = 50L
 
-        /** Sin estado de presión durante este tiempo, la medición terminó (en la captura llega dos veces por segundo). */
-        const val NIBP_QUIET_NANOS = 15L * 1_000_000_000L
+        /** Ya informando, sin estado durante este tiempo la medición terminó (mientras mide llega dos veces por segundo). */
+        const val NIBP_QUIET_NANOS = 30L * 1_000_000_000L
 
-        fun nibpWentQuiet(startedAt: Long, lastFrameAt: Long, now: Long): Boolean =
-            now - maxOf(startedAt, lastFrameAt) > NIBP_QUIET_NANOS
+        /** `lastFrameAt == 0`: el equipo todavía no informó nada de esta medición. */
+        fun nibpWentQuiet(lastFrameAt: Long, now: Long): Boolean =
+            lastFrameAt != 0L && now - lastFrameAt > NIBP_QUIET_NANOS
 
         /** Fallos seguidos al abrir un puerto de ST antes de tratarlo como plaqueta trabada. */
         const val OPEN_FAILURES_BEFORE_CUT = 3
