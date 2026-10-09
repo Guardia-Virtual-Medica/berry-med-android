@@ -16,7 +16,9 @@ Adelante, en la tablet, va Google Chrome con la plataforma médica. Berry Med tr
    | `stop-monitoring` (configurable) | Deja de enviar y limpia. |
    | `start-blood-pressure` (fijo) | Le pide al equipo una medición de presión. |
 
-4. **Durante la consulta**, una vez por segundo hace un `POST` a `{URL base}/{tótem}/metrics` con autenticación básica. Lleva todo lo que llegó desde el envío anterior: las 7 derivaciones de ECG (unas 250 muestras por segundo cada una), la onda de SpO₂, la de respiración, los latidos y los signos vitales. No manda nada si no hay ningún dato útil. Si la API no contesta `200`, reintenta hasta 3 veces y pasa al envío siguiente.
+4. **Durante la consulta**, una vez por segundo hace un `POST` a `{URL base}/{tótem}/metrics`. Lleva todo lo que llegó desde el envío anterior: las 7 derivaciones de ECG (unas 250 muestras por segundo cada una), la onda de SpO₂, la de respiración, los latidos y los signos vitales. No manda nada si no hay ningún dato útil. Ante un error de red o un `5xx` reintenta hasta 3 veces; un `4xx` no se reintenta.
+   - **Si se perdió el inicio.** El `start-monitoring` sale cuando el profesional entra a la videollamada. Si en ese momento la tablet no estaba escuchando (se conectó tarde, se reinició o se actualizó), mientras espera manda cada 10 segundos un `POST` de prueba con el último segundo de mediciones. Si la plataforma responde `200`, hay una toma de signos abierta y empieza a enviar cada segundo; si responde `404`, sigue esperando. Después de un `stop-monitoring` espera 90 segundos antes de volver a probar, porque la plataforma sigue aceptando paquetes un minuto después del fin.
+   - **Si se perdió el fin.** Con la sesión andando, tres respuestas `404` seguidas quieren decir que la toma se cerró, y deja de enviar.
 5. **La consulta se corta sola a los 30 minutos si no llega el evento de fin.** Es una red de seguridad para cuando el fin no llega nunca (por ejemplo, se cerró la pestaña o se cayó Pusher): sin ella la tablet seguiría enviando hasta el próximo inicio. Los minutos se cambian en la pantalla; `0` deja la consulta sin tope. Cada inicio limpia todo antes de empezar.
 6. **La presión** arranca con `start-blood-pressure` si la plaqueta está conectada y no hay otra medición en curso. Un pedido que no se puede atender no borra la presión que se está mostrando. El equipo informa el estado de la medición dos veces por segundo mientras mide; la medición se da por terminada cuando:
    - el equipo informa un resultado final;
@@ -39,6 +41,7 @@ Van los tres a un hub USB con alimentación.
 | Qué pasa | Qué hace la app |
 |---|---|
 | Se reinicia la tablet o se instala una versión nueva | Arranca el servicio sola. Con "Usar de forma predeterminada" marcado, Android le da el permiso USB a cada equipo sin preguntar. |
+| Se perdió el `start-monitoring` o el `stop-monitoring` | Lo detecta por la respuesta de la plataforma al `POST` de prueba (cada 10 s mientras espera) o a los envíos (tres `404` seguidos). Ver el punto 4 de [Cómo funciona](#cómo-funciona). |
 | Se corta el wifi | La librería de Pusher reintenta unos 85 s y se rinde. A los 30 s la app le pide otra tanda, y así mientras no haya conexión. Si queda más de 5 min conectando sin respuesta, arma una conexión nueva (cada vez espera el doble, hasta una hora). |
 | La plaqueta deja de mandar datos 20 s | Corta los 12 V durante 5 s con el relé y vuelve a conectar. |
 | El puerto de la plaqueta abre pero no transmite, no abre, o no acepta la secuencia de arranque tres veces seguidas | Igual: corte de 5 s con el relé. |

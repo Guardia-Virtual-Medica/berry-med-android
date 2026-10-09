@@ -38,7 +38,11 @@ class TotemRuntime(context: Context) {
     private val berry = BerryLink(hub, relay, parser, { config.tuning() }, ::log)
     private val thermo = ThermometerLink(hub, { berry.connected }, ::log)
     private val poster = MetricsPoster()
+    private val watch = SessionWatch()
     private val sessionLock = Any()
+
+    /** Cambia con cada inicio y cada fin: la respuesta de un POST viejo no decide nada. */
+    private var sessionEpoch = 0L
 
     @Volatile var config: BerryConfig = BerryConfig()
     @Volatile var sessionActive: Boolean = false
@@ -50,7 +54,7 @@ class TotemRuntime(context: Context) {
 
     private val pusher = SessionPusher(::log, object : SessionPusher.Listener {
         override fun onStart() = startSession()
-        override fun onStop() = stopSession("evento stop")
+        override fun onStop() = stopSession("evento stop", byPlatform = true)
         override fun onBloodPressure() {
             // Sólo si arrancó: un pedido rechazado no borra la presión que se está mostrando.
             if (berry.startNibp()) parser.resetNibp()
@@ -115,28 +119,50 @@ class TotemRuntime(context: Context) {
         while (true) {
             try {
                 stopSessionIfExpired()
-                val window = synchronized(sessionLock) {
-                    if (!sessionActive) null else parser.takePayload()
-                }
-                if (window != null) {
-                    val cfg = config
-                    applyThermometer(window.vitalSigns, thermo.latest())
-                    val url = cfg.metricsUrl()
-                    if (cfg.postReady() && url != null && isValidSample(window)) {
-                        log("[DATA] ${summarize(window)}")
-                        lastPost = when (val outcome = poster.post(url, cfg.apiUsername, cfg.apiPassword, metricsEnvelope(System.currentTimeMillis(), window))) {
-                            PostOutcome.Ok -> "Último envío correcto"
-                            is PostOutcome.Http -> "La API respondió ${outcome.code}"
-                            is PostOutcome.Failed -> "No se pudo enviar: ${outcome.message}"
-                        }
-                    }
-                }
+                sendOnce()
             } catch (error: Exception) {
                 log("[DATA] Error en el envío: $error")
                 lastPost = "Error al enviar: ${error.message ?: error.javaClass.simpleName}"
             }
             sleep(1_000)
         }
+    }
+
+    /**
+     * Con sesión manda cada segundo. Sin sesión las ondas se descartan cada
+     * segundo, y cada 10 s se prueba con el último: si la plataforma tiene una
+     * toma abierta, la tablet se perdió el start-monitoring y empieza a enviar.
+     */
+    private fun sendOnce() {
+        val now = System.nanoTime()
+        val (active, epoch, window) = synchronized(sessionLock) {
+            Triple(sessionActive, sessionEpoch, parser.takePayload())
+        }
+        if (!active && !watch.probeDue(now)) return
+        val cfg = config
+        val url = cfg.metricsUrl() ?: return
+        if (!cfg.postReady() || !isValidSample(window)) return
+        if (!active) watch.probed(now)
+        applyThermometer(window.vitalSigns, thermo.latest())
+        log("[DATA] ${if (active) "" else "prueba "}${summarize(window)}")
+        val outcome = poster.post(url, cfg.apiUsername, cfg.apiPassword, metricsEnvelope(System.currentTimeMillis(), window))
+        lastPost = describe(outcome, active)
+        // Si mientras viajaba el POST llegó un inicio o un fin, la respuesta ya no cuenta.
+        if (!active) {
+            if (outcome == PostOutcome.Ok) resumeSession(epoch)
+            return
+        }
+        if (!watch.sent(outcome)) return
+        stopSession("la plataforma no tiene la toma abierta") { sessionEpoch == epoch }
+    }
+
+    private fun describe(outcome: PostOutcome, active: Boolean): String = when {
+        outcome == PostOutcome.Ok -> "Último envío correcto"
+        outcome is PostOutcome.Http && outcome.code == 404 && !active -> "Esperando que se abra una toma de signos"
+        outcome is PostOutcome.Http && outcome.code == 404 -> "La plataforma no tiene la toma abierta (404)"
+        outcome is PostOutcome.Http -> "La API respondió ${outcome.code}"
+        outcome is PostOutcome.Failed -> "No se pudo enviar: ${outcome.message}"
+        else -> "No se pudo enviar"
     }
 
     private fun startSession() {
@@ -146,8 +172,26 @@ class TotemRuntime(context: Context) {
             thermo.resetLatest()
             sessionStartNano = System.nanoTime()
             sessionActive = true
+            sessionEpoch++
         }
+        watch.started()
         log("[SESIÓN] Envío iniciado")
+        publish()
+    }
+
+    /**
+     * La plataforma ya tenía la toma abierta y la prueba fue aceptada. No se
+     * limpia nada: lo que se acaba de mandar ya es parte de la toma.
+     */
+    private fun resumeSession(epoch: Long) {
+        synchronized(sessionLock) {
+            if (sessionActive || sessionEpoch != epoch) return
+            sessionStartNano = System.nanoTime()
+            sessionActive = true
+            sessionEpoch++
+        }
+        watch.started()
+        log("[SESIÓN] Envío iniciado: la plataforma tenía la toma abierta")
         publish()
     }
 
@@ -159,15 +203,17 @@ class TotemRuntime(context: Context) {
         }
     }
 
-    private fun stopSession(reason: String, stillDue: () -> Boolean = { true }) {
+    private fun stopSession(reason: String, byPlatform: Boolean = false, stillDue: () -> Boolean = { true }) {
         synchronized(sessionLock) {
             if (!stillDue()) return
             sessionActive = false
             sessionStartNano = 0L
+            sessionEpoch++
             berry.stopNibp()
             parser.resetData()
             thermo.resetLatest()
         }
+        watch.stopped(System.nanoTime(), byPlatform)
         log("[SESIÓN] Envío detenido ($reason)")
         publish()
     }
