@@ -20,13 +20,23 @@ enum class Environment(
     Dev(
         key = "dev",
         apiBaseUrl = "https://portal-dev.ondoctor365.com/api/v1/webhooks/totem",
-        pusherKey = "adac7a549b509b95c930",
+        pusherKey = "37b143a0f816ccba0eb2",
         pusherCluster = "sa1",
     ),
     ;
 
     companion object {
         fun fromKey(key: String?): Environment = entries.firstOrNull { it.key == key } ?: Prod
+
+        /**
+         * Claves que la app traía por defecto y resultaron ser de otra app de
+         * Pusher: se reemplazan por las del entorno al cargar la configuración.
+         * adac7a549b509b95c930 venía de los .env locales de los fronts y no es
+         * la app en la que publica el backend de dev.
+         */
+        private val outdatedKeys = mapOf("adac7a549b509b95c930" to Dev)
+
+        fun replacementFor(pusherKey: String): Environment? = outdatedKeys[pusherKey.trim()]
 
         /** Una configuración guardada antes del selector no tiene entorno: se deduce de su dirección. */
         fun guess(apiBaseUrl: String?): Environment =

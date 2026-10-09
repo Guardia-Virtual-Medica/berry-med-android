@@ -11,7 +11,7 @@ class EnvironmentTest {
         assertEquals("https://portal.ondoctor365.com/api/v1/webhooks/totem", Environment.Prod.apiBaseUrl)
         assertEquals("b5b07bcf4eb9935b29c7", Environment.Prod.pusherKey)
         assertEquals("https://portal-dev.ondoctor365.com/api/v1/webhooks/totem", Environment.Dev.apiBaseUrl)
-        assertEquals("adac7a549b509b95c930", Environment.Dev.pusherKey)
+        assertEquals("37b143a0f816ccba0eb2", Environment.Dev.pusherKey)
         assertEquals("sa1", Environment.Prod.pusherCluster)
         assertEquals("sa1", Environment.Dev.pusherCluster)
     }
@@ -37,6 +37,13 @@ class EnvironmentTest {
         assertEquals(Environment.Dev, Environment.guess("https://portal-dev.ondoctor365.com/api/v1/webhooks/totem"))
         assertEquals(Environment.Prod, Environment.guess("https://portal.ondoctor365.com/api/v1/webhooks/totem"))
         assertEquals(Environment.Prod, Environment.guess(null))
+    }
+
+    @Test
+    fun theOldDevKeyIsReplacedByTheRealOne() {
+        assertEquals(Environment.Dev, Environment.replacementFor("adac7a549b509b95c930"))
+        assertEquals(null, Environment.replacementFor("37b143a0f816ccba0eb2"))
+        assertEquals(null, Environment.replacementFor("otra-clave"))
     }
 
     @Test
