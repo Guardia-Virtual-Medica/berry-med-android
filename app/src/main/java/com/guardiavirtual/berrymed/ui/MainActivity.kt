@@ -11,6 +11,7 @@ import android.os.Looper
 import android.provider.Settings
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.content.res.ColorStateList
 import android.graphics.Typeface
 import android.view.View
@@ -26,6 +27,7 @@ import com.guardiavirtual.berrymed.config.BerryConfig
 import com.guardiavirtual.berrymed.config.buildMetricsUrl
 import com.guardiavirtual.berrymed.databinding.ActivityMainBinding
 import com.guardiavirtual.berrymed.service.MonitorService
+import com.guardiavirtual.berrymed.service.TotemRuntime
 import com.guardiavirtual.berrymed.service.TotemState
 import kotlinx.coroutines.runBlocking
 import kotlin.concurrent.thread
@@ -72,7 +74,12 @@ class MainActivity : AppCompatActivity() {
         binding.batteryButton.setOnClickListener { askBatteryExemption() }
         binding.usbButton.setOnClickListener { runtime().requestUsbPermissionAgain() }
         thread(name = "berry-config-load") {
-            val saved = runBlocking { runtime().store.load() }
+            val saved = try {
+                runBlocking { runtime().store.load() }
+            } catch (error: Exception) {
+                Log.e(TotemRuntime.TAG, "[CONFIG] No se pudo leer la configuración: $error")
+                BerryConfig()
+            }
             handler.post { fill(saved) }
         }
     }
@@ -167,10 +174,16 @@ class MainActivity : AppCompatActivity() {
         binding.formMessage.setTextColor(getColor(R.color.ink))
         binding.formMessage.setText(R.string.saving)
         thread(name = "berry-config-save") {
-            runBlocking { runtime().store.save(config) }
+            val saved = try {
+                runBlocking { runtime().store.save(config) }
+                true
+            } catch (error: Exception) {
+                Log.e(TotemRuntime.TAG, "[CONFIG] No se pudo guardar la configuración: $error")
+                false
+            }
             handler.post {
-                binding.formMessage.setTextColor(getColor(R.color.signal))
-                binding.formMessage.setText(R.string.saved)
+                binding.formMessage.setTextColor(getColor(if (saved) R.color.signal else R.color.warn))
+                binding.formMessage.setText(if (saved) R.string.saved else R.string.save_failed)
             }
         }
     }

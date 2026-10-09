@@ -56,8 +56,10 @@ class BerryLink(
                         }
                     } finally {
                         release(found.handle)
-                        // Mientras leía, acquire() no corrió: la plaqueta se vio hasta recién.
+                        // Mientras leía, acquire() no corrió: la plaqueta se vio hasta recién,
+                        // y si vuelve a faltar merece un corte a los 3 minutos, no a los 30.
                         stSeenAt = System.nanoTime()
+                        absentCutAt = 0L
                     }
                 }
                 Acquire.None -> sleep(5_000)
@@ -130,9 +132,8 @@ class BerryLink(
         val handle = hub.open(driver)
         if (handle == null) {
             hub.unmark(id)
-            return openFailed(driver)
+            return stPortFailed(driver, "no abre")
         }
-        openFailures.remove(id)
         return try {
             val early = readUntil(handle, 400) { bytes -> hasHeader(bytes) || isThermometer(bytes) }
             if (isThermometer(early)) {
@@ -157,6 +158,7 @@ class BerryLink(
                 )
                 return Probe.Skip
             }
+            openFailures.remove(id)
             appliedStartup = startup
             parser.resetData()
             connected = true
@@ -165,7 +167,7 @@ class BerryLink(
         } catch (error: Exception) {
             log("[USB] Error al preparar ${driver.device.deviceName}: $error")
             release(handle)
-            Probe.Skip
+            stPortFailed(driver, "no acepta la secuencia de arranque")
         }
     }
 
@@ -226,16 +228,16 @@ class BerryLink(
     }
 
     /**
-     * Un puerto de ST que sigue enumerado pero no abre, varias veces seguidas,
-     * es la plaqueta trabada sin contestar ni la configuración del puerto.
-     * Uno de otro fabricante, o un fallo suelto, no corta nada.
+     * Un puerto de ST que sigue enumerado pero no abre o no acepta escrituras,
+     * varias veces seguidas, es la plaqueta trabada. Uno de otro fabricante,
+     * o un fallo suelto, no corta nada.
      */
-    private fun openFailed(driver: UsbSerialDriver): Probe {
+    private fun stPortFailed(driver: UsbSerialDriver, what: String): Probe {
         val device = driver.device
         if (!muteMeansHungBerry(device.vendorId)) return Probe.Skip
         val failures = (openFailures[device.deviceId] ?: 0) + 1
         openFailures[device.deviceId] = failures
-        log("[USB] ${device.deviceName} no abre ($failures)")
+        log("[USB] ${device.deviceName} $what ($failures)")
         if (failures < OPEN_FAILURES_BEFORE_CUT || !hub.isPresent(device)) return Probe.Skip
         return Probe.Mute
     }
@@ -269,7 +271,11 @@ class BerryLink(
         }
     }
 
-    /** Devuelve true si se le pidió el corte al relé, salga bien o no. */
+    /**
+     * Devuelve false sólo si el enfriamiento no dejó cortar, para que quien
+     * llama pueda reintentar enseguida. Sin relé, o con el relé sin permiso,
+     * devuelve true: reintentar no cambiaría nada hasta que alguien lo resuelva.
+     */
     private fun powerCycle(reason: String): Boolean {
         if (!relay.plugged()) {
             log("[WATCHDOG] $reason. No hay relé: no se corta la alimentación.")

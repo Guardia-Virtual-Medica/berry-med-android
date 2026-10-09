@@ -2,8 +2,10 @@
 package com.guardiavirtual.berrymed.config
 
 import android.content.Context
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -12,7 +14,11 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
-private val Context.store by preferencesDataStore("berry_config")
+// Un archivo corrupto vuelve a la configuración vacía en vez de cerrar la app en cada arranque.
+private val Context.store by preferencesDataStore(
+    name = "berry_config",
+    corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
+)
 
 class ConfigStore(private val context: Context) {
     val flow: Flow<BerryConfig> = context.store.data
