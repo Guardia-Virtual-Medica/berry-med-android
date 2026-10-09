@@ -25,7 +25,9 @@ import androidx.core.content.ContextCompat
 import com.guardiavirtual.berrymed.BerryMedApp
 import com.guardiavirtual.berrymed.R
 import com.guardiavirtual.berrymed.config.BerryConfig
+import com.guardiavirtual.berrymed.config.Environment
 import com.guardiavirtual.berrymed.config.buildMetricsUrl
+import com.guardiavirtual.berrymed.config.defaultChannel
 import com.guardiavirtual.berrymed.config.hasWebScheme
 import com.guardiavirtual.berrymed.databinding.ActivityMainBinding
 import com.guardiavirtual.berrymed.service.MonitorService
@@ -37,6 +39,7 @@ import kotlin.concurrent.thread
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private var step = 0
+    private var filling = false
     private val handler = Handler(Looper.getMainLooper())
     private val tick = object : Runnable {
         override fun run() {
@@ -61,6 +64,10 @@ class MainActivity : AppCompatActivity() {
         }
         binding.apiUrl.addTextChangedListener(watcher)
         binding.totemId.addTextChangedListener(watcher)
+        binding.totemId.addTextChangedListener(ChannelFollower())
+        binding.environment.setOnCheckedStateChangeListener { _, _ ->
+            if (!filling) applyEnvironment()
+        }
         binding.nextButton.setOnClickListener { advance() }
         binding.backButton.setOnClickListener {
             clearMessage()
@@ -105,10 +112,10 @@ class MainActivity : AppCompatActivity() {
     private fun runtime() = (application as BerryMedApp).runtime
 
     private fun fill(config: BerryConfig) {
+        filling = true
+        select(binding.environment, ENVIRONMENT_VALUES, config.environment)
         binding.apiUrl.setText(config.apiBaseUrl)
         binding.totemId.setText(config.totemId)
-        binding.apiUser.setText(config.apiUsername)
-        binding.apiPassword.setText(config.apiPassword)
         binding.pusherKey.setText(config.pusherKey)
         binding.pusherCluster.setText(config.pusherCluster)
         binding.channel.setText(config.publicChannel)
@@ -120,7 +127,34 @@ class MainActivity : AppCompatActivity() {
         select(binding.ecgMode, MODE_VALUES, config.ecgMode)
         select(binding.respGain, GAIN_VALUES, config.respGain)
         select(binding.nibpMode, NIBP_VALUES, config.nibpMode)
+        filling = false
         preview()
+    }
+
+    /** Al elegir un entorno se cargan sus valores; antes de guardar se pueden cambiar. */
+    private fun applyEnvironment() {
+        val environment = Environment.fromKey(value(binding.environment, ENVIRONMENT_VALUES))
+        binding.apiUrl.setText(environment.apiBaseUrl)
+        binding.pusherKey.setText(environment.pusherKey)
+        binding.pusherCluster.setText(environment.pusherCluster)
+    }
+
+    /** El canal sigue al identificador del tótem mientras nadie lo haya cambiado a mano. */
+    private inner class ChannelFollower : TextWatcher {
+        private var previous = ""
+
+        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+            previous = s?.toString().orEmpty()
+        }
+
+        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+
+        override fun afterTextChanged(s: Editable?) {
+            if (filling) return
+            val channel = binding.channel.text?.toString()?.trim().orEmpty()
+            if (channel.isNotEmpty() && channel != defaultChannel(previous)) return
+            binding.channel.setText(defaultChannel(s?.toString().orEmpty()))
+        }
     }
 
     private fun advance() {
@@ -153,8 +187,6 @@ class MainActivity : AppCompatActivity() {
             binding.apiUrl.text.isNullOrBlank() -> R.string.missing_api
             !hasWebScheme(binding.apiUrl.text.toString()) -> R.string.missing_scheme
             binding.totemId.text.isNullOrBlank() -> R.string.missing_totem
-            binding.apiUser.text.isNullOrBlank() -> R.string.missing_user
-            binding.apiPassword.text.isNullOrBlank() -> R.string.missing_password
             else -> null
         }
         1 -> when {
@@ -197,23 +229,25 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun readForm(): BerryConfig = BerryConfig(
-        apiBaseUrl = binding.apiUrl.text?.toString()?.trim().orEmpty(),
-        totemId = binding.totemId.text?.toString()?.trim().orEmpty(),
-        apiUsername = binding.apiUser.text?.toString()?.trim().orEmpty(),
-        apiPassword = binding.apiPassword.text?.toString()?.trim().orEmpty(),
-        pusherKey = binding.pusherKey.text?.toString()?.trim().orEmpty(),
-        pusherCluster = binding.pusherCluster.text?.toString()?.trim().orEmpty().ifBlank { "us2" },
-        publicChannel = binding.channel.text?.toString()?.trim().orEmpty(),
-        startEventName = binding.startEvent.text?.toString()?.trim().orEmpty().ifBlank { "start-monitoring" },
-        stopEventName = binding.stopEvent.text?.toString()?.trim().orEmpty().ifBlank { "stop-monitoring" },
-        ecgGain = value(binding.ecgGain, GAIN_VALUES),
-        ecgMode = value(binding.ecgMode, MODE_VALUES),
-        respGain = value(binding.respGain, GAIN_VALUES),
-        nibpMode = value(binding.nibpMode, NIBP_VALUES),
-        nibpTargetPressureMmhg = binding.nibpTarget.text?.toString()?.trim().orEmpty(),
-        maxSessionMinutes = binding.maxMinutes.text?.toString()?.trim()?.toIntOrNull() ?: 30,
-    )
+    private fun readForm(): BerryConfig {
+        val totemId = binding.totemId.text?.toString()?.trim().orEmpty()
+        return BerryConfig(
+            environment = value(binding.environment, ENVIRONMENT_VALUES),
+            apiBaseUrl = binding.apiUrl.text?.toString()?.trim().orEmpty(),
+            totemId = totemId,
+            pusherKey = binding.pusherKey.text?.toString()?.trim().orEmpty(),
+            pusherCluster = binding.pusherCluster.text?.toString()?.trim().orEmpty().ifBlank { "us2" },
+            publicChannel = binding.channel.text?.toString()?.trim().orEmpty().ifBlank { defaultChannel(totemId) },
+            startEventName = binding.startEvent.text?.toString()?.trim().orEmpty().ifBlank { "start-monitoring" },
+            stopEventName = binding.stopEvent.text?.toString()?.trim().orEmpty().ifBlank { "stop-monitoring" },
+            ecgGain = value(binding.ecgGain, GAIN_VALUES),
+            ecgMode = value(binding.ecgMode, MODE_VALUES),
+            respGain = value(binding.respGain, GAIN_VALUES),
+            nibpMode = value(binding.nibpMode, NIBP_VALUES),
+            nibpTargetPressureMmhg = binding.nibpTarget.text?.toString()?.trim().orEmpty(),
+            maxSessionMinutes = binding.maxMinutes.text?.toString()?.trim()?.toIntOrNull() ?: 30,
+        )
+    }
 
     private fun preview() {
         val base = binding.apiUrl.text?.toString()?.trim().orEmpty()
@@ -281,6 +315,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
+        /** En el orden de los chips: Producción, Dev. */
+        private val ENVIRONMENT_VALUES = arrayOf(Environment.Prod.key, Environment.Dev.key)
         private val GAIN_VALUES = arrayOf("x0.25", "x0.5", "x1", "x2")
         private val MODE_VALUES = arrayOf("operacion", "monitor", "diagnostico")
         private val NIBP_VALUES = arrayOf("adulto", "nino", "neonato")

@@ -27,11 +27,11 @@ class MetricsPoster {
         .build()
 
     fun post(url: String, username: String, password: String, json: String): PostOutcome {
-        val request = Request.Builder()
+        val builder = Request.Builder()
             .url(url)
-            .header("Authorization", Credentials.basic(username, password))
             .post(json.toRequestBody(JSON))
-            .build()
+        if (username.isNotBlank()) builder.header("Authorization", Credentials.basic(username, password))
+        val request = builder.build()
         var last: PostOutcome = PostOutcome.Failed("sin intento")
         repeat(3) { attempt ->
             try {

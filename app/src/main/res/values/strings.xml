@@ -12,8 +12,6 @@
     <string name="section_device">Plaqueta</string>
     <string name="hint_api">URL base de la API</string>
     <string name="hint_totem">Identificador del tótem</string>
-    <string name="hint_user">Usuario</string>
-    <string name="hint_password">Contraseña</string>
     <string name="hint_pusher">Clave de Pusher</string>
     <string name="hint_cluster">Cluster</string>
     <string name="hint_channel">Canal público</string>
@@ -29,8 +27,13 @@
     <string name="step_destination">Destino</string>
     <string name="step_orders">Órdenes</string>
     <string name="step_device">Plaqueta</string>
-    <string name="help_destination">Copiá la dirección, el identificador y el usuario que te pasaron para este tótem.</string>
-    <string name="help_orders">El canal tiene que ser público. Si no te dijeron otra cosa, dejá el cluster en us2.</string>
+    <string name="help_destination">Elegí el entorno de OnDoctor y escribí el identificador del tótem (su external_id). La dirección se completa sola.</string>
+    <string name="help_orders">La clave de Pusher sale del entorno y el canal, del identificador del tótem.</string>
+    <string name="label_environment">Entorno</string>
+    <string name="environment_prod">Producción</string>
+    <string name="environment_dev">Dev</string>
+    <string name="help_from_environment">Viene del entorno elegido. Cambiala sólo si te indicaron otra.</string>
+    <string name="help_channel">Se arma con el identificador del tótem. Tiene que ser público.</string>
     <string name="help_known_values">Estos valores ya vienen cargados. Cambialos solo si te indicaron otros.</string>
     <string name="help_device">Si nadie te indicó otra cosa, dejá la ganancia en x1 y el modo en Monitor.</string>
     <string name="help_nibp_target">Opcional. Si lo dejás vacío, el equipo usa su presión de inflado.</string>
@@ -40,8 +43,6 @@
     <string name="missing_api">Falta la dirección del servicio.</string>
     <string name="missing_scheme">La dirección tiene que empezar con https://</string>
     <string name="missing_totem">Falta el identificador del tótem.</string>
-    <string name="missing_user">Falta el usuario.</string>
-    <string name="missing_password">Falta la contraseña.</string>
     <string name="missing_pusher">Falta la clave de Pusher.</string>
     <string name="missing_channel">Falta el nombre del canal.</string>
     <string name="save">Guardar y aplicar</string>

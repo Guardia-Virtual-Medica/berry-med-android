@@ -241,14 +241,24 @@
                         <TextView style="@style/FormTitle" android:layout_marginTop="8dp" android:text="@string/section_destination" />
                         <TextView style="@style/Help" android:text="@string/help_destination" />
 
-                        <com.google.android.material.textfield.TextInputLayout style="@style/Field" android:hint="@string/hint_api">
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/apiUrl"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:inputType="textUri"
-                                android:singleLine="true" />
-                        </com.google.android.material.textfield.TextInputLayout>
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:text="@string/label_environment"
+                            android:textColor="@color/ink"
+                            android:textSize="15sp" />
+
+                        <com.google.android.material.chip.ChipGroup
+                            android:id="@+id/environment"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            app:selectionRequired="true"
+                            app:singleSelection="true">
+
+                            <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="true" android:text="@string/environment_prod" />
+                            <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/environment_dev" />
+                        </com.google.android.material.chip.ChipGroup>
 
                         <com.google.android.material.textfield.TextInputLayout style="@style/Field" android:hint="@string/hint_totem">
                             <com.google.android.material.textfield.TextInputEditText
@@ -259,24 +269,15 @@
                                 android:singleLine="true" />
                         </com.google.android.material.textfield.TextInputLayout>
 
-                        <com.google.android.material.textfield.TextInputLayout style="@style/Field" android:hint="@string/hint_user">
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/apiUser"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:inputType="text"
-                                android:singleLine="true" />
-                        </com.google.android.material.textfield.TextInputLayout>
-
                         <com.google.android.material.textfield.TextInputLayout
                             style="@style/Field"
-                            android:hint="@string/hint_password"
-                            app:endIconMode="password_toggle">
+                            android:hint="@string/hint_api"
+                            app:helperText="@string/help_from_environment">
                             <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/apiPassword"
+                                android:id="@+id/apiUrl"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:inputType="textPassword"
+                                android:inputType="textUri"
                                 android:singleLine="true" />
                         </com.google.android.material.textfield.TextInputLayout>
 
@@ -298,7 +299,10 @@
                         <TextView style="@style/FormTitle" android:layout_marginTop="8dp" android:text="@string/section_orders" />
                         <TextView style="@style/Help" android:text="@string/help_orders" />
 
-                        <com.google.android.material.textfield.TextInputLayout style="@style/Field" android:hint="@string/hint_pusher">
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Field"
+                            android:hint="@string/hint_pusher"
+                            app:helperText="@string/help_from_environment">
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/pusherKey"
                                 android:layout_width="match_parent"
@@ -307,7 +311,10 @@
                                 android:singleLine="true" />
                         </com.google.android.material.textfield.TextInputLayout>
 
-                        <com.google.android.material.textfield.TextInputLayout style="@style/Field" android:hint="@string/hint_channel">
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Field"
+                            android:hint="@string/hint_channel"
+                            app:helperText="@string/help_channel">
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/channel"
                                 android:layout_width="match_parent"
