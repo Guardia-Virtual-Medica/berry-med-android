@@ -43,6 +43,7 @@ Van los tres a un hub USB con alimentación.
 | Se reinicia la tablet o se instala una versión nueva | Arranca el servicio sola. Con "Usar de forma predeterminada" marcado, Android le da el permiso USB a cada equipo sin preguntar. |
 | Se perdió el `start-monitoring` o el `stop-monitoring` | Lo detecta por la respuesta de la plataforma al `POST` de prueba (cada 10 s mientras espera) o a los envíos (tres `404` seguidos). Ver el punto 4 de [Cómo funciona](#cómo-funciona). |
 | Se corta el wifi | La librería de Pusher reintenta unos 85 s y se rinde. A los 30 s la app le pide otra tanda, y así mientras no haya conexión. Si queda más de 5 min conectando sin respuesta, arma una conexión nueva (cada vez espera el doble, hasta una hora). |
+| La plaqueta deja de mandar datos 5 s (colgada, o apagada con el USB conectado) | Borra sus valores (frecuencia, SpO₂, presión, ondas) para no mandarlos congelados como si fueran actuales. La temperatura del termómetro sigue llegando. |
 | La plaqueta deja de mandar datos 20 s | Corta los 12 V durante 5 s con el relé y vuelve a conectar. |
 | El puerto de la plaqueta abre pero no transmite, no abre, o no acepta la secuencia de arranque tres veces seguidas | Igual: corte de 5 s con el relé. |
 | La plaqueta no aparece en el USB durante 3 min | Corta igual (puede tener alimentación y no llegar a enumerar), y mientras siga sin aparecer, como mucho cada 30 min. Con la plaqueta apagada a propósito y el relé enchufado, el relé conmuta cada media hora. |

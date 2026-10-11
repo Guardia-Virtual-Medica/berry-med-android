@@ -124,6 +124,13 @@ class UsbRolesTest {
     }
 
     @Test
+    fun aBoardSilentForFiveSecondsHasStaleValues() {
+        assertFalse(BerryLink.valuesAreStale(4.9))
+        assertTrue(BerryLink.valuesAreStale(5.0))
+        assertTrue(BerryLink.STALE_SECONDS < BerryLink.SILENCE_SECONDS)
+    }
+
+    @Test
     fun berryFramesAreToldApartFromThermometerText() {
         val line = """{"valor_temperatura_ir": 36.6, "unit": "C"}""".toByteArray()
         assertFalse(BerryLink.hasHeader(line))

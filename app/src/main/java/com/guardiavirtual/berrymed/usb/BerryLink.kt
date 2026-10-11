@@ -216,8 +216,11 @@ class BerryLink(
                         return End.UsbLost
                     }
                     val silentSeconds = (System.nanoTime() - silentSince) / 1_000_000_000.0
-                    if (silentSeconds > 5 && !warned) {
-                        log("[USB] Sin datos hace ${silentSeconds.toInt()} s")
+                    if (valuesAreStale(silentSeconds) && !warned) {
+                        // Con la plaqueta muda, sus últimos valores no se mandan como si fueran
+                        // actuales: se borran, igual que al desenchufarla. El termómetro sigue.
+                        log("[USB] Sin datos hace ${silentSeconds.toInt()} s: se borran los valores de la plaqueta")
+                        parser.resetData()
                         warned = true
                     }
                     if (silentSeconds >= SILENCE_SECONDS) {
@@ -402,6 +405,11 @@ class BerryLink(
 
     companion object {
         const val SILENCE_SECONDS = 20.0
+
+        /** Sin tramas este tiempo, los valores de la plaqueta ya no son actuales (manda 250 por segundo). */
+        const val STALE_SECONDS = 5.0
+
+        fun valuesAreStale(silentSeconds: Double): Boolean = silentSeconds >= STALE_SECONDS
 
         /** Entre un corte y el siguiente, para que el PM6750 tenga tiempo de arrancar. */
         const val RELAY_COOLDOWN_NANOS = 60L * 1_000_000_000L
