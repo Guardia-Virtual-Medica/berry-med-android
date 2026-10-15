@@ -188,6 +188,31 @@ class ProtocolTest {
     }
 
     @Test
+    fun aSecondOfDataIsSentAsIs() {
+        val window = windowOf(ecgSamples = 250, waveSamples = 50)
+        assertEquals(listOf(window), splitWindow(window))
+    }
+
+    @Test
+    fun aLongerWindowIsSplitIntoSecondsWithoutLosingSamples() {
+        val window = windowOf(ecgSamples = 600, waveSamples = 120, peaks = listOf(10, 260, 590))
+        val parts = splitWindow(window)
+        assertEquals(listOf(250, 250, 100), parts.map { it.ecg.getValue("II").size })
+        assertEquals(600, parts.sumOf { it.ecg.getValue("I").size })
+        assertEquals(120, parts.sumOf { it.spo2.size })
+        assertEquals(120, parts.sumOf { it.resp.size })
+        assertEquals(listOf(listOf(10), listOf(10), listOf(90)), parts.map { part -> part.ecgPeaks.map { it.sample } })
+        assertEquals(40.0, parts[1].ecgPeaks.single().ms)
+        assertTrue(parts.all { it.vitalSigns.heartRate == "86" })
+    }
+
+    @Test
+    fun eachPartStaysUnderPushersTenKilobytes() {
+        val parts = splitWindow(windowOf(ecgSamples = 1_000, waveSamples = 200, value = 249))
+        assertTrue(parts.all { metricsEnvelope(1_757_001_600_000, it).length < 10 * 1024 })
+    }
+
+    @Test
     fun theEnvelopeStaysValidJsonWithControlCharacters() {
         val window = SampleWindow(
             spo2 = emptyList(),
@@ -229,6 +254,16 @@ class ProtocolTest {
         assertFalse(Pm6750Protocol.nibpIsTerminal(0x04)) // midiendo, result 0x1
     }
 }
+
+private fun windowOf(ecgSamples: Int, waveSamples: Int, peaks: List<Int> = emptyList(), value: Int = 128): SampleWindow =
+    SampleWindow(
+        spo2 = List(waveSamples) { value },
+        ecg = Pm6750Protocol.LEADS.associateWith { List(ecgSamples) { value } },
+        ecgPeaks = peaks.map { EcgPeak(it, it * 4.0) },
+        ecgInfo = EcgInfo(),
+        resp = List(waveSamples) { value },
+        vitalSigns = VitalSigns(heartRate = "86"),
+    )
 
 private fun frame(type: Int, data: IntArray): ByteArray {
     val body = ByteArray(1 + data.size)

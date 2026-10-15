@@ -14,6 +14,7 @@ import com.guardiavirtual.berrymed.protocol.applyThermometer
 import com.guardiavirtual.berrymed.protocol.isValidSample
 import com.guardiavirtual.berrymed.protocol.metricsEnvelope
 import com.guardiavirtual.berrymed.protocol.sessionExpired
+import com.guardiavirtual.berrymed.protocol.splitWindow
 import com.guardiavirtual.berrymed.protocol.summarize
 import com.guardiavirtual.berrymed.usb.BerryLink
 import com.guardiavirtual.berrymed.usb.ThermometerLink
@@ -25,6 +26,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import java.util.Locale
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 
@@ -38,6 +42,21 @@ class TotemRuntime(context: Context) {
     private val berry = BerryLink(hub, relay, parser, { config.tuning() }, ::log)
     private val thermo = ThermometerLink(hub, { berry.connected }, ::log)
     private val poster = MetricsPoster()
+
+    /**
+     * Los POST salen de dos hilos aparte: el ciclo de envío no espera la
+     * respuesta, así cada paquete lleva un segundo aunque el servidor tarde más.
+     * Si la red se traba, quedan a lo sumo 10 paquetes y se descartan los más viejos.
+     */
+    private val sender = ThreadPoolExecutor(
+        2,
+        2,
+        0L,
+        TimeUnit.MILLISECONDS,
+        ArrayBlockingQueue(10),
+        { runnable -> Thread(runnable, "berry-send").apply { isDaemon = true } },
+        ThreadPoolExecutor.DiscardOldestPolicy(),
+    )
     private val watch = SessionWatch()
     private val sessionLock = Any()
 
@@ -115,7 +134,14 @@ class TotemRuntime(context: Context) {
         }
     }
 
+    /**
+     * Un ciclo por segundo a ritmo fijo, sin esperar las respuestas. Antes se
+     * esperaba la respuesta y después un segundo más: con el servidor tardando,
+     * cada paquete juntaba dos segundos o más, pasaba los 10 KB que acepta
+     * Pusher y el médico no recibía nada aunque el servidor contestara 200.
+     */
     private fun postLoop() {
+        var next = System.nanoTime()
         while (true) {
             try {
                 stopSessionIfExpired()
@@ -124,7 +150,14 @@ class TotemRuntime(context: Context) {
                 log("[DATA] Error en el envío: $error")
                 lastPost = "Error al enviar: ${error.message ?: error.javaClass.simpleName}"
             }
-            sleep(1_000)
+            next += TICK_NANOS
+            val waitMs = (next - System.nanoTime()) / 1_000_000L
+            if (waitMs > 0) {
+                sleep(waitMs)
+            } else {
+                // Si el ciclo se atrasó, sigue desde ahora: no se recupera en ráfaga.
+                next = System.nanoTime()
+            }
         }
     }
 
@@ -144,8 +177,23 @@ class TotemRuntime(context: Context) {
         if (!cfg.postReady() || !isValidSample(window)) return
         if (!active) watch.probed(now)
         applyThermometer(window.vitalSigns, thermo.latest())
-        log("[DATA] ${if (active) "" else "prueba "}${summarize(window)}")
-        val outcome = poster.post(url, cfg.apiUsername, cfg.apiPassword, metricsEnvelope(System.currentTimeMillis(), window))
+        // Tramos de a lo sumo un segundo, por el límite de Pusher. La prueba lleva sólo el último.
+        val parts = splitWindow(window)
+        val toSend = if (active) parts else listOf(parts.last())
+        val sentAt = System.currentTimeMillis()
+        toSend.forEachIndexed { index, part ->
+            val body = metricsEnvelope(sentAt - (toSend.size - 1 - index) * 1_000L, part)
+            log("[DATA] ${if (active) "" else "prueba "}${summarize(part)} (${body.length} B)")
+            sender.execute { deliver(url, cfg.apiUsername, cfg.apiPassword, body, active, epoch) }
+        }
+    }
+
+    private fun deliver(url: String, username: String, password: String, body: String, active: Boolean, epoch: Long) {
+        val outcome = try {
+            poster.post(url, username, password, body)
+        } catch (error: Exception) {
+            PostOutcome.Failed(error.message ?: error.javaClass.simpleName)
+        }
         lastPost = describe(outcome, active)
         // Si mientras viajaba el POST llegó un inicio o un fin, la respuesta ya no cuenta.
         if (!active) {
@@ -281,5 +329,6 @@ class TotemRuntime(context: Context) {
 
     companion object {
         const val TAG = "BerryMed"
+        private const val TICK_NANOS = 1_000_000_000L
     }
 }
