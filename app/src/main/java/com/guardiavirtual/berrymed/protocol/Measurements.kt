@@ -48,6 +48,42 @@ fun isValidSample(window: SampleWindow): Boolean {
     return !(allEmpty && spo2Empty && ecgEmpty && respEmpty)
 }
 
+/** Un segundo de ECG por derivación. Un paquete así pesa unos 7 KB. */
+const val MAX_ECG_SAMPLES_PER_PACKET = 250
+
+/**
+ * Parte una ventana en tramos de a lo sumo [maxEcgSamples] muestras de ECG por
+ * derivación. El servidor reenvía cada paquete por Pusher, que no acepta más de
+ * 10 KB: con las 7 derivaciones completas, dos segundos ya se pasan. Las ondas
+ * de SpO₂ y respiración se reparten en la misma proporción, los latidos quedan
+ * en el tramo donde caen (con el índice corrido) y los signos van en todos.
+ */
+fun splitWindow(window: SampleWindow, maxEcgSamples: Int = MAX_ECG_SAMPLES_PER_PACKET): List<SampleWindow> {
+    val ecgLength = window.ecg.values.maxOfOrNull { it.size } ?: 0
+    if (ecgLength <= maxEcgSamples) return listOf(window)
+    val parts = (ecgLength + maxEcgSamples - 1) / maxEcgSamples
+    return (0 until parts).map { part ->
+        val from = part * maxEcgSamples
+        val to = minOf(from + maxEcgSamples, ecgLength)
+        SampleWindow(
+            spo2 = proportionalSlice(window.spo2, part, parts),
+            ecg = window.ecg.mapValues { (_, samples) -> samples.subList(minOf(from, samples.size), minOf(to, samples.size)) },
+            ecgPeaks = window.ecgPeaks
+                .filter { it.sample in from until to }
+                .map { peak ->
+                    val sample = peak.sample - from
+                    EcgPeak(sample, java.lang.Math.round(sample * 1000.0 / Pm6750Protocol.ECG_SAMPLE_RATE_HZ * 10.0) / 10.0)
+                },
+            ecgInfo = window.ecgInfo.copy(),
+            resp = proportionalSlice(window.resp, part, parts),
+            vitalSigns = window.vitalSigns.copy(),
+        )
+    }
+}
+
+private fun proportionalSlice(values: List<Int>, part: Int, parts: Int): List<Int> =
+    values.subList(values.size * part / parts, values.size * (part + 1) / parts)
+
 fun parseThermometerLine(line: String): ThermoReading? {
     // El valor puede venir como número o entre comillas; el monitor de Windows acepta las dos.
     val value = Regex(""""valor_temperatura_ir"\s*:\s*("?)(-?[0-9]+(?:\.[0-9]+)?)\1\s*[,}]""")

@@ -15,9 +15,10 @@ sealed class PostOutcome {
 }
 
 /**
- * POST de métricas. Hasta tres intentos, igual que el monitor de Windows: un
- * error de red espera medio segundo y un código distinto de 200 reintenta
- * enseguida. Después el paquete se descarta y el siguiente lleva datos nuevos.
+ * POST de métricas. Hasta tres intentos ante un error de red (con medio segundo
+ * entre intentos) o un 5xx. Un 4xx no se reintenta: un 404 ("no hay toma
+ * abierta") no cambia por insistir. Después el paquete se descarta y el
+ * siguiente lleva datos nuevos.
  */
 class MetricsPoster {
     private val client = OkHttpClient.Builder()
@@ -37,6 +38,7 @@ class MetricsPoster {
             try {
                 client.newCall(request).execute().use { response ->
                     if (response.code == 200) return PostOutcome.Ok
+                    if (response.code in 400..499) return PostOutcome.Http(response.code)
                     last = PostOutcome.Http(response.code)
                 }
             } catch (error: Exception) {
