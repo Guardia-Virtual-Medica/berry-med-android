@@ -46,6 +46,35 @@ class ProtocolTest {
     }
 
     @Test
+    fun statsCountFramesByTypeWithoutConsumingThePayload() {
+        val parser = BmDataParser()
+        parser.addData(frame(0x01, intArrayOf(10, 20, 30, 40, 50, 60, 70)))
+        parser.addData(frame(0x01, intArrayOf(11, 21, 31, 41, 51, 61, 71)))
+        parser.addData(frame(0xFE, intArrayOf(80)))
+        parser.addData(frame(0xFF, intArrayOf(90)))
+        parser.addData(frame(0x05, intArrayOf(0, 36, 6)))
+        parser.addData(frame(0x03, intArrayOf(0x04, 60, 0, 0, 0)))
+        val bad = frame(0x04, intArrayOf(0, 98, 72))
+        bad[bad.lastIndex] = (bad.last() + 1).toByte()
+        parser.addData(bad)
+
+        val stats = parser.stats()
+        assertEquals(2, stats.frames.ecg)
+        assertEquals(1, stats.frames.spo2Wave)
+        assertEquals(1, stats.frames.respWave)
+        assertEquals(1, stats.frames.temperature)
+        assertEquals(1, stats.frames.nibp)
+        assertEquals(0x04, stats.frames.nibpStatus)
+        assertEquals(120, stats.frames.cuffMmhg)
+        assertEquals(0, stats.frames.spo2)
+        assertEquals(1, stats.frames.badChecksum)
+        assertEquals("36.6", stats.vitals.temperature)
+        // Mirar los contadores no le saca nada al envío.
+        assertEquals(listOf(10, 11), parser.takePayload().ecg.getValue("I"))
+        assertEquals(2, parser.stats().frames.ecg)
+    }
+
+    @Test
     fun ecgFrameFillsTheSevenLeadsAndTheNextPostIsEmpty() {
         val parser = BmDataParser()
         parser.addData(frame(0x01, intArrayOf(10, 20, 30, 40, 50, 60, 70)))

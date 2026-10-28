@@ -15,6 +15,7 @@ class BmDataParser {
     private var ecgInfo = EcgInfo()
     private var resp = ArrayList<Int>()
     private var vitals = VitalSigns()
+    private val counts = FrameCounts()
 
     var onNibp: ((status: Int, cuffMmhg: Int, sys: Int, mean: Int, dia: Int) -> Unit)? = null
 
@@ -53,7 +54,10 @@ class BmDataParser {
                 }
                 val frame = raw.subList(start, end).toIntArray()
                 dropUntil(end)
-                if (!checksumOk(frame)) continue
+                if (!checksumOk(frame)) {
+                    counts.badChecksum++
+                    continue
+                }
                 try {
                     parse(frame)?.let(events::add)
                 } catch (_: IndexOutOfBoundsException) {
@@ -87,6 +91,8 @@ class BmDataParser {
     }
 
     fun peekVitals(): VitalSigns = synchronized(lock) { vitals.copy() }
+
+    fun stats(): ParserStats = synchronized(lock) { ParserStats(counts.copy(), vitals.copy(), ecgInfo.copy()) }
 
     fun resetData() = synchronized(lock) {
         raw.clear()
@@ -128,6 +134,7 @@ class BmDataParser {
     private fun parse(frame: IntArray): NibpEvent? {
         when (frame[3]) {
             0x01 -> {
+                counts.ecg++
                 if (ecgLen() < MAX_WAVE) {
                     val samples = frame.copyOfRange(4, frame.size - 1)
                     for ((lead, value) in Pm6750Protocol.LEADS.zip(samples.toList())) {
@@ -143,6 +150,7 @@ class BmDataParser {
                 vitals.heartRate = formatCount(heartRate)
                 vitals.respRate = formatCount(respRate)
                 ecgInfo = info
+                counts.ecgInfo++
             }
             0x03 -> {
                 val sys = frame[6]
@@ -150,6 +158,9 @@ class BmDataParser {
                 if (sys != 0 || dia != 0) {
                     vitals.nibp = "${formatCount(sys)}/${formatCount(dia)}"
                 }
+                counts.nibp++
+                counts.nibpStatus = frame[4]
+                counts.cuffMmhg = frame[5] * 2
                 return NibpEvent(frame[4], frame[5] * 2, sys, frame[7], dia)
             }
             0x04 -> {
@@ -158,20 +169,29 @@ class BmDataParser {
                 val saturationText = if (saturation <= 100) formatCount(saturation) else "-"
                 val pulseText = if (pulse <= 250) formatCount(pulse) else "-"
                 vitals.spo2Pulse = if (saturationText == "-" && pulseText == "-") NO_PAIR else "$saturationText/$pulseText"
+                counts.spo2++
             }
             0x05 -> {
                 val tenths = frame[5] * 10 + frame[6]
                 vitals.temperature = if (tenths == 0) "-" else "${tenths / 10}.${tenths % 10}"
+                counts.temperature++
             }
             0x30 -> {
+                counts.peaks++
                 if (peaks.size < MAX_PEAKS) {
                     val sample = ecgLen()
                     val ms = java.lang.Math.round(sample * 1000.0 / Pm6750Protocol.ECG_SAMPLE_RATE_HZ * 10.0) / 10.0
                     peaks += EcgPeak(sample, ms)
                 }
             }
-            0xFE -> if (spo2.size < MAX_WAVE) spo2 += frame[4]
-            0xFF -> if (resp.size < MAX_WAVE) resp += frame[4]
+            0xFE -> {
+                counts.spo2Wave++
+                if (spo2.size < MAX_WAVE) spo2 += frame[4]
+            }
+            0xFF -> {
+                counts.respWave++
+                if (resp.size < MAX_WAVE) resp += frame[4]
+            }
         }
         return null
     }

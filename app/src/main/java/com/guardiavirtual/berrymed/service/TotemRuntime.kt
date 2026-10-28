@@ -10,6 +10,7 @@ import com.guardiavirtual.berrymed.net.MetricsPoster
 import com.guardiavirtual.berrymed.net.PostOutcome
 import com.guardiavirtual.berrymed.net.SessionPusher
 import com.guardiavirtual.berrymed.protocol.BmDataParser
+import com.guardiavirtual.berrymed.protocol.SampleWindow
 import com.guardiavirtual.berrymed.protocol.applyThermometer
 import com.guardiavirtual.berrymed.protocol.isValidSample
 import com.guardiavirtual.berrymed.protocol.metricsEnvelope
@@ -68,6 +69,13 @@ class TotemRuntime(context: Context) {
     @Volatile private var sessionStartNano: Long = 0L
     @Volatile var lastPost: String = "Todavía no se envió"
     @Volatile var pusherUp: Boolean = false
+
+    /** Con el panel Testing abierto no sale ningún POST de prueba: sólo se mira. */
+    @Volatile var testing: Boolean = false
+        private set
+    @Volatile private var lastWindow: SampleWindow? = null
+    val console = ConsoleLog()
+    private val testingSession = TestingSession()
 
     var onNotification: (text: String) -> Unit = {}
 
@@ -171,7 +179,8 @@ class TotemRuntime(context: Context) {
         val (active, epoch, window) = synchronized(sessionLock) {
             Triple(sessionActive, sessionEpoch, parser.takePayload())
         }
-        if (!active && !watch.probeDue(now)) return
+        lastWindow = window
+        if (!active && (testing || !watch.probeDue(now))) return
         val cfg = config
         val url = cfg.metricsUrl() ?: return
         if (!cfg.postReady() || !isValidSample(window)) return
@@ -214,6 +223,11 @@ class TotemRuntime(context: Context) {
     }
 
     private fun startSession() {
+        if (testing) {
+            // La consulta gana: Testing no puede dejar a un paciente sin envío.
+            endTesting()
+            log("[TEST] Llegó el inicio de una consulta: se corta la prueba")
+        }
         synchronized(sessionLock) {
             berry.stopNibp()
             parser.resetData()
@@ -315,8 +329,109 @@ class TotemRuntime(context: Context) {
         onNotification(notification)
     }
 
+    /** Devuelve el motivo si no se puede probar ahora. */
+    fun startTesting(): String? {
+        if (sessionActive) return "Hay una consulta enviando: la prueba espera a que termine."
+        testingSession.reset()
+        testing = true
+        log("[TEST] Prueba iniciada: no se envía nada a la API")
+        return null
+    }
+
+    fun stopTesting() {
+        if (!testing) return
+        endTesting()
+        log("[TEST] Prueba detenida")
+    }
+
+    private fun endTesting() {
+        testing = false
+        testingSession.reset()
+        // Una presión pedida desde Testing no queda inflando el manguito.
+        if (berry.nibpRunning && !sessionActive) berry.stopNibp()
+    }
+
+    fun checkMeasure(measure: TestingSession.Measure) {
+        testingSession.check(measure, parser.stats())
+    }
+
+    fun testNibpStart(): String {
+        if (!testing) return "Iniciá la prueba primero."
+        if (sessionActive) return "Hay una consulta enviando."
+        if (!berry.startNibp()) return "No se pudo iniciar: plaqueta sin conectar o ya está midiendo."
+        parser.resetNibp()
+        return "Midiendo…"
+    }
+
+    fun testNibpStop(): String {
+        // Una presión pedida por el médico no se para desde Testing.
+        if (sessionActive) return "Hay una consulta enviando."
+        berry.stopNibp()
+        return "STOP enviado"
+    }
+
+    /** Lee el estado del relé sin cambiarlo. Bloquea un momento: llamarlo fuera del hilo de la pantalla. */
+    fun testRelayState(): String {
+        val passing = relay.powerPassing()
+        val text = when (passing) {
+            null -> "El relé no contesta o no está conectado"
+            true -> "Relé apagado: los 12 V pasan a la plaqueta"
+            false -> "Relé encendido: la plaqueta está sin alimentación"
+        }
+        log("[RELÉ] $text")
+        return text
+    }
+
+    /** Tarda los 5 s del corte: llamarlo fuera del hilo de la pantalla. */
+    fun testRelayCut(): String = when {
+        !testing -> "Iniciá la prueba primero."
+        sessionActive -> "Hay una consulta enviando: no se corta la plaqueta."
+        !relay.plugged() -> "No hay relé conectado."
+        !berry.manualPowerCycle() -> "El último corte fue hace menos de un minuto. Esperá y probá de nuevo."
+        else -> "Corte hecho. La plaqueta se vuelve a conectar sola."
+    }
+
+    fun testingSnapshot(): TestingSnapshot {
+        val stats = parser.stats()
+        val berryUp = berry.connected
+        val verdicts = testingSession.poll(stats, berryUp)
+        val reading = thermo.latest()
+        val thermoAt = thermo.lastReadingAtNano
+        val cfg = config
+        val window = lastWindow
+        val preview = if (window != null && isValidSample(window)) {
+            val vitals = window.vitalSigns.copy()
+            applyThermometer(vitals, reading)
+            metricsEnvelope(System.currentTimeMillis(), splitWindow(window.copy(vitalSigns = vitals)).last())
+        } else {
+            null
+        }
+        return TestingSnapshot(
+            testing = testing,
+            sessionActive = sessionActive,
+            berryUp = berryUp,
+            berryPort = berry.portName(),
+            lastDataAge = berry.lastDataAgeSeconds(),
+            rates = testingSession.rates(),
+            verdicts = verdicts,
+            stats = stats,
+            nibpRunning = berry.nibpRunning,
+            thermoConnected = thermo.connected,
+            thermoPort = thermo.portName,
+            thermoReading = reading?.let { "${it.value} ${it.unit}" },
+            thermoAge = if (thermoAt == 0L) null else (System.nanoTime() - thermoAt) / 1_000_000_000L,
+            thermoLine = thermo.lastLine,
+            relayPlugged = relay.plugged(),
+            lastCutAge = berry.lastPowerCycleAgeSeconds(),
+            url = cfg.metricsUrl(),
+            preview = preview,
+            console = console.snapshot(),
+        )
+    }
+
     private fun log(message: String) {
         Log.i(TAG, message)
+        console.add(message)
     }
 
     private fun sleep(ms: Long) {

@@ -10,4 +10,6 @@
     <color name="line">#244255</color>
     <color name="ink_soft">#5E7278</color>
     <color name="warn">#8C3A2F</color>
+    <!-- El rojo de warn no se lee sobre el fondo oscuro del monitor. -->
+    <color name="test_fail">#F2A38F</color>
 </resources>

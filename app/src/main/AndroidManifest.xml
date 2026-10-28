@@ -35,6 +35,11 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".ui.TestingActivity"
+            android:configChanges="orientation|screenSize|screenLayout"
+            android:exported="false" />
+
         <!--
             Lo que Android abre al conectar un dispositivo del tótem. Sin pantalla y
             en su propia tarea: se cierra enseguida y Chrome queda adelante.

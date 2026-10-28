@@ -20,6 +20,11 @@ class ThermometerLink(
     @Volatile var running: Boolean = true
     @Volatile var connected: Boolean = false
     @Volatile var measured: Boolean = false
+
+    /** Para la pantalla de Testing: el puerto, la última línea cruda y cuándo llegó la última lectura. */
+    @Volatile var portName: String? = null
+    @Volatile var lastLine: String = ""
+    @Volatile var lastReadingAtNano: Long = 0L
     private var latest: ThermoReading? = null
     private val lock = Any()
 
@@ -59,6 +64,7 @@ class ThermometerLink(
         } finally {
             connected = false
             measured = false
+            portName = null
             try {
                 handle.close()
             } catch (_: Exception) {
@@ -78,6 +84,7 @@ class ThermometerLink(
                 continue
             }
             connected = true
+            portName = driver.device.deviceName
             log("[THERM] Esperando mediciones en ${driver.device.deviceName}")
             return handle
         }
@@ -126,8 +133,10 @@ class ThermometerLink(
     }
 
     private fun store(line: String) {
+        if (line.isNotBlank()) lastLine = line.trim()
         val reading = parseThermometerLine(line) ?: return
         synchronized(lock) { latest = reading }
+        lastReadingAtNano = System.nanoTime()
         if (!measured) log("[THERM] Primera medición: ${reading.value} ${reading.unit}")
         measured = true
     }
