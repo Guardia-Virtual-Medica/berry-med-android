@@ -82,6 +82,7 @@ class MainActivity : AppCompatActivity() {
         binding.saveButton.setOnClickListener { save() }
         binding.batteryButton.setOnClickListener { askBatteryExemption() }
         binding.usbButton.setOnClickListener { runtime().requestUsbPermissionAgain() }
+        binding.testingButton.setOnClickListener { startActivity(Intent(this, TestingActivity::class.java)) }
         thread(name = "berry-config-load") {
             val saved = try {
                 runBlocking { runtime().store.load() }

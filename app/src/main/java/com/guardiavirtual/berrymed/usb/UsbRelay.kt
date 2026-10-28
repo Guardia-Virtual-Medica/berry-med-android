@@ -45,6 +45,14 @@ class UsbRelay(private val hub: UsbHub) : Closeable {
         restorePower(link)
     }
 
+    /** Lee el estado sin cambiarlo. Devuelve null si el relé no está o no contesta. */
+    fun powerPassing(): Boolean? = synchronized(lock) {
+        val device = hub.relayDevice() ?: return null
+        val link = connectionFor(device) ?: return null
+        val status = readStatus(link) ?: return null
+        !relayIsOn(status, relay = 1)
+    }
+
     private fun restorePower(link: UsbDeviceConnection): Boolean {
         repeat(RESTORE_ATTEMPTS) { attempt ->
             if (setRelay(link, relay = 1, enabled = false)) return true

@@ -91,6 +91,27 @@ adb logcat -s BerryMed
 
 El servicio corre siempre como `connectedDevice`. `dataSync` no sirve: en Android 15 no puede arrancar al encender la tablet y tiene un tope de 6 horas por día.
 
+## Testing
+
+El botón **Testing** de la pantalla principal abre un panel para comprobar, en la tablet, que cada equipo transmite, antes de que nada se procese y se mande. No abre puertos propios: muestra lo que el servicio ya está leyendo.
+
+- **Iniciar prueba** frena los `POST` de prueba de cada 10 s mientras el panel está abierto. Pusher sigue conectado: si llega un `start-monitoring`, gana la consulta y la prueba se corta sola. Con una consulta enviando, la prueba no arranca. Al salir de la pantalla la prueba se corta y, si quedó una presión midiendo, se manda STOP.
+- **Una tarjeta por medición de la plaqueta.** ECG, SpO₂, respiración y temperatura muestran el valor, las muestras por segundo y un punto verde si llegaron datos en los últimos 3 s. **Probar** mira 5 s de tramas y da OK o el motivo:
+
+  | Medición | OK si en 5 s | Si no |
+  |---|---|---|
+  | ECG | llegan 200 muestras/s o más y los electrodos están puestos | "No llega la onda", "Llegan N muestras/s", "Electrodos sueltos" |
+  | SpO₂ | llegan la onda y los valores, con saturación | "No llega la onda", "Sin dedo en el sensor" |
+  | Respiración | llega la onda | "No llega la onda de respiración" |
+  | Temperatura | llegan tramas con valor | "La plaqueta no manda temperatura", "Sensor sin conectar" |
+
+  Los umbrales de SpO₂ y respiración son provisorios: alcanza con que llegue la onda.
+- **Presión**: **Medir** y **Parar** infla y desinfla de verdad, con los mismos plazos que una medición pedida por Pusher.
+- **Termómetro**: la última lectura, hace cuánto llegó y la última línea cruda. Sólo manda cuando alguien aprieta el gatillo.
+- **Relé**: **Leer estado** no cambia nada; **Cortar 5 s** pide confirmación, reinicia la plaqueta y respeta el minuto entre cortes.
+- **Transmisión (no se envía)**: la URL y el JSON que saldría, con su tamaño, y **Copiar JSON**.
+- **Consola**: los últimos logs del servicio, los mismos de `adb logcat -s BerryMed`.
+
 ## Qué no hace esta versión
 
 No publica `/health` y no usa Bluetooth. La aplicación web no cambia: cuando el `POST` llega, sigue igual que con el exe. Ojo con el volumen: el exe por USB pierde una de cada dos tramas, así que esta app manda el doble de muestras de ECG que un tótem con Windows.

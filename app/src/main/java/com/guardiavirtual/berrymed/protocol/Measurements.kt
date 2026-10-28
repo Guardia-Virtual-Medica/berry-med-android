@@ -35,6 +35,27 @@ data class SampleWindow(
 
 data class ThermoReading(val value: Double, val unit: String)
 
+/**
+ * Tramas válidas recibidas desde que arrancó la app, por tipo. Nunca se
+ * reinician: la pantalla de Testing calcula las tasas con la diferencia.
+ */
+data class FrameCounts(
+    var ecg: Long = 0,
+    var ecgInfo: Long = 0,
+    var nibp: Long = 0,
+    var spo2: Long = 0,
+    var temperature: Long = 0,
+    var peaks: Long = 0,
+    var spo2Wave: Long = 0,
+    var respWave: Long = 0,
+    var badChecksum: Long = 0,
+    var nibpStatus: Int = -1,
+    var cuffMmhg: Int = 0,
+)
+
+/** Lo que mira la pantalla de Testing, sin tocar lo que se va a enviar. */
+data class ParserStats(val frames: FrameCounts, val vitals: VitalSigns, val ecgInfo: EcgInfo)
+
 private val EMPTY_SENTINELS = setOf("-", "- -", NO_PAIR)
 
 fun isValidSample(window: SampleWindow): Boolean {

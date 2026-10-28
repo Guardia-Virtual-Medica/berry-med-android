@@ -59,4 +59,23 @@
     <string name="battery_unavailable">Esta tablet no tiene el ajuste de batería. Buscalo a mano en Ajustes, Batería.</string>
     <string name="usb_permission">Pedir permiso USB</string>
     <string name="help_usb_default">Al aceptar el permiso USB, marcá «Usar de forma predeterminada» para la plaqueta, el termómetro y el relé. Si no, Android lo vuelve a pedir arriba de Chrome después de cada reinicio o corte del relé.</string>
+    <string name="testing">Testing</string>
+    <string name="testing_title">Testing</string>
+    <string name="testing_back">← Volver</string>
+    <string name="testing_help">Muestra lo que llega de cada equipo por USB, sin enviar nada a la API. Pusher sigue escuchando: si empieza una consulta, la prueba se corta sola.</string>
+    <string name="testing_start">Iniciar prueba</string>
+    <string name="testing_stop">Detener</string>
+    <string name="testing_all">Probar todo</string>
+    <string name="testing_preview">Transmisión (no se envía)</string>
+    <string name="testing_copy">Copiar JSON</string>
+    <string name="testing_copied">JSON copiado.</string>
+    <string name="testing_console">Consola</string>
+    <string name="testing_pause">Pausar</string>
+    <string name="testing_resume">Seguir</string>
+    <string name="testing_clear">Limpiar</string>
+    <string name="testing_first">Iniciá la prueba primero.</string>
+    <string name="testing_cut_title">¿Cortar la plaqueta?</string>
+    <string name="testing_cut_body">El relé le corta los 12 V durante 5 s. Si hay una medición de presión en curso, se pierde.</string>
+    <string name="testing_cut_confirm">Cortar 5 s</string>
+    <string name="testing_cancel">Cancelar</string>
 </resources>

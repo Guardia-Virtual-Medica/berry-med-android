@@ -33,7 +33,7 @@ class BerryLink(
     @Volatile private var nibpStartedAt: Long = 0L
     @Volatile private var lastNibpFrameAt: Long = 0L
     private var appliedStartup: List<Pair<Int, Int>> = emptyList()
-    private var lastPowerCycleAt: Long = 0L
+    @Volatile private var lastPowerCycleAt: Long = 0L
     private var lastPowerCheckAt: Long = 0L
     private var powerCheckLogged = false
     private var stSeenAt: Long = System.nanoTime()
@@ -76,6 +76,23 @@ class BerryLink(
             }
             Acquire.None -> sleep(5_000)
         }
+    }
+
+    fun portName(): String? = current?.device?.deviceName
+
+    fun lastPowerCycleAgeSeconds(): Long? {
+        val stamp = lastPowerCycleAt
+        if (stamp == 0L) return null
+        return (System.nanoTime() - stamp) / 1_000_000_000L
+    }
+
+    /**
+     * El corte que se pide a mano desde Testing. Respeta el minuto entre cortes;
+     * devuelve false si todavía no se puede. Tarda los 5 s del corte.
+     */
+    fun manualPowerCycle(): Boolean {
+        if (!relay.plugged()) return false
+        return powerCycle("corte pedido desde Testing")
     }
 
     fun stopNibp() {
@@ -309,7 +326,9 @@ class BerryLink(
      * Devuelve false sólo si el enfriamiento no dejó cortar, para que quien
      * llama pueda reintentar enseguida. Sin relé, o con el relé sin permiso,
      * devuelve true: reintentar no cambiaría nada hasta que alguien lo resuelva.
+     * Sincronizado porque el corte manual de Testing llega desde otro hilo.
      */
+    @Synchronized
     private fun powerCycle(reason: String): Boolean {
         if (!relay.plugged()) {
             log("[WATCHDOG] $reason. No hay relé: no se corta la alimentación.")
