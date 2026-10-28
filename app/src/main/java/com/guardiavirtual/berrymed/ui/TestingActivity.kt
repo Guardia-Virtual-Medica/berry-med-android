@@ -59,6 +59,8 @@ class TestingActivity : AppCompatActivity() {
         binding.thermoCard.setup("Termómetro IR", null)
         binding.relayCard.setup("Relé USBRelay2", "Leer estado", "Cortar 5 s")
 
+        // Volver corta la prueba en onStop, igual que el gesto de atrás.
+        binding.backButton.setOnClickListener { finish() }
         binding.startButton.setOnClickListener {
             val blocked = runtime().startTesting()
             binding.testMessage.text = blocked.orEmpty()
@@ -104,6 +106,15 @@ class TestingActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         handler.post(tick)
+    }
+
+    /**
+     * Al cerrar la pantalla (Volver o el gesto de atrás) la prueba se corta
+     * enseguida: onStop puede llegar varios segundos después.
+     */
+    override fun onPause() {
+        if (isFinishing) runtime().stopTesting()
+        super.onPause()
     }
 
     /** Salir de la pantalla corta la prueba: no queda el envío frenado ni el manguito inflado. */
