@@ -38,6 +38,20 @@ class SweepTrace(val samplesPerScreen: Int) {
     }
 
     /**
+     * Pantalla en blanco y el barrido de nuevo en x = 0, sin volver a leer
+     * lo viejo: al cambiar las derivaciones. Con [skipTo], además, salta lo
+     * que llegó mientras no se leía (al reanudar un ECG congelado).
+     */
+    fun wipe(skipTo: Long? = null) {
+        values.fill(Float.NaN)
+        head = 0
+        if (skipTo != null) cursor = skipTo
+    }
+
+    /** Otra cantidad de muestras por pantalla (otra velocidad), en blanco y siguiendo desde donde iba. */
+    fun resized(samples: Int): SweepTrace = SweepTrace(samples).also { it.cursor = cursor }
+
+    /**
      * Arma los segmentos para `drawLines`: cuatro números por segmento. No
      * une dos muestras si alguna falta, ni las que quedan dentro del hueco
      * de [gap] muestras adelante del cursor. Devuelve cuántos números cargó.

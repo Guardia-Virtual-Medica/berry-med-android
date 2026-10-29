@@ -1,593 +1,1429 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Panel Local, apaisado: el ECG a la izquierda, los signos en el medio y la
-    cámara, el otoscopio, la presión y el estetoscopio a la derecha. El
-    candado va arriba de todo y tapa el panel hasta que se escribe el PIN.
+    Panel Local, apaisado y pensado para 1280×800 dp: la cabecera arriba; a
+    la izquierda el área principal (el ECG o el dispositivo abierto), la tira
+    de ECG cuando hay un dispositivo abierto y el dock; a la derecha, la
+    columna de vitales, que no se mueve ni scrollea. En otras tablets se
+    estira la izquierda y los vitales quedan en 312 dp.
+
+    El ECG y los tres dispositivos son hermanos en el área principal y se
+    alternan con visibility: abrir un dispositivo no lo enciende y cerrarlo
+    no lo apaga, y la imagen del otoscopio sigue en la ventana aunque no se
+    vea. Arriba de todo, el diálogo de Finalizar y, último, el candado.
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/monitor">
+    android:background="@color/bg">
 
     <LinearLayout
         android:id="@+id/panel"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="horizontal"
-        android:padding="8dp">
+        android:orientation="vertical">
 
-        <!-- Izquierda: ECG. -->
+        <!-- Cabecera: hora y fecha, los chips de los equipos y Finalizar. -->
         <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="50"
-            android:orientation="vertical">
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="24dp"
+            android:paddingEnd="16dp">
 
+            <!-- Hora y fecha alineadas por baseline. -->
             <LinearLayout
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+                <TextView
+                    android:id="@+id/clock"
+                    style="@style/Panel.Value"
+                    android:textColor="@color/text"
+                    android:textSize="30sp"
+                    tools:text="10:12" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/local_title"
-                        android:textColor="@color/vital_on"
-                        android:textSize="22sp" />
-
-                    <TextView
-                        android:id="@+id/berryLine"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:maxLines="1"
-                        android:textColor="@color/vital_dim"
-                        android:textSize="13sp" />
-                </LinearLayout>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/speedButton"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="6dp"
-                    android:text="@string/local_speed_25"
-                    android:textColor="@color/vital_on"
-                    app:strokeColor="@color/vital_dim" />
-
-                <com.google.android.material.button.MaterialButtonToggleGroup
-                    android:id="@+id/gainGroup"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="6dp"
-                    app:checkedButton="@id/gainOne"
-                    app:selectionRequired="true"
-                    app:singleSelection="true">
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/gainHalf"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:minWidth="0dp"
-                        android:text="@string/local_gain_half"
-                        android:textColor="@color/vital_on"
-                        app:strokeColor="@color/vital_dim" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/gainOne"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:minWidth="0dp"
-                        android:text="@string/local_gain_one"
-                        android:textColor="@color/vital_on"
-                        app:strokeColor="@color/vital_dim" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/gainTwo"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:minWidth="0dp"
-                        android:text="@string/local_gain_two"
-                        android:textColor="@color/vital_on"
-                        app:strokeColor="@color/vital_dim" />
-                </com.google.android.material.button.MaterialButtonToggleGroup>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/exitButton"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/local_exit"
-                    android:textColor="@color/vital_on"
-                    app:strokeColor="@color/vital_dim" />
+                <TextView
+                    android:id="@+id/date"
+                    style="@style/Panel.Text"
+                    android:layout_marginStart="12dp"
+                    android:textColor="@color/muted"
+                    tools:text="Jueves 29 de octubre de 2026" />
             </LinearLayout>
 
-            <com.guardiavirtual.berrymed.ui.panel.EcgPaperView
-                android:id="@+id/ecgPaper"
-                android:layout_width="match_parent"
+            <Space
+                android:layout_width="0dp"
                 android:layout_height="0dp"
-                android:layout_marginTop="6dp"
                 android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/chipEcg"
+                style="@style/Panel.Chip"
+                android:layout_width="wrap_content"
+                android:text="@string/local_chip_ecg" />
+
+            <TextView
+                android:id="@+id/chipSpo2"
+                style="@style/Panel.Chip"
+                android:layout_width="wrap_content"
+                android:text="@string/local_chip_spo2" />
+
+            <TextView
+                android:id="@+id/chipPa"
+                style="@style/Panel.Chip"
+                android:layout_width="wrap_content"
+                android:text="@string/local_chip_pa" />
+
+            <TextView
+                android:id="@+id/chipTemp"
+                style="@style/Panel.Chip"
+                android:layout_width="wrap_content"
+                android:text="@string/local_chip_temp" />
+
+            <TextView
+                android:id="@+id/chipOtoscope"
+                style="@style/Panel.Chip"
+                android:layout_width="wrap_content"
+                android:text="@string/local_otoscope" />
+
+            <TextView
+                android:id="@+id/chipStetho"
+                style="@style/Panel.Chip"
+                android:layout_width="wrap_content"
+                android:text="@string/local_stetho" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/finishButton"
+                style="@style/Panel.Button.Outline"
+                android:layout_width="wrap_content"
+                android:layout_marginStart="16dp"
+                android:text="@string/local_finish" />
         </LinearLayout>
 
-        <!-- Medio: los signos. -->
-        <ScrollView
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_marginStart="8dp"
-            android:layout_weight="22">
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/line" />
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:padding="12dp">
+
+            <!-- Izquierda: área principal, tira de ECG y dock. -->
             <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
                 android:orientation="vertical">
 
-                <LinearLayout style="@style/LocalCard">
+                <!-- El 1 dp de relleno deja ver el borde de la tarjeta: lo de adentro se recorta a sus esquinas. -->
+                <FrameLayout
+                    android:id="@+id/mainArea"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/panel_card"
+                    android:padding="1dp">
 
-                    <TextView style="@style/LocalCardTitle" android:text="@string/local_hr" />
-
-                    <LinearLayout style="@style/LocalValueRow">
-                        <TextView android:id="@+id/hrValue" style="@style/LocalValue" />
-                        <TextView style="@style/LocalUnit" android:text="@string/local_unit_bpm" />
-                    </LinearLayout>
-
-                    <TextView android:id="@+id/hrDetail" style="@style/LocalDetail" />
-                </LinearLayout>
-
-                <LinearLayout style="@style/LocalCard">
-
-                    <TextView style="@style/LocalCardTitle" android:text="@string/local_spo2" />
-
-                    <LinearLayout style="@style/LocalValueRow">
-                        <TextView android:id="@+id/spo2Value" style="@style/LocalValue" />
-                        <TextView style="@style/LocalUnit" android:text="@string/local_unit_percent" />
-                    </LinearLayout>
-
-                    <TextView android:id="@+id/spo2Detail" style="@style/LocalDetail" />
-
-                    <com.guardiavirtual.berrymed.ui.panel.WaveformView
-                        android:id="@+id/spo2Wave"
+                    <!-- El ECG, la vista por defecto. -->
+                    <LinearLayout
+                        android:id="@+id/ecgPanel"
                         android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@color/surface"
+                        android:orientation="vertical">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="63dp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingStart="17dp"
+                            android:paddingEnd="11dp">
+
+                            <TextView
+                                style="@style/Panel.Text.Title"
+                                android:text="@string/local_ecg" />
+
+                            <TextView
+                                android:id="@+id/ecgSignal"
+                                style="@style/Panel.Text.Status"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="16dp"
+                                android:fontFamily="@font/barlow_medium"
+                                android:includeFontPadding="false"
+                                tools:text="Señal buena" />
+
+                            <Space
+                                android:layout_width="0dp"
+                                android:layout_height="0dp"
+                                android:layout_weight="1" />
+
+                            <LinearLayout
+                                style="@style/Panel.Segments"
+                                android:contentDescription="@string/local_leads">
+
+                                <TextView
+                                    android:id="@+id/leadsII"
+                                    style="@style/Panel.Segment"
+                                    android:text="II" />
+
+                                <TextView
+                                    android:id="@+id/leads3"
+                                    style="@style/Panel.Segment"
+                                    android:layout_marginStart="2dp"
+                                    android:text="3" />
+
+                                <TextView
+                                    android:id="@+id/leads7"
+                                    style="@style/Panel.Segment"
+                                    android:layout_marginStart="2dp"
+                                    android:text="7" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                style="@style/Panel.Segments"
+                                android:layout_marginStart="16dp">
+
+                                <TextView
+                                    android:id="@+id/speed12"
+                                    style="@style/Panel.Segment"
+                                    android:text="12,5" />
+
+                                <TextView
+                                    android:id="@+id/speed25"
+                                    style="@style/Panel.Segment"
+                                    android:layout_marginStart="2dp"
+                                    android:text="25" />
+
+                                <TextView
+                                    android:id="@+id/speed50"
+                                    style="@style/Panel.Segment"
+                                    android:layout_marginStart="2dp"
+                                    android:text="50" />
+                            </LinearLayout>
+
+                            <TextView
+                                style="@style/Panel.Text.Small"
+                                android:layout_marginStart="8dp"
+                                android:text="@string/local_unit_mm_s" />
+
+                            <LinearLayout
+                                style="@style/Panel.Segments"
+                                android:layout_marginStart="16dp">
+
+                                <TextView
+                                    android:id="@+id/gain5"
+                                    style="@style/Panel.Segment"
+                                    android:text="5" />
+
+                                <TextView
+                                    android:id="@+id/gain10"
+                                    style="@style/Panel.Segment"
+                                    android:layout_marginStart="2dp"
+                                    android:text="10" />
+
+                                <TextView
+                                    android:id="@+id/gain20"
+                                    style="@style/Panel.Segment"
+                                    android:layout_marginStart="2dp"
+                                    android:text="20" />
+                            </LinearLayout>
+
+                            <TextView
+                                style="@style/Panel.Text.Small"
+                                android:layout_marginStart="8dp"
+                                android:text="@string/local_unit_mm_mv" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/ecgFreezeButton"
+                                style="@style/Panel.Button.Outline"
+                                android:layout_width="wrap_content"
+                                android:layout_height="46dp"
+                                android:layout_marginStart="16dp"
+                                android:paddingStart="12dp"
+                                android:paddingEnd="16dp"
+                                android:text="@string/local_freeze"
+                                android:textSize="15sp"
+                                app:icon="@drawable/ic_pause"
+                                app:iconSize="22dp" />
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="@color/line" />
+
+                        <FrameLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="0dp"
+                            android:layout_weight="1">
+
+                            <com.guardiavirtual.berrymed.ui.panel.EcgPaperView
+                                android:id="@+id/ecgPaper"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent" />
+
+                            <TextView
+                                android:id="@+id/ecgFrozenBadge"
+                                style="@style/Panel.Badge"
+                                android:layout_width="wrap_content"
+                                android:layout_gravity="top|end"
+                                android:layout_marginTop="12dp"
+                                android:layout_marginEnd="14dp"
+                                tools:text="CONGELADO · 10:12:09"
+                                tools:visibility="visible" />
+                        </FrameLayout>
+                    </LinearLayout>
+
+                    <!-- El otoscopio abierto: la imagen en un círculo y sus controles a la derecha. -->
+                    <LinearLayout
+                        android:id="@+id/otoscopePanel"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@color/surface"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="63dp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingStart="11dp"
+                            android:paddingEnd="11dp">
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/otoscopeBack"
+                                style="@style/Panel.Button.Outline"
+                                android:layout_width="wrap_content"
+                                android:paddingStart="12dp"
+                                android:paddingEnd="16dp"
+                                android:text="@string/local_ecg"
+                                android:textSize="15sp"
+                                app:icon="@drawable/ic_arrow_back"
+                                app:iconSize="20dp"
+                                app:strokeColor="@color/line2" />
+
+                            <TextView
+                                style="@style/Panel.Text.Title"
+                                android:layout_marginStart="14dp"
+                                android:text="@string/local_otoscope" />
+
+                            <TextView
+                                android:id="@+id/otoscopeStatus"
+                                style="@style/Panel.Text.Status"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="14dp"
+                                android:fontFamily="@font/barlow_medium"
+                                tools:text="En vivo · UVC" />
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="@color/line" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="0dp"
+                            android:layout_weight="1"
+                            android:orientation="horizontal"
+                            android:padding="11dp">
+
+                            <FrameLayout
+                                android:id="@+id/otoscopeViewer"
+                                android:layout_width="0dp"
+                                android:layout_height="match_parent"
+                                android:layout_weight="1"
+                                android:background="@drawable/panel_viewer">
+
+                                <!--
+                                    El círculo de 400 dp (o lo que entre), recortado con un
+                                    contorno ovalado. Una sola de las dos vistas se muestra:
+                                    PreviewView si va por Camera2, TextureView si va por UVC.
+                                    La imagen es cuadrada y la llena.
+                                -->
+                                <FrameLayout
+                                    android:id="@+id/otoscopeCircle"
+                                    android:layout_width="400dp"
+                                    android:layout_height="400dp"
+                                    android:layout_gravity="center">
+
+                                    <androidx.camera.view.PreviewView
+                                        android:id="@+id/otoscopePreview"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="match_parent"
+                                        android:visibility="gone"
+                                        app:implementationMode="compatible"
+                                        app:scaleType="fillCenter" />
+
+                                    <TextureView
+                                        android:id="@+id/otoscopeTexture"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="match_parent"
+                                        android:visibility="gone" />
+
+                                    <ImageView
+                                        android:id="@+id/otoscopeFrozen"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="match_parent"
+                                        android:background="@color/videoBg"
+                                        android:contentDescription="@string/local_camera_frozen"
+                                        android:scaleType="centerCrop"
+                                        android:visibility="gone" />
+
+                                    <View
+                                        android:layout_width="match_parent"
+                                        android:layout_height="match_parent"
+                                        android:background="@drawable/panel_otoscope_ring" />
+                                </FrameLayout>
+
+                                <TextView
+                                    android:id="@+id/otoscopeMessage"
+                                    style="@style/Panel.Text"
+                                    android:layout_width="320dp"
+                                    android:layout_gravity="center"
+                                    android:gravity="center"
+                                    android:lineSpacingMultiplier="1.2"
+                                    android:textColor="@color/muted"
+                                    android:textSize="15sp"
+                                    tools:text="Otoscopio apagado. Tocá Encender." />
+
+                                <TextView
+                                    android:id="@+id/otoscopeBadge"
+                                    style="@style/Panel.Badge"
+                                    android:layout_width="wrap_content"
+                                    android:layout_gravity="top|start"
+                                    android:layout_marginStart="12dp"
+                                    android:layout_marginTop="12dp" />
+                            </FrameLayout>
+
+                            <LinearLayout
+                                android:layout_width="208dp"
+                                android:layout_height="match_parent"
+                                android:layout_marginStart="12dp"
+                                android:orientation="vertical">
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/otoscopeFreezeButton"
+                                    style="@style/Panel.Button.Primary"
+                                    android:layout_width="match_parent"
+                                    android:enabled="false"
+                                    android:text="@string/local_freeze"
+                                    app:icon="@drawable/ic_pause" />
+
+                                <TextView
+                                    style="@style/Panel.Text.Small"
+                                    android:layout_width="match_parent"
+                                    android:layout_marginTop="10dp"
+                                    android:lineSpacingMultiplier="1.2"
+                                    android:text="@string/local_freeze_help" />
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/otoscopePowerButton"
+                                    style="@style/Panel.Button.Secondary"
+                                    android:layout_width="match_parent"
+                                    android:layout_marginTop="12dp"
+                                    android:text="@string/local_otoscope_on"
+                                    app:icon="@drawable/ic_power_settings_new" />
+                            </LinearLayout>
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- El estetoscopio abierto: el fonocardiograma y sus controles. -->
+                    <LinearLayout
+                        android:id="@+id/stethoPanel"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@color/surface"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="63dp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingStart="11dp"
+                            android:paddingEnd="11dp">
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/stethoBack"
+                                style="@style/Panel.Button.Outline"
+                                android:layout_width="wrap_content"
+                                android:paddingStart="12dp"
+                                android:paddingEnd="16dp"
+                                android:text="@string/local_ecg"
+                                android:textSize="15sp"
+                                app:icon="@drawable/ic_arrow_back"
+                                app:iconSize="20dp"
+                                app:strokeColor="@color/line2" />
+
+                            <TextView
+                                style="@style/Panel.Text.Title"
+                                android:layout_marginStart="14dp"
+                                android:text="@string/local_stetho" />
+
+                            <TextView
+                                android:id="@+id/stethoStatus"
+                                style="@style/Panel.Text.Status"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="14dp"
+                                android:fontFamily="@font/barlow_medium"
+                                tools:text="Escuchando" />
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="@color/line" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="0dp"
+                            android:layout_weight="1"
+                            android:orientation="horizontal"
+                            android:padding="11dp">
+
+                            <FrameLayout
+                                android:layout_width="0dp"
+                                android:layout_height="match_parent"
+                                android:layout_weight="1"
+                                android:background="@drawable/panel_viewer">
+
+                                <com.guardiavirtual.berrymed.ui.panel.WaveformView
+                                    android:id="@+id/stethoWave"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent" />
+
+                                <TextView
+                                    style="@style/Panel.Text.Caps"
+                                    android:layout_gravity="top|start"
+                                    android:layout_marginStart="14dp"
+                                    android:layout_marginTop="12dp"
+                                    android:text="@string/local_phono_label" />
+
+                                <!-- Lo que dice el estetoscopio al empezar o si algo falla. -->
+                                <TextView
+                                    android:id="@+id/stethoMessage"
+                                    style="@style/Panel.Text.Small"
+                                    android:layout_width="match_parent"
+                                    android:layout_gravity="bottom|start"
+                                    android:layout_marginStart="14dp"
+                                    android:layout_marginEnd="14dp"
+                                    android:layout_marginBottom="12dp"
+                                    android:lineSpacingMultiplier="1.2"
+                                    tools:text="Escuchando. Sin auricular: sólo se ve la onda." />
+                            </FrameLayout>
+
+                            <LinearLayout
+                                android:layout_width="208dp"
+                                android:layout_height="match_parent"
+                                android:layout_marginStart="12dp"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    style="@style/Panel.Text.Caps"
+                                    android:text="@string/local_stetho_filter" />
+
+                                <!-- El filtro queda fijo en Corazón hasta que se pueda cambiar en vivo. -->
+                                <LinearLayout
+                                    style="@style/Panel.Segments"
+                                    android:layout_width="match_parent"
+                                    android:layout_marginTop="8dp"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        android:id="@+id/filterHeart"
+                                        style="@style/Panel.Segment.Wide"
+                                        android:enabled="false"
+                                        android:text="@string/local_stetho_heart" />
+
+                                    <TextView
+                                        android:id="@+id/filterLung"
+                                        style="@style/Panel.Segment.Wide"
+                                        android:enabled="false"
+                                        android:text="@string/local_stetho_lung" />
+
+                                    <TextView
+                                        android:id="@+id/filterWide"
+                                        style="@style/Panel.Segment.Wide"
+                                        android:enabled="false"
+                                        android:text="@string/local_stetho_wide" />
+                                </LinearLayout>
+
+                                <TextView
+                                    style="@style/Panel.Text.Caps"
+                                    android:layout_marginTop="14dp"
+                                    android:text="@string/local_stetho_volume" />
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="8dp"
+                                    android:gravity="center_vertical"
+                                    android:orientation="horizontal">
+
+                                    <com.google.android.material.button.MaterialButton
+                                        android:id="@+id/volumeDown"
+                                        style="@style/Panel.Button.Secondary"
+                                        android:layout_width="52dp"
+                                        android:contentDescription="@string/local_stetho_volume_down"
+                                        android:paddingStart="0dp"
+                                        android:paddingEnd="0dp"
+                                        app:cornerRadius="10dp"
+                                        app:icon="@drawable/ic_remove"
+                                        app:iconGravity="textStart"
+                                        app:iconPadding="0dp" />
+
+                                    <TextView
+                                        android:id="@+id/volumeValue"
+                                        style="@style/Panel.Value"
+                                        android:layout_width="0dp"
+                                        android:layout_weight="1"
+                                        android:gravity="center"
+                                        android:textColor="@color/text"
+                                        android:textSize="26sp"
+                                        tools:text="6" />
+
+                                    <com.google.android.material.button.MaterialButton
+                                        android:id="@+id/volumeUp"
+                                        style="@style/Panel.Button.Secondary"
+                                        android:layout_width="52dp"
+                                        android:contentDescription="@string/local_stetho_volume_up"
+                                        android:paddingStart="0dp"
+                                        android:paddingEnd="0dp"
+                                        app:cornerRadius="10dp"
+                                        app:icon="@drawable/ic_add"
+                                        app:iconGravity="textStart"
+                                        app:iconPadding="0dp" />
+                                </LinearLayout>
+
+                                <Space
+                                    android:layout_width="0dp"
+                                    android:layout_height="0dp"
+                                    android:layout_weight="1" />
+
+                                <TextView
+                                    style="@style/Panel.Text"
+                                    android:layout_marginBottom="12dp"
+                                    android:text="@string/local_recordings_empty"
+                                    android:textColor="@color/faint"
+                                    android:textSize="14sp" />
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/stethoListenButton"
+                                    style="@style/Panel.Button.Primary"
+                                    android:layout_width="match_parent"
+                                    android:text="@string/local_stetho_listen"
+                                    app:icon="@drawable/ic_mic" />
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/stethoStopButton"
+                                    style="@style/Panel.Button.Secondary"
+                                    android:layout_width="match_parent"
+                                    android:layout_marginTop="10dp"
+                                    android:text="@string/local_stetho_stop"
+                                    app:icon="@drawable/ic_close" />
+                            </LinearLayout>
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- La cámara de la tablet abierta. -->
+                    <LinearLayout
+                        android:id="@+id/cameraPanel"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@color/surface"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="63dp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingStart="11dp"
+                            android:paddingEnd="11dp">
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/cameraBack"
+                                style="@style/Panel.Button.Outline"
+                                android:layout_width="wrap_content"
+                                android:paddingStart="12dp"
+                                android:paddingEnd="16dp"
+                                android:text="@string/local_ecg"
+                                android:textSize="15sp"
+                                app:icon="@drawable/ic_arrow_back"
+                                app:iconSize="20dp"
+                                app:strokeColor="@color/line2" />
+
+                            <TextView
+                                style="@style/Panel.Text.Title"
+                                android:layout_marginStart="14dp"
+                                android:text="@string/local_camera" />
+
+                            <TextView
+                                android:id="@+id/cameraStatus"
+                                style="@style/Panel.Text.Status"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="14dp"
+                                android:fontFamily="@font/barlow_medium"
+                                tools:text="En vivo · trasera" />
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="@color/line" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="0dp"
+                            android:layout_weight="1"
+                            android:orientation="horizontal"
+                            android:padding="11dp">
+
+                            <FrameLayout
+                                android:id="@+id/cameraViewer"
+                                android:layout_width="0dp"
+                                android:layout_height="match_parent"
+                                android:layout_weight="1"
+                                android:background="@drawable/panel_viewer">
+
+                                <!-- COMPATIBLE usa un TextureView: así Congelar puede sacar la imagen con getBitmap. -->
+                                <androidx.camera.view.PreviewView
+                                    android:id="@+id/cameraPreview"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    app:implementationMode="compatible"
+                                    app:scaleType="fitCenter" />
+
+                                <ImageView
+                                    android:id="@+id/frozenImage"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:background="@color/videoBg"
+                                    android:contentDescription="@string/local_camera_frozen"
+                                    android:scaleType="fitCenter"
+                                    android:visibility="gone" />
+
+                                <TextView
+                                    android:id="@+id/cameraMessage"
+                                    style="@style/Panel.Text"
+                                    android:layout_width="320dp"
+                                    android:layout_gravity="center"
+                                    android:gravity="center"
+                                    android:lineSpacingMultiplier="1.2"
+                                    android:textColor="@color/muted"
+                                    android:textSize="15sp"
+                                    tools:text="En pausa mientras el otoscopio está encendido." />
+
+                                <TextView
+                                    android:id="@+id/cameraBadge"
+                                    style="@style/Panel.Badge"
+                                    android:layout_width="wrap_content"
+                                    android:layout_gravity="top|start"
+                                    android:layout_marginStart="12dp"
+                                    android:layout_marginTop="12dp" />
+                            </FrameLayout>
+
+                            <LinearLayout
+                                android:layout_width="208dp"
+                                android:layout_height="match_parent"
+                                android:layout_marginStart="12dp"
+                                android:orientation="vertical">
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/freezeButton"
+                                    style="@style/Panel.Button.Primary"
+                                    android:layout_width="match_parent"
+                                    android:text="@string/local_freeze"
+                                    app:icon="@drawable/ic_pause" />
+
+                                <TextView
+                                    style="@style/Panel.Text.Small"
+                                    android:layout_width="match_parent"
+                                    android:layout_marginTop="10dp"
+                                    android:lineSpacingMultiplier="1.2"
+                                    android:text="@string/local_freeze_help" />
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/cameraSwitchButton"
+                                    style="@style/Panel.Button.Secondary"
+                                    android:layout_width="match_parent"
+                                    android:layout_marginTop="12dp"
+                                    android:text="@string/local_camera_switch"
+                                    app:icon="@drawable/ic_cameraswitch" />
+                            </LinearLayout>
+                        </LinearLayout>
+                    </LinearLayout>
+                </FrameLayout>
+
+                <!-- La tira de ECG, sólo con un dispositivo abierto. -->
+                <LinearLayout
+                    android:id="@+id/ecgStrip"
+                    android:layout_width="match_parent"
+                    android:layout_height="72dp"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/panel_card"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="8dp"
+                    android:visibility="gone">
+
+                    <LinearLayout
+                        android:layout_width="70dp"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <TextView
+                            style="@style/Panel.Text.Small"
+                            android:text="@string/local_strip_label" />
+
+                        <TextView
+                            android:id="@+id/stripHr"
+                            style="@style/Panel.Value"
+                            android:layout_marginTop="4dp"
+                            android:textColor="@color/ecg"
+                            android:textSize="18sp"
+                            tools:text="FC 71" />
+                    </LinearLayout>
+
+                    <com.guardiavirtual.berrymed.ui.panel.EcgPaperView
+                        android:id="@+id/stripPaper"
+                        android:layout_width="0dp"
                         android:layout_height="56dp"
-                        android:layout_marginTop="4dp" />
+                        android:layout_marginStart="14dp"
+                        android:layout_weight="1" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/viewEcgButton"
+                        style="@style/Panel.Button.Secondary"
+                        android:layout_width="wrap_content"
+                        android:layout_marginStart="14dp"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="18dp"
+                        android:text="@string/local_view_ecg"
+                        android:textSize="15sp"
+                        app:cornerRadius="10dp"
+                        app:icon="@drawable/ic_open_in_full"
+                        app:iconSize="20dp" />
                 </LinearLayout>
 
-                <LinearLayout style="@style/LocalCard">
+                <!-- El dock: siempre los tres, también cuando falta el equipo. -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="80dp"
+                    android:layout_marginTop="12dp"
+                    android:orientation="horizontal">
 
-                    <TextView style="@style/LocalCardTitle" android:text="@string/local_resp" />
+                    <LinearLayout
+                        android:id="@+id/otoscopeTile"
+                        style="@style/Panel.Tile">
 
-                    <LinearLayout style="@style/LocalValueRow">
-                        <TextView android:id="@+id/respValue" style="@style/LocalValue" />
-                        <TextView style="@style/LocalUnit" android:text="@string/local_unit_rpm" />
+                        <ImageView
+                            style="@style/Panel.TileIcon"
+                            android:src="@drawable/ic_hearing" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="14dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/Panel.Text"
+                                android:fontFamily="@font/barlow_semibold"
+                                android:text="@string/local_otoscope"
+                                android:textSize="17sp" />
+
+                            <TextView
+                                android:id="@+id/otoscopeTileStatus"
+                                style="@style/Panel.Text.Small"
+                                android:layout_marginTop="4dp"
+                                android:maxLines="1"
+                                tools:text="En vivo" />
+                        </LinearLayout>
+
+                        <ImageView
+                            android:id="@+id/otoscopeTileIcon"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:importantForAccessibility="no"
+                            android:src="@drawable/ic_chevron_right"
+                            app:tint="@color/faint" />
                     </LinearLayout>
 
-                    <com.guardiavirtual.berrymed.ui.panel.WaveformView
-                        android:id="@+id/respWave"
-                        android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:layout_marginTop="4dp" />
-                </LinearLayout>
+                    <LinearLayout
+                        android:id="@+id/stethoTile"
+                        style="@style/Panel.Tile"
+                        android:layout_marginStart="12dp">
 
-                <LinearLayout style="@style/LocalCard">
+                        <ImageView
+                            style="@style/Panel.TileIcon"
+                            android:src="@drawable/ic_stethoscope" />
 
-                    <TextView style="@style/LocalCardTitle" android:text="@string/local_temp" />
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="14dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
 
-                    <LinearLayout style="@style/LocalValueRow">
-                        <TextView android:id="@+id/tempValue" style="@style/LocalValue" />
-                        <TextView style="@style/LocalUnit" android:text="@string/local_unit_celsius" />
+                            <TextView
+                                style="@style/Panel.Text"
+                                android:fontFamily="@font/barlow_semibold"
+                                android:text="@string/local_stetho"
+                                android:textSize="17sp" />
+
+                            <TextView
+                                android:id="@+id/stethoTileStatus"
+                                style="@style/Panel.Text.Small"
+                                android:layout_marginTop="4dp"
+                                android:maxLines="1"
+                                tools:text="Conectado" />
+                        </LinearLayout>
+
+                        <ImageView
+                            android:id="@+id/stethoTileIcon"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:importantForAccessibility="no"
+                            android:src="@drawable/ic_chevron_right"
+                            app:tint="@color/faint" />
                     </LinearLayout>
 
-                    <TextView android:id="@+id/thermoDetail" style="@style/LocalDetail" />
+                    <LinearLayout
+                        android:id="@+id/cameraTile"
+                        style="@style/Panel.Tile"
+                        android:layout_marginStart="12dp">
+
+                        <ImageView
+                            style="@style/Panel.TileIcon"
+                            android:src="@drawable/ic_videocam" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="14dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/Panel.Text"
+                                android:fontFamily="@font/barlow_semibold"
+                                android:text="@string/local_camera"
+                                android:textSize="17sp" />
+
+                            <TextView
+                                android:id="@+id/cameraTileStatus"
+                                style="@style/Panel.Text.Small"
+                                android:layout_marginTop="4dp"
+                                android:maxLines="1"
+                                tools:text="Lista" />
+                        </LinearLayout>
+
+                        <ImageView
+                            android:id="@+id/cameraTileIcon"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:importantForAccessibility="no"
+                            android:src="@drawable/ic_chevron_right"
+                            app:tint="@color/faint" />
+                    </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
-        </ScrollView>
 
-        <!-- Derecha: cámara, otoscopio, presión y estetoscopio; si no entran, se desplaza. -->
-        <ScrollView
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_marginStart="8dp"
-            android:layout_weight="28">
-
+            <!-- Derecha: los vitales, en posición fija y sin scroll. -->
             <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_width="312dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="12dp"
                 android:orientation="vertical">
 
-                <LinearLayout style="@style/LocalCard">
+                <LinearLayout
+                    style="@style/Panel.Card"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1.65"
+                    android:paddingTop="14dp"
+                    android:paddingBottom="12dp">
 
-                    <TextView style="@style/LocalCardTitle" android:text="@string/local_camera" />
+                    <LinearLayout style="@style/Panel.CardTop">
 
-                    <FrameLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="220dp"
-                        android:layout_marginTop="6dp"
-                        android:background="@color/monitor">
+                        <TextView
+                            style="@style/Panel.CardLabel"
+                            android:text="@string/local_hr"
+                            android:textColor="@color/ecg" />
 
-                        <!-- COMPATIBLE usa un TextureView: así Congelar puede sacar la imagen con getBitmap. -->
-                        <androidx.camera.view.PreviewView
-                            android:id="@+id/cameraPreview"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            app:implementationMode="compatible"
-                            app:scaleType="fitCenter" />
+                        <TextView
+                            style="@style/Panel.CardSource"
+                            android:text="@string/local_hr_source" />
 
-                        <ImageView
-                            android:id="@+id/frozenImage"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:background="@color/monitor"
-                            android:contentDescription="@string/local_camera_frozen"
-                            android:scaleType="fitCenter"
-                            android:visibility="gone" />
-                    </FrameLayout>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:orientation="horizontal">
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/cameraSwitchButton"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginEnd="6dp"
-                            android:layout_weight="1"
-                            android:text="@string/local_camera_switch"
-                            android:textColor="@color/vital_on"
-                            app:strokeColor="@color/vital_dim" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/freezeButton"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="@string/local_freeze"
-                            android:textColor="@color/vital_on"
-                            app:strokeColor="@color/vital_dim" />
+                        <TextView
+                            style="@style/Panel.CardUnit"
+                            android:text="@string/local_unit_bpm" />
                     </LinearLayout>
 
-                    <TextView android:id="@+id/cameraMessage" style="@style/LocalDetail" />
-                </LinearLayout>
-
-                <!-- Debajo de la cámara, que queda en pausa mientras el otoscopio está encendido. -->
-                <LinearLayout
-                    android:id="@+id/otoscopeCard"
-                    style="@style/LocalCard"
-                    android:visibility="gone">
-
-                    <TextView style="@style/LocalCardTitle" android:text="@string/local_otoscope" />
-
-                    <!--
-                        Cuadrado, como la imagen del otoscopio. Una sola de las dos vistas
-                        se muestra: PreviewView si va por Camera2, TextureView si va por
-                        UVC. Las dos dejan sacar la imagen para Congelar.
-                    -->
-                    <FrameLayout
-                        android:id="@+id/otoscopeStage"
-                        android:layout_width="220dp"
-                        android:layout_height="220dp"
-                        android:layout_gravity="center_horizontal"
-                        android:layout_marginTop="6dp"
-                        android:background="@color/monitor">
-
-                        <androidx.camera.view.PreviewView
-                            android:id="@+id/otoscopePreview"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:visibility="gone"
-                            app:implementationMode="compatible"
-                            app:scaleType="fitCenter" />
-
-                        <TextureView
-                            android:id="@+id/otoscopeTexture"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:visibility="gone" />
-
-                        <ImageView
-                            android:id="@+id/otoscopeFrozen"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:background="@color/monitor"
-                            android:contentDescription="@string/local_camera_frozen"
-                            android:scaleType="fitCenter"
-                            android:visibility="gone" />
-                    </FrameLayout>
-
-                    <!-- El hueco que deja el cuadro mientras está ampliado: así la tarjeta no salta. -->
                     <TextView
-                        android:id="@+id/otoscopePlaceholder"
-                        android:layout_width="220dp"
-                        android:layout_height="220dp"
-                        android:layout_gravity="center_horizontal"
-                        android:layout_marginTop="6dp"
-                        android:background="@color/monitor"
-                        android:gravity="center"
-                        android:text="@string/local_otoscope_zoomed"
-                        android:textColor="@color/vital_dim"
-                        android:textSize="15sp"
-                        android:visibility="gone" />
+                        android:id="@+id/hrValue"
+                        style="@style/Panel.Value"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical"
+                        android:textColor="@color/ecg"
+                        android:textSize="112sp"
+                        tools:text="71" />
 
-                    <LinearLayout
+                    <TextView
+                        android:id="@+id/hrNote"
+                        style="@style/Panel.Text.Small"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:orientation="horizontal">
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/otoscopePowerButton"
-                            style="@style/LocalRowButton"
-                            android:layout_marginEnd="6dp"
-                            android:text="@string/local_otoscope_on" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/otoscopeFreezeButton"
-                            style="@style/LocalRowButton.Outlined"
-                            android:layout_marginEnd="6dp"
-                            android:enabled="false"
-                            android:text="@string/local_freeze" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/otoscopeZoomButton"
-                            style="@style/LocalRowButton.Outlined"
-                            android:enabled="false"
-                            android:text="@string/local_otoscope_zoom" />
-                    </LinearLayout>
-
-                    <TextView android:id="@+id/otoscopeMessage" style="@style/LocalDetail" />
+                        android:gravity="end"
+                        android:maxLines="1"
+                        tools:text="Electrodos sueltos" />
                 </LinearLayout>
 
-                <LinearLayout style="@style/LocalCard">
-
-                    <TextView style="@style/LocalCardTitle" android:text="@string/local_nibp" />
-
-                    <LinearLayout style="@style/LocalValueRow">
-                        <TextView android:id="@+id/nibpValue" style="@style/LocalValue" />
-                        <TextView style="@style/LocalUnit" android:text="@string/local_unit_mmhg" />
-                    </LinearLayout>
-
-                    <TextView android:id="@+id/nibpDetail" style="@style/LocalDetail" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:orientation="horizontal">
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/measureButton"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginEnd="6dp"
-                            android:layout_weight="1"
-                            android:text="@string/local_measure" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/stopButton"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="@string/local_stop"
-                            android:textColor="@color/vital_on"
-                            app:strokeColor="@color/vital_dim" />
-                    </LinearLayout>
-
-                    <TextView android:id="@+id/nibpMessage" style="@style/LocalDetail" />
-                </LinearLayout>
-
-                <!--
-                    Debajo de la presión: en 1280×800 dp la cámara, el otoscopio y la
-                    presión ya llenan la columna, y la presión se usa más.
-                -->
                 <LinearLayout
-                    android:id="@+id/stethoCard"
-                    style="@style/LocalCard"
-                    android:visibility="gone">
+                    style="@style/Panel.Card"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_weight="1">
 
-                    <TextView style="@style/LocalCardTitle" android:text="@string/local_stetho" />
+                    <LinearLayout style="@style/Panel.CardTop">
 
-                    <com.guardiavirtual.berrymed.ui.panel.WaveformView
-                        android:id="@+id/stethoWave"
-                        android:layout_width="match_parent"
-                        android:layout_height="64dp"
-                        android:layout_marginTop="4dp" />
+                        <TextView
+                            style="@style/Panel.CardLabel"
+                            android:text="@string/local_spo2"
+                            android:textColor="@color/spo2" />
 
-                    <com.google.android.material.progressindicator.LinearProgressIndicator
-                        android:id="@+id/stethoLevel"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:contentDescription="@string/local_stetho_level"
-                        android:max="100"
-                        app:indicatorColor="@color/status_live"
-                        app:trackColor="@color/monitor"
-                        app:trackThickness="6dp" />
+                        <Space
+                            android:layout_width="0dp"
+                            android:layout_height="0dp"
+                            android:layout_weight="1" />
+
+                        <TextView
+                            style="@style/Panel.CardUnit"
+                            android:text="@string/local_unit_percent" />
+                    </LinearLayout>
 
                     <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical"
                         android:orientation="horizontal">
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/stethoListenButton"
-                            style="@style/LocalRowButton"
-                            android:layout_marginEnd="6dp"
-                            android:text="@string/local_stetho_listen" />
+                        <TextView
+                            android:id="@+id/spo2Value"
+                            style="@style/Panel.Value"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:textColor="@color/spo2"
+                            android:textSize="64sp"
+                            tools:text="98" />
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/stethoStopButton"
-                            style="@style/LocalRowButton.Outlined"
-                            android:layout_marginEnd="6dp"
-                            android:text="@string/local_stetho_stop" />
-
-                        <!-- Dice sólo "x1": con "Ganancia x1" Escuchar no entraba en una línea. -->
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/stethoGainButton"
-                            style="@style/LocalRowButton.Outlined"
+                        <LinearLayout
                             android:layout_width="wrap_content"
-                            android:layout_weight="0"
-                            android:contentDescription="@string/local_stetho_gain_label"
-                            android:minWidth="0dp" />
+                            android:layout_height="wrap_content"
+                            android:gravity="end"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/Panel.Text.Small"
+                                android:text="@string/local_pulse" />
+
+                            <TextView
+                                android:id="@+id/pulseValue"
+                                style="@style/Panel.Value"
+                                android:layout_marginTop="4dp"
+                                android:textColor="@color/text2"
+                                android:textSize="26sp"
+                                tools:text="73" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    style="@style/Panel.Card"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_weight="0.85">
+
+                    <LinearLayout style="@style/Panel.CardTop">
+
+                        <TextView
+                            style="@style/Panel.CardLabel"
+                            android:text="@string/local_resp"
+                            android:textColor="@color/resp" />
+
+                        <Space
+                            android:layout_width="0dp"
+                            android:layout_height="0dp"
+                            android:layout_weight="1" />
+
+                        <TextView
+                            style="@style/Panel.CardUnit"
+                            android:text="@string/local_unit_rpm" />
                     </LinearLayout>
 
-                    <TextView android:id="@+id/stethoMessage" style="@style/LocalDetail" />
+                    <TextView
+                        android:id="@+id/respValue"
+                        style="@style/Panel.Value"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical"
+                        android:textColor="@color/resp"
+                        android:textSize="52sp"
+                        tools:text="17" />
+                </LinearLayout>
+
+                <LinearLayout
+                    style="@style/Panel.Card"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_weight="1.1">
+
+                    <LinearLayout style="@style/Panel.CardTop">
+
+                        <TextView
+                            style="@style/Panel.CardLabel"
+                            android:text="@string/local_pa"
+                            android:textColor="@color/pa" />
+
+                        <TextView
+                            android:id="@+id/paTime"
+                            style="@style/Panel.CardSource"
+                            tools:text="10:07 · hace 4 min" />
+
+                        <TextView
+                            style="@style/Panel.CardUnit"
+                            android:text="@string/local_unit_mmhg" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <FrameLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1">
+
+                            <!-- El resultado, con la media al lado, alineada por baseline. -->
+                            <LinearLayout
+                                android:id="@+id/paResult"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:id="@+id/paValue"
+                                    style="@style/Panel.Value"
+                                    android:textColor="@color/pa"
+                                    android:textSize="52sp"
+                                    tools:text="120/80" />
+
+                                <TextView
+                                    android:id="@+id/paMean"
+                                    style="@style/Panel.Value"
+                                    android:layout_marginStart="6dp"
+                                    android:text=""
+                                    android:textColor="@color/muted"
+                                    android:textSize="20sp"
+                                    tools:text="(93)" />
+                            </LinearLayout>
+
+                            <!-- Midiendo: el manguito en vivo, la fase y la barra. -->
+                            <LinearLayout
+                                android:id="@+id/paMeasuring"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center_vertical"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal"
+                                android:visibility="gone">
+
+                                <TextView
+                                    android:id="@+id/paCuff"
+                                    style="@style/Panel.Value"
+                                    android:textColor="@color/text"
+                                    android:textSize="44sp"
+                                    tools:text="129" />
+
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="12dp"
+                                    android:layout_weight="1"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        android:id="@+id/paPhase"
+                                        style="@style/Panel.Text.Small"
+                                        tools:text="Midiendo…" />
+
+                                    <ProgressBar
+                                        android:id="@+id/paProgress"
+                                        style="?android:attr/progressBarStyleHorizontal"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="6dp"
+                                        android:layout_marginTop="6dp"
+                                        android:max="1000"
+                                        android:progressDrawable="@drawable/panel_progress" />
+                                </LinearLayout>
+                            </LinearLayout>
+
+                            <TextView
+                                android:id="@+id/paNoResult"
+                                style="@style/Panel.Text"
+                                android:layout_gravity="center_vertical"
+                                android:lineSpacingMultiplier="1.15"
+                                android:text="@string/local_pa_no_result"
+                                android:textColor="@color/muted"
+                                android:textSize="15sp"
+                                android:visibility="gone" />
+                        </FrameLayout>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/paButton"
+                            style="@style/Panel.Button.Card"
+                            android:layout_width="wrap_content"
+                            android:layout_marginStart="10dp"
+                            android:text="@string/local_measure" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/tempCard"
+                    style="@style/Panel.Card"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_weight="0.95">
+
+                    <LinearLayout style="@style/Panel.CardTop">
+
+                        <TextView
+                            android:id="@+id/tempLabel"
+                            style="@style/Panel.CardLabel"
+                            android:text="@string/local_temp"
+                            android:textColor="@color/temp" />
+
+                        <TextView
+                            android:id="@+id/tempTime"
+                            style="@style/Panel.CardSource"
+                            tools:text="IR · 10:12" />
+
+                        <TextView
+                            android:id="@+id/tempUnit"
+                            style="@style/Panel.CardUnit"
+                            android:text="@string/local_unit_celsius" />
+                    </LinearLayout>
+
+                    <FrameLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1">
+
+                        <TextView
+                            android:id="@+id/tempValue"
+                            style="@style/Panel.Value"
+                            android:layout_gravity="center_vertical"
+                            android:textColor="@color/temp"
+                            android:textSize="52sp"
+                            tools:text="36,6" />
+
+                        <TextView
+                            android:id="@+id/tempMessage"
+                            style="@style/Panel.Text"
+                            android:layout_gravity="center_vertical"
+                            android:lineSpacingMultiplier="1.15"
+                            android:textColor="@color/muted"
+                            android:textSize="15sp"
+                            android:visibility="gone"
+                            tools:text="Termómetro IR desconectado" />
+                    </FrameLayout>
                 </LinearLayout>
             </LinearLayout>
-        </ScrollView>
+        </LinearLayout>
     </LinearLayout>
 
-    <!--
-        El otoscopio ampliado: el cuadro de la tarjeta se muda acá adentro, al
-        centro, y el panel de atrás queda oscurecido y, en Android 12 o más,
-        desenfocado. Clickable para que los toques no pasen al panel. Va antes
-        del candado, que tiene que seguir tapando todo.
-    -->
+    <!-- El diálogo de Finalizar: clickable para que los toques no pasen al panel. -->
     <FrameLayout
-        android:id="@+id/otoscopeZoom"
+        android:id="@+id/finishLayer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/zoom_scrim"
+        android:background="@color/scrim"
         android:clickable="true"
         android:focusable="true"
         android:visibility="gone">
 
-        <!-- El cuadro se agrega primero, con el lado calculado al abrir; abajo, los botones. -->
         <LinearLayout
-            android:id="@+id/otoscopeZoomBox"
-            android:layout_width="wrap_content"
+            android:layout_width="440dp"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:orientation="vertical">
+            android:background="@drawable/panel_dialog"
+            android:clickable="true"
+            android:focusable="true"
+            android:orientation="vertical"
+            android:padding="28dp">
+
+            <TextView
+                style="@style/Panel.Text"
+                android:fontFamily="@font/barlow_semibold"
+                android:text="@string/local_finish_title"
+                android:textSize="22sp" />
+
+            <TextView
+                style="@style/Panel.Text"
+                android:layout_width="match_parent"
+                android:layout_marginTop="12dp"
+                android:lineSpacingMultiplier="1.25"
+                android:text="@string/local_finish_body"
+                android:textColor="@color/body" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:gravity="end"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/finishCancel"
+                    style="@style/Panel.Button.Outline"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="@string/local_finish_cancel" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/finishConfirm"
+                    style="@style/Panel.Button.Light"
+                    android:layout_width="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:text="@string/local_finish_confirm" />
+            </LinearLayout>
+        </LinearLayout>
+    </FrameLayout>
+
+    <!-- El candado: clickable para que los toques no pasen al panel de abajo. -->
+    <FrameLayout
+        android:id="@+id/lock"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/bg"
+        android:clickable="true"
+        android:focusable="true">
+
+        <LinearLayout
+            android:layout_width="440dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:background="@drawable/panel_card"
+            android:orientation="vertical"
+            android:padding="28dp">
+
+            <TextView
+                style="@style/Panel.Text"
+                android:fontFamily="@font/barlow_semibold"
+                android:text="@string/local_title"
+                android:textSize="22sp" />
+
+            <TextView
+                style="@style/Panel.Text"
+                android:layout_width="match_parent"
+                android:layout_marginTop="10dp"
+                android:lineSpacingMultiplier="1.25"
+                android:text="@string/local_lock_help"
+                android:textColor="@color/body"
+                android:textSize="15sp" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:hint="@string/local_pin_hint"
+                android:textColorHint="@color/muted"
+                app:boxBackgroundColor="@color/bg"
+                app:boxCornerRadiusBottomEnd="10dp"
+                app:boxCornerRadiusBottomStart="10dp"
+                app:boxCornerRadiusTopEnd="10dp"
+                app:boxCornerRadiusTopStart="10dp"
+                app:boxStrokeColor="@color/primary"
+                app:hintTextColor="@color/primary">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/pinInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/barlow_semi_condensed_semibold"
+                    android:gravity="center"
+                    android:imeOptions="actionDone"
+                    android:inputType="numberPassword"
+                    android:maxLength="12"
+                    android:singleLine="true"
+                    android:textColor="@color/text"
+                    android:textSize="24sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:id="@+id/lockMessage"
+                style="@style/Panel.Text"
+                android:layout_width="match_parent"
+                android:layout_marginTop="8dp"
+                android:minHeight="20dp"
+                android:textColor="@color/warn"
+                android:textSize="15sp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
+                android:gravity="end"
                 android:orientation="horizontal">
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/otoscopeZoomFreezeButton"
-                    style="@style/LocalRowButton.Outlined"
-                    android:layout_marginEnd="8dp"
-                    android:text="@string/local_freeze" />
+                    android:id="@+id/lockBackButton"
+                    style="@style/Panel.Button.Outline"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="@string/local_back" />
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/otoscopeZoomPowerButton"
-                    style="@style/LocalRowButton.Outlined"
-                    android:layout_marginEnd="8dp"
-                    android:text="@string/local_otoscope_off" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/otoscopeZoomCloseButton"
-                    style="@style/LocalRowButton"
-                    android:text="@string/local_otoscope_reduce" />
+                    android:id="@+id/enterButton"
+                    style="@style/Panel.Button.Primary"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="10dp"
+                    android:paddingStart="24dp"
+                    android:paddingEnd="24dp"
+                    android:text="@string/local_enter"
+                    android:textSize="16sp"
+                    app:cornerRadius="10dp" />
             </LinearLayout>
-
-            <TextView
-                android:id="@+id/otoscopeZoomMessage"
-                style="@style/LocalDetail"
-                android:gravity="center"
-                android:minHeight="20dp" />
         </LinearLayout>
     </FrameLayout>
-
-    <!-- El candado: clickable para que los toques no pasen al panel de abajo. -->
-    <LinearLayout
-        android:id="@+id/lock"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@color/monitor"
-        android:clickable="true"
-        android:focusable="true"
-        android:gravity="center"
-        android:orientation="vertical"
-        android:padding="24dp">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/local_title"
-            android:textColor="@color/vital_on"
-            android:textSize="32sp" />
-
-        <TextView
-            android:layout_width="420dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:gravity="center"
-            android:text="@string/local_lock_help"
-            android:textColor="@color/vital_dim"
-            android:textSize="15sp" />
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="240dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:hint="@string/local_pin_hint"
-            android:textColorHint="@color/vital_dim"
-            app:boxStrokeColor="@color/vital_on"
-            app:hintTextColor="@color/vital_on">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/pinInput"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:imeOptions="actionDone"
-                android:inputType="numberPassword"
-                android:maxLength="12"
-                android:singleLine="true"
-                android:textColor="@color/vital_on"
-                android:textSize="24sp" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <TextView
-            android:id="@+id/lockMessage"
-            android:layout_width="420dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:gravity="center"
-            android:minHeight="20dp"
-            android:textColor="@color/test_fail"
-            android:textSize="15sp" />
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:orientation="horizontal">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/lockBackButton"
-                style="@style/Widget.Material3.Button.OutlinedButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="10dp"
-                android:text="@string/local_back"
-                android:textColor="@color/vital_on"
-                app:strokeColor="@color/vital_dim" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/enterButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/local_enter" />
-        </LinearLayout>
-    </LinearLayout>
 </FrameLayout>

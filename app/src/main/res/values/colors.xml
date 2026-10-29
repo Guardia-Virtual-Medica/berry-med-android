@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- La pantalla principal y Testing. -->
     <color name="monitor">#102033</color>
     <color name="vital_on">#F4FBF8</color>
     <color name="vital_dim">#7E97A1</color>
@@ -7,13 +8,55 @@
     <color name="ink">#16303A</color>
     <color name="signal">#1F6F62</color>
     <color name="status_live">#3DDC97</color>
-    <color name="line">#244255</color>
+    <!-- Fondo de las tarjetas de Testing; antes se llamaba line, que ahora es un token del Panel Local. -->
+    <color name="card">#244255</color>
     <color name="ink_soft">#5E7278</color>
-    <color name="warn">#8C3A2F</color>
-    <!-- El rojo de warn no se lee sobre el fondo oscuro del monitor. -->
+    <!-- El error del formulario de configuración; antes se llamaba warn, que ahora es un token del Panel Local. -->
+    <color name="form_error">#8C3A2F</color>
+    <!-- El rojo de form_error no se lee sobre el fondo oscuro del monitor. -->
     <color name="test_fail">#F2A38F</color>
     <!-- Fondo del ícono del Panel Local: distinto del verde de Berry Med para no confundirlos. -->
     <color name="local_icon">#1E4E8C</color>
-    <!-- Lo que tapa el panel detrás del otoscopio ampliado: el azul del monitor, casi opaco. -->
-    <color name="zoom_scrim">#CC0B1A2B</color>
+
+    <!--
+        Los tokens del Panel Local, con los nombres del handoff de diseño.
+        Neutros y superficies.
+    -->
+    <color name="bg">#0B0F14</color>
+    <color name="surface">#11171E</color>
+    <color name="surface2">#1A232D</color>
+    <color name="surfaceActive">#18212B</color>
+    <color name="dialog">#131A22</color>
+    <color name="line">#1E2731</color>
+    <color name="line2">#26313D</color>
+    <color name="line3">#3A4654</color>
+    <color name="dashed">#2E3946</color>
+    <color name="text">#E8EDF2</color>
+    <color name="text2">#C9D2DC</color>
+    <color name="body">#A9B4C0</color>
+    <color name="muted">#8A97A6</color>
+    <color name="faint">#5B6775</color>
+    <color name="ecgBg">#0D1318</color>
+    <color name="gridMajor">#1A242D</color>
+    <color name="gridMinor">#121A20</color>
+    <color name="videoBg">#05080B</color>
+    <!-- El fondo detrás del diálogo de Finalizar: rgba(3, 5, 8, 0.72). -->
+    <color name="scrim">#B8030508</color>
+
+    <!-- Cada parámetro con su color fijo, como en los monitores de cabecera. -->
+    <color name="ecg">#45D483</color>
+    <color name="spo2">#3CC8E8</color>
+    <color name="resp">#F2C94C</color>
+    <color name="pa">#B9A6FF</color>
+    <color name="temp">#FF9F5A</color>
+    <color name="phono">#8FB8FF</color>
+
+    <!-- Estado. Los de alarma quedan definidos para cuando se decidan; hoy nada los usa. -->
+    <color name="primary">#4C9BFF</color>
+    <color name="onPrimary">#06101C</color>
+    <color name="alarm">#FF4D4F</color>
+    <color name="alarmBg">#2A1013</color>
+    <color name="alarmText">#FF8A8A</color>
+    <color name="warn">#FFB020</color>
+    <color name="ok">#45D483</color>
 </resources>

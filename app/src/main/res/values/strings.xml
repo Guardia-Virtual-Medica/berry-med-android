@@ -93,59 +93,93 @@
     <string name="section_local">Panel Local</string>
     <string name="help_local">El PIN que pide el Panel Local al abrirse y cada vez que vuelve a la pantalla. Si lo dejás vacío vuelve a 1515.</string>
     <string name="hint_local_pin">PIN del Panel Local</string>
+    <string name="section_stetho">Estetoscopio</string>
+    <string name="help_stetho">Cómo se llaman para Android el adaptador del estetoscopio y el auricular. Se leen en Testing → Dispositivos que ve Android. El Panel Local los busca por estos nombres y nunca usa el micrófono ni el parlante de la tablet.</string>
+    <string name="hint_stetho_input">Nombre del adaptador del estetoscopio</string>
+    <string name="hint_headset_name">Nombre del auricular</string>
+
+    <!-- Panel Local: el candado. -->
     <string name="local_title">Panel Local</string>
     <string name="local_lock_help">Atención presencial: muestra todos los instrumentos en vivo. No envía nada a OnDoctor ni guarda nada.</string>
     <string name="local_pin_hint">PIN</string>
     <string name="local_enter">Entrar</string>
     <string name="local_back">Volver</string>
     <string name="local_pin_wrong">PIN incorrecto</string>
-    <string name="local_exit">Salir</string>
-    <string name="local_speed_25">25 mm/s</string>
-    <string name="local_speed_12">12.5 mm/s</string>
-    <string name="local_gain_half">x0.5</string>
-    <string name="local_gain_one">x1</string>
-    <string name="local_gain_two">x2</string>
-    <string name="local_hr">Frecuencia cardíaca</string>
+
+    <!-- Panel Local: la cabecera y Finalizar. -->
+    <string name="local_finish">Finalizar</string>
+    <string name="local_finish_title">¿Finalizar la sesión?</string>
+    <string name="local_finish_body">Se detiene el ECG y se apagan el otoscopio y la cámara. Las capturas y grabaciones de esta sesión se descartan.</string>
+    <string name="local_finish_cancel">Cancelar</string>
+    <string name="local_finish_confirm">Finalizar sesión</string>
+    <string name="local_chip_ecg">ECG</string>
+    <string name="local_chip_spo2">SpO₂</string>
+    <string name="local_chip_pa">PA</string>
+    <string name="local_chip_temp">Temp</string>
+
+    <!-- Panel Local: el ECG. -->
+    <string name="local_ecg">ECG</string>
+    <string name="local_unit_mm_s">mm/s</string>
+    <string name="local_unit_mm_mv">mm/mV</string>
+    <string name="local_leads">Derivaciones</string>
+    <string name="local_freeze">Congelar</string>
+    <string name="local_resume">Reanudar</string>
+    <string name="local_frozen_at">CONGELADO · %1$s</string>
+    <string name="local_strip_label">ECG · II</string>
+    <string name="local_strip_hr">FC %1$s</string>
+    <string name="local_view_ecg">Ver ECG</string>
+
+    <!-- Panel Local: los vitales. -->
+    <string name="local_hr">FC</string>
+    <string name="local_hr_source">desde ECG</string>
     <string name="local_spo2">SpO₂</string>
-    <string name="local_resp">Respiración</string>
-    <string name="local_temp">Temperatura</string>
-    <string name="local_camera">Cámara</string>
-    <string name="local_nibp">Presión arterial</string>
+    <string name="local_pulse">Pulso</string>
+    <string name="local_resp">Resp</string>
+    <string name="local_pa">PA</string>
+    <string name="local_pa_measuring">midiendo</string>
+    <string name="local_pa_no_result">Última medición sin resultado</string>
+    <string name="local_measure">Medir</string>
+    <string name="local_cancel">Cancelar</string>
+    <string name="local_temp">Temp</string>
+    <string name="local_thermo_off">Termómetro IR desconectado</string>
+    <string name="local_thermo_wait">Apretá el gatillo para medir</string>
     <string name="local_unit_bpm">lpm</string>
     <string name="local_unit_rpm">rpm</string>
     <string name="local_unit_percent">%</string>
     <string name="local_unit_celsius">°C</string>
     <string name="local_unit_mmhg">mmHg</string>
-    <string name="local_measure">Medir</string>
-    <string name="local_stop">Parar</string>
+
+    <!-- Panel Local: el dock y los dispositivos. -->
+    <string name="local_otoscope">Otoscopio</string>
+    <string name="local_stetho">Estetoscopio</string>
+    <string name="local_camera">Cámara</string>
+    <string name="local_freeze_help">Congelá la imagen para mirarla con calma. No se guarda.</string>
+    <string name="local_video_resume">Seguir</string>
+    <string name="local_camera_frozen">Imagen congelada: no se guarda.</string>
     <string name="local_camera_switch">Cambiar cámara</string>
-    <string name="local_freeze">Congelar</string>
-    <string name="local_resume">Seguir</string>
     <string name="local_camera_denied">Sin permiso para usar la cámara. Se da en Ajustes, Apps, Berry Med.</string>
     <string name="local_camera_missing">Esta tablet no tiene esa cámara.</string>
     <string name="local_camera_failed">No se pudo abrir la cámara.</string>
-    <string name="local_camera_frozen">Imagen congelada: no se guarda.</string>
-    <string name="section_stetho">Estetoscopio</string>
-    <string name="help_stetho">Cómo se llaman para Android el adaptador del estetoscopio y el auricular. Se leen en Testing → Dispositivos que ve Android. El Panel Local los busca por estos nombres y nunca usa el micrófono ni el parlante de la tablet.</string>
-    <string name="hint_stetho_input">Nombre del adaptador del estetoscopio</string>
-    <string name="hint_headset_name">Nombre del auricular</string>
-    <string name="local_stetho">Estetoscopio</string>
-    <string name="local_stetho_listen">Escuchar</string>
-    <string name="local_stetho_stop">Parar</string>
-    <string name="local_stetho_gain">x%1$d</string>
-    <string name="local_stetho_gain_label">Ganancia</string>
-    <string name="local_stetho_starting">Encendiendo…</string>
-    <string name="local_stetho_denied">Sin permiso para el micrófono. Se da en Ajustes, Apps, Berry Med.</string>
-    <string name="local_stetho_level">Nivel</string>
-    <string name="local_otoscope">Otoscopio</string>
+    <string name="local_camera_paused">En pausa mientras el otoscopio está encendido.</string>
     <string name="local_otoscope_on">Encender</string>
     <string name="local_otoscope_off">Apagar</string>
+    <string name="local_otoscope_idle">Otoscopio apagado. Tocá Encender.</string>
+    <string name="local_otoscope_missing">Otoscopio desconectado.</string>
     <string name="local_otoscope_starting">Encendiendo…</string>
     <string name="local_otoscope_ready">Otoscopio encendido · %1$s</string>
     <string name="local_otoscope_done">Otoscopio apagado</string>
     <string name="local_otoscope_denied">El otoscopio necesita el permiso de la cámara. Se da en Ajustes, Apps, Berry Med.</string>
-    <string name="local_otoscope_zoom">Ampliar</string>
-    <string name="local_otoscope_reduce">Reducir</string>
-    <string name="local_otoscope_zoomed">Ampliado</string>
-    <string name="local_camera_paused">En pausa mientras el otoscopio está encendido.</string>
+    <string name="local_stetho_listen">Escuchar</string>
+    <string name="local_stetho_stop">Parar</string>
+    <string name="local_stetho_starting">Encendiendo…</string>
+    <string name="local_stetho_denied">Sin permiso para el micrófono. Se da en Ajustes, Apps, Berry Med.</string>
+    <string name="local_stetho_filter">Filtro</string>
+    <string name="local_stetho_heart">Corazón</string>
+    <string name="local_stetho_lung">Pulmón</string>
+    <string name="local_stetho_wide">Amplio</string>
+    <string name="local_stetho_volume">Volumen</string>
+    <string name="local_stetho_volume_down">Bajar el volumen</string>
+    <string name="local_stetho_volume_up">Subir el volumen</string>
+    <string name="local_phono_label">Fonocardiograma · filtro corazón</string>
+    <string name="local_recordings_empty">Todavía no hay grabaciones</string>
 </resources>
