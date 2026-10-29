@@ -5,6 +5,7 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
+import android.graphics.Color
 import android.graphics.Outline
 import android.os.Bundle
 import android.os.SystemClock
@@ -32,7 +33,10 @@ import com.google.android.material.button.MaterialButton
 import com.guardiavirtual.berrymed.BerryMedApp
 import com.guardiavirtual.berrymed.R
 import com.guardiavirtual.berrymed.config.pinAccepted
+import com.guardiavirtual.berrymed.audio.StethoDsp
+import com.guardiavirtual.berrymed.audio.StethoFilter
 import com.guardiavirtual.berrymed.databinding.ActivityLocalPanelBinding
+import com.guardiavirtual.berrymed.databinding.PanelRecordingRowBinding
 import com.guardiavirtual.berrymed.otoscope.CameraXOtoscope
 import com.guardiavirtual.berrymed.otoscope.OtoscopePower
 import com.guardiavirtual.berrymed.otoscope.OtoscopeSource
@@ -48,6 +52,8 @@ import com.guardiavirtual.berrymed.ui.panel.PanelFormat
 import com.guardiavirtual.berrymed.ui.panel.PanelState
 import com.guardiavirtual.berrymed.ui.panel.PanelUi
 import com.guardiavirtual.berrymed.ui.panel.PressureCard
+import com.guardiavirtual.berrymed.ui.panel.RecordingRow
+import com.guardiavirtual.berrymed.ui.panel.StethoPrimary
 import com.guardiavirtual.berrymed.ui.panel.ScreenState
 import com.guardiavirtual.berrymed.ui.panel.Segments
 import com.guardiavirtual.berrymed.ui.panel.Status
@@ -77,6 +83,11 @@ class LocalPanelActivity : AppCompatActivity() {
     private lateinit var speeds: Segments
     private lateinit var gains: Segments
     private lateinit var leadSegments: Segments
+    private lateinit var filterSegments: Segments
+    private lateinit var recordingRows: List<PanelRecordingRowBinding>
+
+    /** Las grabaciones que se ven en las filas, en el orden de las filas. */
+    private var shownRecordings: List<RecordingRow> = emptyList()
 
     /** La imagen del otoscopio abierta en su panel, por Camera2 o por UVC. */
     private var otoscope: OtoscopeSource? = null
@@ -240,20 +251,7 @@ class LocalPanelActivity : AppCompatActivity() {
         }
         binding.otoscopePowerButton.setOnClickListener { otoscopePower() }
 
-        binding.stethoListenButton.setOnClickListener {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-                listen()
-            } else {
-                micPermission.launch(Manifest.permission.RECORD_AUDIO)
-            }
-        }
-        binding.stethoStopButton.setOnClickListener {
-            runtime().localStethoStop { text -> runOnUiThread { binding.stethoMessage.text = text } }
-        }
-        binding.volumeDown.setOnClickListener { stepVolume(up = false) }
-        binding.volumeUp.setOnClickListener { stepVolume(up = true) }
-        binding.filterHeart.isSelected = true
-        showVolume()
+        setUpStethoscope()
         showDevice(null)
     }
 
@@ -450,6 +448,9 @@ class LocalPanelActivity : AppCompatActivity() {
         // Las capturas se descartan al bloquearse, y Finalizar pasa por acá (onStop): no se guardan en ningún lado.
         cameraFreeze.clear()
         otoscopeFreeze.clear()
+        // Las grabaciones del estetoscopio, igual: se cortan la reproducción y la grabación en curso.
+        runtime().localStethoDiscard()
+        shownRecordings = emptyList()
     }
 
     private fun tryUnlock() {
@@ -493,14 +494,85 @@ class LocalPanelActivity : AppCompatActivity() {
         }
     }
 
+    private fun setUpStethoscope() {
+        val stetho = runtime().stetho
+        binding.stethoListenButton.setOnClickListener { stethoPrimary() }
+        binding.stethoStopButton.setOnClickListener {
+            runtime().localStethoStop { text -> runOnUiThread { stethoMessage(text) } }
+        }
+        // El filtro se aplica en el hilo de audio desde el próximo bloque, sin cortar la escucha.
+        filterSegments = Segments(
+            listOf(binding.filterHeart, binding.filterLung, binding.filterWide),
+            initial = stetho.filter.ordinal,
+        ) { index ->
+            stetho.filter = StethoFilter.entries[index]
+            showPhonoLabel(stetho.filter)
+        }
+        showPhonoLabel(stetho.filter)
+        binding.volumeDown.setOnClickListener { stepVolume(up = false) }
+        binding.volumeUp.setOnClickListener { stepVolume(up = true) }
+        showVolume()
+        recordingRows = listOf(binding.recording0, binding.recording1, binding.recording2)
+        recordingRows.forEachIndexed { index, row -> row.root.setOnClickListener { toggleRecording(index) } }
+    }
+
+    /** Escuchar, Grabar 15 s o, mientras graba, cortar y guardar lo que lleva. */
+    private fun stethoPrimary() {
+        val runtime = runtime()
+        when (PanelUi.stethoButtons(runtime.localSnapshot()).primary) {
+            StethoPrimary.LISTEN ->
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                    listen()
+                } else {
+                    micPermission.launch(Manifest.permission.RECORD_AUDIO)
+                }
+            StethoPrimary.RECORD -> stethoMessage(runtime.localStethoRecord())
+            StethoPrimary.RECORDING -> stethoMessage(runtime.localStethoStopRecording())
+        }
+        render(runtime.localSnapshot())
+    }
+
+    /**
+     * Tocar una grabación la reproduce por el auricular; tocar la que suena
+     * la para. Si se está escuchando, el runtime para primero la escucha.
+     */
+    private fun toggleRecording(slot: Int) {
+        val row = shownRecordings.getOrNull(slot) ?: return
+        val runtime = runtime()
+        if (row.playing) {
+            runtime.localStethoStopPlayback { runOnUiThread { stethoMessage("") } }
+        } else {
+            runtime.localStethoPlay(row.number) { text -> runOnUiThread { stethoMessage(text) } }
+        }
+    }
+
+    private fun stethoMessage(text: CharSequence) {
+        if (unlocked) binding.stethoMessage.text = text
+    }
+
+    private fun filterName(filter: StethoFilter): String = getString(
+        when (filter) {
+            StethoFilter.HEART -> R.string.local_stetho_heart
+            StethoFilter.LUNG -> R.string.local_stetho_lung
+            StethoFilter.WIDE -> R.string.local_stetho_wide
+        },
+    )
+
+    private fun showPhonoLabel(filter: StethoFilter) {
+        binding.phonoLabel.text = getString(R.string.local_phono_label, filterName(filter))
+    }
+
     private fun stepVolume(up: Boolean) {
         val stetho = runtime().stetho
-        stetho.gain = PanelUi.stethoGainStep(stetho.gain, up)
+        stetho.volume = PanelUi.stethoVolumeStep(stetho.volume, up)
         showVolume()
     }
 
     private fun showVolume() {
-        binding.volumeValue.text = PanelUi.stethoVolume(runtime().stetho.gain).toString()
+        val volume = runtime().stetho.volume
+        binding.volumeValue.text = volume.toString()
+        binding.volumeDown.isEnabled = volume > StethoDsp.VOLUME_MIN
+        binding.volumeUp.isEnabled = volume < StethoDsp.VOLUME_MAX
     }
 
     private fun otoscopePower() {
@@ -719,6 +791,7 @@ class LocalPanelActivity : AppCompatActivity() {
         Tone.WARN -> R.color.warn
         Tone.MUTED -> R.color.muted
         Tone.FAINT -> R.color.faint
+        Tone.RECORDING -> R.color.recording
     }
 
     private fun renderVitals(state: PanelState, s: LocalSnapshot) {
@@ -815,12 +888,56 @@ class LocalPanelActivity : AppCompatActivity() {
             binding.otoscopeMessage.text = otoscopeText
         }
 
-        binding.stethoListenButton.isEnabled = s.stethoAvailable && !s.stethoRunning && !s.stethoStarting
-        binding.stethoStopButton.isEnabled = s.stethoRunning || s.stethoStarting
+        renderStethoscope(state)
 
         cameraFreeze.setCanFreeze(cameraState == CameraState.LIVE)
         binding.cameraSwitchButton.isEnabled = cameraState != CameraState.MISSING && !cameraPaused
         binding.cameraMessage.visibility = if (cameraState == CameraState.LIVE) View.GONE else View.VISIBLE
+    }
+
+    private fun renderStethoscope(state: PanelState) {
+        val stetho = state.stetho
+        val primary = binding.stethoListenButton
+        primary.isEnabled = stetho.primaryEnabled
+        if (stetho.primary == StethoPrimary.RECORDING) {
+            val white = ColorStateList.valueOf(Color.WHITE)
+            primary.backgroundTintList = ColorStateList.valueOf(getColor(R.color.alarm))
+            primary.setTextColor(white)
+            primary.iconTint = white
+            primary.text = getString(R.string.local_stetho_recording, stetho.remaining)
+            primary.setIconResource(R.drawable.ic_fiber_manual_record)
+        } else {
+            val text = ContextCompat.getColorStateList(this, R.color.panel_primary_text)
+            primary.backgroundTintList = ContextCompat.getColorStateList(this, R.color.panel_primary_bg)
+            primary.setTextColor(text)
+            primary.iconTint = text
+            val listen = stetho.primary == StethoPrimary.LISTEN
+            primary.setText(if (listen) R.string.local_stetho_listen else R.string.local_stetho_record)
+            primary.setIconResource(if (listen) R.drawable.ic_hearing else R.drawable.ic_mic)
+        }
+        binding.stethoStopButton.isEnabled = stetho.stopEnabled
+
+        filterSegments.select(state.stethoFilter.ordinal)
+        filterSegments.setEnabled(stetho.filters)
+
+        shownRecordings = state.recordings
+        binding.recordingsEmpty.visibility = if (shownRecordings.isEmpty()) View.VISIBLE else View.GONE
+        binding.recordingsRow.visibility = if (shownRecordings.isEmpty()) View.GONE else View.VISIBLE
+        recordingRows.forEachIndexed { index, row ->
+            val recording = shownRecordings.getOrNull(index)
+            if (recording == null) {
+                row.root.visibility = View.INVISIBLE
+                return@forEachIndexed
+            }
+            row.root.visibility = View.VISIBLE
+            row.recordingLabel.text = getString(R.string.local_recording_row, recording.number, filterName(recording.filter))
+            row.recordingTime.text = recording.at
+            row.recordingIcon.setImageResource(if (recording.playing) R.drawable.ic_pause else R.drawable.ic_play_arrow)
+            row.root.contentDescription = getString(
+                if (recording.playing) R.string.local_recording_pause else R.string.local_recording_play,
+                recording.number,
+            )
+        }
     }
 
     companion object {

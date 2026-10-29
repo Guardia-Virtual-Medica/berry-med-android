@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package com.guardiavirtual.berrymed.ui.panel
 
+import com.guardiavirtual.berrymed.audio.StethoFilter
+import com.guardiavirtual.berrymed.audio.StethoRecording
 import com.guardiavirtual.berrymed.otoscope.OtoscopePower
 import com.guardiavirtual.berrymed.protocol.EcgInfo
 import com.guardiavirtual.berrymed.protocol.LiveFeed
@@ -37,6 +39,10 @@ class PanelUiTest {
         stethoAvailable: Boolean = false,
         stethoStarting: Boolean = false,
         stethoRunning: Boolean = false,
+        stethoFilter: StethoFilter = StethoFilter.DEFAULT,
+        stethoRecordingSeconds: Double? = null,
+        stethoRecordings: List<StethoRecording> = emptyList(),
+        stethoReplaying: Int? = null,
         otoscopePlugged: Boolean = false,
         otoscopeAvailable: Boolean = false,
         otoscopeState: OtoscopePower.State = OtoscopePower.State.OFF,
@@ -56,6 +62,10 @@ class PanelUiTest {
         stethoStarting = stethoStarting,
         stethoRunning = stethoRunning,
         stethoPlaying = false,
+        stethoFilter = stethoFilter,
+        stethoRecordingSeconds = stethoRecordingSeconds,
+        stethoRecordings = stethoRecordings,
+        stethoReplaying = stethoReplaying,
         otoscopePlugged = otoscopePlugged,
         otoscopeAvailable = otoscopeAvailable,
         otoscopeState = otoscopeState,
@@ -260,13 +270,63 @@ class PanelUiTest {
     }
 
     @Test
-    fun stethoscopeVolumeOverTodaysGains() {
-        assertEquals(listOf(2, 5, 10), listOf(1, 2, 4).map(PanelUi::stethoVolume))
-        assertEquals(2, PanelUi.stethoGainStep(1, up = true))
-        assertEquals(4, PanelUi.stethoGainStep(2, up = true))
-        assertEquals(4, PanelUi.stethoGainStep(4, up = true))
-        assertEquals(1, PanelUi.stethoGainStep(1, up = false))
-        assertEquals(2, PanelUi.stethoGainStep(4, up = false))
+    fun stethoscopeVolumeStepsByOneBetweenZeroAndTen() {
+        assertEquals(7, PanelUi.stethoVolumeStep(6, up = true))
+        assertEquals(5, PanelUi.stethoVolumeStep(6, up = false))
+        assertEquals(10, PanelUi.stethoVolumeStep(10, up = true))
+        assertEquals(0, PanelUi.stethoVolumeStep(0, up = false))
+        assertEquals(1, PanelUi.stethoVolumeStep(0, up = true))
+    }
+
+    @Test
+    fun stethoscopePrimaryListensThenRecords() {
+        val idle = PanelUi.stethoButtons(snapshot(stethoAvailable = true))
+        assertEquals(StethoButtons(StethoPrimary.LISTEN, primaryEnabled = true, stopEnabled = false, remaining = 15, filters = true), idle)
+        assertFalse(PanelUi.stethoButtons(snapshot()).primaryEnabled)
+        assertFalse(PanelUi.stethoButtons(snapshot(stethoAvailable = true, stethoStarting = true)).primaryEnabled)
+        val listening = PanelUi.stethoButtons(snapshot(stethoAvailable = true, stethoRunning = true))
+        assertEquals(StethoButtons(StethoPrimary.RECORD, primaryEnabled = true, stopEnabled = true, remaining = 15, filters = true), listening)
+    }
+
+    @Test
+    fun recordingCountsDownAndLocksTheFilter() {
+        val s = snapshot(stethoAvailable = true, stethoRunning = true, stethoRecordingSeconds = 2.0)
+        assertEquals(
+            StethoButtons(StethoPrimary.RECORDING, primaryEnabled = true, stopEnabled = true, remaining = 13, filters = false),
+            PanelUi.stethoButtons(s),
+        )
+        assertEquals(15, PanelUi.recordingRemaining(0.0))
+        assertEquals(15, PanelUi.recordingRemaining(0.5))
+        assertEquals(1, PanelUi.recordingRemaining(14.2))
+        assertEquals(0, PanelUi.recordingRemaining(15.0))
+        val state = build(s)
+        assertEquals(Status("Grabando", Tone.RECORDING), state.stethoscopeStatus)
+        assertEquals(Status("Grabando · 13 s", Tone.RECORDING), state.stethoscopeTile.status)
+    }
+
+    @Test
+    fun recordingsShowNewestFirstWithTheirTimeAndWhichOneIsPlaying() {
+        val list = listOf(
+            StethoRecording(1, StethoFilter.HEART, at(10, 5), ShortArray(0)),
+            StethoRecording(2, StethoFilter.LUNG, at(10, 9), ShortArray(0)),
+        )
+        val rows = build(snapshot(stethoAvailable = true, stethoRecordings = list, stethoReplaying = 1)).recordings
+        assertEquals(
+            listOf(
+                RecordingRow(2, StethoFilter.LUNG, "10:09", playing = false),
+                RecordingRow(1, StethoFilter.HEART, "10:05", playing = true),
+            ),
+            rows,
+        )
+        assertTrue(build(snapshot()).recordings.isEmpty())
+        val replaying = build(snapshot(stethoAvailable = true, stethoRecordings = list, stethoReplaying = 2))
+        assertEquals(Status("Reproduciendo", Tone.OK), replaying.stethoscopeStatus)
+    }
+
+    @Test
+    fun theFilterComesFromTheRuntime() {
+        assertEquals(StethoFilter.HEART, build(snapshot()).stethoFilter)
+        assertEquals(StethoFilter.WIDE, build(snapshot(stethoFilter = StethoFilter.WIDE)).stethoFilter)
     }
 
     @Test
@@ -281,6 +341,8 @@ class PanelUiTest {
 
     @Test
     fun aSavedCaptureIsNotSavedAgain() {
-        assertEquals(VideoButtons(null, discard = true, help = false), PanelUi.videoButtons(VideoMode.REVIEW))
+        assertEquals(VideoButtons(null, discard = true, help = false, backToLive = true), PanelUi.videoButtons(VideoMode.REVIEW))
+        // Congelado sin guardar sí se descarta: el botón sigue diciendo "Descartar y volver".
+        assertFalse(PanelUi.videoButtons(VideoMode.FROZEN).backToLive)
     }
 }

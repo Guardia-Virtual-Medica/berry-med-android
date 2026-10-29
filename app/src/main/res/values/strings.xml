@@ -186,6 +186,12 @@
     <string name="local_stetho_volume">Volumen</string>
     <string name="local_stetho_volume_down">Bajar el volumen</string>
     <string name="local_stetho_volume_up">Subir el volumen</string>
-    <string name="local_phono_label">Fonocardiograma · filtro corazón</string>
+    <string name="local_phono_label">Fonocardiograma · filtro %1$s</string>
+    <string name="local_stetho_record">Grabar 15 s</string>
+    <string name="local_stetho_recording">Grabando… %1$d s</string>
     <string name="local_recordings_empty">Todavía no hay grabaciones</string>
+    <string name="local_recording_row">Grabación %1$d · %2$s</string>
+    <string name="local_recording_play">Reproducir la grabación %1$d</string>
+    <string name="local_recording_pause">Parar la grabación %1$d</string>
+    <string name="local_capture_back_live">Volver al vivo</string>
 </resources>
