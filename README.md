@@ -2,6 +2,8 @@
 
 App de tótem que reemplaza a `berry-monitor.exe`. Lee el monitor PM6750 (la plaqueta Berry) y el termómetro por USB y, mientras dura una consulta, manda las mediciones a la API una vez por segundo, con el mismo JSON que el monitor de Windows.
 
+La documentación del proyecto está en [`docs/`](docs/): los planes de cada etapa (`docs/planes/`), las decisiones de producto con su fecha ([`docs/decisiones.md`](docs/decisiones.md)), el armado del tótem ([`docs/hardware.md`](docs/hardware.md)), el handoff de diseño del Panel Local (`docs/redisenio/`) y las revisiones (`docs/revisiones/`).
+
 Adelante, en la tablet, va Google Chrome con la plataforma médica. Berry Med trabaja en segundo plano: arranca sola al encender la tablet y no se muestra. Su pantalla se abre a mano para configurarla o ver el estado.
 
 ## Cómo funciona
@@ -78,6 +80,8 @@ Todo queda guardado en la tablet. La pantalla también muestra los signos vitale
 1. **Abrir Berry Med una vez después de instalarla.** Android no le avisa el encendido a una app que nunca se abrió.
 2. **Aceptar el permiso USB de la plaqueta, el termómetro, el hub YKUSH3 y el otoscopio marcando "Usar de forma predeterminada".** Android da el permiso por cada conexión: después de un reinicio, cada equipo vuelve como un dispositivo nuevo. Con la casilla marcada lo da solo. Para eso abre una pantalla de Berry Med que no muestra nada y se cierra enseguida, así que Chrome queda adelante. Sin la casilla, cada reinicio muestra un pedido de permiso arriba de Chrome. El adaptador del estetoscopio y el auricular no piden permiso: Android los maneja como audio. El otoscopio sí, por si la tablet no lo lista como cámara (ver [Panel Local](#panel-local)); su pedido aparece la primera vez que se enciende su puerto.
 
+   Conviene abrir el Panel Local una vez y aceptar el permiso de la cámara **antes** de aceptar el permiso USB del otoscopio: en Android 10 o más, Android puede negar sin diálogo el permiso USB de un dispositivo de video si la app todavía no tiene el de cámara.
+
    Cada equipo se pide una sola vez, para no tapar Chrome una y otra vez. Si alguien rechaza o cierra el pedido, la pantalla de Berry Med dice "Falta aceptar el permiso USB" y se resuelve con **Pedir permiso USB**. Un equipo sin permiso no frena a los demás.
 3. **Tocar "Evitar que se duerma"** para excluir la app de la optimización de batería. Con Chrome adelante es imprescindible: si Android cierra el servicio, sólo puede volver a levantarlo si la app está excluida. Algunas marcas tienen además su propia lista de apps que se duermen: sacarla de ahí también.
 4. **Sin bloqueo con PIN, patrón ni contraseña.** Con bloqueo seguro Android no avisa el encendido hasta que alguien desbloquea, y la app no arranca.
@@ -134,6 +138,30 @@ Para atención **presencial, sin teleconsulta**: el médico o el enfermero que e
 - **La escala del ECG es la del papel, en milímetros reales.** 25 mm/s son 25 mm de pantalla por segundo, no una aproximación en dp. La escala vertical, en cambio, es aproximada: la plaqueta manda cada muestra como un byte de 0 a 255 con la línea de base en 128 y no documenta cuántos milivoltios son. El papel supone 40 unidades por mV; la ganancia sirve para ajustarlo a ojo.
 - **Tipografía e íconos**: Barlow y Barlow Semi Condensed (licencia OFL, en `app/src/main/res/font/`, con sus licencias en `app/src/main/assets/fonts/`) e íconos de Material Symbols Rounded (Apache 2.0).
 
+## Probar el Panel Local en el tótem
+
+Con el armado completo (ver [`docs/hardware.md`](docs/hardware.md)), la tablet conectada a una computadora y, en otra terminal, `adb logcat -s BerryMed` andando. En este orden:
+
+1. **Testing → Dispositivos que ve Android**, con todo enchufado y los tres puertos del YKUSH3 encendidos (Leer estado; si alguno está apagado, Encender):
+   - que aparezcan las dos placas de audio USB, el adaptador del estetoscopio y el auricular H390, y anotar con qué nombre las lista Android: son los que van en Configuración → Plaqueta → Estetoscopio si no coinciden con `USB Audio` y `H390`;
+   - en Cámaras, si el otoscopio aparece como cámara externa ("externa (USB)") o sólo como dispositivo USB.
+2. **Panel Local con la plaqueta**: ECG (las derivaciones barriendo, señal buena con los electrodos puestos), SpO₂ con el dedo en el sensor, respiración, presión (Medir, ver el manguito inflando y el resultado con la hora) y termómetro (apretar el gatillo y que llegue la lectura).
+3. **Estetoscopio**: Escuchar y comprobar que suena por el H390 sin acople; con el estetoscopio en el pecho, que se vea la onda; anotar qué volumen y qué filtro hacen falta; Grabar 15 s y reproducir la grabación por el auricular.
+4. **Otoscopio**: Encender, que prenda la luz y aparezca la imagen; anotar por qué camino fue (el encabezado dice "En vivo · Camera2" o "En vivo · UVC"); Congelar y Guardar captura; Apagar. Al salir del panel, el puerto del otoscopio tiene que quedar como estaba antes de abrirlo (con Leer estado en Testing).
+5. **Al salir**, que Chrome y la teleconsulta sigan andando: los puertos que estaban encendidos siguen encendidos y la consulta envía como siempre.
+
+Si algo falla, en `adb logcat -s BerryMed`:
+
+| Qué falla | Qué buscar |
+|---|---|
+| El hub no cambia un puerto | Líneas `[YKUSH]`: "El hub no contesta" o "El hub rechazó". |
+| El otoscopio no aparece o no da imagen | Líneas `[OTOSCOPIO]`: si apareció y por qué camino se abrió, "No apareció en 8 s", "Está enchufado pero sin permiso USB", "No abrió …" con el motivo. |
+| El estetoscopio no suena o no hay onda | Líneas `[ESTETO]`: "Escuchando por …" dice qué entrada y qué salida eligió; "No se pudo abrir el auricular" o "la captura" con el error. |
+| La plaqueta, la presión o el termómetro | Líneas `[USB]` (puerto de la plaqueta), `[NIBP]` (presión) y `[THERM]` (termómetro). |
+| El panel no abre o se ignoran órdenes | Líneas `[LOCAL]` y `[SESIÓN]`. |
+
+Lo que el emulador no puede mostrar está en "Riesgos a confirmar en la tablet real" de [`docs/hardware.md`](docs/hardware.md#riesgos-a-confirmar-en-la-tablet-real): si el otoscopio aparece por Camera2 o sólo por UVC, si las dos placas de audio conviven y con qué nombres, el ancho de banda con otoscopio y audio a la vez en el mismo hub, que `setPreferredDevice` enrute de verdad al adaptador y al auricular, y el permiso USB del otoscopio negado sin diálogo si falta el de cámara.
+
 ## Qué no hace esta versión
 
 No publica `/health` y no usa Bluetooth. La aplicación web no cambia: cuando el `POST` llega, sigue igual que con el exe. Ojo con el volumen: el exe por USB pierde una de cada dos tramas, así que esta app manda el doble de muestras de ECG que un tótem con Windows.
@@ -146,7 +174,23 @@ Abrir la carpeta en Android Studio y ejecutar el módulo `app`, o desde la termi
 ./gradlew test assembleDebug
 ```
 
-Hace falta JDK 17 y el Android SDK 35. Los tests no necesitan la plaqueta.
+Hace falta JDK 17 y el Android SDK 35. En una Mac con Homebrew, el JDK 17 se apunta con `JAVA_HOME`:
+
+```bash
+JAVA_HOME=/opt/homebrew/opt/openjdk@17 ./gradlew test assembleDebug
+```
+
+Los tests no necesitan la plaqueta. `local.properties` (la ruta del SDK) es de cada máquina y no se commitea.
+
+El APK no se publica en GitHub: no hay releases ni CI. Se compila y se instala en la tablet conectada por USB:
+
+```bash
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+Siempre firmado con la misma clave: si cambia, hay que desinstalar y eso borra la configuración (ver [Instalar y dejarla sola](#instalar-y-dejarla-sola)).
+
+Para probar sin tablet está el emulador `berry_tablet`: Android 15, 2560×1600 a 320 dpi, que son los 1280×800 dp para los que está pensado el Panel Local.
 
 ## Licencia
 

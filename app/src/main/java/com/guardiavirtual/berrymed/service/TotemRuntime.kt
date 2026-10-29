@@ -570,8 +570,9 @@ class TotemRuntime(context: Context) {
      * Escuchar: enciende en el YKUSH3 los puertos del adaptador y del
      * auricular que estén apagados y, si encendió alguno, espera hasta 5 s a
      * que Android vea las dos placas de audio antes de abrir el audio. Si no
-     * encendió nada, abre con lo que hay. Sin YKUSH3 se intenta directo. Todo en otro hilo; [done] se llama desde ese hilo con el
-     * mensaje para la tarjeta.
+     * encendió nada, abre con lo que hay. Sin YKUSH3 se intenta directo.
+     * Todo en otro hilo; [done] se llama desde ese hilo con el mensaje para la
+     * tarjeta.
      */
     fun localStethoStart(done: (String) -> Unit) {
         if (!localMode) {

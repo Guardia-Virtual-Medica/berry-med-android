@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas"><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Caveat:wght@500;700&display=swap" rel="stylesheet"><style>body{margin:0;background:#f0eee9;font-family:system-ui,sans-serif;color:#1a1a1a}a{color:#2f6fe0}a:hover{color:#1d4fa8}.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.55)}.dv-card{max-width:100%;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}.dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.5)}</style></helmet>
+<section class="dv-turn" id="t2">
+<div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">Variantes de <a class="dv-oid" href="#1a">1a</a>: sin datos del paciente, con fecha y hora</span></div>
+<div class="dv-opts">
+<div class="dv-opt" id="2a"><div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a>Igual que 1a, con fecha y hora en lugar del paciente · vista por defecto</div>
+<div class="dv-card" style="width:1000px">
+<div style="padding:20px 20px 0">
+<div style="width:956px;height:600px;box-sizing:border-box;border:2.5px solid #222;border-radius:14px;padding:8px 12px 12px;display:flex;flex-direction:column;gap:8px;font-family:'Patrick Hand',cursive;color:#1f1f1f">
+<div style="height:14px;display:flex;justify-content:space-between;font-size:12px;color:#aaa"><span>12:25</span><span>wifi · bat</span></div>
+<div style="display:flex;align-items:center;gap:8px;padding-bottom:8px;border-bottom:2px solid #222">
+<div style="display:flex;align-items:baseline;gap:10px;line-height:1.1"><span style="font-size:28px">12:25</span><span style="font-size:17px;color:#555">miércoles 29 oct 2026</span></div>
+<div style="flex:1"></div>
+<span style="display:flex;align-items:center;gap:5px;font-size:14px;border:1.5px solid #222;border-radius:20px;padding:2px 9px"><i style="width:8px;height:8px;border-radius:50%;background:#2e9d5b"></i>ECG</span>
+<span style="display:flex;align-items:center;gap:5px;font-size:14px;border:1.5px solid #222;border-radius:20px;padding:2px 9px"><i style="width:8px;height:8px;border-radius:50%;background:#2e9d5b"></i>SpO₂</span>
+<span style="display:flex;align-items:center;gap:5px;font-size:14px;border:1.5px solid #222;border-radius:20px;padding:2px 9px"><i style="width:8px;height:8px;border-radius:50%;background:#2e9d5b"></i>PA</span>
+<span style="display:flex;align-items:center;gap:5px;font-size:14px;border:1.5px dashed #aaa;color:#999;border-radius:20px;padding:2px 9px"><i style="width:8px;height:8px;border-radius:50%;border:1.5px solid #aaa;box-sizing:border-box"></i>Temp</span>
+<span style="display:flex;align-items:center;gap:5px;font-size:14px;border:1.5px solid #222;border-radius:20px;padding:2px 9px"><i style="width:8px;height:8px;border-radius:50%;background:#2e9d5b"></i>Oto</span>
+<span style="display:flex;align-items:center;gap:5px;font-size:14px;border:1.5px solid #222;border-radius:20px;padding:2px 9px"><i style="width:8px;height:8px;border-radius:50%;background:#2e9d5b"></i>Esteto</span>
+<div style="width:12px"></div>
+<span style="border:2px solid #222;border-radius:8px;padding:6px 16px;font-size:17px">Finalizar</span>
+</div>
+<div style="flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:10px">
+<div style="display:flex;flex-direction:column;gap:10px;min-height:0">
+<div style="flex:1;min-height:0;border:2px solid #222;border-radius:8px;display:flex;flex-direction:column;overflow:hidden">
+<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1.5px dashed #bbb;font-size:15px">
+<b style="font-size:19px;font-weight:400">ECG</b>
+<div style="display:flex;border:1.5px solid #222;border-radius:6px;overflow:hidden"><span style="padding:1px 10px">1</span><span style="padding:1px 10px;border-left:1.5px solid #222;background:#222;color:#fff">3 der.</span><span style="padding:1px 10px;border-left:1.5px solid #222">12</span></div>
+<div style="flex:1"></div>
+<span style="border:1.5px solid #222;border-radius:6px;padding:1px 8px">25 mm/s ▾</span>
+<span style="border:1.5px solid #222;border-radius:6px;padding:1px 8px">10 mm/mV ▾</span>
+<span style="border:1.5px solid #222;border-radius:6px;padding:1px 8px">Congelar</span>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;background:repeating-linear-gradient(0deg,#eee 0 1px,transparent 1px 20px),repeating-linear-gradient(90deg,#eee 0 1px,transparent 1px 20px)">
+<div style="flex:1;display:flex;align-items:center;gap:8px;padding:0 10px"><span style="width:26px;font-size:15px">II</span><div style="flex:1;height:56px;background:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='60'%3E%3Cpath d='M0 30h60l10-5l10 5h10l5 5l5-25l5 40l5-20h20l15-8l15 8h40' fill='none' stroke='%23222' stroke-width='2'/%3E%3C/svg%3E&quot;) repeat-x left center;background-size:auto 100%"></div></div>
+<div style="flex:1;display:flex;align-items:center;gap:8px;padding:0 10px"><span style="width:26px;font-size:15px">V1</span><div style="flex:1;height:56px;background:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='60'%3E%3Cpath d='M0 30h60l10-5l10 5h10l5 5l5-25l5 40l5-20h20l15-8l15 8h40' fill='none' stroke='%23222' stroke-width='2'/%3E%3C/svg%3E&quot;) repeat-x left center;background-size:auto 100%"></div></div>
+<div style="flex:1;display:flex;align-items:center;gap:8px;padding:0 10px"><span style="width:26px;font-size:15px">V5</span><div style="flex:1;height:56px;background:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='60'%3E%3Cpath d='M0 30h60l10-5l10 5h10l5 5l5-25l5 40l5-20h20l15-8l15 8h40' fill='none' stroke='%23222' stroke-width='2'/%3E%3C/svg%3E&quot;) repeat-x left center;background-size:auto 100%"></div></div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">
+<div style="border:2px solid #222;border-radius:8px;padding:8px;display:flex;align-items:center;gap:10px"><div style="width:64px;height:44px;background:#e6e6e3;border-radius:4px"></div><div style="display:flex;flex-direction:column;line-height:1.1"><span style="font-size:17px">Otoscopio</span><span style="font-size:13px;color:#2e9d5b">● en vivo · abrir ▸</span></div></div>
+<div style="border:2px solid #222;border-radius:8px;padding:8px;display:flex;align-items:center;gap:10px"><div style="width:64px;height:44px;background:#e6e6e3;border-radius:4px"></div><div style="display:flex;flex-direction:column;line-height:1.1"><span style="font-size:17px">Estetoscopio</span><span style="font-size:13px;color:#777">listo · abrir ▸</span></div></div>
+<div style="border:2px solid #222;border-radius:8px;padding:8px;display:flex;align-items:center;gap:10px"><div style="width:64px;height:44px;background:#e6e6e3;border-radius:4px"></div><div style="display:flex;flex-direction:column;line-height:1.1"><span style="font-size:17px">Cámara</span><span style="font-size:13px;color:#777">apagada · abrir ▸</span></div></div>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;min-height:0">
+<div style="flex:1.4;border:2px solid #222;border-radius:8px;padding:6px 12px;display:flex;flex-direction:column;justify-content:center"><div style="display:flex;justify-content:space-between;font-size:15px;color:#555"><span>FC · desde ECG</span><span>lpm</span></div><div style="font-size:64px;line-height:1">72</div></div>
+<div style="flex:1;border:2px solid #222;border-radius:8px;padding:6px 12px;display:flex;flex-direction:column;justify-content:center"><div style="display:flex;justify-content:space-between;font-size:15px;color:#555"><span>SpO₂ · pulso 74</span><span>%</span></div><div style="font-size:44px;line-height:1">98</div></div>
+<div style="flex:1;border:2px solid #222;border-radius:8px;padding:6px 12px;display:flex;flex-direction:column;justify-content:center"><div style="display:flex;justify-content:space-between;font-size:15px;color:#555"><span>Respiración</span><span>rpm</span></div><div style="font-size:44px;line-height:1">16</div></div>
+<div style="flex:1.2;border:2px solid #222;border-radius:8px;padding:6px 12px;display:flex;align-items:center;gap:8px"><div style="flex:1;display:flex;flex-direction:column"><div style="font-size:15px;color:#555">Presión · 12:21</div><div style="font-size:40px;line-height:1">120/80</div></div><span style="border:2px solid #222;border-radius:8px;padding:4px 12px;font-size:16px">Medir</span></div>
+<div style="flex:1;border:2px dashed #aaa;border-radius:8px;padding:6px 12px;display:flex;align-items:center;gap:8px;color:#888"><div style="flex:1;display:flex;flex-direction:column"><div style="font-size:15px">Temperatura</div><div style="font-size:15px">Termómetro desconectado</div></div><span style="border:2px solid #888;border-radius:8px;padding:4px 10px;font-size:16px">Conectar</span></div>
+</div>
+</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;padding:16px 20px 20px;font:13.5px/1.45 system-ui"><div><b>Cambios respecto de <a class="dv-oid" href="#1a">1a</a>.</b> Sin datos del paciente: la cabecera muestra la hora grande y la fecha, para que una captura de pantalla o una foto quede fechada.</div><div><b>Detalle.</b> Si la app corre en modo inmersivo (sin barra de Android), este reloj reemplaza al del sistema. Si no, se respetan los <i>insets</i> y no se pisan.</div><div><b>A definir.</b> ¿Hace falta un cronómetro de sesión (por ejemplo "15 min") o alcanza con la hora?</div></div>
+</div></div>
+<div class="dv-opt" id="2b"><div class="dv-olabel"><a class="dv-oid" href="#2b">2b</a>Mismo panel con el otoscopio abierto desde el dock</div>
+<div class="dv-card" style="width:1000px">
+<div style="padding:20px 20px 0">
+<div style="width:956px;height:600px;box-sizing:border-box;border:2.5px solid #222;border-radius:14px;padding:8px 12px 12px;display:flex;flex-direction:column;gap:8px;font-family:'Patrick Hand',cursive;color:#1f1f1f">
+<div style="height:14px;display:flex;justify-content:space-between;font-size:12px;color:#aaa"><span>12:25</span><span>wifi · bat</span></div>
+<div style="display:flex;align-items:center;gap:8px;padding-bottom:8px;border-bottom:2px solid #222">
+<div style="display:flex;align-items:baseline;gap:10px;line-height:1.1"><span style="font-size:28px">12:25</span><span style="font-size:17px;color:#555">miércoles 29 oct 2026</span></div>
+<div style="flex:1"></div>
+<span style="display:flex;align-items:center;gap:5px;font-size:14px;border:1.5px solid #222;border-radius:20px;padding:2px 9px"><i style="width:8px;height:8px;border-radius:50%;background:#2e9d5b"></i>ECG</span>
+<span style="display:flex;align-items:center;gap:5px;font-size:14px;border:1.5px solid #222;border-radius:20px;padding:2px 9px"><i style="width:8px;height:8px;border-radius:50%;background:#2e9d5b"></i>SpO₂</span>
+<span style="display:flex;align-items:center;gap:5px;font-size:14px;border:1.5px solid #222;border-radius:20px;padding:2px 9px"><i style="width:8px;height:8px;border-radius:50%;background:#2e9d5b"></i>PA</span>
+<span style="display:flex;align-items:center;gap:5px;font-size:14px;border:1.5px dashed #aaa;color:#999;border-radius:20px;padding:2px 9px"><i style="width:8px;height:8px;border-radius:50%;border:1.5px solid #aaa;box-sizing:border-box"></i>Temp</span>
+<span style="display:flex;align-items:center;gap:5px;font-size:14px;border:1.5px solid #222;border-radius:20px;padding:2px 9px"><i style="width:8px;height:8px;border-radius:50%;background:#2e9d5b"></i>Oto</span>
+<span style="display:flex;align-items:center;gap:5px;font-size:14px;border:1.5px solid #222;border-radius:20px;padding:2px 9px"><i style="width:8px;height:8px;border-radius:50%;background:#2e9d5b"></i>Esteto</span>
+<div style="width:12px"></div>
+<span style="border:2px solid #222;border-radius:8px;padding:6px 16px;font-size:17px">Finalizar</span>
+</div>
+<div style="flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:10px">
+<div style="display:flex;flex-direction:column;gap:10px;min-height:0">
+<div style="flex:1;min-height:0;border:2.5px solid #222;border-radius:8px;display:flex;flex-direction:column;overflow:hidden">
+<div style="display:flex;align-items:center;gap:10px;padding:6px 10px;border-bottom:1.5px dashed #bbb;font-size:15px"><span style="border:1.5px solid #222;border-radius:6px;padding:1px 10px">‹ Volver al ECG</span><b style="font-size:20px;font-weight:400">Otoscopio</b><span style="color:#2e9d5b">● en vivo</span><div style="flex:1"></div><span style="border:1.5px solid #222;border-radius:6px;padding:1px 8px">Luz ▾</span><span style="border:1.5px solid #222;border-radius:6px;padding:1px 8px">Zoom ▾</span></div>
+<div style="flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 170px;gap:10px;padding:10px">
+<div style="background:#e6e6e3;border-radius:8px;display:flex;align-items:center;justify-content:center"><div style="width:250px;height:250px;border-radius:50%;border:2px dashed #999;display:flex;align-items:center;justify-content:center;font-size:17px;color:#888">video en vivo</div></div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<span style="background:#2f6fe0;color:#fff;border-radius:10px;padding:16px;font-size:20px;text-align:center">Capturar</span>
+<span style="border:2px solid #222;border-radius:10px;padding:10px;font-size:17px;text-align:center">Congelar</span>
+<span style="border:2px solid #222;border-radius:10px;padding:10px;font-size:17px;text-align:center">Apagar</span>
+<div style="flex:1"></div>
+<div style="font-size:15px;color:#555">Capturas (3)</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px"><div style="aspect-ratio:1;background:#e6e6e3;border-radius:4px"></div><div style="aspect-ratio:1;background:#e6e6e3;border-radius:4px"></div><div style="aspect-ratio:1;background:#e6e6e3;border-radius:4px"></div></div>
+</div>
+</div>
+</div>
+<div style="height:62px;box-sizing:border-box;border:2px solid #222;border-radius:8px;display:flex;align-items:center;gap:8px;padding:0 10px;font-size:15px;background:repeating-linear-gradient(0deg,#eee 0 1px,transparent 1px 20px),repeating-linear-gradient(90deg,#eee 0 1px,transparent 1px 20px)"><span style="width:56px">ECG · II</span><div style="flex:1;height:44px;background:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='60'%3E%3Cpath d='M0 30h60l10-5l10 5h10l5 5l5-25l5 40l5-20h20l15-8l15 8h40' fill='none' stroke='%23222' stroke-width='2'/%3E%3C/svg%3E&quot;) repeat-x left center;background-size:auto 100%"></div><span style="border:1.5px solid #222;border-radius:6px;padding:1px 8px;background:#fff">Expandir ▴</span></div>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;min-height:0">
+<div style="flex:1.4;border:2px solid #222;border-radius:8px;padding:6px 12px;display:flex;flex-direction:column;justify-content:center"><div style="display:flex;justify-content:space-between;font-size:15px;color:#555"><span>FC · desde ECG</span><span>lpm</span></div><div style="font-size:64px;line-height:1">72</div></div>
+<div style="flex:1;border:2px solid #222;border-radius:8px;padding:6px 12px;display:flex;flex-direction:column;justify-content:center"><div style="display:flex;justify-content:space-between;font-size:15px;color:#555"><span>SpO₂ · pulso 74</span><span>%</span></div><div style="font-size:44px;line-height:1">98</div></div>
+<div style="flex:1;border:2px solid #222;border-radius:8px;padding:6px 12px;display:flex;flex-direction:column;justify-content:center"><div style="display:flex;justify-content:space-between;font-size:15px;color:#555"><span>Respiración</span><span>rpm</span></div><div style="font-size:44px;line-height:1">16</div></div>
+<div style="flex:1.2;border:2px solid #222;border-radius:8px;padding:6px 12px;display:flex;align-items:center;gap:8px"><div style="flex:1;display:flex;flex-direction:column"><div style="font-size:15px;color:#555">Presión · 12:21</div><div style="font-size:40px;line-height:1">120/80</div></div><span style="border:2px solid #222;border-radius:8px;padding:4px 12px;font-size:16px">Medir</span></div>
+<div style="flex:1;border:2px dashed #aaa;border-radius:8px;padding:6px 12px;display:flex;align-items:center;gap:8px;color:#888"><div style="flex:1;display:flex;flex-direction:column"><div style="font-size:15px">Temperatura</div><div style="font-size:15px">Termómetro desconectado</div></div><span style="border:2px solid #888;border-radius:8px;padding:4px 10px;font-size:16px">Conectar</span></div>
+</div>
+</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;padding:16px 20px 20px;font:13.5px/1.45 system-ui"><div><b>Flujo.</b> Al tocar un dispositivo del dock, ocupa el área del ECG. El ECG baja a una tira de una derivación y la columna de vitales no se mueve.</div><div><b>Resuelve</b> el punto débil de <a class="dv-oid" href="#1a">1a</a>: el ECG sigue visible mientras se examina. "Volver" o tocar la tira devuelve el ECG grande. El estetoscopio y la cámara usan el mismo patrón.</div><div><b>A definir.</b> Si el ECG está desconectado, la tira desaparece y el dispositivo gana ese espacio.</div></div>
+</div></div>
+</div>
+<p class="dv-next">Probá pedirme: "<a class="dv-oid" href="#2b">2b</a> con el estetoscopio" · "<a class="dv-oid" href="#2a">2a</a> con 12 derivaciones" · "pasemos a la UI de <a class="dv-oid" href="#2a">2a</a>"</p>
+</section>
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Panel de dispositivos médicos — propuesta UX en lo-fi</span></div>
+
+<div style="display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start;margin:0 0 36px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="font:600 12px system-ui;color:rgba(0,0,0,.55);text-transform:uppercase;letter-spacing:.06em">Diagnóstico de la pantalla actual</div>
+<div style="position:relative;width:640px;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.15)">
+<img src="uploads/pasted-1793276975144-0.png" alt="Pantalla actual" style="display:block;width:640px;height:auto;filter:grayscale(.4) brightness(.85)">
+<span style="position:absolute;left:4%;top:3%;transform:translate(-50%,-50%);width:24px;height:24px;border-radius:50%;background:#d6453d;color:#fff;font:700 12px/24px system-ui;text-align:center">1</span>
+<span style="position:absolute;left:34%;top:4%;transform:translate(-50%,-50%);width:24px;height:24px;border-radius:50%;background:#d6453d;color:#fff;font:700 12px/24px system-ui;text-align:center">2</span>
+<span style="position:absolute;left:26%;top:45%;transform:translate(-50%,-50%);width:24px;height:24px;border-radius:50%;background:#d6453d;color:#fff;font:700 12px/24px system-ui;text-align:center">3</span>
+<span style="position:absolute;left:55%;top:8%;transform:translate(-50%,-50%);width:24px;height:24px;border-radius:50%;background:#d6453d;color:#fff;font:700 12px/24px system-ui;text-align:center">4</span>
+<span style="position:absolute;left:92%;top:25%;transform:translate(-50%,-50%);width:24px;height:24px;border-radius:50%;background:#d6453d;color:#fff;font:700 12px/24px system-ui;text-align:center">5</span>
+<span style="position:absolute;left:84%;top:95%;transform:translate(-50%,-50%);width:24px;height:24px;border-radius:50%;background:#d6453d;color:#fff;font:700 12px/24px system-ui;text-align:center">6</span>
+<span style="position:absolute;left:66%;top:67%;transform:translate(-50%,-50%);width:24px;height:24px;border-radius:50%;background:#d6453d;color:#fff;font:700 12px/24px system-ui;text-align:center">7</span>
+<span style="position:absolute;left:74%;top:80%;transform:translate(-50%,-50%);width:24px;height:24px;border-radius:50%;background:#d6453d;color:#fff;font:700 12px/24px system-ui;text-align:center">8</span>
+<span style="position:absolute;left:60%;top:86%;transform:translate(-50%,-50%);width:24px;height:24px;border-radius:50%;background:#d6453d;color:#fff;font:700 12px/24px system-ui;text-align:center">9</span>
+</div>
+</div>
+<div style="max-width:440px;display:flex;flex-direction:column;gap:18px;font:14px/1.5 system-ui">
+<ol style="margin:22px 0 0;padding-left:22px;display:flex;flex-direction:column;gap:6px">
+<li>La barra de estado pisa el título (no respeta los <i>insets</i> de Android).</li>
+<li>Controles del ECG mezclados con "Salir". El "x1" seleccionado casi no se lee y la ganancia no tiene unidad.</li>
+<li>El ECG ocupa la mitad de la pantalla aunque no haya señal.</li>
+<li>Todas las tarjetas pesan igual. El "—" no explica qué pasa ni qué hacer.</li>
+<li>Dos videos en vivo (cámara + otoscopio) compitiendo a la vez.</li>
+<li>La presión arterial queda cortada: hay que hacer scroll para ver un signo vital.</li>
+<li>Estados redactados distinto: "Sin señal", "sin conectar", "Sin medir todavía".</li>
+<li>Estilos de botón distintos sin motivo ("Apagar" relleno, el resto con contorno).</li>
+<li>Espacio vacío en la columna central mientras la derecha desborda.</li>
+<li>Falta el estetoscopio, y ninguna medición muestra hora ni fuente.</li>
+</ol>
+<div style="background:#fff;border-radius:8px;padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,.06)">
+<div style="font-weight:600;margin-bottom:6px">Principios para el rediseño</div>
+<div style="display:flex;flex-direction:column;gap:4px;color:#333">
+<span><b>Vitales sin scroll y siempre en el mismo lugar</b>, para que se lean de un vistazo y la vista los encuentre sola.</span>
+<span><b>Un foco a la vez:</b> un solo video grande y los controles al lado de su dispositivo.</span>
+<span><b>Cada estado dice qué hacer:</b> desconectado → Conectar, medido → hora + Repetir.</span>
+<span><b>El color solo marca estado:</b> conexión, señal pobre, fuera de rango. Nada decorativo.</span>
+</div>
+</div>
+</div>
+</div>
+
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a"><div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Monitor de cabecera: ECG + columna de vitales y dispositivos de imagen en un dock</div>
+<div class="dv-card" style="width:1000px">
+<div style="padding:20px 20px 0">
+<div style="width:956px;height:600px;box-sizing:border-box;border:2.5px solid #222;border-radius:14px;padding:8px 12px 12px;display:flex;flex-direction:column;gap:8px;font-family:'Patrick Hand',cursive;color:#1f1f1f">
+<div style="height:14px;display:flex;justify-content:space-between;font-size:12px;color:#aaa"><span>12:25</span><span>wifi · bat</span></div>
+<div style="display:flex;align-items:center;gap:8px;padding-bottom:8px;border-bottom:2px solid #222">
+<div style="display:flex;flex-direction:column;line-height:1.1"><span style="font-size:20px">Juan Pérez · 54 a</span><span style="font-size:14px;color:#777">Consulta iniciada 12:10</span></div>
+<div style="flex:1"></div>
+<span style="display:flex;align-items:center;gap:5px;font-size:14px;border:1.5px solid #222;border-radius:20px;padding:2px 9px"><i style="width:8px;height:8px;border-radius:50%;background:#2e9d5b"></i>ECG</span>
+<span style="display:flex;align-items:center;gap:5px;font-size:14px;border:1.5px solid #222;border-radius:20px;padding:2px 9px"><i style="width:8px;height:8px;border-radius:50%;background:#2e9d5b"></i>SpO₂</span>
+<span style="display:flex;align-items:center;gap:5px;font-size:14px;border:1.5px solid #222;border-radius:20px;padding:2px 9px"><i style="width:8px;height:8px;border-radius:50%;background:#2e9d5b"></i>PA</span>
+<span style="display:flex;align-items:center;gap:5px;font-size:14px;border:1.5px dashed #aaa;color:#999;border-radius:20px;padding:2px 9px"><i style="width:8px;height:8px;border-radius:50%;border:1.5px solid #aaa;box-sizing:border-box"></i>Temp</span>
+<span style="display:flex;align-items:center;gap:5px;font-size:14px;border:1.5px solid #222;border-radius:20px;padding:2px 9px"><i style="width:8px;height:8px;border-radius:50%;background:#2e9d5b"></i>Oto</span>
+<span style="display:flex;align-items:center;gap:5px;font-size:14px;border:1.5px solid #222;border-radius:20px;padding:2px 9px"><i style="width:8px;height:8px;border-radius:50%;background:#2e9d5b"></i>Esteto</span>
+<div style="width:12px"></div>
+<span style="border:2px solid #222;border-radius:8px;padding:6px 16px;font-size:17px">Finalizar</span>
+</div>
+<div style="flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:10px">
+<div style="display:flex;flex-direction:column;gap:10px;min-height:0">
+<div style="flex:1;min-height:0;border:2px solid #222;border-radius:8px;display:flex;flex-direction:column;overflow:hidden">
+<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1.5px dashed #bbb;font-size:15px">
+<b style="font-size:19px;font-weight:400">ECG</b>
+<div style="display:flex;border:1.5px solid #222;border-radius:6px;overflow:hidden"><span style="padding:1px 10px">1</span><span style="padding:1px 10px;border-left:1.5px solid #222;background:#222;color:#fff">3 der.</span><span style="padding:1px 10px;border-left:1.5px solid #222">12</span></div>
+<div style="flex:1"></div>
+<span style="border:1.5px solid #222;border-radius:6px;padding:1px 8px">25 mm/s ▾</span>
+<span style="border:1.5px solid #222;border-radius:6px;padding:1px 8px">10 mm/mV ▾</span>
+<span style="border:1.5px solid #222;border-radius:6px;padding:1px 8px">Congelar</span>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;background:repeating-linear-gradient(0deg,#eee 0 1px,transparent 1px 20px),repeating-linear-gradient(90deg,#eee 0 1px,transparent 1px 20px)">
+<div style="flex:1;display:flex;align-items:center;gap:8px;padding:0 10px"><span style="width:26px;font-size:15px">II</span><div style="flex:1;height:56px;background:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='60'%3E%3Cpath d='M0 30h60l10-5l10 5h10l5 5l5-25l5 40l5-20h20l15-8l15 8h40' fill='none' stroke='%23222' stroke-width='2'/%3E%3C/svg%3E&quot;) repeat-x left center;background-size:auto 100%"></div></div>
+<div style="flex:1;display:flex;align-items:center;gap:8px;padding:0 10px"><span style="width:26px;font-size:15px">V1</span><div style="flex:1;height:56px;background:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='60'%3E%3Cpath d='M0 30h60l10-5l10 5h10l5 5l5-25l5 40l5-20h20l15-8l15 8h40' fill='none' stroke='%23222' stroke-width='2'/%3E%3C/svg%3E&quot;) repeat-x left center;background-size:auto 100%"></div></div>
+<div style="flex:1;display:flex;align-items:center;gap:8px;padding:0 10px"><span style="width:26px;font-size:15px">V5</span><div style="flex:1;height:56px;background:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='60'%3E%3Cpath d='M0 30h60l10-5l10 5h10l5 5l5-25l5 40l5-20h20l15-8l15 8h40' fill='none' stroke='%23222' stroke-width='2'/%3E%3C/svg%3E&quot;) repeat-x left center;background-size:auto 100%"></div></div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">
+<div style="border:2px solid #222;border-radius:8px;padding:8px;display:flex;align-items:center;gap:10px"><div style="width:64px;height:44px;background:#e6e6e3;border-radius:4px"></div><div style="display:flex;flex-direction:column;line-height:1.1"><span style="font-size:17px">Otoscopio</span><span style="font-size:13px;color:#2e9d5b">● en vivo · abrir ▸</span></div></div>
+<div style="border:2px solid #222;border-radius:8px;padding:8px;display:flex;align-items:center;gap:10px"><div style="width:64px;height:44px;background:#e6e6e3;border-radius:4px"></div><div style="display:flex;flex-direction:column;line-height:1.1"><span style="font-size:17px">Estetoscopio</span><span style="font-size:13px;color:#777">listo · abrir ▸</span></div></div>
+<div style="border:2px solid #222;border-radius:8px;padding:8px;display:flex;align-items:center;gap:10px"><div style="width:64px;height:44px;background:#e6e6e3;border-radius:4px"></div><div style="display:flex;flex-direction:column;line-height:1.1"><span style="font-size:17px">Cámara</span><span style="font-size:13px;color:#777">apagada · abrir ▸</span></div></div>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;min-height:0">
+<div style="flex:1.4;border:2px solid #222;border-radius:8px;padding:6px 12px;display:flex;flex-direction:column;justify-content:center"><div style="display:flex;justify-content:space-between;font-size:15px;color:#555"><span>FC · desde ECG</span><span>lpm</span></div><div style="font-size:64px;line-height:1">72</div></div>
+<div style="flex:1;border:2px solid #222;border-radius:8px;padding:6px 12px;display:flex;flex-direction:column;justify-content:center"><div style="display:flex;justify-content:space-between;font-size:15px;color:#555"><span>SpO₂ · pulso 74</span><span>%</span></div><div style="font-size:44px;line-height:1">98</div></div>
+<div style="flex:1;border:2px solid #222;border-radius:8px;padding:6px 12px;display:flex;flex-direction:column;justify-content:center"><div style="display:flex;justify-content:space-between;font-size:15px;color:#555"><span>Respiración</span><span>rpm</span></div><div style="font-size:44px;line-height:1">16</div></div>
+<div style="flex:1.2;border:2px solid #222;border-radius:8px;padding:6px 12px;display:flex;align-items:center;gap:8px"><div style="flex:1;display:flex;flex-direction:column"><div style="font-size:15px;color:#555">Presión · 12:21</div><div style="font-size:40px;line-height:1">120/80</div></div><span style="border:2px solid #222;border-radius:8px;padding:4px 12px;font-size:16px">Medir</span></div>
+<div style="flex:1;border:2px dashed #aaa;border-radius:8px;padding:6px 12px;display:flex;align-items:center;gap:8px;color:#888"><div style="flex:1;display:flex;flex-direction:column"><div style="font-size:15px">Temperatura</div><div style="font-size:15px">Termómetro desconectado</div></div><span style="border:2px solid #888;border-radius:8px;padding:4px 10px;font-size:16px">Conectar</span></div>
+</div>
+</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;padding:16px 20px 20px;font:13.5px/1.45 system-ui">
+<div><b>Idea.</b> Copia la lógica de los monitores de cabecera: curva a la izquierda, números a la derecha. Otoscopio, estetoscopio y cámara se abren a pantalla completa desde el dock.</div>
+<div><b>A favor</b><br>• El personal clínico ya conoce esta lectura.<br>• Los 5 vitales siempre a la vista.<br>• Cada video ocupa toda la pantalla cuando se usa.</div>
+<div><b>En contra</b><br>• Mientras se mira el otoscopio, el ECG queda tapado.<br>• Si el ECG no está conectado, el área principal queda vacía.</div>
+</div>
+</div></div>
+
+<div class="dv-opt" id="1b"><div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Por dispositivo: franja fija de vitales arriba, menú lateral de dispositivos y un foco</div>
+<div class="dv-card" style="width:1000px">
+<div style="padding:20px 20px 0">
+<div style="width:956px;height:600px;box-sizing:border-box;border:2.5px solid #222;border-radius:14px;padding:8px 12px 12px;display:flex;flex-direction:column;gap:8px;font-family:'Patrick Hand',cursive;color:#1f1f1f">
+<div style="height:14px;display:flex;justify-content:space-between;font-size:12px;color:#aaa"><span>12:25</span><span>wifi · bat</span></div>
+<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr)) auto;gap:8px">
+<div style="border:2px solid #222;border-radius:8px;padding:4px 10px"><div style="font-size:14px;color:#555">FC · lpm</div><div style="font-size:36px;line-height:1">72</div></div>
+<div style="border:2px solid #222;border-radius:8px;padding:4px 10px"><div style="font-size:14px;color:#555">SpO₂ · %</div><div style="font-size:36px;line-height:1">98</div></div>
+<div style="border:2px solid #222;border-radius:8px;padding:4px 10px"><div style="font-size:14px;color:#555">Resp · rpm</div><div style="font-size:36px;line-height:1">16</div></div>
+<div style="border:2px solid #222;border-radius:8px;padding:4px 10px"><div style="font-size:14px;color:#555">PA · 12:21</div><div style="font-size:36px;line-height:1">120/80</div></div>
+<div style="border:2px dashed #aaa;border-radius:8px;padding:4px 10px;color:#888"><div style="font-size:14px">Temp · °C</div><div style="font-size:16px;line-height:1.2;margin-top:6px">sin conectar</div></div>
+<div style="display:flex;align-items:center"><span style="border:2px solid #222;border-radius:8px;padding:8px 16px;font-size:17px">Finalizar</span></div>
+</div>
+<div style="flex:1;min-height:0;display:grid;grid-template-columns:170px minmax(0,1fr);gap:10px">
+<div style="display:flex;flex-direction:column;gap:4px;border-right:2px solid #222;padding-right:10px">
+<div style="display:flex;align-items:center;gap:8px;padding:9px 8px;border-radius:8px;font-size:17px"><i style="width:24px;height:24px;border:1.5px solid #222;border-radius:5px"></i><span style="flex:1">ECG</span><i style="width:8px;height:8px;border-radius:50%;background:#2e9d5b"></i></div>
+<div style="display:flex;align-items:center;gap:8px;padding:9px 8px;border-radius:8px;font-size:17px"><i style="width:24px;height:24px;border:1.5px solid #222;border-radius:5px"></i><span style="flex:1">Estetoscopio</span><i style="width:8px;height:8px;border-radius:50%;background:#2e9d5b"></i></div>
+<div style="display:flex;align-items:center;gap:8px;padding:9px 8px;border-radius:8px;font-size:17px;background:#222;color:#fff"><i style="width:24px;height:24px;border:1.5px solid #fff;border-radius:5px"></i><span style="flex:1">Otoscopio</span><i style="width:8px;height:8px;border-radius:50%;background:#5fd08a"></i></div>
+<div style="display:flex;align-items:center;gap:8px;padding:9px 8px;border-radius:8px;font-size:17px"><i style="width:24px;height:24px;border:1.5px solid #222;border-radius:5px"></i><span style="flex:1">Cámara</span><i style="width:8px;height:8px;border-radius:50%;background:#2e9d5b"></i></div>
+<div style="display:flex;align-items:center;gap:8px;padding:9px 8px;border-radius:8px;font-size:17px"><i style="width:24px;height:24px;border:1.5px solid #222;border-radius:5px"></i><span style="flex:1">Presión</span><i style="width:8px;height:8px;border-radius:50%;background:#2e9d5b"></i></div>
+<div style="display:flex;align-items:center;gap:8px;padding:9px 8px;border-radius:8px;font-size:17px;color:#999"><i style="width:24px;height:24px;border:1.5px dashed #aaa;border-radius:5px"></i><span style="flex:1">Temperatura</span><i style="width:8px;height:8px;border-radius:50%;border:1.5px solid #aaa;box-sizing:border-box"></i></div>
+<div style="flex:1"></div>
+<div style="font-family:'Caveat',cursive;font-size:19px;color:#2f6fe0;line-height:1.05">punto = estado de conexión, siempre visible</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;min-height:0">
+<div style="display:flex;align-items:center;gap:10px;font-size:15px"><b style="font-size:22px;font-weight:400">Otoscopio</b><span style="color:#2e9d5b">● en vivo</span><div style="flex:1"></div><span style="border:1.5px solid #222;border-radius:6px;padding:1px 8px">Luz ▾</span><span style="border:1.5px solid #222;border-radius:6px;padding:1px 8px">Zoom ▾</span></div>
+<div style="flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 190px;gap:10px">
+<div style="background:#e6e6e3;border-radius:8px;display:flex;align-items:center;justify-content:center"><div style="width:300px;height:300px;border-radius:50%;border:2px dashed #999;display:flex;align-items:center;justify-content:center;font-size:17px;color:#888">video en vivo</div></div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<span style="background:#2f6fe0;color:#fff;border-radius:10px;padding:16px;font-size:20px;text-align:center">Capturar</span>
+<span style="border:2px solid #222;border-radius:10px;padding:10px;font-size:17px;text-align:center">Congelar</span>
+<span style="border:2px solid #222;border-radius:10px;padding:10px;font-size:17px;text-align:center">Apagar</span>
+<div style="flex:1"></div>
+<div style="font-size:15px;color:#555">Capturas (3)</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px"><div style="aspect-ratio:1;background:#e6e6e3;border-radius:4px"></div><div style="aspect-ratio:1;background:#e6e6e3;border-radius:4px"></div><div style="aspect-ratio:1;background:#e6e6e3;border-radius:4px"></div></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;padding:16px 20px 20px;font:13.5px/1.45 system-ui">
+<div><b>Idea.</b> Los vitales viven en una franja fija arriba. El menú lateral es a la vez selector de dispositivo y monitor de conexión. Cada dispositivo usa el área principal entera, con sus controles al lado.</div>
+<div><b>A favor</b><br>• La más limpia y fácil de escalar a dispositivos nuevos.<br>• Controles grandes y siempre cerca de su dispositivo.<br>• Funciona igual en tablets más chicas.</div>
+<div><b>En contra</b><br>• No permite ver el ECG y un video a la vez.<br>• Hace falta un toque más para cambiar de dispositivo.</div>
+</div>
+</div></div>
+
+<div class="dv-opt" id="1c"><div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Pantalla dividida: franja de vitales, ECG fijo a la izquierda y un dispositivo por pestaña a la derecha</div>
+<div class="dv-card" style="width:1000px">
+<div style="padding:20px 20px 0">
+<div style="width:956px;height:600px;box-sizing:border-box;border:2.5px solid #222;border-radius:14px;padding:8px 12px 12px;display:flex;flex-direction:column;gap:8px;font-family:'Patrick Hand',cursive;color:#1f1f1f">
+<div style="height:14px;display:flex;justify-content:space-between;font-size:12px;color:#aaa"><span>12:25</span><span>wifi · bat</span></div>
+<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr)) auto;gap:8px">
+<div style="border:2px solid #222;border-radius:8px;padding:4px 10px"><div style="font-size:14px;color:#555">FC · lpm</div><div style="font-size:36px;line-height:1">72</div></div>
+<div style="border:2px solid #222;border-radius:8px;padding:4px 10px"><div style="font-size:14px;color:#555">SpO₂ · %</div><div style="font-size:36px;line-height:1">98</div></div>
+<div style="border:2px solid #222;border-radius:8px;padding:4px 10px"><div style="font-size:14px;color:#555">Resp · rpm</div><div style="font-size:36px;line-height:1">16</div></div>
+<div style="border:2px solid #222;border-radius:8px;padding:4px 10px;display:flex;align-items:center;gap:6px"><div style="flex:1"><div style="font-size:14px;color:#555">PA · 12:21</div><div style="font-size:36px;line-height:1">120/80</div></div><span style="border:1.5px solid #222;border-radius:6px;padding:2px 6px;font-size:14px">Medir</span></div>
+<div style="border:2px solid #222;border-radius:8px;padding:4px 10px"><div style="font-size:14px;color:#555">Temp · 12:18</div><div style="font-size:36px;line-height:1">36,6</div></div>
+<div style="display:flex;align-items:center"><span style="border:2px solid #222;border-radius:8px;padding:8px 16px;font-size:17px">Finalizar</span></div>
+</div>
+<div style="flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:10px">
+<div style="border:2px solid #222;border-radius:8px;display:flex;flex-direction:column;overflow:hidden">
+<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1.5px dashed #bbb;font-size:15px"><b style="font-size:19px;font-weight:400">ECG</b><span style="color:#2e9d5b">●</span><div style="flex:1"></div><span style="border:1.5px solid #222;border-radius:6px;padding:1px 8px">3 der. ▾</span><span style="border:1.5px solid #222;border-radius:6px;padding:1px 8px">25 mm/s ▾</span><span style="border:1.5px solid #222;border-radius:6px;padding:1px 8px">10 mm/mV ▾</span></div>
+<div style="flex:1;display:flex;flex-direction:column;background:repeating-linear-gradient(0deg,#eee 0 1px,transparent 1px 20px),repeating-linear-gradient(90deg,#eee 0 1px,transparent 1px 20px)">
+<div style="flex:1;display:flex;align-items:center;gap:8px;padding:0 10px"><span style="width:26px;font-size:15px">II</span><div style="flex:1;height:56px;background:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='60'%3E%3Cpath d='M0 30h60l10-5l10 5h10l5 5l5-25l5 40l5-20h20l15-8l15 8h40' fill='none' stroke='%23222' stroke-width='2'/%3E%3C/svg%3E&quot;) repeat-x left center;background-size:auto 100%"></div></div>
+<div style="flex:1;display:flex;align-items:center;gap:8px;padding:0 10px"><span style="width:26px;font-size:15px">V1</span><div style="flex:1;height:56px;background:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='60'%3E%3Cpath d='M0 30h60l10-5l10 5h10l5 5l5-25l5 40l5-20h20l15-8l15 8h40' fill='none' stroke='%23222' stroke-width='2'/%3E%3C/svg%3E&quot;) repeat-x left center;background-size:auto 100%"></div></div>
+<div style="flex:1;display:flex;align-items:center;gap:8px;padding:0 10px"><span style="width:26px;font-size:15px">V5</span><div style="flex:1;height:56px;background:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='60'%3E%3Cpath d='M0 30h60l10-5l10 5h10l5 5l5-25l5 40l5-20h20l15-8l15 8h40' fill='none' stroke='%23222' stroke-width='2'/%3E%3C/svg%3E&quot;) repeat-x left center;background-size:auto 100%"></div></div>
+</div>
+</div>
+<div style="border:2px solid #222;border-radius:8px;display:flex;flex-direction:column;overflow:hidden">
+<div style="display:flex;border-bottom:2px solid #222;font-size:17px">
+<span style="flex:1;text-align:center;padding:7px 0;background:#222;color:#fff">Otoscopio</span>
+<span style="flex:1;text-align:center;padding:7px 0;border-left:2px solid #222">Estetoscopio</span>
+<span style="flex:1;text-align:center;padding:7px 0;border-left:2px solid #222">Cámara</span>
+</div>
+<div style="flex:1;min-height:0;margin:10px;background:#e6e6e3;border-radius:8px;display:flex;align-items:center;justify-content:center"><div style="width:200px;height:200px;border-radius:50%;border:2px dashed #999;display:flex;align-items:center;justify-content:center;font-size:16px;color:#888">video en vivo</div></div>
+<div style="display:flex;gap:8px;padding:0 10px 10px"><span style="flex:1.4;background:#2f6fe0;color:#fff;border-radius:10px;padding:10px;font-size:18px;text-align:center">Capturar</span><span style="flex:1;border:2px solid #222;border-radius:10px;padding:8px;font-size:17px;text-align:center">Congelar</span><span style="border:2px solid #222;border-radius:10px;padding:8px 12px;font-size:17px;text-align:center">⋯</span></div>
+</div>
+</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;padding:16px 20px 20px;font:13.5px/1.45 system-ui">
+<div><b>Idea.</b> El ECG corre siempre y un solo dispositivo de imagen o sonido se ve a la vez, elegido por pestaña. Las pestañas de dispositivos desconectados se atenúan pero no desaparecen.</div>
+<div><b>A favor</b><br>• ECG continuo mientras se examina (útil en teleconsulta).<br>• Corrige la competencia entre los dos videos actuales.<br>• Todo cabe sin scroll.</div>
+<div><b>En contra</b><br>• Las dos mitades quedan más chicas.<br>• En 12 derivaciones el ECG queda apretado: conviene expandirlo a pantalla completa.</div>
+</div>
+</div></div>
+
+<div class="dv-opt" id="1d"><div class="dv-olabel"><a class="dv-oid" href="#1d">1d</a>Consulta guiada: paso a paso para quien opera la tablet, con resumen al costado</div>
+<div class="dv-card" style="width:1000px">
+<div style="padding:20px 20px 0">
+<div style="width:956px;height:600px;box-sizing:border-box;border:2.5px solid #222;border-radius:14px;padding:8px 12px 12px;display:flex;flex-direction:column;gap:8px;font-family:'Patrick Hand',cursive;color:#1f1f1f">
+<div style="height:14px;display:flex;justify-content:space-between;font-size:12px;color:#aaa"><span>12:25</span><span>wifi · bat</span></div>
+<div style="display:flex;align-items:center;gap:14px;padding-bottom:8px;border-bottom:2px solid #222">
+<span style="font-size:20px">Juan Pérez · 54 a</span>
+<div style="flex:1;display:flex;align-items:center;gap:8px"><div style="flex:1;height:10px;border:1.5px solid #222;border-radius:6px;overflow:hidden"><div style="width:40%;height:100%;background:#222"></div></div><span style="font-size:15px;color:#555">paso 3 de 6</span></div>
+<span style="border:2px solid #222;border-radius:8px;padding:6px 14px;font-size:16px">Ver panel completo</span>
+</div>
+<div style="flex:1;min-height:0;display:grid;grid-template-columns:230px minmax(0,1fr);gap:12px">
+<div style="display:flex;flex-direction:column;gap:6px">
+<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:2px solid #222;border-radius:8px;font-size:17px"><span style="width:22px;height:22px;border-radius:50%;background:#222;color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center">✓</span><span style="flex:1">Temperatura</span><span style="color:#555">36,6</span></div>
+<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:2px solid #222;border-radius:8px;font-size:17px"><span style="width:22px;height:22px;border-radius:50%;background:#222;color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center">✓</span><span style="flex:1">Presión</span><span style="color:#555">120/80</span></div>
+<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:2.5px solid #2f6fe0;background:#eef3fd;border-radius:8px;font-size:17px"><span style="width:22px;height:22px;border-radius:50%;border:2px solid #2f6fe0;color:#2f6fe0;font-size:14px;display:flex;align-items:center;justify-content:center">3</span><span style="flex:1">SpO₂ y pulso</span></div>
+<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:2px dashed #aaa;border-radius:8px;font-size:17px;color:#888"><span style="width:22px;height:22px;border-radius:50%;border:1.5px solid #aaa;font-size:14px;display:flex;align-items:center;justify-content:center">4</span><span style="flex:1">ECG</span></div>
+<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:2px dashed #aaa;border-radius:8px;font-size:17px;color:#888"><span style="width:22px;height:22px;border-radius:50%;border:1.5px solid #aaa;font-size:14px;display:flex;align-items:center;justify-content:center">5</span><span style="flex:1">Auscultación</span></div>
+<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:2px dashed #aaa;border-radius:8px;font-size:17px;color:#888"><span style="width:22px;height:22px;border-radius:50%;border:1.5px solid #aaa;font-size:14px;display:flex;align-items:center;justify-content:center">6</span><span style="flex:1">Otoscopía</span></div>
+<div style="flex:1"></div>
+<div style="font-family:'Caveat',cursive;font-size:19px;color:#2f6fe0;line-height:1.05">se puede saltar a cualquier paso tocándolo</div>
+</div>
+<div style="border:2px solid #222;border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px">
+<div style="font-size:26px">Colocá el oxímetro en el dedo índice</div>
+<div style="flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px">
+<div style="background:#e6e6e3;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;color:#888;text-align:center;padding:10px">ilustración / animación<br>de cómo colocarlo</div>
+<div style="display:flex;flex-direction:column;justify-content:center;gap:6px">
+<div style="font-size:15px;color:#555">SpO₂</div>
+<div style="font-size:84px;line-height:.9">98<span style="font-size:30px"> %</span></div>
+<div style="font-size:20px;color:#555">pulso 74 lpm</div>
+<div style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:15px;color:#555"><div style="flex:1;height:8px;border:1.5px solid #222;border-radius:5px;overflow:hidden"><div style="width:70%;height:100%;background:#2e9d5b"></div></div>estabilizando 4 s</div>
+</div>
+</div>
+<div style="display:flex;gap:10px"><span style="border:2px solid #222;border-radius:10px;padding:10px 18px;font-size:17px">Omitir</span><span style="border:2px solid #222;border-radius:10px;padding:10px 18px;font-size:17px">Repetir</span><div style="flex:1"></div><span style="background:#2f6fe0;color:#fff;border-radius:10px;padding:12px 26px;font-size:19px">Guardar y seguir →</span></div>
+</div>
+</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;padding:16px 20px 20px;font:13.5px/1.45 system-ui">
+<div><b>Idea.</b> Un modo para cuando la tablet la opera alguien sin formación médica (enfermería o asistente) y el médico está remoto. Indica qué hacer, espera a que el valor se estabilice y lo guarda con hora.</div>
+<div><b>A favor</b><br>• Menos errores y ningún examen olvidado.<br>• Cada valor queda guardado como medición, no solo mostrado.<br>• Ideal para capacitar a operadores nuevos.</div>
+<div><b>En contra</b><br>• Resulta rígido para un médico experto.<br>• Funciona mejor como complemento de <a class="dv-oid" href="#1b">1b</a> o <a class="dv-oid" href="#1c">1c</a> que como pantalla única.</div>
+</div>
+</div></div>
+
+</div>
+
+<div style="margin:40px 0 0;display:flex;flex-direction:column;gap:12px">
+<div style="font:600 12px system-ui;color:rgba(0,0,0,.55);text-transform:uppercase;letter-spacing:.06em">Común a todas las opciones · estados de un signo vital</div>
+<div style="display:flex;flex-wrap:wrap;gap:14px;font-family:'Patrick Hand',cursive;color:#1f1f1f">
+<div style="width:190px;display:flex;flex-direction:column;gap:6px"><div style="height:120px;box-sizing:border-box;border:2px dashed #aaa;border-radius:8px;padding:8px 12px;color:#888;display:flex;flex-direction:column"><span style="font-size:15px">SpO₂</span><span style="font-size:16px;flex:1">Oxímetro no detectado</span><span style="align-self:flex-start;border:2px solid #888;border-radius:8px;padding:2px 10px;font-size:15px">Conectar</span></div><span style="font:12px system-ui;color:#666">Desconectado: atenuado, con acción</span></div>
+<div style="width:190px;display:flex;flex-direction:column;gap:6px"><div style="height:120px;box-sizing:border-box;border:2px solid #222;border-radius:8px;padding:8px 12px;display:flex;flex-direction:column"><span style="font-size:15px;color:#555">SpO₂</span><span style="font-size:20px;flex:1;display:flex;align-items:center;gap:8px;color:#777"><i style="width:16px;height:16px;border-radius:50%;border:2.5px solid #ccc;border-top-color:#222"></i>Conectando…</span></div><span style="font:12px system-ui;color:#666">Conectando</span></div>
+<div style="width:190px;display:flex;flex-direction:column;gap:6px"><div style="height:120px;box-sizing:border-box;border:2px solid #222;border-radius:8px;padding:8px 12px;display:flex;flex-direction:column"><div style="display:flex;justify-content:space-between;font-size:15px;color:#555"><span>SpO₂</span><span style="color:#2e9d5b">● en vivo</span></div><span style="font-size:48px;line-height:1.1">98 <span style="font-size:20px">%</span></span></div><span style="font:12px system-ui;color:#666">Continuo, en vivo</span></div>
+<div style="width:190px;display:flex;flex-direction:column;gap:6px"><div style="height:120px;box-sizing:border-box;border:2px dashed #c99a2e;border-radius:8px;padding:8px 12px;display:flex;flex-direction:column"><div style="display:flex;justify-content:space-between;font-size:15px;color:#555"><span>SpO₂</span><span style="color:#a77a12">señal débil</span></div><span style="font-size:48px;line-height:1.1;color:#aaa">9?</span><span style="font-size:14px;color:#a77a12">Revisar el sensor</span></div><span style="font:12px system-ui;color:#666">Señal pobre: el valor no es confiable</span></div>
+<div style="width:190px;display:flex;flex-direction:column;gap:6px"><div style="height:120px;box-sizing:border-box;border:2px solid #222;border-radius:8px;padding:8px 12px;display:flex;flex-direction:column"><span style="font-size:15px;color:#555">Presión</span><span style="font-size:30px;line-height:1.2;flex:1">Midiendo… 145</span><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:8px;border:1.5px solid #222;border-radius:5px;overflow:hidden"><div style="width:55%;height:100%;background:#222"></div></div><span style="border:1.5px solid #222;border-radius:6px;padding:0 6px;font-size:14px">Cancelar</span></div></div><span style="font:12px system-ui;color:#666">Medición puntual en curso</span></div>
+<div style="width:190px;display:flex;flex-direction:column;gap:6px"><div style="height:120px;box-sizing:border-box;border:2px solid #222;border-radius:8px;padding:8px 12px;display:flex;flex-direction:column"><div style="display:flex;justify-content:space-between;font-size:15px;color:#555"><span>Presión</span><span>12:21 · hace 3 min</span></div><span style="font-size:40px;line-height:1.1;flex:1">120/80</span><span style="align-self:flex-start;border:1.5px solid #222;border-radius:6px;padding:0 8px;font-size:14px">Repetir</span></div><span style="font:12px system-ui;color:#666">Resultado: siempre con hora</span></div>
+<div style="width:190px;display:flex;flex-direction:column;gap:6px"><div style="height:120px;box-sizing:border-box;border:2.5px solid #d6453d;border-radius:8px;padding:8px 12px;display:flex;flex-direction:column"><div style="display:flex;justify-content:space-between;font-size:15px;color:#d6453d"><span>FC</span><span>▲ alta</span></div><span style="font-size:48px;line-height:1.1;color:#d6453d">132</span><span style="font-size:14px;color:#555">límite 120 lpm</span></div><span style="font:12px system-ui;color:#666">Fuera de rango: color + ícono + texto</span></div>
+</div>
+</div>
+
+<div style="margin:32px 0 0;display:flex;flex-wrap:wrap;gap:32px;font:14px/1.5 system-ui">
+<div style="max-width:520px"><div style="font-weight:600;margin-bottom:4px">Mi recomendación inicial</div><a class="dv-oid" href="#1c">1c</a> como pantalla por defecto (ECG continuo y un dispositivo a la vez), con <a class="dv-oid" href="#1d">1d</a> como modo opcional si la tablet la operan personas sin formación médica. Si el ECG casi nunca se usa en paralelo con otro dispositivo, <a class="dv-oid" href="#1b">1b</a> es la opción más limpia.</div>
+<div style="max-width:520px"><div style="font-weight:600;margin-bottom:4px">Para decidir necesito saber</div>• ¿Quién opera la tablet? ¿Hay un médico remoto mirando ("Panel Local" sugiere que sí)?<br>• ¿Se usan dispositivos en simultáneo? Por ejemplo, ECG mientras se ausculta.<br>• ¿Hace falta ver las 12 derivaciones o alcanza con 1–3 y expandir?<br>• ¿Se registran capturas y mediciones, o la pantalla es solo visualización?<br>• ¿La cámara general es para el paciente (piel, heridas) o para la videollamada?</div>
+</div>
+
+<p class="dv-next">Probá pedirme: "seguimos con <a class="dv-oid" href="#1c">1c</a>, mostrame el estetoscopio y el ECG a pantalla completa" · "combiná la franja de <a class="dv-oid" href="#1b">1b</a> con las pestañas de <a class="dv-oid" href="#1c">1c</a>" · "flujo completo de <a class="dv-oid" href="#1d">1d</a>"</p>
+</section>
+</x-dc>
+</body>
+</html>

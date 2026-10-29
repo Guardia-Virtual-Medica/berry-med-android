@@ -13,8 +13,9 @@ import android.media.AudioManager
 /**
  * Lo que Android ve enchufado, para la pantalla de Testing: los dispositivos
  * USB con sus interfaces, los dispositivos de audio y las cámaras. Sirve para
- * comprobar el armado del tótem antes de escribir el Panel Local: si los tres
- * audios USB conviven, y si el otoscopio aparece como cámara externa.
+ * validar el armado del tótem desde Testing: si las placas de audio USB
+ * conviven y con qué nombre aparecen, y si el otoscopio aparece como cámara
+ * externa.
  * No abre nada: sólo lista.
  */
 class DeviceInventory(context: Context) {
