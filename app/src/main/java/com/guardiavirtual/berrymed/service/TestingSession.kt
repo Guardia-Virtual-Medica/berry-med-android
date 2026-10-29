@@ -2,6 +2,7 @@
 package com.guardiavirtual.berrymed.service
 
 import com.guardiavirtual.berrymed.protocol.ParserStats
+import com.guardiavirtual.berrymed.tele.TeleView
 import com.guardiavirtual.berrymed.usb.DeviceInventory
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -176,6 +177,7 @@ data class TestingSnapshot(
     val ykushPorts: List<YkushPortView>,
     val inventory: DeviceInventory.Snapshot,
     val url: String?,
+    val tele: TeleView,
     val preview: String?,
     val console: List<String>,
 )

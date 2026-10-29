@@ -64,6 +64,12 @@ data class BerryConfig(
         return buildMetricsUrl(apiBaseUrl, totemId, apiEndpoint)
     }
 
+    /** Donde se pide el token de LiveKit para publicar el otoscopio y el estetoscopio en la teleconsulta. */
+    fun livekitTokenUrl(): String? {
+        if (apiBaseUrl.isBlank() || totemId.isBlank() || !hasWebScheme(apiBaseUrl)) return null
+        return buildMetricsUrl(apiBaseUrl, totemId, LIVEKIT_TOKEN_ENDPOINT)
+    }
+
     fun pusherReady(): Boolean = pusherKey.isNotBlank() && publicChannel.isNotBlank() && channelIsPublic()
 
     /** La librería tira una excepción al suscribirse a un canal privado o de presencia sin autenticación. */
@@ -87,6 +93,9 @@ data class BerryConfig(
 }
 
 const val YKUSH_PORTS = 3
+
+/** La ruta del token de LiveKit, junto a la de métricas: `{URL base}/{tótem}/livekit-token`. */
+const val LIVEKIT_TOKEN_ENDPOINT = "livekit-token"
 const val DEFAULT_LOCAL_PIN = "1515"
 
 /** El nombre que declara el adaptador de audio TTGK (3302:29E3). */

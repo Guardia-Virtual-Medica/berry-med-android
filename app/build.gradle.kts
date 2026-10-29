@@ -14,6 +14,12 @@ android {
         versionCode = 8
         versionName = "1.2.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // Sólo ARM: la tablet es ARM, el emulador berry_tablet también (Mac con Apple Silicon),
+        // y libuvc (el otoscopio por UVC) no trae x86. WebRTC de LiveKit trae las cuatro
+        // arquitecturas y, sin este filtro, el APK pasaba de 12 a 70 MB.
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+        }
     }
 
     buildTypes {
@@ -39,6 +45,11 @@ android {
         unitTests.isReturnDefaultValues = true
     }
     packaging {
+        // Las librerías nativas van comprimidas en el APK (Android las descomprime al instalar):
+        // sin comprimir, WebRTC solo sumaba 19 MB al APK que se baja de Releases.
+        jniLibs {
+            useLegacyPackaging = true
+        }
         resources {
             excludes += setOf(
                 "META-INF/DEPENDENCIES",
@@ -73,6 +84,12 @@ dependencies {
     // la 3.2.7 (la última que sí) se toma sólo este módulo: el resto trae Glide, MMKV, RTMP y
     // dos librerías que ya no se pueden bajar, y su registro USB rompe en Android 14.
     implementation("com.github.jiangdongguo.AndroidUSBCamera:libuvc:3.2.7")
+    // La teleconsulta: Berry Med publica el otoscopio y el estetoscopio en la sala de LiveKit
+    // del encuentro. 2.29.0 es la última 2.x con más de dos semanas publicada (20 sep 2026).
+    implementation("io.livekit:livekit-android:2.29.0")
+    // El cuerpo de los eventos de Pusher y la respuesta del token. Ya viene con Pusher
+    // (en tiempo de ejecución); se declara para compilar contra ella.
+    implementation("com.google.code.gson:gson:2.9.1")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:2.0.21")

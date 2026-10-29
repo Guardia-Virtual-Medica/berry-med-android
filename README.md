@@ -10,13 +10,14 @@ Adelante, en la tablet, va Google Chrome con la plataforma médica. Berry Med tr
 
 1. **Al encender la tablet** arranca el servicio de Berry Med, sin abrir ninguna pantalla. Queda en primer plano para Android (con una notificación fija) y sigue andando con la pantalla apagada. También arranca solo después de instalar una versión nueva.
 2. **Conecta los equipos USB**: la plaqueta, el termómetro y el hub YKUSH3 (ver [Equipos](#equipos)). Si falta alguno, sigue con los demás.
-3. **Escucha las órdenes por Pusher.** Se suscribe al canal público del tótem y espera tres eventos. Pusher no transporta las mediciones.
+3. **Escucha las órdenes por Pusher.** Se suscribe al canal público del tótem y espera estos eventos. Pusher no transporta las mediciones.
 
    | Evento | Qué hace |
    |---|---|
    | `start-monitoring` (configurable) | Limpia lo que quedó de la consulta anterior y empieza a enviar. |
    | `stop-monitoring` (configurable) | Deja de enviar y limpia. |
    | `start-blood-pressure` (fijo) | Le pide al equipo una medición de presión. |
+   | `start_oth`, `stop_oth`, `start_steth`, `stop_steth` (fijos) | Enciende o apaga el otoscopio o el estetoscopio en la teleconsulta (ver [Teleconsulta](#teleconsulta-otoscopio-y-estetoscopio)). No dependen de que haya una consulta de signos enviando. |
 
 4. **Durante la consulta**, una vez por segundo, a ritmo fijo y sin esperar la respuesta anterior, hace un `POST` a `{URL base}/{tótem}/metrics`. Cada paquete lleva como mucho un segundo de datos (unos 7 KB): el servidor lo reenvía al médico por Pusher, que no acepta mensajes de más de 10 KB. Lleva todo lo que llegó desde el envío anterior: las 7 derivaciones de ECG (unas 250 muestras por segundo cada una), la onda de SpO₂, la de respiración, los latidos y los signos vitales. No manda nada si no hay ningún dato útil; una lectura del termómetro sola cuenta como dato útil. Cualquier `2xx` es un envío correcto. Ante un error de red o un `5xx` espera medio segundo y reintenta una vez; un `4xx` no se reintenta. Cada intento tiene 5 s en total, así un paquete no tarda más de unos 11 s: uno que llega tarde ya no le sirve al médico, que mira en vivo. Si la red se traba y se juntan más de 10 paquetes, se tiran los más viejos; la consola lo registra ("Se descartó un paquete") y el último envío dice cuántos se descartaron en la consulta.
    - **Si se perdió el inicio.** El `start-monitoring` sale cuando el profesional entra a la videollamada. Si en ese momento la tablet no estaba escuchando (se conectó tarde, se reinició o se actualizó), mientras espera manda cada 10 segundos un `POST` de prueba con el último segundo de mediciones. Si la plataforma responde `200`, hay una toma de signos abierta y empieza a enviar cada segundo; si responde `404`, sigue esperando. Después de un `stop-monitoring` espera 90 segundos antes de volver a probar, porque la plataforma sigue aceptando paquetes un minuto después del fin.
@@ -83,10 +84,11 @@ Todo queda guardado en la tablet. La pantalla también muestra los signos vitale
    Conviene abrir el Panel Local una vez y aceptar el permiso de la cámara **antes** de aceptar el permiso USB del otoscopio: en Android 10 o más, Android puede negar sin diálogo el permiso USB de un dispositivo de video si la app todavía no tiene el de cámara.
 
    Cada equipo se pide una sola vez, para no tapar Chrome una y otra vez. Si alguien rechaza o cierra el pedido, la pantalla de Berry Med dice "Falta aceptar el permiso USB" y se resuelve con **Pedir permiso USB**. Un equipo sin permiso no frena a los demás.
-3. **Tocar "Evitar que se duerma"** para excluir la app de la optimización de batería. Con Chrome adelante es imprescindible: si Android cierra el servicio, sólo puede volver a levantarlo si la app está excluida. Algunas marcas tienen además su propia lista de apps que se duermen: sacarla de ahí también.
-4. **Sin bloqueo con PIN, patrón ni contraseña.** Con bloqueo seguro Android no avisa el encendido hasta que alguien desbloquea, y la app no arranca.
-5. **Instalar siempre un APK firmado con la misma clave.** Si cambia la clave hay que desinstalar, y eso borra la configuración.
-6. **Probarlo con Chrome adelante**: reiniciar la tablet con todo enchufado y, con una consulta andando, desenchufar y volver a enchufar la plaqueta. En los dos casos la plaqueta tiene que volver sola, sin tocar la pantalla y sin que Chrome quede tapado.
+3. **Aceptar los permisos de cámara y micrófono** que pide la pantalla principal (son para el otoscopio y el estetoscopio de la [teleconsulta](#teleconsulta-otoscopio-y-estetoscopio)) y, en Ajustes → Apps → Berry Med, **otorgar "Mostrar sobre otras apps"**. Con ese permiso, al encender la tablet Berry Med se abre un segundo y se manda atrás: es lo que Android necesita para dejarle usar la cámara y el micrófono con Chrome adelante. Sin él, después de cada reinicio hay que abrir Berry Med una vez a mano (la notificación lo recuerda).
+4. **Tocar "Evitar que se duerma"** para excluir la app de la optimización de batería. Con Chrome adelante es imprescindible: si Android cierra el servicio, sólo puede volver a levantarlo si la app está excluida. Algunas marcas tienen además su propia lista de apps que se duermen: sacarla de ahí también.
+5. **Sin bloqueo con PIN, patrón ni contraseña.** Con bloqueo seguro Android no avisa el encendido hasta que alguien desbloquea, y la app no arranca.
+6. **Instalar siempre un APK firmado con la misma clave.** Si cambia la clave hay que desinstalar, y eso borra la configuración.
+7. **Probarlo con Chrome adelante**: reiniciar la tablet con todo enchufado y, con una consulta andando, desenchufar y volver a enchufar la plaqueta. En los dos casos la plaqueta tiene que volver sola, sin tocar la pantalla y sin que Chrome quede tapado.
 
 Para ver qué está haciendo, con la tablet conectada a una computadora:
 
@@ -94,7 +96,7 @@ Para ver qué está haciendo, con la tablet conectada a una computadora:
 adb logcat -s BerryMed
 ```
 
-El servicio corre siempre como `connectedDevice`. `dataSync` no sirve: en Android 15 no puede arrancar al encender la tablet y tiene un tope de 6 horas por día.
+El servicio corre siempre como `connectedDevice`. `dataSync` no sirve: en Android 15 no puede arrancar al encender la tablet y tiene un tope de 6 horas por día. Cuando una pantalla de Berry Med está adelante (la principal, Testing o el Panel Local) y los permisos están otorgados, pasa a `connectedDevice|camera|microphone` y ya no baja; Android no deja sumar esos tipos desde segundo plano ni al encender la tablet.
 
 ## Testing
 
@@ -115,6 +117,7 @@ El botón **Testing** de la pantalla principal abre un panel para comprobar, en 
 - **Termómetro**: la última lectura, hace cuánto llegó y la última línea cruda. Sólo manda cuando alguien aprieta el gatillo.
 - **Hub YKUSH3**: **Leer estado** consulta los tres puertos sin cambiarlos; **Encender** y **Apagar** conmutan cada puerto, y la pantalla dice qué equipo lleva cada uno según la configuración. Con una consulta enviando no se cambia ningún puerto. El servicio no toca los puertos solo: al encender la tablet el hub arranca con los tres encendidos, y sólo el [Panel Local](#panel-local) los cambia mientras está abierto.
 - **Dispositivos que ve Android**: los dispositivos USB con sus interfaces y permiso, los dispositivos de audio (tipo, nombre, entrada o salida, frecuencia) y las cámaras con su orientación. Sirve para validar el armado antes del Panel Local: si las placas de audio USB conviven y si el otoscopio aparece como cámara externa. Se renueva cada 3 s.
+- **Teleconsulta (LiveKit)**: si el servicio tiene cámara y micrófono, el estado de la sala (desconectada, conectando, conectada, error), qué pista publica, los cuadros por segundo del otoscopio, el nivel del estetoscopio y si Android silencia la captura, y el último error. Abajo, una **prueba manual** con **Servidor** y **Token** y los botones **Publicar otoscopio**, **Publicar estetoscopio** y **Cortar**: usa lo mismo que la teleconsulta, pero sin pedirle el token a la API (para probar con un servidor LiveKit propio y un token de `lk token create`). Sigue publicando con Testing cerrado, para probar con Chrome adelante, hasta **Cortar** o hasta que se abra el Panel Local; mientras tanto, las órdenes de Pusher para los instrumentos se ignoran.
 - **Transmisión (no se envía)**: la URL y el JSON que saldría, con su tamaño, y **Copiar JSON**.
 - **Consola**: los últimos logs del servicio, los mismos de `adb logcat -s BerryMed`.
 
@@ -138,6 +141,24 @@ Para atención **presencial, sin teleconsulta**: el médico o el enfermero que e
 - **La escala del ECG es la del papel, en milímetros reales.** 25 mm/s son 25 mm de pantalla por segundo, no una aproximación en dp. La escala vertical, en cambio, es aproximada: la plaqueta manda cada muestra como un byte de 0 a 255 con la línea de base en 128 y no documenta cuántos milivoltios son. El papel supone 40 unidades por mV; la ganancia sirve para ajustarlo a ojo.
 - **Tipografía e íconos**: Barlow y Barlow Semi Condensed (licencia OFL, en `app/src/main/res/font/`, con sus licencias en `app/src/main/assets/fonts/`) e íconos de Material Symbols Rounded (Apache 2.0).
 
+## Teleconsulta: otoscopio y estetoscopio
+
+Durante la teleconsulta de OnDoctor el médico ve el otoscopio y escucha el estetoscopio del tótem. La videollamada sigue siendo la de Zoom en Chrome; los instrumentos van aparte, por la sala de LiveKit del encuentro (`encounter-{id}`), y los publica Berry Med desde segundo plano.
+
+1. En el kiosco, el paciente toca **Encender** en la tarjeta del otoscopio o del estetoscopio. La API manda `start_oth` o `start_steth` por el canal del tótem, con el encuentro.
+2. Berry Med pide el token a `POST {URL base}/{tótem}/livekit-token` (junto a la de métricas, sin autenticación), entra a la sala y publica la pista: el video del otoscopio o el audio del estetoscopio. Si el puerto del YKUSH3 del instrumento estaba apagado lo enciende (el del auricular no), y al terminar apaga sólo lo que encendió.
+3. Uno a la vez, como en el kiosco: encender uno despublica el otro. **Apagar** (`stop_oth`, `stop_steth`) despublica y, sin pistas, sale de la sala. El fin de la consulta (`stop-monitoring`) y una orden de otro encuentro también cierran todo.
+
+Detalles:
+
+- **Otoscopio**: elige el camino como el Panel Local. Por **UVC** (preferido: va directo por USB y no compite con la cámara de la tablet que usa Zoom) o por **Camera2**. Va a 800×800 o lo que entregue el otoscopio, hasta 30 cuadros por segundo, unos 1,5 Mbps, sin simulcast y sin achicar la imagen si falta ancho de banda (se bajan los cuadros).
+- **Estetoscopio**: sólo el adaptador por su nombre configurado, nunca el micrófono de la tablet ni el del auricular. Sin procesamiento de voz (eco, ruido, ganancia automática y pasa-altos apagados), fuente `UNPROCESSED` si la tablet la tiene (si no, `MIC`), con el filtro Amplio (20 a 1000 Hz) y el volumen por defecto del Panel Local, en Opus a 64 kbps sin DTX. Berry Med no toca el modo, el foco ni el ruteo del audio: si lo hiciera le rompería el audio a Zoom.
+- **El micrófono es uno solo.** Mientras Chrome tiene abierto el micrófono de la llamada, Android le da silencio a cualquier otra captura, aunque sea de otro dispositivo (ver [`docs/hardware.md`](docs/hardware.md#el-micrófono-compartido)). Por eso el kiosco suelta el micrófono de Zoom mientras el estetoscopio está encendido. Testing muestra si Android silencia la captura.
+- **Con el Panel Local abierto** las órdenes se ignoran (quedan en la consola), y abrir el panel corta la teleconsulta: los instrumentos son del panel.
+- **Requisitos**: el tótem tiene que tener el otoscopio o el estetoscopio habilitados en el panel de administración de OnDoctor (si no, la API responde `409`), los permisos de cámara y micrófono otorgados y el servicio con cámara y micrófono: después de reiniciar la tablet, abrir Berry Med una vez o darle "Mostrar sobre otras apps" (ver [Instalar y dejarla sola](#instalar-y-dejarla-sola)). Si no, la orden queda en la consola con el motivo.
+- **Qué mirar**: Testing → **Teleconsulta (LiveKit)** y, en `adb logcat -s BerryMed`, las líneas `[TELE]` (token, sala, qué publica, por qué no) y `[PUSHER]` (qué orden llegó y de qué encuentro).
+- La sala no se suscribe a nada y Berry Med no reproduce nada. No graba ni manda el audio o el video a otro lado.
+
 ## Probar el Panel Local en el tótem
 
 Con el armado completo (ver [`docs/hardware.md`](docs/hardware.md)), la tablet conectada a una computadora y, en otra terminal, `adb logcat -s BerryMed` andando. En este orden:
@@ -159,6 +180,7 @@ Si algo falla, en `adb logcat -s BerryMed`:
 | El estetoscopio no suena o no hay onda | Líneas `[ESTETO]`: "Escuchando por …" dice qué entrada y qué salida eligió; "No se pudo abrir el auricular" o "la captura" con el error. |
 | La plaqueta, la presión o el termómetro | Líneas `[USB]` (puerto de la plaqueta), `[NIBP]` (presión) y `[THERM]` (termómetro). |
 | El panel no abre o se ignoran órdenes | Líneas `[LOCAL]` y `[SESIÓN]`. |
+| La teleconsulta no muestra el otoscopio o el estetoscopio | Líneas `[TELE]` y `[PUSHER]`, y Testing → Teleconsulta (LiveKit). |
 
 Lo que el emulador no puede mostrar está en "Riesgos a confirmar en la tablet real" de [`docs/hardware.md`](docs/hardware.md#riesgos-a-confirmar-en-la-tablet-real): si el otoscopio aparece por Camera2 o sólo por UVC, si las dos placas de audio conviven y con qué nombres, el ancho de banda con otoscopio y audio a la vez en el mismo hub, que `setPreferredDevice` enrute de verdad al adaptador y al auricular, y el permiso USB del otoscopio negado sin diálogo si falta el de cámara.
 

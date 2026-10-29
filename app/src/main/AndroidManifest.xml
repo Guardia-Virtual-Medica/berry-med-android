@@ -18,6 +18,18 @@
     <!-- El estetoscopio del Panel Local, por el adaptador de audio USB. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
+    <!--
+        La teleconsulta: el servicio publica el otoscopio y el estetoscopio en LiveKit
+        con Chrome adelante. Para eso, además de connectedDevice, va como camera y
+        microphone (ver MonitorService).
+    -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <!--
+        "Mostrar sobre otras apps", que se otorga a mano en Ajustes: con él, al encender
+        la tablet se abre Berry Med un momento para habilitar cámara y micrófono.
+    -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <application
         android:name=".BerryMedApp"
@@ -102,7 +114,7 @@
         <service
             android:name=".service.MonitorService"
             android:exported="false"
-            android:foregroundServiceType="connectedDevice"
+            android:foregroundServiceType="connectedDevice|camera|microphone"
             android:stopWithTask="false" />
 
         <receiver

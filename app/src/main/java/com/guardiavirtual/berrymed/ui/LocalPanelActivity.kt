@@ -264,6 +264,12 @@ class LocalPanelActivity : AppCompatActivity() {
         clock.run()
     }
 
+    /** Con el panel adelante, el servicio suma cámara y micrófono para la teleconsulta de después. */
+    override fun onResume() {
+        super.onResume()
+        MonitorService.promote(this)
+    }
+
     /** Al cerrar con Finalizar o el gesto de atrás el modo se corta ya: onStop puede tardar segundos. */
     override fun onPause() {
         if (isFinishing) {

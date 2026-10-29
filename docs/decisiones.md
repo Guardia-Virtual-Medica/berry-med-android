@@ -64,9 +64,20 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
   - La lista de grabaciones va debajo del fonocardiograma, por falta de alto.
   - El filtro queda fijo mientras graba.
 
+### LiveKit: otoscopio y estetoscopio en la teleconsulta (plan 6)
+
+- Reemplaza la decisión de más arriba ("no cambiar nada"): el médico de OnDoctor ve el otoscopio y escucha el estetoscopio del tótem durante la teleconsulta. La videollamada sigue en Zoom; los instrumentos van por la sala de LiveKit del encuentro. Plan en `docs/planes/plan-6-livekit-teleconsulta.md`, en tres partes: API (token para publicar), kiosco (suelta el micrófono de Zoom mientras suena el estetoscopio) y Berry Med (publica).
+- Berry Med escucha `start_oth`, `stop_oth`, `start_steth` y `stop_steth` en el canal del tótem, pide el token a `POST {URL base}/{tótem}/livekit-token` y publica una pista a la vez. Con el Panel Local abierto las órdenes se ignoran.
+- SDK `io.livekit:livekit-android` 2.29.0 (la última 2.x con más de dos semanas). Sin manejador de audio (`NoAudioHandler`), tipo de audio de medios y módulo de audio propio: Berry Med nunca toca el modo, el foco ni el ruteo del audio, que son de Zoom.
+- Estetoscopio: fuente `UNPROCESSED` (o `MIC`), sin procesamiento de voz, filtro Amplio y volumen por defecto aplicados al buffer de captura, Opus a 64 kbps sin DTX.
+- Otoscopio: el mismo camino que elige el Panel Local (UVC o Camera2), sin vista, 800×800 hasta 30 cuadros, 1,5 Mbps, sin simulcast, manteniendo la resolución.
+- Servicio en primer plano: `connectedDevice` desde el arranque; suma `camera|microphone` sólo con una pantalla de Berry Med visible, y nunca baja. Al encender la tablet, si la app tiene "Mostrar sobre otras apps", abre la pantalla principal un momento y la manda atrás; si no, la notificación pide abrir Berry Med una vez.
+- El APK sólo lleva ARM (`arm64-v8a`, `armeabi-v7a`) y las librerías nativas comprimidas: WebRTC trae cuatro arquitecturas y el APK pasaba de 12 a 70 MB; queda en 25 MB.
+- No se cambia la app del médico. Nota: `useLiveKitDevices.ts` de `gvm.mt.doctors` espeja el video (`scaleX(-1)`) e invierte la imagen del otoscopio; es una línea si se decide sacarlo.
+
 ## Pendiente
 
 - Prueba con el hardware real en la tablet (ver "Probar el Panel Local en el tótem" en el `README.md` y los riesgos de `docs/hardware.md`).
 - Los hallazgos 8 a 26 de `docs/revisiones/revision-codigo-opus.md`.
-- LiveKit: publicar el otoscopio y el estetoscopio desde Berry Med (plan 6).
+- Plan 6 en la tablet real: el camino UVC sin vista, el adaptador con `UNPROCESSED`, el micrófono de Zoom en pausa y el reinicio con "Mostrar sobre otras apps" (ver "Qué probar en la tablet" en el PR).
 - v2 con guardado y PDF local.

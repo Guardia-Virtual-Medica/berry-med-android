@@ -4,6 +4,7 @@ package com.guardiavirtual.berrymed.ui
 import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -57,9 +58,8 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         ContextCompat.startForegroundService(this, Intent(this, MonitorService::class.java))
-        if (Build.VERSION.SDK_INT >= 33) {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
-        }
+        // Abierta por el encendido de la tablet: sólo para habilitar cámara y micrófono, sin diálogos.
+        if (!fromBoot()) askPermissions()
         showStep(0)
         val watcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
@@ -108,6 +108,46 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         handler.post(tick)
+    }
+
+    /**
+     * Con la pantalla adelante el servicio suma cámara y micrófono para la
+     * teleconsulta. Si la abrió el encendido de la tablet, se manda atrás
+     * enseguida: Chrome tiene que quedar adelante.
+     */
+    override fun onResume() {
+        super.onResume()
+        MonitorService.promote(this)
+        if (fromBoot()) {
+            intent.removeExtra(EXTRA_FROM_BOOT)
+            handler.postDelayed({ moveTaskToBack(true) }, BOOT_BACK_DELAY_MS)
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+    }
+
+    private fun fromBoot(): Boolean = intent?.getBooleanExtra(EXTRA_FROM_BOOT, false) == true
+
+    /**
+     * Las notificaciones, y la cámara y el micrófono para el otoscopio y el
+     * estetoscopio de la teleconsulta. Sólo los que faltan.
+     */
+    private fun askPermissions() {
+        val wanted = buildList {
+            if (Build.VERSION.SDK_INT >= 33) add(Manifest.permission.POST_NOTIFICATIONS)
+            add(Manifest.permission.CAMERA)
+            add(Manifest.permission.RECORD_AUDIO)
+        }.filter { ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED }
+        if (wanted.isNotEmpty()) ActivityCompat.requestPermissions(this, wanted.toTypedArray(), 1)
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        // Recién otorgados: el servicio los suma ahora, con la pantalla todavía adelante.
+        MonitorService.promote(this)
     }
 
     override fun onStop() {
@@ -333,6 +373,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
+        /** La abrió [com.guardiavirtual.berrymed.service.BootReceiver] al encender la tablet. */
+        const val EXTRA_FROM_BOOT = "com.guardiavirtual.berrymed.FROM_BOOT"
+
+        /** Lo que espera adelante, abierta por el encendido, para que el servicio sume cámara y micrófono. */
+        private const val BOOT_BACK_DELAY_MS = 1_500L
+
         /** En el orden de los chips: Producción, Dev. */
         private val ENVIRONMENT_VALUES = arrayOf(Environment.Prod.key, Environment.Dev.key)
         private val GAIN_VALUES = arrayOf("x0.25", "x0.5", "x1", "x2")

@@ -83,6 +83,14 @@
     <string name="testing_usb">USB</string>
     <string name="testing_audio">Audio</string>
     <string name="testing_cameras">Cámaras</string>
+    <string name="testing_tele">Teleconsulta (LiveKit)</string>
+    <string name="testing_tele_help">Lo que Berry Med publica en la sala del encuentro cuando el kiosco enciende el otoscopio o el estetoscopio. La prueba manual usa un servidor y un token propios (lk token create), sin pedirle nada a la API. Sigue con Testing cerrado (para probar con Chrome adelante) hasta Cortar o hasta que se abra el Panel Local.</string>
+    <string name="testing_tele_manual">Prueba manual</string>
+    <string name="testing_tele_server">Servidor (ws:// o wss://)</string>
+    <string name="testing_tele_token">Token</string>
+    <string name="testing_tele_otoscope">Publicar otoscopio</string>
+    <string name="testing_tele_stetho">Publicar estetoscopio</string>
+    <string name="testing_tele_stop">Cortar</string>
     <string name="section_ykush">Hub YKUSH3</string>
     <string name="help_ykush">En qué puerto del hub (1 a 3) va cada equipo. Si no sabés, dejá los valores que vienen.</string>
     <string name="hint_ykush_otoscope">Puerto del otoscopio</string>

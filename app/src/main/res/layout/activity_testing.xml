@@ -310,6 +310,118 @@
                 style="@style/TestingList" />
         </LinearLayout>
 
+        <!-- La teleconsulta: lo que Berry Med publica en LiveKit, y una prueba a mano con servidor y token propios. -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="6dp"
+            android:background="@color/card"
+            android:orientation="vertical"
+            android:padding="14dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/testing_tele"
+                    android:textColor="@color/vital_on"
+                    android:textSize="17sp" />
+
+                <View
+                    android:id="@+id/teleDot"
+                    android:layout_width="10dp"
+                    android:layout_height="10dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/status_dot"
+                    android:backgroundTint="@color/vital_dim" />
+
+                <TextView
+                    android:id="@+id/teleState"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:textColor="@color/vital_dim"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/testing_tele_help"
+                android:textColor="@color/vital_dim"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/teleDetail"
+                style="@style/TestingList" />
+
+            <TextView
+                style="@style/TestingListTitle"
+                android:text="@string/testing_tele_manual" />
+
+            <EditText
+                android:id="@+id/teleServer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:autofillHints=""
+                android:fontFamily="monospace"
+                android:hint="@string/testing_tele_server"
+                android:inputType="textUri"
+                android:textColor="@color/vital_on"
+                android:textColorHint="@color/vital_dim"
+                android:textSize="13sp" />
+
+            <EditText
+                android:id="@+id/teleToken"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:autofillHints=""
+                android:fontFamily="monospace"
+                android:hint="@string/testing_tele_token"
+                android:inputType="textNoSuggestions"
+                android:maxLines="3"
+                android:textColor="@color/vital_on"
+                android:textColorHint="@color/vital_dim"
+                android:textSize="13sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/teleOtoscopeButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:text="@string/testing_tele_otoscope" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/teleStethoButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:text="@string/testing_tele_stetho" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/teleStopButton"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/testing_tele_stop"
+                    android:textColor="@color/vital_on"
+                    app:strokeColor="@color/vital_dim" />
+            </LinearLayout>
+        </LinearLayout>
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

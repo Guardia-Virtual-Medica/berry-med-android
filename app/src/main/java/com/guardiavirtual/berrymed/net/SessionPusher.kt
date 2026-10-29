@@ -3,6 +3,8 @@ package com.guardiavirtual.berrymed.net
 
 import com.guardiavirtual.berrymed.config.BerryConfig
 import com.guardiavirtual.berrymed.config.Environment
+import com.guardiavirtual.berrymed.tele.TeleOrder
+import com.guardiavirtual.berrymed.tele.TeleOrders
 import com.pusher.client.Pusher
 import com.pusher.client.PusherOptions
 import com.pusher.client.channel.PusherEvent
@@ -34,6 +36,9 @@ class SessionPusher(
         fun onStop()
         fun onBloodPressure()
         fun onConnection(connected: Boolean)
+
+        /** Encender o apagar el otoscopio o el estetoscopio en la teleconsulta (`start_oth`, `stop_steth`, …). */
+        fun onInstrument(order: TeleOrder)
     }
 
     @Volatile private var client: Pusher? = null
@@ -158,7 +163,27 @@ class SessionPusher(
         channel.bind(start, event(pusher) { listener.onStart() })
         channel.bind(stop, event(pusher) { listener.onStop() })
         channel.bind(BLOOD_PRESSURE, event(pusher) { listener.onBloodPressure() })
-        log("[PUSHER] Escuchando $start, $stop y $BLOOD_PRESSURE")
+        // No dependen de que haya una consulta de signos enviando.
+        for (name in TeleOrders.EVENTS.keys) {
+            channel.bind(name, instrumentEvent(pusher, name))
+        }
+        log("[PUSHER] Escuchando $start, $stop, $BLOOD_PRESSURE y ${TeleOrders.EVENTS.keys.joinToString(", ")}")
+    }
+
+    /** El cuerpo trae `encounter_external_id`; sin él la orden no se puede atender y se registra. */
+    private fun instrumentEvent(pusher: Pusher, name: String) = SubscriptionEventListener { event: PusherEvent ->
+        if (client !== pusher) return@SubscriptionEventListener
+        try {
+            val order = TeleOrders.parse(name, event.data)
+            if (order == null) {
+                log("[PUSHER] $name sin encounter_external_id: se ignora (${event.data?.take(120)})")
+                return@SubscriptionEventListener
+            }
+            log("[PUSHER] $name del encuentro ${order.encounterId}")
+            listener.onInstrument(order)
+        } catch (error: Exception) {
+            log("[PUSHER] No se pudo procesar $name: $error")
+        }
     }
 
     private fun event(pusher: Pusher, block: () -> Unit) = SubscriptionEventListener { _: PusherEvent ->
