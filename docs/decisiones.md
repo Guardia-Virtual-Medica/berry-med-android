@@ -75,9 +75,18 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - El APK sólo lleva ARM (`arm64-v8a`, `armeabi-v7a`) y las librerías nativas comprimidas: WebRTC trae cuatro arquitecturas y el APK pasaba de 12 a 70 MB; queda en 25 MB.
 - No se cambia la app del médico. Nota: `useLiveKitDevices.ts` de `gvm.mt.doctors` espeja el video (`scaleX(-1)`) e invierte la imagen del otoscopio; es una línea si se decide sacarlo.
 
+### Plan 6, revisión: el kiosco dentro de Berry Med
+
+- El usuario decidió **no modificar la API, el kiosco ni la app del médico**. Se cierran gvm.mt.api#29 y gvm.mt.totem#70. Revisión en `docs/planes/plan-6-revision-kiosco-en-berry-med.md`.
+- El kiosco corre dentro de Berry Med, en un `WebView`, como hacía la app del proveedor (se deduce del historial de los repos: el kiosco navega con `window.location.href` a una dirección con `serverUrl` y `token`, y antes la API mandaba `koplak://auth?…`). Berry Med es la app de inicio de la tablet; se sale a la configuración con cinco toques en una esquina y el PIN.
+- El token sale de esa dirección: Berry Med entra a la sala apenas lo ve y se queda; `start_*`/`stop_*` sólo publican y despublican; `stop-monitoring` sólo despublica. Sale con un token nuevo, cuando el kiosco vuelve al inicio, al login o al setup, o a las 3 horas. El token nunca va al log.
+- `serverUrl` es el subdominio de LiveKit Cloud: sin esquema, el servidor es `wss://{serverUrl}.livekit.cloud`.
+- Con el kiosco y el estetoscopio en la misma app, Android no silencia la captura del estetoscopio con Zoom en la llamada: ya no hace falta pausar el micrófono del kiosco.
+- Se sacan del PR #19 el pedido del token a la API, el permiso "Mostrar sobre otras apps" y la apertura de la pantalla principal desde el arranque.
+
 ## Pendiente
 
 - Prueba con el hardware real en la tablet (ver "Probar el Panel Local en el tótem" en el `README.md` y los riesgos de `docs/hardware.md`).
 - Los hallazgos 8 a 26 de `docs/revisiones/revision-codigo-opus.md`.
-- Plan 6 en la tablet real: el camino UVC sin vista, el adaptador con `UNPROCESSED`, el micrófono de Zoom en pausa y el reinicio con "Mostrar sobre otras apps" (ver "Qué probar en la tablet" en el PR).
+- Plan 6 en la tablet real: Zoom dentro del `WebView`, el camino UVC sin vista, el adaptador con `UNPROCESSED` y el kiosco como app de inicio (ver "Qué probar en la tablet" en el PR #19).
 - v2 con guardado y PDF local.

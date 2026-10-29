@@ -130,16 +130,17 @@ El emulador no los muestra. Se revisan con Testing → "Dispositivos que ve Andr
 | Que `setPreferredDevice` realmente enrute al adaptador y al auricular | Que el sonido salga por el H390 y no por el parlante, y que la onda sea la del estetoscopio y no la del micrófono del auricular. |
 | Permiso USB del otoscopio negado sin diálogo (Android 10 o más) si la app todavía no tiene el permiso de cámara | Aceptar el permiso de cámara en el Panel Local antes del permiso USB del otoscopio. |
 | El otoscopio por UVC sin vista para la teleconsulta (libuvc entrega cuadros sin superficie donde dibujar) | Testing → Teleconsulta: "otoscopio por UVC" con cuadros por segundo mayores a 0, y el médico ve la imagen. |
-| Camera2 para la teleconsulta mientras Zoom usa la cámara de la tablet (límite de cámaras abiertas a la vez) | Por eso se prefiere UVC; si la tablet lo lista por Camera2, que el médico vea el otoscopio y el paciente siga viéndose en Zoom. |
+| Camera2 para la teleconsulta mientras Zoom usa la cámara de la tablet (límite de cámaras abiertas a la vez) | Por eso se prefiere UVC; si la tablet lo lista por Camera2, que el médico vea el otoscopio y el paciente siga viéndose en Zoom. En el emulador, con una sola cámara, abrir el otoscopio le sacó la cámara al `WebView`. |
 | Que el adaptador ofrezca `UNPROCESSED` | La línea `[TELE] Estetoscopio por …` dice la fuente. |
-| Que Android no silencie la captura con el micrófono de Zoom en pausa | Testing → Teleconsulta: "la captura no está silenciada". |
+| Que Android no silencie la captura del estetoscopio con Zoom en la llamada dentro del kiosco | Testing → Teleconsulta: "la captura no está silenciada". |
+| Que Zoom Video SDK ande en el `WebView` (cookies, `SharedArrayBuffer`, navegador) | Que la videollamada se vea y se escuche en el kiosco de Berry Med; líneas `[KIOSCO]`. |
 
 ## El micrófono compartido
 
-En la teleconsulta Chrome tiene la llamada de Zoom con el micrófono de la tablet abierto (`VOICE_COMMUNICATION`, con el audio en `MODE_IN_COMMUNICATION`). Android (`AudioPolicyService::updateUidStates_l`) no deja capturar a otra app mientras la dueña del modo de comunicación está capturando: le da **silencio**, aunque capture de otro dispositivo, como el adaptador del estetoscopio. No hay forma de evitarlo desde Berry Med.
+En la teleconsulta la llamada de Zoom tiene el micrófono de la tablet abierto (`VOICE_COMMUNICATION`, con el audio en `MODE_IN_COMMUNICATION`). Android (`AudioPolicyService::updateUidStates_l`) no deja capturar a **otra app** mientras la dueña del modo de comunicación está capturando: le da **silencio**, aunque capture de otro dispositivo, como el adaptador del estetoscopio. Con Zoom en Chrome, el estetoscopio de Berry Med quedaba mudo.
 
-- Por eso, mientras el estetoscopio está encendido en la teleconsulta, el kiosco suelta el micrófono de Zoom (sigue el parlante) y Berry Med puede capturar el adaptador. El paciente lo ve en la tarjeta del estetoscopio.
-- Berry Med no toca el modo, el foco ni el ruteo del audio: si pusiera `MODE_IN_COMMUNICATION` le rompería el audio a Zoom.
+- **Resuelto compartiendo la app**: el kiosco (y con él Zoom) corre dentro de Berry Med, así que la captura de la llamada y la del estetoscopio son del mismo UID y Android no silencia ninguna. No hace falta que el kiosco suelte el micrófono. En el emulador, con una llamada WebRTC abierta en el `WebView`, las dos capturas quedaron `silenced:false`.
+- Berry Med no toca el modo, el foco ni el ruteo del audio: el `WebView` maneja los de la llamada.
 - Testing → Teleconsulta (LiveKit) muestra si Android silencia la captura (`AudioRecordingConfiguration.isClientSilenced()`); en `adb shell dumpsys media.audio_policy` se ve el estado de cada captura.
 - Cámara y micrófono desde segundo plano: el servicio de Berry Med tiene que haberse puesto en primer plano como `camera|microphone` con una pantalla de Berry Med visible (ver el `README.md`). El fabricante de la tablet puede tener reglas más duras.
 
