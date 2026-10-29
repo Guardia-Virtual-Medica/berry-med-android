@@ -2,6 +2,7 @@
 package com.guardiavirtual.berrymed.ui.panel
 
 import com.guardiavirtual.berrymed.protocol.EcgInfo
+import com.guardiavirtual.berrymed.protocol.LiveFeed
 import java.util.Locale
 
 /**
@@ -66,9 +67,17 @@ object PanelFormat {
         else -> "Termómetro IR: ${value(reading)} °C · hace ${ageSeconds} s"
     }
 
-    fun nibpDetail(running: Boolean, cuffMmhg: Int, pressure: String): String = when {
-        running -> "Midiendo · manguito $cuffMmhg mmHg"
-        pressure == NONE -> "Sin medir todavía"
-        else -> "Última medición terminada"
+    /**
+     * [nibp] arranca en status -1 cada vez que se abre el panel. Si después
+     * llegó algún status y no hay presión, la medición terminó sin resultado:
+     * con un final de error de la plaqueta (`Pm6750Protocol.nibpIsTerminal`:
+     * manguito flojo, demoró, detenido) o cortada por Parar o por el tope de
+     * tiempo antes de que la plaqueta mandara un final.
+     */
+    fun nibpDetail(running: Boolean, nibp: LiveFeed.NibpState, pressure: String): String = when {
+        running -> "Midiendo · manguito ${nibp.cuffMmhg} mmHg"
+        pressure != NONE -> "Última medición terminada"
+        nibp.status >= 0 -> "Última medición sin resultado"
+        else -> "Sin medir todavía"
     }
 }

@@ -7,8 +7,6 @@ import com.guardiavirtual.berrymed.protocol.VitalSigns
 
 /** Lo que el Panel Local muestra en cada refresco, aparte de las ondas, que lee del [LiveFeed]. */
 data class LocalSnapshot(
-    val localMode: Boolean,
-    val sessionActive: Boolean,
     val berryUp: Boolean,
     val lastDataAge: Double?,
     val vitals: VitalSigns,

@@ -12,4 +12,6 @@
     <color name="warn">#8C3A2F</color>
     <!-- El rojo de warn no se lee sobre el fondo oscuro del monitor. -->
     <color name="test_fail">#F2A38F</color>
+    <!-- Fondo del ícono del Panel Local: distinto del verde de Berry Med para no confundirlos. -->
+    <color name="local_icon">#1E4E8C</color>
 </resources>

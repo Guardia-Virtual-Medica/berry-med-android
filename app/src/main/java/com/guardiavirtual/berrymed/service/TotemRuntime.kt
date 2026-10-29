@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import java.util.Locale
 import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.Executors
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -63,14 +64,27 @@ class TotemRuntime(context: Context) {
         { runnable -> Thread(runnable, "berry-send").apply { isDaemon = true } },
         ThreadPoolExecutor.DiscardOldestPolicy(),
     )
+    /**
+     * El STOP de la presión al cerrar el Panel Local o Testing. Escribir en el
+     * puerto serie puede tardar hasta un segundo y esos cierres llegan desde
+     * la pantalla: si se escribiera ahí, cerrar con el manguito inflando
+     * trabaría la tablet. El hilo es del servicio y no de la pantalla, así el
+     * STOP sale aunque la actividad se destruya enseguida.
+     */
+    private val nibpStopper = Executors.newSingleThreadExecutor { runnable ->
+        Thread(runnable, "berry-nibp-stop").apply { isDaemon = true }
+    }
     private val watch = SessionWatch()
     private val sessionLock = Any()
 
-    /** Cambia con cada inicio y cada fin: la respuesta de un POST viejo no decide nada. */
-    private var sessionEpoch = 0L
+    /**
+     * Consulta o Panel Local, nunca los dos. Se decide siempre dentro de
+     * [sessionLock], junto con lo demás que cambia al abrir o cortar.
+     */
+    private val gate = SessionGate()
 
     @Volatile var config: BerryConfig = BerryConfig()
-    @Volatile var sessionActive: Boolean = false
+    val sessionActive: Boolean get() = gate.sessionActive
     @Volatile private var sessionStartNano: Long = 0L
     @Volatile var lastPost: String = "Todavía no se envió"
     @Volatile var pusherUp: Boolean = false
@@ -82,8 +96,7 @@ class TotemRuntime(context: Context) {
      * Con el Panel Local abierto no sale ningún POST ni se atiende ninguna
      * orden de Pusher: la tablet está atendiendo a alguien de forma presencial.
      */
-    @Volatile var localMode: Boolean = false
-        private set
+    val localMode: Boolean get() = gate.localMode
 
     /** Las muestras en vivo para el Panel Local; el parser las copia acá apenas las decodifica. */
     val live = LiveFeed()
@@ -206,7 +219,7 @@ class TotemRuntime(context: Context) {
     private fun sendOnce() {
         val now = System.nanoTime()
         val (active, epoch, window) = synchronized(sessionLock) {
-            Triple(sessionActive, sessionEpoch, parser.takePayload())
+            Triple(gate.sessionActive, gate.epoch, parser.takePayload())
         }
         lastWindow = window
         if (!active && (testing || localMode || !watch.probeDue(now))) return
@@ -239,7 +252,7 @@ class TotemRuntime(context: Context) {
             return
         }
         if (!watch.sent(outcome)) return
-        stopSession("la plataforma no tiene la toma abierta") { sessionEpoch == epoch }
+        stopSession("la plataforma no tiene la toma abierta") { gate.epoch == epoch }
     }
 
     private fun describe(outcome: PostOutcome, active: Boolean): String = when {
@@ -254,13 +267,11 @@ class TotemRuntime(context: Context) {
     private fun startSession() {
         // Se mira dentro del lock, igual que en startLocal: nunca quedan abiertos los dos.
         val opened = synchronized(sessionLock) {
-            if (localMode) return@synchronized false
+            if (!gate.startSession()) return@synchronized false
             berry.stopNibp()
             parser.resetData()
             thermo.resetLatest()
             sessionStartNano = System.nanoTime()
-            sessionActive = true
-            sessionEpoch++
             true
         }
         if (!opened) {
@@ -284,10 +295,8 @@ class TotemRuntime(context: Context) {
     private fun resumeSession(epoch: Long) {
         synchronized(sessionLock) {
             // Un POST de prueba que salió justo antes de abrir el Panel Local no arranca la consulta.
-            if (sessionActive || localMode || sessionEpoch != epoch) return
+            if (!gate.resumeSession(epoch)) return
             sessionStartNano = System.nanoTime()
-            sessionActive = true
-            sessionEpoch++
         }
         watch.started()
         log("[SESIÓN] Envío iniciado: la plataforma tenía la toma abierta")
@@ -305,9 +314,8 @@ class TotemRuntime(context: Context) {
     private fun stopSession(reason: String, byPlatform: Boolean = false, stillDue: () -> Boolean = { true }) {
         synchronized(sessionLock) {
             if (!stillDue()) return
-            sessionActive = false
+            gate.stopSession()
             sessionStartNano = 0L
-            sessionEpoch++
             berry.stopNibp()
             parser.resetData()
             thermo.resetLatest()
@@ -370,6 +378,9 @@ class TotemRuntime(context: Context) {
     /** Devuelve el motivo si no se puede probar ahora. */
     fun startTesting(): String? {
         if (sessionActive) return "Hay una consulta enviando: la prueba espera a que termine."
+        // Al revés no: abrir el panel sí corta la prueba. Testing es diagnóstico y el
+        // panel está atendiendo a un paciente; en pantalla dividida no se le saca la presión.
+        if (localMode) return "El Panel Local está abierto: la prueba espera a que se cierre."
         testingSession.reset()
         testing = true
         log("[TEST] Prueba iniciada: no se envía nada a la API")
@@ -386,7 +397,16 @@ class TotemRuntime(context: Context) {
         testing = false
         testingSession.reset()
         // Una presión pedida desde Testing no queda inflando el manguito.
-        if (berry.nibpRunning && !sessionActive) berry.stopNibp()
+        stopNibpInBackground()
+    }
+
+    /**
+     * Manda STOP fuera del hilo que llama, que suele ser el de la pantalla.
+     * Se decide ahora: una presión de una consulta que arranca después no se toca.
+     */
+    private fun stopNibpInBackground() {
+        if (!berry.nibpRunning || sessionActive) return
+        nibpStopper.execute { berry.stopNibp() }
     }
 
     fun checkMeasure(measure: TestingSession.Measure) {
@@ -412,9 +432,10 @@ class TotemRuntime(context: Context) {
     fun startLocal(): String? {
         // Dentro del lock: una prueba aceptada no puede arrancar la consulta entre el chequeo y el cambio.
         synchronized(sessionLock) {
-            if (sessionActive) return "Hay una consulta enviando: el Panel Local espera a que termine."
-            localMode = true
+            if (!gate.openLocal()) return "Hay una consulta enviando: el Panel Local espera a que termine."
         }
+        // El panel arranca en blanco: ni ondas ni el estado de una presión de antes.
+        live.clear()
         if (testing) {
             endTesting()
             log("[TEST] Se abrió el Panel Local: se corta la prueba")
@@ -424,11 +445,11 @@ class TotemRuntime(context: Context) {
         return null
     }
 
+    /** Corta el modo local en el acto; el STOP de la presión sale en otro hilo. */
     fun stopLocal() {
-        if (!localMode) return
-        localMode = false
+        if (!gate.closeLocal()) return
         // Una presión pedida desde el panel no queda inflando el manguito.
-        if (berry.nibpRunning && !sessionActive) berry.stopNibp()
+        stopNibpInBackground()
         log("[LOCAL] Panel Local cerrado")
         publish()
     }
@@ -451,8 +472,6 @@ class TotemRuntime(context: Context) {
         val reading = thermo.latest()
         val thermoAt = thermo.lastReadingAtNano
         return LocalSnapshot(
-            localMode = localMode,
-            sessionActive = sessionActive,
             berryUp = berry.connected,
             lastDataAge = berry.lastDataAgeSeconds(),
             vitals = stats.vitals,

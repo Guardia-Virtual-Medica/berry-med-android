@@ -2,10 +2,13 @@
 package com.guardiavirtual.berrymed.ui.panel
 
 import com.guardiavirtual.berrymed.protocol.EcgInfo
+import com.guardiavirtual.berrymed.protocol.LiveFeed
 import com.guardiavirtual.berrymed.protocol.NO_PAIR
+import com.guardiavirtual.berrymed.protocol.Pm6750Protocol
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class PanelFormatTest {
     @Test
@@ -54,8 +57,20 @@ class PanelFormatTest {
 
     @Test
     fun nibpDetail() {
-        assertEquals("Midiendo · manguito 80 mmHg", PanelFormat.nibpDetail(true, 80, "—"))
-        assertEquals("Sin medir todavía", PanelFormat.nibpDetail(false, 0, "—"))
-        assertEquals("Última medición terminada", PanelFormat.nibpDetail(false, 0, "120/80"))
+        val none = LiveFeed.NibpState(status = -1, cuffMmhg = 0)
+        assertEquals("Midiendo · manguito 80 mmHg", PanelFormat.nibpDetail(true, LiveFeed.NibpState(0x04, 80), "—"))
+        assertEquals("Sin medir todavía", PanelFormat.nibpDetail(false, none, "—"))
+        assertEquals("Última medición terminada", PanelFormat.nibpDetail(false, LiveFeed.NibpState(0x00, 0), "120/80"))
+    }
+
+    @Test
+    fun aMeasurementThatEndedInErrorIsNotShownAsNeverMeasured() {
+        // BIT5~2 = 0x4: manguito flojo, un final de la plaqueta sin presión.
+        val looseCuff = LiveFeed.NibpState(status = 0x4 shl 2, cuffMmhg = 0)
+        assertTrue(Pm6750Protocol.nibpIsTerminal(looseCuff.status))
+        assertEquals("Última medición sin resultado", PanelFormat.nibpDetail(false, looseCuff, "—"))
+        // Cortada con Parar mientras inflaba: la plaqueta no llegó a mandar un final.
+        val inflating = LiveFeed.NibpState(status = 0x1 shl 2, cuffMmhg = 120)
+        assertEquals("Última medición sin resultado", PanelFormat.nibpDetail(false, inflating, "—"))
     }
 }

@@ -41,7 +41,13 @@ class WaveformView @JvmOverloads constructor(context: Context, attrs: AttributeS
 
     fun attach(channel: LiveFeed.Channel) {
         this.channel = channel
+        restart()
+    }
+
+    /** Al desbloquear el panel: el servicio vació el canal y la pantalla empieza en blanco. */
+    fun restart() {
         trace.reset()
+        invalidate()
     }
 
     fun tick() {
@@ -55,12 +61,18 @@ class WaveformView @JvmOverloads constructor(context: Context, attrs: AttributeS
         val w = width.toFloat()
         val h = height.toFloat()
         val margin = h * 0.12f
-        val span = (range.second - range.first).coerceAtLeast(1f)
+        val span = range.second - range.first
         val pxPerSample = w / trace.samplesPerScreen
+        // Una onda plana (sin dedo, sin respiración) va al medio y no pegada abajo.
+        val yOf: (Float) -> Float = if (span <= 0f) {
+            { h / 2f }
+        } else {
+            { v -> h - margin - (v - range.first) / span * (h - 2 * margin) }
+        }
         val count = trace.segments(
             lines,
             xOf = { i -> i * pxPerSample },
-            yOf = { v -> h - margin - (v - range.first) / span * (h - 2 * margin) },
+            yOf = yOf,
             gap = GAP_SAMPLES,
         )
         if (count > 0) canvas.drawLines(lines, 0, count, tracePaint)

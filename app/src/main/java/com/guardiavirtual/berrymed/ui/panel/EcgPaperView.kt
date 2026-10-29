@@ -2,6 +2,7 @@
 package com.guardiavirtual.berrymed.ui.panel
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -24,6 +25,13 @@ class EcgPaperView @JvmOverloads constructor(context: Context, attrs: AttributeS
     private var traces: List<SweepTrace> = emptyList()
     private var lines = FloatArray(0)
     private var feed: LiveFeed? = null
+
+    /**
+     * El papel con la cuadrícula, dibujado una sola vez por tamaño. Son
+     * cientos de líneas: repetirlas en cada cuadro, a 60 por segundo, gasta
+     * la tablet en algo que no cambia.
+     */
+    private var paper: Bitmap? = null
     private val pxPerMm = resources.displayMetrics.xdpi / 25.4f
 
     var mmPerSecond = 25f
@@ -56,7 +64,13 @@ class EcgPaperView @JvmOverloads constructor(context: Context, attrs: AttributeS
 
     fun attach(feed: LiveFeed) {
         this.feed = feed
+        restart()
+    }
+
+    /** Al desbloquear el panel: el servicio vació las ondas y el papel empieza en blanco. */
+    fun restart() {
         traces.forEach(SweepTrace::reset)
+        invalidate()
     }
 
     /** Trae lo nuevo de cada derivación y redibuja si llegó algo. */
@@ -72,7 +86,27 @@ class EcgPaperView @JvmOverloads constructor(context: Context, attrs: AttributeS
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
+        // Otro tamaño, otra cuadrícula: se vuelve a dibujar en el próximo cuadro.
+        paper?.recycle()
+        paper = null
         rebuild()
+    }
+
+    private fun paper(): Bitmap? {
+        paper?.let { return it }
+        if (width <= 0 || height <= 0) return null
+        return Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also { bitmap ->
+            val canvas = Canvas(bitmap)
+            canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paperPaint)
+            drawGrid(canvas, width.toFloat(), height.toFloat())
+            paper = bitmap
+        }
+    }
+
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        paper?.recycle()
+        paper = null
     }
 
     private fun rebuild() {
@@ -86,8 +120,12 @@ class EcgPaperView @JvmOverloads constructor(context: Context, attrs: AttributeS
         super.onDraw(canvas)
         val w = width.toFloat()
         val h = height.toFloat()
-        canvas.drawRect(0f, 0f, w, h, paperPaint)
-        drawGrid(canvas, w, h)
+        val background = paper()
+        if (background != null) {
+            canvas.drawBitmap(background, 0f, 0f, null)
+        } else {
+            canvas.drawRect(0f, 0f, w, h, paperPaint)
+        }
         if (traces.isEmpty()) return
         val laneHeight = h / leads.size
         // Del papel y no del ancho: así 25 mm/s son 25 mm reales aunque la última muestra no entre entera.

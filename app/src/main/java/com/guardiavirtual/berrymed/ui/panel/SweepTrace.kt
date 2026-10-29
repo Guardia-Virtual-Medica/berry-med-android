@@ -30,9 +30,11 @@ class SweepTrace(val samplesPerScreen: Int) {
         return read.count
     }
 
+    /** Pantalla en blanco y a leer desde el principio del canal, que se acaba de vaciar. */
     fun reset() {
         values.fill(Float.NaN)
         head = 0
+        cursor = 0L
     }
 
     /**

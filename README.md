@@ -96,7 +96,7 @@ El servicio corre siempre como `connectedDevice`. `dataSync` no sirve: en Androi
 
 El botón **Testing** de la pantalla principal abre un panel para comprobar, en la tablet, que cada equipo transmite, antes de que nada se procese y se mande. No abre puertos propios: muestra lo que el servicio ya está leyendo.
 
-- **Iniciar prueba** frena los `POST` de prueba de cada 10 s mientras el panel está abierto. Pusher sigue conectado: si llega un `start-monitoring`, gana la consulta y la prueba se corta sola. Con una consulta enviando, la prueba no arranca. Al salir de la pantalla la prueba se corta y, si quedó una presión midiendo, se manda STOP.
+- **Iniciar prueba** frena los `POST` de prueba de cada 10 s mientras el panel está abierto. Pusher sigue conectado: si llega un `start-monitoring`, gana la consulta y la prueba se corta sola. Con una consulta enviando o con el [Panel Local](#panel-local) abierto, la prueba no arranca. Al salir de la pantalla la prueba se corta y, si quedó una presión midiendo, se manda STOP.
 - **Una tarjeta por medición de la plaqueta.** ECG, SpO₂, respiración y temperatura muestran el valor, las muestras por segundo y un punto verde si llegaron datos en los últimos 3 s. **Probar** mira 5 s de tramas y da OK o el motivo:
 
   | Medición | OK si en 5 s | Si no |
@@ -118,15 +118,15 @@ El botón **Testing** de la pantalla principal abre un panel para comprobar, en 
 
 Para atención **presencial, sin teleconsulta**: el médico o el enfermero que está al lado del paciente ve en la tablet todos los instrumentos en vivo, con Chrome cerrado. Es una cosa o la otra: con el panel abierto la tablet no hace teleconsulta.
 
-- **Cómo se entra.** Con el ícono **Panel Local** de la tablet (un segundo ícono de Berry Med, que abre directo el panel) o con el botón **Panel Local** de la pantalla principal. Si la tablet arrancó sin pasar por Berry Med, el panel levanta el servicio.
+- **Cómo se entra.** Con el ícono **Panel Local** de la tablet (un segundo ícono de Berry Med, con el mismo dibujo sobre fondo azul, que abre directo el panel) o con el botón **Panel Local** de la pantalla principal. Si la tablet arrancó sin pasar por Berry Med, el panel levanta el servicio.
 - **PIN.** Lo pide al abrir y cada vez que el panel vuelve al frente. Por defecto `1515`; se cambia en Configuración, paso Plaqueta. Con una consulta enviando no se abre y lo dice.
-- **Qué muestra.** Pantalla apaisada, a pantalla completa y sin apagarse:
+- **Qué muestra.** Pantalla apaisada, a pantalla completa y sin apagarse. Cada vez que se desbloquea arranca en blanco, sin ondas de antes:
   - Las **7 derivaciones de ECG** sobre papel milimetrado (1 mm y 5 mm, medidos con la densidad real de la pantalla), con barrido como un monitor, a 25 mm/s o 12,5 mm/s y ganancia de pantalla x0.5, x1 o x2.
   - **Frecuencia cardíaca** con el estado de los electrodos, la señal débil y el código de arritmia que informa la plaqueta.
   - **SpO₂** con el pulso y su onda, **respiración** con su onda, y **temperatura**: la de la plaqueta y la del termómetro infrarrojo con hace cuánto llegó.
-  - **Presión**: **Medir** y **Parar**, la presión del manguito mientras infla y el último resultado.
+  - **Presión**: **Medir** y **Parar**, la presión del manguito mientras infla y el último resultado. Si la medición terminó sin presión (manguito flojo, demoró, se apretó Parar) dice "Última medición sin resultado".
   - La **cámara** de la tablet: vista previa, frontal o trasera, y **Congelar** para mirar una imagen quieta. Pide el permiso de la cámara la primera vez.
-- **Qué no hace.** No identifica al paciente, no guarda nada (ni la imagen congelada), no envía nada a OnDoctor y no tiene alarmas ni PDF. Mientras está abierto no sale ningún `POST`, ni siquiera el de prueba de cada 10 s, y se ignoran `start-monitoring`, `stop-monitoring` y `start-blood-pressure` (quedan en la consola). Si estaba abierto Testing, la prueba se corta. Al salir (con **Salir**, el gesto de atrás o cambiando de app) todo vuelve a la normalidad y, si quedó una presión midiendo, se manda STOP.
+- **Qué no hace.** No identifica al paciente, no guarda nada (ni la imagen congelada), no envía nada a OnDoctor y no tiene alarmas ni PDF. Mientras está abierto no sale ningún `POST`, ni siquiera el de prueba de cada 10 s, y se ignoran `start-monitoring`, `stop-monitoring` y `start-blood-pressure` (quedan en la consola). Si estaba abierto Testing, la prueba se corta; con el panel abierto, Testing no deja iniciar otra, porque el panel está atendiendo a un paciente. Al salir (con **Salir**, el gesto de atrás o cambiando de app) todo vuelve a la normalidad y, si quedó una presión midiendo, se manda STOP.
 - **La escala vertical del ECG es aproximada.** La plaqueta manda cada muestra como un byte de 0 a 255 con la línea de base en 128 y no documenta cuántos milivoltios son. El papel usa 10 mm por mV suponiendo 40 unidades por mV; la ganancia de pantalla sirve para ajustarlo a ojo. La velocidad horizontal sí es la real (250 muestras por segundo). Las ondas de SpO₂ y respiración se ajustan solas a la altura, porque la plaqueta tampoco documenta su escala ni su frecuencia.
 
 ## Qué no hace esta versión

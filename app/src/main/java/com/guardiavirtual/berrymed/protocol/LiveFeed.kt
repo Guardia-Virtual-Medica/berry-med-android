@@ -33,7 +33,8 @@ class LiveFeed {
          */
         fun readSince(cursor: Long, out: IntArray): Read = synchronized(lock) {
             val oldest = maxOf(0L, written - capacity)
-            // Un cursor adelante de lo escrito quedó de antes de un clear: se arranca de nuevo.
+            // Un cursor adelante de lo escrito quedó de antes de un clear (al abrir el
+            // panel): se arranca de nuevo en vez de esperar a que lo escrito lo alcance.
             var from = if (cursor > written) oldest else maxOf(cursor, oldest)
             val available = (written - from).toInt()
             val n = minOf(available, out.size)
@@ -78,6 +79,7 @@ class LiveFeed {
         nibp = NibpState(status, cuffMmhg)
     }
 
+    /** Lo llama el servicio al abrir el Panel Local, para que no arranque con ondas viejas. */
     fun clear() {
         ecg.values.forEach(Channel::clear)
         spo2.clear()

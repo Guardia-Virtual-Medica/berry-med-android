@@ -180,6 +180,10 @@ class LocalPanelActivity : AppCompatActivity() {
             ?.hideSoftInputFromWindow(binding.pinInput.windowToken, 0)
         binding.lock.visibility = View.GONE
         binding.nibpMessage.text = ""
+        // startLocal vació las ondas: las pantallas arrancan en blanco y leen desde cero.
+        binding.ecgPaper.restart()
+        binding.spo2Wave.restart()
+        binding.respWave.restart()
         unlocked = true
         lastRenderAt = 0L
         binding.ecgPaper.postOnAnimation(frame)
@@ -278,7 +282,7 @@ class LocalPanelActivity : AppCompatActivity() {
 
         val pressure = PanelFormat.pressure(vitals.nibp)
         binding.nibpValue.text = pressure
-        binding.nibpDetail.text = PanelFormat.nibpDetail(s.nibpRunning, s.nibp.cuffMmhg, pressure)
+        binding.nibpDetail.text = PanelFormat.nibpDetail(s.nibpRunning, s.nibp, pressure)
         binding.measureButton.isEnabled = s.berryUp && !s.nibpRunning
         binding.stopButton.isEnabled = s.nibpRunning
     }
