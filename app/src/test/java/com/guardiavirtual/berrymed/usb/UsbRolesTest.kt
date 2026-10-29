@@ -99,4 +99,19 @@ class UsbRolesTest {
         assertTrue(BerryLink.isThermometer(line))
         assertTrue(BerryLink.hasHeader(byteArrayOf(0x10, 0x55, 0xAA.toByte(), 0x04)))
     }
+
+    @Test
+    fun thePanelReadsEachDeviceFromOneList() {
+        val devices = PanelDevices.of(
+            listOf(
+                KnownDevices.YKUSH_VENDOR to KnownDevices.YKUSH3_PRODUCT,
+                KnownDevices.OTOSCOPE_VENDOR to KnownDevices.OTOSCOPE_PRODUCT,
+                KnownDevices.LOGITECH_VENDOR to 0x0A44,
+            ),
+        )
+        assertTrue(devices.ykush)
+        assertTrue(devices.otoscope)
+        assertFalse(devices.stethoAdapter)
+        assertFalse(PanelDevices.of(emptyList()).ykush)
+    }
 }

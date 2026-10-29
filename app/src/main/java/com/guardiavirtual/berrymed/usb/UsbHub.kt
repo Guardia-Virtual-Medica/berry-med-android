@@ -94,6 +94,13 @@ class UsbHub(context: Context) {
     fun plugged(vendorId: Int, productId: Int): Boolean =
         manager.deviceList.values.any { it.vendorId == vendorId && it.productId == productId }
 
+    /**
+     * Qué equipos del Panel Local están enchufados, de una sola lectura de la
+     * lista de USB: el panel lo pregunta cada medio segundo y cada lectura
+     * arma la lista entera.
+     */
+    fun panelDevices(): PanelDevices = PanelDevices.of(manager.deviceList.values.map { it.vendorId to it.productId })
+
     fun isPresent(device: UsbDevice): Boolean =
         manager.deviceList.values.any { it.deviceId == device.deviceId }
 
@@ -167,6 +174,18 @@ class UsbHub(context: Context) {
             if (vendorId == STM32_VENDOR) return false
             return provenNotBerry || berryUp
         }
+    }
+}
+
+/** Lo que el Panel Local necesita saber de lo enchufado, tenga permiso o no. */
+data class PanelDevices(val ykush: Boolean, val stethoAdapter: Boolean, val otoscope: Boolean) {
+    companion object {
+        /** Desde los pares fabricante–producto de lo que ve Android. */
+        fun of(devices: List<Pair<Int, Int>>): PanelDevices = PanelDevices(
+            ykush = devices.any { (vendor, product) -> KnownDevices.isYkush3(vendor, product) },
+            stethoAdapter = devices.any { (vendor, product) -> KnownDevices.isStethoAdapter(vendor, product) },
+            otoscope = devices.any { (vendor, product) -> KnownDevices.isOtoscope(vendor, product) },
+        )
     }
 }
 

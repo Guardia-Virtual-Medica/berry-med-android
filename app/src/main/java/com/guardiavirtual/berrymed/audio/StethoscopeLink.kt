@@ -34,9 +34,19 @@ class StethoscopeLink(
     private val appContext = context.applicationContext
     private val audio = appContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private val lock = Any()
-    private var worker: Thread? = null
 
-    @Volatile private var keepRunning = false
+    // Sólo con [lock].
+    private var worker: Thread? = null
+    private var session: Session? = null
+
+    /**
+     * Una escucha. Cada hilo de audio tiene la suya: si un hilo viejo queda
+     * trabado en una lectura y vuelve tarde, no sigue andando ni pisa el
+     * estado de la escucha que arrancó después.
+     */
+    private class Session {
+        @Volatile var keepRunning = true
+    }
 
     /** Si está capturando. */
     @Volatile var running: Boolean = false
@@ -95,12 +105,13 @@ class StethoscopeLink(
         if (input == null) return "No aparece el adaptador del estetoscopio (\"${config.stethoInputName}\")."
         val record = openRecord(input) ?: return "No se pudo abrir el adaptador del estetoscopio."
         val track = output?.let(::openTrack)
-        keepRunning = true
+        val current = Session()
+        session = current
         running = true
         playing = track != null
         level = 0f
         wave.clear()
-        worker = Thread({ loop(record, track) }, THREAD_NAME).apply {
+        worker = Thread({ loop(record, track, current) }, THREAD_NAME).apply {
             isDaemon = true
             start()
         }
@@ -111,19 +122,40 @@ class StethoscopeLink(
     /**
      * Para y espera a que el hilo suelte el audio. Un bloque es de 20 ms,
      * así que la espera es corta aunque se llame desde la pantalla.
+     *
+     * Si el adaptador desapareció, la lectura puede no volver nunca y el hilo
+     * no termina. Ahí se lo da por detenido igual: si no, [running] quedaría
+     * en true y Escuchar diría "Ya está escuchando." sin sonido. Ese hilo
+     * suelta lo suyo cuando la lectura vuelva, sin tocar una escucha nueva.
      */
     fun stop() {
-        val thread = synchronized(lock) {
+        val (current, thread) = synchronized(lock) {
             if (!running) return
-            keepRunning = false
-            worker.also { worker = null }
+            session?.keepRunning = false
+            session to worker
         }
         try {
             thread?.join(JOIN_MS)
         } catch (_: InterruptedException) {
             Thread.currentThread().interrupt()
         }
+        synchronized(lock) {
+            // Si el hilo terminó, ya limpió él y la sesión no es más ésta.
+            if (session === current) {
+                log("[ESTETO] El hilo de audio no terminó a tiempo: se da por detenido")
+                finish()
+            }
+        }
         log("[ESTETO] Detenido")
+    }
+
+    /** Deja todo en reposo. Con [lock]. */
+    private fun finish() {
+        session = null
+        worker = null
+        level = 0f
+        playing = false
+        running = false
     }
 
     /**
@@ -196,7 +228,7 @@ class StethoscopeLink(
         }
     }
 
-    private fun loop(record: AudioRecord, track: AudioTrack?) {
+    private fun loop(record: AudioRecord, track: AudioTrack?, current: Session) {
         val filter = BandPass()
         val input = ShortArray(BLOCK_SAMPLES)
         val output = ShortArray(BLOCK_SAMPLES)
@@ -204,7 +236,7 @@ class StethoscopeLink(
         try {
             record.startRecording()
             track?.play()
-            while (keepRunning) {
+            while (current.keepRunning) {
                 val n = record.read(input, 0, input.size)
                 if (n < 0) {
                     log("[ESTETO] La captura devolvió $n: se corta")
@@ -226,9 +258,8 @@ class StethoscopeLink(
             log("[ESTETO] Error en la captura: $error")
         } finally {
             release(record, track)
-            level = 0f
-            playing = false
-            running = false
+            // Si stop() ya lo dio por detenido, puede haber otra escucha andando: no se toca.
+            synchronized(lock) { if (session === current) finish() }
         }
     }
 

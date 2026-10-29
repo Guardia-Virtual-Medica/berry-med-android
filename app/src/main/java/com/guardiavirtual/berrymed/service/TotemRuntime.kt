@@ -25,7 +25,6 @@ import com.guardiavirtual.berrymed.protocol.splitWindow
 import com.guardiavirtual.berrymed.protocol.summarize
 import com.guardiavirtual.berrymed.usb.BerryLink
 import com.guardiavirtual.berrymed.usb.DeviceInventory
-import com.guardiavirtual.berrymed.usb.KnownDevices
 import com.guardiavirtual.berrymed.usb.ThermometerLink
 import com.guardiavirtual.berrymed.usb.UsbHub
 import com.guardiavirtual.berrymed.usb.YkushHub
@@ -106,8 +105,14 @@ class TotemRuntime(context: Context) {
     private val otoscope = OtoscopePower(OTOSCOPE_WAIT_NANOS, CAMERA2_GRACE_NANOS)
     val otoscopeProbe = OtoscopeProbe(appContext, hub)
 
-    /** El puerto que encendió el otoscopio, por si la configuración cambia mientras está prendido. */
-    @Volatile private var otoscopePort = 0
+    /**
+     * El puerto del otoscopio, si lo encendió el panel: sólo ése se apaga. Al
+     * encender la tablet el hub arranca con los tres prendidos y la
+     * teleconsulta usa el otoscopio por ahí; apagarlo al salir lo dejaría
+     * desenchufado para Chrome. Guarda el número, así se apaga el puerto que
+     * se encendió aunque la configuración cambie mientras tanto.
+     */
+    private val otoscopePorts = PanelPorts()
 
     val otoscopeState: OtoscopePower.State get() = otoscope.state
 
@@ -516,9 +521,9 @@ class TotemRuntime(context: Context) {
 
     /**
      * Escuchar: enciende en el YKUSH3 los puertos del adaptador y del
-     * auricular que estén apagados, espera hasta 5 s a que Android vea las
-     * dos placas de audio y recién ahí abre el audio. Sin YKUSH3 se intenta
-     * directo. Todo en otro hilo; [done] se llama desde ese hilo con el
+     * auricular que estén apagados y, si encendió alguno, espera hasta 5 s a
+     * que Android vea las dos placas de audio antes de abrir el audio. Si no
+     * encendió nada, abre con lo que hay. Sin YKUSH3 se intenta directo. Todo en otro hilo; [done] se llama desde ese hilo con el
      * mensaje para la tarjeta.
      */
     fun localStethoStart(done: (String) -> Unit) {
@@ -547,12 +552,15 @@ class TotemRuntime(context: Context) {
     private fun startStethoscope(epoch: Long): String {
         val cfg = config
         val notes = ArrayList<String>()
-        if (ykush.plugged()) {
+        val hubPresent = ykush.plugged()
+        var poweredSome = false
+        if (hubPresent) {
             val ports = listOf(cfg.ykushStethoscopePort, cfg.ykushHeadsetPort)
             for (port in stethoPorts.toTurnOn(ports, ykush.readAll())) {
                 if (stethoEpoch != epoch) return ""
                 if (ykush.setPort(port, true)) {
                     stethoPorts.turnedOn(port)
+                    poweredSome = true
                 } else {
                     notes += "El YKUSH3 no encendió el puerto $port."
                 }
@@ -560,9 +568,12 @@ class TotemRuntime(context: Context) {
         } else {
             notes += "Sin YKUSH3: se intenta directo."
         }
-        // Encender un puerto es enchufar el equipo: Android tarda un momento en ver la placa de audio.
-        val deadline = System.nanoTime() + STETHO_WAIT_NANOS
         var found = stetho.devices(cfg)
+        // Encender un puerto es enchufar el equipo: Android tarda un momento en ver
+        // la placa de audio. Si no se encendió nada, lo que no está no va a aparecer
+        // solo; sin YKUSH3 sí se le da tiempo al adaptador, que pudo recién enchufarse.
+        val wait = poweredSome || (!hubPresent && found.input == null)
+        val deadline = System.nanoTime() + if (wait) STETHO_WAIT_NANOS else 0L
         while ((found.input == null || found.output == null) && System.nanoTime() < deadline) {
             if (stethoEpoch != epoch || !localMode) return ""
             sleep(DEVICE_POLL_MS)
@@ -600,10 +611,10 @@ class TotemRuntime(context: Context) {
     }
 
     /**
-     * Encender el otoscopio: prende su puerto en el YKUSH3 (y con él la luz),
-     * espera hasta 8 s a que Android lo vea como cámara externa o como
-     * dispositivo USB con permiso, y avisa por cuál camino abrirlo. Si no
-     * aparece, apaga el puerto. Todo en el hilo del otoscopio; [progress] y
+     * Encender el otoscopio: prende su puerto en el YKUSH3 (y con él la luz)
+     * si estaba apagado, espera hasta 8 s a que Android lo vea como cámara
+     * externa o como dispositivo USB con permiso, y avisa por cuál camino
+     * abrirlo. Si no aparece, apaga el puerto si lo encendió el panel. Todo en el hilo del otoscopio; [progress] y
      * [done] se llaman desde ahí.
      */
     fun localOtoscopeOn(progress: (String) -> Unit, done: (OtoscopePower.Path?, String) -> Unit) {
@@ -618,7 +629,6 @@ class TotemRuntime(context: Context) {
             return
         }
         val port = config.ykushOtoscopePort
-        otoscopePort = port
         otoscopeWorker.execute {
             try {
                 waitForOtoscope(actions, port, progress, done)
@@ -639,7 +649,14 @@ class TotemRuntime(context: Context) {
     ) {
         if (OtoscopePower.Action.PORT_ON in actions) {
             progress("Encendiendo…")
-            if (!ykush.setPort(port, true)) log("[OTOSCOPIO] El YKUSH3 no encendió el puerto $port: se espera igual")
+            // Un estado que no se pudo leer cuenta como apagado: encender de más no rompe nada.
+            if (otoscopePorts.toTurnOn(listOf(port), ykush.readAll()).isEmpty()) {
+                log("[OTOSCOPIO] El puerto $port ya está encendido")
+            } else if (ykush.setPort(port, true)) {
+                otoscopePorts.turnedOn(port)
+            } else {
+                log("[OTOSCOPIO] El YKUSH3 no encendió el puerto $port: se espera igual")
+            }
             if (!otoscope.portReady(System.nanoTime())) return
             progress("Esperando la cámara…")
         } else {
@@ -655,7 +672,21 @@ class TotemRuntime(context: Context) {
                     return
                 }
                 is OtoscopePower.Poll.TimedOut -> {
-                    if (OtoscopePower.Action.PORT_OFF in poll.actions) ykush.setPort(port, false)
+                    if (otoscopeProbe.usbPresent() && !otoscopeProbe.usbReady()) {
+                        // Enchufado pero sin permiso: el pedido sale una vez por dispositivo y
+                        // alguien lo cerró. Se pide de nuevo y el puerto queda encendido, porque
+                        // apagarlo desenchufa el otoscopio y el pedido no serviría. Si lo
+                        // encendió el panel, se apaga al salir.
+                        log("[OTOSCOPIO] Está enchufado pero sin permiso USB: se vuelve a pedir")
+                        hub.forgetAsked()
+                        done(
+                            null,
+                            "Falta aceptar el permiso USB del otoscopio: aceptá el pedido que aparece " +
+                                "o, si no aparece, tocá «Pedir permiso USB» en Berry Med. Después, Encender otra vez.",
+                        )
+                        return
+                    }
+                    if (OtoscopePower.Action.PORT_OFF in poll.actions) turnOffOtoscopePort()
                     log("[OTOSCOPIO] No apareció en ${OTOSCOPE_WAIT_NANOS / 1_000_000_000L} s")
                     done(null, "El otoscopio no aparece como cámara.")
                     return
@@ -668,25 +699,36 @@ class TotemRuntime(context: Context) {
      * Apagar el otoscopio, también al cerrar el panel o si la imagen no
      * abrió. La pantalla suelta la cámara antes de llamar; acá queda apagar
      * el puerto, en el hilo del otoscopio y después de cualquier cierre UVC
-     * que esté en la cola.
+     * que esté en la cola. Sólo si lo encendió el panel: si ya estaba
+     * encendido, queda como estaba.
+     *
+     * Aunque el otoscopio ya esté apagado se pasa por el hilo: un puerto que
+     * quedó encendido esperando el permiso USB también se apaga al salir.
      */
     fun localOtoscopeOff() {
-        val actions = otoscope.switchOff()
-        if (OtoscopePower.Action.PORT_OFF !in actions) return
-        val port = otoscopePort
+        val powering = OtoscopePower.Action.PORT_OFF in otoscope.switchOff()
         otoscopeWorker.execute {
             try {
-                if (ykush.plugged()) ykush.setPort(port, false)
+                turnOffOtoscopePort()
             } finally {
-                otoscope.poweredOff()
+                if (powering) otoscope.poweredOff()
             }
         }
+    }
+
+    /** Apaga el puerto del otoscopio si lo encendió el panel, y lo olvida. En el hilo del otoscopio. */
+    private fun turnOffOtoscopePort() {
+        val ports = otoscopePorts.takeToTurnOff()
+        if (ports.isEmpty() || !ykush.plugged()) return
+        for (port in ports) ykush.setPort(port, false)
+        log("[OTOSCOPIO] Se apagó el puerto ${ports.joinToString(", ")} del YKUSH3, que había encendido el panel")
     }
 
     fun localSnapshot(): LocalSnapshot {
         val stats = parser.stats()
         val reading = thermo.latest()
         val thermoAt = thermo.lastReadingAtNano
+        val plugged = hub.panelDevices()
         return LocalSnapshot(
             berryUp = berry.connected,
             lastDataAge = berry.lastDataAgeSeconds(),
@@ -697,12 +739,11 @@ class TotemRuntime(context: Context) {
             thermoAge = if (thermoAt == 0L) null else (System.nanoTime() - thermoAt) / 1_000_000_000L,
             nibpRunning = berry.nibpRunning,
             nibp = live.nibp,
-            stethoAvailable = stetho.running || ykush.plugged() ||
-                hub.plugged(KnownDevices.STETHO_ADAPTER_VENDOR, KnownDevices.STETHO_ADAPTER_PRODUCT),
+            stethoAvailable = stetho.running || plugged.ykush || plugged.stethoAdapter,
             stethoStarting = stethoStarting,
             stethoRunning = stetho.running,
             stethoPlaying = stetho.playing,
-            otoscopeAvailable = otoscope.state != OtoscopePower.State.OFF || ykush.plugged() || otoscopeProbe.usbPresent(),
+            otoscopeAvailable = otoscope.state != OtoscopePower.State.OFF || plugged.ykush || plugged.otoscope,
             otoscopeState = otoscope.state,
         )
     }
@@ -785,10 +826,11 @@ class TotemRuntime(context: Context) {
         return vitals.temperature
     }
 
-    /** Para lo que pasa en la pantalla y conviene ver en la consola de Testing. */
-    fun note(message: String) = log(message)
-
-    private fun log(message: String) {
+    /**
+     * Al logcat y a la consola de Testing. Lo usan también las pantallas para
+     * lo que pasa en ellas y conviene ver ahí, como una imagen que no abrió.
+     */
+    internal fun log(message: String) {
         Log.i(TAG, message)
         console.add(message)
     }

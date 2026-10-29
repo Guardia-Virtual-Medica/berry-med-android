@@ -26,7 +26,8 @@ class OtoscopeProbe(context: Context, private val hub: UsbHub) {
         KnownDevices.isOtoscope(it.vendorId, it.productId)
     }
 
-    fun usbPresent(): Boolean = usbDevice() != null
+    /** Enchufado, tenga permiso o no. */
+    fun usbPresent(): Boolean = hub.plugged(KnownDevices.OTOSCOPE_VENDOR, KnownDevices.OTOSCOPE_PRODUCT)
 
     /** Enchufado y con permiso USB: lo que necesita el camino UVC. */
     fun usbReady(): Boolean = usbDevice()?.let(hub.manager::hasPermission) == true

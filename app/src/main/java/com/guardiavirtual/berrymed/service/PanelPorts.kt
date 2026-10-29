@@ -2,8 +2,8 @@
 package com.guardiavirtual.berrymed.service
 
 /**
- * Qué puertos del YKUSH3 prendió el Panel Local para el estetoscopio. Al
- * cerrar el panel se apagan sólo ésos: si un puerto ya estaba encendido (al
+ * Qué puertos del YKUSH3 prendió el Panel Local, uno para el estetoscopio y
+ * otro para el otoscopio. Al apagar se apagan sólo ésos: si un puerto ya estaba encendido (al
  * encender la tablet el hub arranca con los tres prendidos), queda como
  * estaba. Sin Android, para probar la secuencia sola.
  */

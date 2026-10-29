@@ -26,14 +26,16 @@ object AudioPick {
 
     /**
      * La entrada del estetoscopio: una entrada USB cuyo nombre contiene
-     * [inputName]. Si hay varias, la que no es el auricular: el H390 también
-     * tiene micrófono y puede declarar un nombre parecido.
+     * [inputName] y que no es el auricular. El H390 también tiene micrófono y
+     * puede declarar un nombre parecido ("USB Audio"): si el adaptador no está
+     * y sólo coincide el auricular, es null. Elegirlo haría que el médico se
+     * escuche a sí mismo por su propio auricular.
      */
     fun stethoInput(devices: List<Device>, inputName: String, headsetName: String): Device? {
         val wanted = inputName.trim()
         if (wanted.isEmpty()) return null
         val matches = devices.filter { it.usb && it.isSource && it.name.contains(wanted, ignoreCase = true) }
-        return matches.firstOrNull { !isHeadset(it, headsetName) } ?: matches.firstOrNull()
+        return matches.firstOrNull { !isHeadset(it, headsetName) }
     }
 
     /** La salida del auricular: por el nombre configurado y, si no está, por "Logitech". */

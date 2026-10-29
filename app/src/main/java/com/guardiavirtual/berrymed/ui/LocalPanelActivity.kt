@@ -368,9 +368,9 @@ class LocalPanelActivity : AppCompatActivity() {
         }
         val runtime = runtime()
         val source = when (path) {
-            OtoscopePower.Path.CAMERA2 -> CameraXOtoscope(this, binding.otoscopePreview, runtime.otoscopeProbe)
+            OtoscopePower.Path.CAMERA2 -> CameraXOtoscope(this, binding.otoscopePreview)
             OtoscopePower.Path.UVC ->
-                UvcOtoscope(this, binding.otoscopeTexture, runtime.otoscopeProbe, runtime.otoscopeExecutor, runtime::note)
+                UvcOtoscope(this, binding.otoscopeTexture, runtime.otoscopeProbe, runtime.otoscopeExecutor, runtime::log)
         }
         otoscope = source
         source.open { reason ->
@@ -378,7 +378,7 @@ class LocalPanelActivity : AppCompatActivity() {
             if (reason == null) {
                 binding.otoscopeMessage.text = getString(R.string.local_otoscope_ready, source.label)
             } else {
-                runtime.note("[OTOSCOPIO] No abrió ${source.label}: $reason")
+                runtime.log("[OTOSCOPIO] No abrió ${source.label}: $reason")
                 otoscopeOff(null)
                 binding.otoscopeMessage.text = reason
             }

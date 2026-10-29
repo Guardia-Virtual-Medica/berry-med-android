@@ -33,6 +33,17 @@ class AudioPickTest {
     }
 
     @Test
+    fun withoutTheAdapterTheHeadsetMicIsNeverTheStethoscope() {
+        val devices = listOf(
+            input(1, "Built-in mic", usb = false),
+            input(4, "USB Audio - Logitech USB Headset H390"),
+            output(6, "USB Audio - Logitech USB Headset H390"),
+        )
+        assertNull(AudioPick.stethoInput(devices, "USB Audio", "H390"))
+        assertNull(AudioPick.stethoInput(listOf(input(7, "Logitech USB Audio")), "USB Audio", ""))
+    }
+
+    @Test
     fun withoutAMatchThereIsNoInputAndNeverTheBuiltInMic() {
         val devices = listOf(input(1, "USB Audio", usb = false), input(2, "HD video"), output(3, "USB Audio"))
         assertNull(AudioPick.stethoInput(devices, "USB Audio", "H390"))

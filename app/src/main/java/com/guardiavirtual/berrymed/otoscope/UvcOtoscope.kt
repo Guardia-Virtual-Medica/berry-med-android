@@ -47,8 +47,6 @@ class UvcOtoscope(
 
     @Volatile private var closed = false
 
-    override fun isAvailable(): Boolean = probe.usbReady()
-
     override fun open(done: (String?) -> Unit) {
         closed = false
         textureView.visibility = View.VISIBLE

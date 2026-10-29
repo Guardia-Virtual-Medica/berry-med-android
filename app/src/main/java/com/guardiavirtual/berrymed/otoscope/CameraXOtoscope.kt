@@ -26,15 +26,12 @@ import androidx.core.content.ContextCompat
 class CameraXOtoscope(
     private val activity: AppCompatActivity,
     private val previewView: PreviewView,
-    private val probe: OtoscopeProbe,
 ) : OtoscopeSource {
     override val label = "por Camera2"
     private var provider: ProcessCameraProvider? = null
     private var closed = false
 
     private val selector = CameraSelector.Builder().requireLensFacing(CameraSelector.LENS_FACING_EXTERNAL).build()
-
-    override fun isAvailable(): Boolean = probe.cameraSeen()
 
     override fun open(done: (String?) -> Unit) {
         closed = false
@@ -56,20 +53,15 @@ class CameraXOtoscope(
         }, ContextCompat.getMainExecutor(activity))
     }
 
-    // shutdownAsync está marcado para pruebas, pero es público y es la única forma de que CameraX vuelva a listar las cámaras.
-    @SuppressLint("VisibleForTests")
+    /**
+     * CameraX arma su lista de cámaras al iniciarse. El otoscopio se enchufa al
+     * encender el puerto, después, así que la lista puede no tenerlo o tenerlo
+     * con el id de un encendido anterior: en ese caso no lo ve o el bind falla.
+     * Las dos cosas se resuelven igual, reiniciándolo una vez.
+     */
     private fun bind(provider: ProcessCameraProvider, retried: Boolean, done: (String?) -> Unit) {
         if (!hasExternal(provider)) {
-            if (retried) {
-                done("Android lista el otoscopio como cámara pero CameraX no lo ve.")
-                return
-            }
-            // CameraX arma su lista de cámaras al iniciarse. El otoscopio se enchufa
-            // al encender el puerto, después: hay que reiniciarlo para que lo vea.
-            provider.shutdownAsync().addListener({
-                if (closed) return@addListener
-                withProvider(done) { fresh -> bind(fresh, retried = true, done) }
-            }, ContextCompat.getMainExecutor(activity))
+            if (retried) done("Android lista el otoscopio como cámara pero CameraX no lo ve.") else restart(provider, done)
             return
         }
         try {
@@ -80,8 +72,21 @@ class CameraXOtoscope(
             this.provider = provider
             done(null)
         } catch (error: Exception) {
-            done("No se pudo abrir el otoscopio: ${error.message ?: error.javaClass.simpleName}")
+            if (retried) {
+                done("No se pudo abrir el otoscopio: ${error.message ?: error.javaClass.simpleName}")
+            } else {
+                restart(provider, done)
+            }
         }
+    }
+
+    // shutdownAsync está marcado para pruebas, pero es público y es la única forma de que CameraX vuelva a listar las cámaras.
+    @SuppressLint("VisibleForTests")
+    private fun restart(provider: ProcessCameraProvider, done: (String?) -> Unit) {
+        provider.shutdownAsync().addListener({
+            if (closed) return@addListener
+            withProvider(done) { fresh -> bind(fresh, retried = true, done) }
+        }, ContextCompat.getMainExecutor(activity))
     }
 
     private fun hasExternal(provider: ProcessCameraProvider): Boolean = try {

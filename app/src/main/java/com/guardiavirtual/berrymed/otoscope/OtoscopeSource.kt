@@ -12,9 +12,6 @@ interface OtoscopeSource {
     /** Lo que dice la tarjeta: "por Camera2" o "por UVC". */
     val label: String
 
-    /** Si este camino ve el otoscopio enchufado ahora. */
-    fun isAvailable(): Boolean
-
     /** Abre la imagen en la tarjeta. [done] llega en el hilo de la pantalla: null si abrió, o el motivo. */
     fun open(done: (String?) -> Unit)
 
