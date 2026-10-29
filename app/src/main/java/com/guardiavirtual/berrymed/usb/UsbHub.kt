@@ -129,14 +129,15 @@ class UsbHub(context: Context) {
     }
 
     /**
-     * Los puertos serie y el hub YKUSH3, con o sin permiso. Lo demás no es del
-     * tótem para el permiso USB: el otoscopio, el adaptador del estetoscopio y
-     * el auricular los maneja Android por su cuenta, como cámara y como audio.
+     * Los puertos serie, el hub YKUSH3 y el otoscopio, con o sin permiso. El
+     * otoscopio necesita permiso para el camino UVC del Panel Local, cuando la
+     * tablet no lo lista como cámara. El adaptador del estetoscopio y el
+     * auricular no: Android los maneja por su cuenta, como audio.
      */
     private fun totemDevices(): List<UsbDevice> {
         val serial = UsbSerialProber.getDefaultProber().findAllDrivers(manager).map { it.device }
-        val hubs = manager.deviceList.values.filter { isYkush(it) }
-        return (serial + hubs).distinctBy { it.deviceId }
+        val others = manager.deviceList.values.filter { isYkush(it) || KnownDevices.isOtoscope(it.vendorId, it.productId) }
+        return (serial + others).distinctBy { it.deviceId }
     }
 
     companion object {

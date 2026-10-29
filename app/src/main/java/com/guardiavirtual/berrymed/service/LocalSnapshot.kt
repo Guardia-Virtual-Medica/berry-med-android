@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package com.guardiavirtual.berrymed.service
 
+import com.guardiavirtual.berrymed.otoscope.OtoscopePower
 import com.guardiavirtual.berrymed.protocol.EcgInfo
 import com.guardiavirtual.berrymed.protocol.LiveFeed
 import com.guardiavirtual.berrymed.protocol.VitalSigns
@@ -22,4 +23,7 @@ data class LocalSnapshot(
     val stethoStarting: Boolean,
     val stethoRunning: Boolean,
     val stethoPlaying: Boolean,
+    /** La tarjeta del otoscopio se muestra si está el otoscopio o el YKUSH3 que lo enciende. */
+    val otoscopeAvailable: Boolean,
+    val otoscopeState: OtoscopePower.State,
 )

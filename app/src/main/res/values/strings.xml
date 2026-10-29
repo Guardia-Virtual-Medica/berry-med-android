@@ -136,4 +136,12 @@
     <string name="local_stetho_starting">Encendiendo…</string>
     <string name="local_stetho_denied">Sin permiso para el micrófono. Se da en Ajustes, Apps, Berry Med.</string>
     <string name="local_stetho_level">Nivel</string>
+    <string name="local_otoscope">Otoscopio</string>
+    <string name="local_otoscope_on">Encender</string>
+    <string name="local_otoscope_off">Apagar</string>
+    <string name="local_otoscope_starting">Encendiendo…</string>
+    <string name="local_otoscope_ready">Otoscopio encendido · %1$s</string>
+    <string name="local_otoscope_done">Otoscopio apagado</string>
+    <string name="local_otoscope_denied">El otoscopio necesita el permiso de la cámara. Se da en Ajustes, Apps, Berry Med.</string>
+    <string name="local_camera_paused">En pausa mientras el otoscopio está encendido.</string>
 </resources>
