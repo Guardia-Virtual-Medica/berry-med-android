@@ -25,6 +25,7 @@ import androidx.core.content.ContextCompat
 import com.guardiavirtual.berrymed.BerryMedApp
 import com.guardiavirtual.berrymed.R
 import com.guardiavirtual.berrymed.config.BerryConfig
+import com.guardiavirtual.berrymed.config.DEFAULT_LOCAL_PIN
 import com.guardiavirtual.berrymed.config.Environment
 import com.guardiavirtual.berrymed.config.buildMetricsUrl
 import com.guardiavirtual.berrymed.config.defaultChannel
@@ -84,6 +85,7 @@ class MainActivity : AppCompatActivity() {
         binding.batteryButton.setOnClickListener { askBatteryExemption() }
         binding.usbButton.setOnClickListener { runtime().requestUsbPermissionAgain() }
         binding.testingButton.setOnClickListener { startActivity(Intent(this, TestingActivity::class.java)) }
+        binding.localPanelButton.setOnClickListener { startActivity(Intent(this, LocalPanelActivity::class.java)) }
         thread(name = "berry-config-load") {
             val saved = try {
                 runBlocking { runtime().store.load() }
@@ -128,6 +130,7 @@ class MainActivity : AppCompatActivity() {
         binding.ykushOtoscope.setText(config.ykushOtoscopePort.toString())
         binding.ykushStethoscope.setText(config.ykushStethoscopePort.toString())
         binding.ykushHeadset.setText(config.ykushHeadsetPort.toString())
+        binding.localPin.setText(config.localPanelPin)
         select(binding.ecgGain, GAIN_VALUES, config.ecgGain)
         select(binding.ecgMode, MODE_VALUES, config.ecgMode)
         select(binding.respGain, GAIN_VALUES, config.respGain)
@@ -255,6 +258,7 @@ class MainActivity : AppCompatActivity() {
             ykushOtoscopePort = ykushPortOrDefault(binding.ykushOtoscope.text?.toString(), 1),
             ykushStethoscopePort = ykushPortOrDefault(binding.ykushStethoscope.text?.toString(), 2),
             ykushHeadsetPort = ykushPortOrDefault(binding.ykushHeadset.text?.toString(), 3),
+            localPanelPin = binding.localPin.text?.toString()?.trim().orEmpty().ifBlank { DEFAULT_LOCAL_PIN },
         )
     }
 

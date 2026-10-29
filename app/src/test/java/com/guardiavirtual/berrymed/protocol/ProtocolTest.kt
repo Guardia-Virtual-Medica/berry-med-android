@@ -75,6 +75,33 @@ class ProtocolTest {
     }
 
     @Test
+    fun theLiveFeedCopiesSamplesWithoutTouchingThePayload() {
+        val parser = BmDataParser()
+        val live = LiveFeed()
+        parser.live = live
+        parser.addData(frame(0x01, intArrayOf(10, 20, 30, 40, 50, 60, 70)))
+        parser.addData(frame(0x01, intArrayOf(11, 21, 31, 41, 51, 61, 71)))
+        parser.addData(frame(0xFE, intArrayOf(80)))
+        parser.addData(frame(0xFF, intArrayOf(90)))
+        parser.addData(frame(0x03, intArrayOf(0x04, 40, 0, 0, 0)))
+
+        val out = IntArray(8)
+        assertEquals(2, live.ecg.getValue("II").readSince(0, out).count)
+        assertEquals(listOf(20, 21), out.take(2))
+        assertEquals(1, live.spo2.readSince(0, out).count)
+        assertEquals(80, out[0])
+        assertEquals(1, live.resp.readSince(0, out).count)
+        assertEquals(90, out[0])
+        assertEquals(LiveFeed.NibpState(0x04, 80), live.nibp)
+
+        // El envío sigue entregando lo mismo que sin el panel.
+        val payload = parser.takePayload()
+        assertEquals(listOf(10, 11), payload.ecg.getValue("I"))
+        assertEquals(listOf(80), payload.spo2)
+        assertEquals(listOf(90), payload.resp)
+    }
+
+    @Test
     fun ecgFrameFillsTheSevenLeadsAndTheNextPostIsEmpty() {
         val parser = BmDataParser()
         parser.addData(frame(0x01, intArrayOf(10, 20, 30, 40, 50, 60, 70)))

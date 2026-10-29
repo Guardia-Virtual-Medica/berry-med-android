@@ -86,4 +86,55 @@
         <item name="android:paddingBottom">8dp</item>
         <item name="android:textSize">15sp</item>
     </style>
+
+    <!-- Las tarjetas del Panel Local, del mismo color que las de Testing. -->
+    <style name="LocalCard">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginBottom">8dp</item>
+        <item name="android:background">@color/line</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:padding">10dp</item>
+    </style>
+
+    <style name="LocalCardTitle">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/vital_dim</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="LocalValueRow">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:baselineAligned">true</item>
+        <item name="android:orientation">horizontal</item>
+    </style>
+
+    <style name="LocalValue">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginEnd">6dp</item>
+        <item name="android:fontFamily">sans-serif-light</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:text">—</item>
+        <item name="android:textColor">@color/vital_on</item>
+        <item name="android:textSize">40sp</item>
+    </style>
+
+    <style name="LocalUnit">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/vital_dim</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <style name="LocalDetail">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">2dp</item>
+        <item name="android:lineSpacingExtra">2dp</item>
+        <item name="android:textColor">@color/vital_dim</item>
+        <item name="android:textSize">13sp</item>
+    </style>
 </resources>

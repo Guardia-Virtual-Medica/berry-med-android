@@ -19,6 +19,9 @@ class BmDataParser {
 
     var onNibp: ((status: Int, cuffMmhg: Int, sys: Int, mean: Int, dia: Int) -> Unit)? = null
 
+    /** El Panel Local recibe cada muestra apenas se decodifica, sin tocar lo que se envía. */
+    @Volatile var live: LiveFeed? = null
+
     fun addData(data: ByteArray) {
         if (data.isEmpty()) return
         val events = ArrayList<NibpEvent>()
@@ -135,8 +138,9 @@ class BmDataParser {
         when (frame[3]) {
             0x01 -> {
                 counts.ecg++
+                val samples = frame.copyOfRange(4, frame.size - 1)
+                live?.onEcg(samples)
                 if (ecgLen() < MAX_WAVE) {
-                    val samples = frame.copyOfRange(4, frame.size - 1)
                     for ((lead, value) in Pm6750Protocol.LEADS.zip(samples.toList())) {
                         ecg.getValue(lead) += value
                     }
@@ -161,6 +165,7 @@ class BmDataParser {
                 counts.nibp++
                 counts.nibpStatus = frame[4]
                 counts.cuffMmhg = frame[5] * 2
+                live?.onNibp(frame[4], frame[5] * 2)
                 return NibpEvent(frame[4], frame[5] * 2, sys, frame[7], dia)
             }
             0x04 -> {
@@ -186,10 +191,12 @@ class BmDataParser {
             }
             0xFE -> {
                 counts.spo2Wave++
+                live?.onSpo2Wave(frame[4])
                 if (spo2.size < MAX_WAVE) spo2 += frame[4]
             }
             0xFF -> {
                 counts.respWave++
+                live?.onRespWave(frame[4])
                 if (resp.size < MAX_WAVE) resp += frame[4]
             }
         }

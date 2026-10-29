@@ -12,6 +12,9 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <!-- La cámara de la tablet, sólo en el Panel Local. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera.any" android:required="false" />
 
     <application
         android:name=".BerryMedApp"
@@ -39,6 +42,25 @@
             android:name=".ui.TestingActivity"
             android:configChanges="orientation|screenSize|screenLayout"
             android:exported="false" />
+
+        <!--
+            El Panel Local tiene su propio ícono en la tablet: atención presencial,
+            con todos los instrumentos en pantalla y sin Chrome ni envío a la API.
+        -->
+        <activity
+            android:name=".ui.LocalPanelActivity"
+            android:configChanges="orientation|screenSize|screenLayout"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="@string/local_panel"
+            android:launchMode="singleTask"
+            android:screenOrientation="landscape"
+            android:taskAffinity="com.guardiavirtual.berrymed.local">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
 
         <!--
             Lo que Android abre al conectar un dispositivo del tótem. Sin pantalla y

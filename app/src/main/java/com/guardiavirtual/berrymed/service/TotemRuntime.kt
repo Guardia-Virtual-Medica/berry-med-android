@@ -10,7 +10,10 @@ import com.guardiavirtual.berrymed.net.MetricsPoster
 import com.guardiavirtual.berrymed.net.PostOutcome
 import com.guardiavirtual.berrymed.net.SessionPusher
 import com.guardiavirtual.berrymed.protocol.BmDataParser
+import com.guardiavirtual.berrymed.protocol.LiveFeed
 import com.guardiavirtual.berrymed.protocol.SampleWindow
+import com.guardiavirtual.berrymed.protocol.ThermoReading
+import com.guardiavirtual.berrymed.protocol.VitalSigns
 import com.guardiavirtual.berrymed.protocol.applyThermometer
 import com.guardiavirtual.berrymed.protocol.isValidSample
 import com.guardiavirtual.berrymed.protocol.metricsEnvelope
@@ -75,6 +78,15 @@ class TotemRuntime(context: Context) {
     /** Con el panel Testing abierto no sale ningún POST de prueba: sólo se mira. */
     @Volatile var testing: Boolean = false
         private set
+    /**
+     * Con el Panel Local abierto no sale ningún POST ni se atiende ninguna
+     * orden de Pusher: la tablet está atendiendo a alguien de forma presencial.
+     */
+    @Volatile var localMode: Boolean = false
+        private set
+
+    /** Las muestras en vivo para el Panel Local; el parser las copia acá apenas las decodifica. */
+    val live = LiveFeed()
     @Volatile private var lastWindow: SampleWindow? = null
     @Volatile private var inventoryCache: DeviceInventory.Snapshot? = null
     val console = ConsoleLog()
@@ -84,8 +96,21 @@ class TotemRuntime(context: Context) {
 
     private val pusher = SessionPusher(::log, object : SessionPusher.Listener {
         override fun onStart() = startSession()
-        override fun onStop() = stopSession("evento stop", byPlatform = true)
+
+        override fun onStop() {
+            if (localMode) {
+                log("[SESIÓN] Llegó un fin de consulta con el Panel Local abierto: se ignora")
+                return
+            }
+            stopSession("evento stop", byPlatform = true)
+        }
+
         override fun onBloodPressure() {
+            // Con el Panel Local abierto la presión la pide quien está al lado del paciente.
+            if (localMode) {
+                log("[SESIÓN] Llegó un pedido de presión con el Panel Local abierto: se ignora")
+                return
+            }
             // Sólo si arrancó: un pedido rechazado no borra la presión que se está mostrando.
             if (berry.startNibp()) parser.resetNibp()
         }
@@ -100,6 +125,7 @@ class TotemRuntime(context: Context) {
     fun start() {
         if (!started.compareAndSet(false, true)) return
         parser.onNibp = { status, _, _, _, _ -> berry.onNibpStatus(status) }
+        parser.live = live
         scope.launch {
             store.flow.collect { saved ->
                 config = saved
@@ -183,7 +209,7 @@ class TotemRuntime(context: Context) {
             Triple(sessionActive, sessionEpoch, parser.takePayload())
         }
         lastWindow = window
-        if (!active && (testing || !watch.probeDue(now))) return
+        if (!active && (testing || localMode || !watch.probeDue(now))) return
         val cfg = config
         val url = cfg.metricsUrl() ?: return
         if (!cfg.postReady() || !isValidSample(window)) return
@@ -226,18 +252,25 @@ class TotemRuntime(context: Context) {
     }
 
     private fun startSession() {
-        if (testing) {
-            // La consulta gana: Testing no puede dejar a un paciente sin envío.
-            endTesting()
-            log("[TEST] Llegó el inicio de una consulta: se corta la prueba")
-        }
-        synchronized(sessionLock) {
+        // Se mira dentro del lock, igual que en startLocal: nunca quedan abiertos los dos.
+        val opened = synchronized(sessionLock) {
+            if (localMode) return@synchronized false
             berry.stopNibp()
             parser.resetData()
             thermo.resetLatest()
             sessionStartNano = System.nanoTime()
             sessionActive = true
             sessionEpoch++
+            true
+        }
+        if (!opened) {
+            log("[SESIÓN] Llegó un inicio de consulta con el Panel Local abierto: se ignora")
+            return
+        }
+        if (testing) {
+            // La consulta gana: Testing no puede dejar a un paciente sin envío.
+            endTesting()
+            log("[TEST] Llegó el inicio de una consulta: se corta la prueba")
         }
         watch.started()
         log("[SESIÓN] Envío iniciado")
@@ -250,7 +283,8 @@ class TotemRuntime(context: Context) {
      */
     private fun resumeSession(epoch: Long) {
         synchronized(sessionLock) {
-            if (sessionActive || sessionEpoch != epoch) return
+            // Un POST de prueba que salió justo antes de abrir el Panel Local no arranca la consulta.
+            if (sessionActive || localMode || sessionEpoch != epoch) return
             sessionStartNano = System.nanoTime()
             sessionActive = true
             sessionEpoch++
@@ -293,6 +327,7 @@ class TotemRuntime(context: Context) {
         val notification = when {
             hub.permissionMissing() -> "Falta el permiso USB"
             !berryUp -> "Esperando la plaqueta"
+            localMode -> "Panel Local abierto"
             active -> "Plaqueta conectada, enviando mediciones"
             else -> "Plaqueta conectada, sesión detenida"
         }
@@ -373,6 +408,63 @@ class TotemRuntime(context: Context) {
         return "STOP enviado"
     }
 
+    /** Devuelve el motivo si el Panel Local no puede abrirse ahora. */
+    fun startLocal(): String? {
+        // Dentro del lock: una prueba aceptada no puede arrancar la consulta entre el chequeo y el cambio.
+        synchronized(sessionLock) {
+            if (sessionActive) return "Hay una consulta enviando: el Panel Local espera a que termine."
+            localMode = true
+        }
+        if (testing) {
+            endTesting()
+            log("[TEST] Se abrió el Panel Local: se corta la prueba")
+        }
+        log("[LOCAL] Panel Local abierto: no se envía nada a la API ni se atienden órdenes")
+        publish()
+        return null
+    }
+
+    fun stopLocal() {
+        if (!localMode) return
+        localMode = false
+        // Una presión pedida desde el panel no queda inflando el manguito.
+        if (berry.nibpRunning && !sessionActive) berry.stopNibp()
+        log("[LOCAL] Panel Local cerrado")
+        publish()
+    }
+
+    fun localNibpStart(): String {
+        if (!localMode) return "El panel no está activo."
+        if (!berry.startNibp()) return "No se pudo iniciar: plaqueta sin conectar o ya está midiendo."
+        parser.resetNibp()
+        return "Midiendo…"
+    }
+
+    fun localNibpStop(): String {
+        if (!localMode) return "El panel no está activo."
+        berry.stopNibp()
+        return "Medición detenida"
+    }
+
+    fun localSnapshot(): LocalSnapshot {
+        val stats = parser.stats()
+        val reading = thermo.latest()
+        val thermoAt = thermo.lastReadingAtNano
+        return LocalSnapshot(
+            localMode = localMode,
+            sessionActive = sessionActive,
+            berryUp = berry.connected,
+            lastDataAge = berry.lastDataAgeSeconds(),
+            vitals = stats.vitals,
+            ecgInfo = stats.ecgInfo,
+            thermoConnected = thermo.connected,
+            thermoReading = reading?.let { r -> formatThermo(r) },
+            thermoAge = if (thermoAt == 0L) null else (System.nanoTime() - thermoAt) / 1_000_000_000L,
+            nibpRunning = berry.nibpRunning,
+            nibp = live.nibp,
+        )
+    }
+
     /** Lee los tres puertos del YKUSH3 sin cambiarlos. Bloquea hasta un segundo: llamarlo fuera del hilo de la pantalla. */
     fun testYkushRead(): String {
         if (!ykush.plugged()) return "No hay hub YKUSH3 conectado."
@@ -443,6 +535,12 @@ class TotemRuntime(context: Context) {
             preview = preview,
             console = console.snapshot(),
         )
+    }
+
+    private fun formatThermo(reading: ThermoReading): String {
+        val vitals = VitalSigns()
+        applyThermometer(vitals, reading)
+        return vitals.temperature
     }
 
     private fun log(message: String) {

@@ -59,6 +59,7 @@ class ConfigStore(private val context: Context) {
             prefs[YKUSH_OTOSCOPE] = config.ykushOtoscopePort
             prefs[YKUSH_STETHOSCOPE] = config.ykushStethoscopePort
             prefs[YKUSH_HEADSET] = config.ykushHeadsetPort
+            prefs[LOCAL_PIN] = config.localPanelPin
         }
     }
 
@@ -105,6 +106,7 @@ class ConfigStore(private val context: Context) {
         ykushOtoscopePort = this[YKUSH_OTOSCOPE] ?: 1,
         ykushStethoscopePort = this[YKUSH_STETHOSCOPE] ?: 2,
         ykushHeadsetPort = this[YKUSH_HEADSET] ?: 3,
+        localPanelPin = this[LOCAL_PIN] ?: DEFAULT_LOCAL_PIN,
     )
 
     companion object {
@@ -128,5 +130,6 @@ class ConfigStore(private val context: Context) {
         private val YKUSH_OTOSCOPE = intPreferencesKey("ykush_otoscope_port")
         private val YKUSH_STETHOSCOPE = intPreferencesKey("ykush_stethoscope_port")
         private val YKUSH_HEADSET = intPreferencesKey("ykush_headset_port")
+        private val LOCAL_PIN = stringPreferencesKey("local_panel_pin")
     }
 }

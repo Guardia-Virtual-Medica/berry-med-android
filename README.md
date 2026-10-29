@@ -69,7 +69,7 @@ En la pantalla de Berry Med, en tres pasos:
 
   La URL base tiene que empezar con `https://` y no terminar en `/metrics`; la pantalla muestra cómo queda armada. La ruta `medical_devices` del `readme.txt` del exe es de la plataforma anterior. OnDoctor no pide usuario ni contraseña para recibir mediciones, así que el `POST` va sin autenticación.
 - **Órdenes**: la clave de Pusher (viene del entorno), el cluster (un desplegable, `us2` o `sa1`; por defecto `sa1`), el canal, los nombres de los eventos de inicio y fin, y los minutos máximos de una consulta (30 por defecto, `0` sin tope). El canal se arma solo como `totem.<external_id>` con el identificador de Destino, y lo sigue mientras nadie lo cambie a mano. Tiene que ser público: un canal `private-` o `presence-` no se conecta y la pantalla lo marca. La clave del exe viejo es de otra plataforma y no recibe las órdenes de OnDoctor.
-- **Plaqueta**: la ganancia y el modo de ECG, la ganancia de respiración, el modo de presión y la presión de inflado. La ganancia y el modo se aplican apenas se guardan, sin reconectar. Abajo, en qué puerto del hub YKUSH3 va el otoscopio, el estetoscopio y el auricular.
+- **Plaqueta**: la ganancia y el modo de ECG, la ganancia de respiración, el modo de presión y la presión de inflado. La ganancia y el modo se aplican apenas se guardan, sin reconectar. Abajo, en qué puerto del hub YKUSH3 va el otoscopio, el estetoscopio y el auricular, y el PIN del [Panel Local](#panel-local) (`1515` si se deja vacío).
 
 Todo queda guardado en la tablet. La pantalla también muestra los signos vitales, si la plaqueta está funcional, el último dato, la conexión con Pusher, el termómetro, el hub YKUSH3 y el resultado del último envío.
 
@@ -113,6 +113,21 @@ El botón **Testing** de la pantalla principal abre un panel para comprobar, en 
 - **Dispositivos que ve Android**: los dispositivos USB con sus interfaces y permiso, los dispositivos de audio (tipo, nombre, entrada o salida, frecuencia) y las cámaras con su orientación. Sirve para validar el armado antes del Panel Local: si las placas de audio USB conviven y si el otoscopio aparece como cámara externa. Se renueva cada 3 s.
 - **Transmisión (no se envía)**: la URL y el JSON que saldría, con su tamaño, y **Copiar JSON**.
 - **Consola**: los últimos logs del servicio, los mismos de `adb logcat -s BerryMed`.
+
+## Panel Local
+
+Para atención **presencial, sin teleconsulta**: el médico o el enfermero que está al lado del paciente ve en la tablet todos los instrumentos en vivo, con Chrome cerrado. Es una cosa o la otra: con el panel abierto la tablet no hace teleconsulta.
+
+- **Cómo se entra.** Con el ícono **Panel Local** de la tablet (un segundo ícono de Berry Med, que abre directo el panel) o con el botón **Panel Local** de la pantalla principal. Si la tablet arrancó sin pasar por Berry Med, el panel levanta el servicio.
+- **PIN.** Lo pide al abrir y cada vez que el panel vuelve al frente. Por defecto `1515`; se cambia en Configuración, paso Plaqueta. Con una consulta enviando no se abre y lo dice.
+- **Qué muestra.** Pantalla apaisada, a pantalla completa y sin apagarse:
+  - Las **7 derivaciones de ECG** sobre papel milimetrado (1 mm y 5 mm, medidos con la densidad real de la pantalla), con barrido como un monitor, a 25 mm/s o 12,5 mm/s y ganancia de pantalla x0.5, x1 o x2.
+  - **Frecuencia cardíaca** con el estado de los electrodos, la señal débil y el código de arritmia que informa la plaqueta.
+  - **SpO₂** con el pulso y su onda, **respiración** con su onda, y **temperatura**: la de la plaqueta y la del termómetro infrarrojo con hace cuánto llegó.
+  - **Presión**: **Medir** y **Parar**, la presión del manguito mientras infla y el último resultado.
+  - La **cámara** de la tablet: vista previa, frontal o trasera, y **Congelar** para mirar una imagen quieta. Pide el permiso de la cámara la primera vez.
+- **Qué no hace.** No identifica al paciente, no guarda nada (ni la imagen congelada), no envía nada a OnDoctor y no tiene alarmas ni PDF. Mientras está abierto no sale ningún `POST`, ni siquiera el de prueba de cada 10 s, y se ignoran `start-monitoring`, `stop-monitoring` y `start-blood-pressure` (quedan en la consola). Si estaba abierto Testing, la prueba se corta. Al salir (con **Salir**, el gesto de atrás o cambiando de app) todo vuelve a la normalidad y, si quedó una presión midiendo, se manda STOP.
+- **La escala vertical del ECG es aproximada.** La plaqueta manda cada muestra como un byte de 0 a 255 con la línea de base en 128 y no documenta cuántos milivoltios son. El papel usa 10 mm por mV suponiendo 40 unidades por mV; la ganancia de pantalla sirve para ajustarlo a ojo. La velocidad horizontal sí es la real (250 muestras por segundo). Las ondas de SpO₂ y respiración se ajustan solas a la altura, porque la plaqueta tampoco documenta su escala ni su frecuencia.
 
 ## Qué no hace esta versión
 

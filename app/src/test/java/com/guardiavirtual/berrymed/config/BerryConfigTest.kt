@@ -31,4 +31,15 @@ class BerryConfigTest {
             assertTrue(config.missingFields().any { "canal público" in it })
         }
     }
+
+    @Test
+    fun theLocalPanelPinIgnoresSpacesAndFallsBackTo1515() {
+        assertTrue(pinAccepted("2468", "2468"))
+        assertTrue(pinAccepted(" 2468 ", "2468 "))
+        assertTrue(pinAccepted("1515", ""))
+        assertTrue(pinAccepted("1515", null))
+        assertFalse(pinAccepted("1515", "2468"))
+        assertFalse(pinAccepted("", "2468"))
+        assertFalse(pinAccepted(null, null))
+    }
 }
