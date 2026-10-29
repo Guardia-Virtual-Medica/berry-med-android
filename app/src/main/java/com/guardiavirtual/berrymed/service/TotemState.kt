@@ -10,7 +10,7 @@ data class TotemState(
     val berryUp: Boolean = false,
     val lastData: String = "Último dato: sin datos",
     val pusherUp: Boolean = false,
-    val others: String = "Termómetro sin conectar. Relé sin conectar. La sesión está detenida.",
+    val others: String = "Termómetro sin conectar. Hub YKUSH3 sin conectar. La sesión está detenida.",
     val lastPost: String = "Todavía no se envió",
     val notification: String = "Esperando la plaqueta",
 )

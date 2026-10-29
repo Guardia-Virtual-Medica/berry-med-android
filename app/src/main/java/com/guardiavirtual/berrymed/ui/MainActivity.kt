@@ -29,6 +29,7 @@ import com.guardiavirtual.berrymed.config.Environment
 import com.guardiavirtual.berrymed.config.buildMetricsUrl
 import com.guardiavirtual.berrymed.config.defaultChannel
 import com.guardiavirtual.berrymed.config.hasWebScheme
+import com.guardiavirtual.berrymed.config.ykushPortOrDefault
 import com.guardiavirtual.berrymed.databinding.ActivityMainBinding
 import com.guardiavirtual.berrymed.service.MonitorService
 import com.guardiavirtual.berrymed.service.TotemRuntime
@@ -124,6 +125,9 @@ class MainActivity : AppCompatActivity() {
         binding.stopEvent.setText(config.stopEventName)
         binding.maxMinutes.setText(config.maxSessionMinutes.toString())
         binding.nibpTarget.setText(config.nibpTargetPressureMmhg)
+        binding.ykushOtoscope.setText(config.ykushOtoscopePort.toString())
+        binding.ykushStethoscope.setText(config.ykushStethoscopePort.toString())
+        binding.ykushHeadset.setText(config.ykushHeadsetPort.toString())
         select(binding.ecgGain, GAIN_VALUES, config.ecgGain)
         select(binding.ecgMode, MODE_VALUES, config.ecgMode)
         select(binding.respGain, GAIN_VALUES, config.respGain)
@@ -248,6 +252,9 @@ class MainActivity : AppCompatActivity() {
             nibpMode = value(binding.nibpMode, NIBP_VALUES),
             nibpTargetPressureMmhg = binding.nibpTarget.text?.toString()?.trim().orEmpty(),
             maxSessionMinutes = binding.maxMinutes.text?.toString()?.trim()?.toIntOrNull() ?: 30,
+            ykushOtoscopePort = ykushPortOrDefault(binding.ykushOtoscope.text?.toString(), 1),
+            ykushStethoscopePort = ykushPortOrDefault(binding.ykushStethoscope.text?.toString(), 2),
+            ykushHeadsetPort = ykushPortOrDefault(binding.ykushHeadset.text?.toString(), 3),
         )
     }
 

@@ -13,9 +13,9 @@ import com.hoho.android.usbserial.driver.UsbSerialPort
 import com.hoho.android.usbserial.driver.UsbSerialProber
 
 /**
- * Dispositivos USB del tótem: puertos serie y el relé, con un permiso por dispositivo.
- * También lleva qué puertos ya se probaron y no son la plaqueta: ésos quedan
- * para el termómetro, que sólo habla cuando alguien mide.
+ * Dispositivos USB del tótem: los puertos serie y el hub YKUSH3, con un permiso
+ * por dispositivo. También lleva qué puertos ya se probaron y no son la
+ * plaqueta: ésos quedan para el termómetro, que sólo habla cuando alguien mide.
  */
 class UsbHub(context: Context) {
     private val appContext = context.applicationContext
@@ -84,18 +84,11 @@ class UsbHub(context: Context) {
         }
     }
 
-    fun relayDevice(): UsbDevice? =
-        manager.deviceList.values.firstOrNull { isRelay(it) && manager.hasPermission(it) }
+    /** El hub YKUSH3, sólo si ya tiene permiso. */
+    fun ykushDevice(): UsbDevice? =
+        manager.deviceList.values.firstOrNull { isYkush(it) && manager.hasPermission(it) }
 
-    fun relayPlugged(): Boolean = manager.deviceList.values.any { isRelay(it) }
-
-    /**
-     * Si hay un puerto serie de ST enchufado, con o sin permiso: la plaqueta
-     * tiene alimentación y enumeró. Un ST que no es puerto serie (por ejemplo
-     * el bootloader DFU tras una baja de tensión) no cuenta: ése necesita el corte.
-     */
-    fun stPresent(): Boolean =
-        UsbSerialProber.getDefaultProber().findAllDrivers(manager).any { it.device.vendorId == STM32_VENDOR }
+    fun ykushPlugged(): Boolean = manager.deviceList.values.any { isYkush(it) }
 
     fun isPresent(device: UsbDevice): Boolean =
         manager.deviceList.values.any { it.deviceId == device.deviceId }
@@ -127,24 +120,26 @@ class UsbHub(context: Context) {
     private fun serialDrivers(): List<UsbSerialDriver> {
         return UsbSerialProber.getDefaultProber().findAllDrivers(manager).filter { driver ->
             val device = driver.device
-            !isRelay(device) && manager.hasPermission(device) && synchronized(busy) { device.deviceId !in busy }
+            manager.hasPermission(device) && synchronized(busy) { device.deviceId !in busy }
         }
     }
 
-    /** Los puertos serie y el relé, con o sin permiso. Lo demás no es del tótem. */
+    /**
+     * Los puertos serie y el hub YKUSH3, con o sin permiso. Lo demás no es del
+     * tótem para el permiso USB: el otoscopio, el adaptador del estetoscopio y
+     * el auricular los maneja Android por su cuenta, como cámara y como audio.
+     */
     private fun totemDevices(): List<UsbDevice> {
         val serial = UsbSerialProber.getDefaultProber().findAllDrivers(manager).map { it.device }
-        val relays = manager.deviceList.values.filter { isRelay(it) }
-        return (serial + relays).distinctBy { it.deviceId }
+        val hubs = manager.deviceList.values.filter { isYkush(it) }
+        return (serial + hubs).distinctBy { it.deviceId }
     }
 
     companion object {
         const val ACTION_USB_PERMISSION = "com.guardiavirtual.berrymed.USB_PERMISSION"
         const val BAUD = 115200
-        const val RELAY_VENDOR = 0x16C0
-        const val RELAY_PRODUCT = 0x05DF
 
-        /** El PM6750 es un STM32 VCP. Un puerto de ST mudo es la plaqueta trabada. */
+        /** El PM6750 es un STM32 VCP. Un puerto de ST mudo es la plaqueta que todavía no arrancó. */
         const val STM32_VENDOR = 0x0483
 
         /**
@@ -154,15 +149,14 @@ class UsbHub(context: Context) {
          */
         private const val PERMISSION_GRACE_NANOS = 3L * 1_000_000_000L
 
-        fun isRelay(device: UsbDevice): Boolean =
-            device.vendorId == RELAY_VENDOR && device.productId == RELAY_PRODUCT
+        fun isYkush(device: UsbDevice): Boolean = KnownDevices.isYkush3(device.vendorId, device.productId)
 
         /**
          * El termómetro sólo manda una línea cuando alguien mide, así que no se
          * lo puede reconocer por lo que transmite. Toma un puerto que ya se
          * probó y no es la plaqueta, o cualquiera mientras la plaqueta está
          * conectada, porque hay una sola. Nunca uno de ST: ése es la plaqueta,
-         * aunque esté muda, y tiene que quedar libre para el corte del relé.
+         * aunque esté muda, y tiene que quedar libre para cuando arranque.
          */
         fun thermometerMayTake(vendorId: Int, provenNotBerry: Boolean, berryUp: Boolean): Boolean {
             if (vendorId == STM32_VENDOR) return false
@@ -176,7 +170,7 @@ class UsbHub(context: Context) {
  * vez: el diálogo aparece arriba de Chrome, que tiene la plataforma médica, y
  * repetirlo solo la taparía una y otra vez. Un rechazo o un diálogo sin
  * respuesta esperan al botón "Pedir permiso USB". Un dispositivo que vuelve a
- * aparecer (otro deviceId, por ejemplo tras un corte del relé) se pide de nuevo.
+ * aparecer (otro deviceId, por ejemplo tras desenchufarlo) se pide de nuevo.
  */
 class PermissionRequests(private val graceNanos: Long = 0L) {
     private val asked = HashSet<Int>()

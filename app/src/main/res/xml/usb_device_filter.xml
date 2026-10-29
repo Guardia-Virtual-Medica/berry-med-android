@@ -2,19 +2,21 @@
 <!--
     Lo que la app abre sola al conectarse. Sirve para que el pedido de permiso
     muestre "Usar de forma predeterminada": marcado, Android da el permiso solo
-    cada vez que el dispositivo aparece, también tras un corte del relé o un
-    reinicio. Los puertos serie van por fabricante porque el chip del
-    termómetro puede variar.
+    cada vez que el dispositivo aparece, también tras un reinicio. Los puertos
+    serie van por fabricante porque el chip del termómetro puede variar.
+
+    El otoscopio, el adaptador del estetoscopio y el auricular no van acá a
+    propósito: la app no los abre por USB (Android los maneja como cámara y
+    como audio), y pedirles permiso sólo pondría un diálogo de más arriba de Chrome.
 -->
 <resources>
-    <!-- Relé USBRelay2 -->
-    <usb-device vendor-id="5824" product-id="1503" />
     <!-- Plaqueta PM6750 (STM32 VCP, 0483) -->
     <usb-device vendor-id="1155" />
     <!--
         Adaptadores serie y placas que puede traer el termómetro: WCH CH34x/CH9102 (1A86),
         Silicon Labs CP210x (10C4), FTDI (0403), Espressif (303A), Prolific (067B),
         Arduino (2341, 2A03), Raspberry Pi RP2040 (2E8A), Microchip (04D8).
+        Microchip (04D8) es también el fabricante del hub YKUSH3 (04D8:F11B).
     -->
     <usb-device vendor-id="6790" />
     <usb-device vendor-id="4292" />

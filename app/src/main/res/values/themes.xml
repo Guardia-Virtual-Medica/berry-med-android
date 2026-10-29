@@ -54,6 +54,26 @@
         <item name="android:textSize">15sp</item>
     </style>
 
+    <!-- Las listas de dispositivos del panel Testing. -->
+    <style name="TestingListTitle">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">10dp</item>
+        <item name="android:textColor">@color/vital_on</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="TestingList">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">2dp</item>
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:lineSpacingExtra">2dp</item>
+        <item name="android:textColor">@color/vital_dim</item>
+        <item name="android:textIsSelectable">true</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+
     <style name="StepLabel">
         <item name="android:layout_width">0dp</item>
         <item name="android:layout_height">wrap_content</item>

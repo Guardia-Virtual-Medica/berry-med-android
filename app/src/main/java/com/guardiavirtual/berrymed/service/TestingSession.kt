@@ -2,6 +2,7 @@
 package com.guardiavirtual.berrymed.service
 
 import com.guardiavirtual.berrymed.protocol.ParserStats
+import com.guardiavirtual.berrymed.usb.DeviceInventory
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -152,6 +153,9 @@ class ConsoleLog(private val capacity: Int = 200) {
     fun clear() = synchronized(lines) { lines.clear() }
 }
 
+/** Un puerto del YKUSH3 en la pantalla: qué equipo lleva y si está encendido (null: no se leyó). */
+data class YkushPortView(val port: Int, val role: String, val on: Boolean?)
+
 /** Lo que muestra el panel Testing en cada refresco. */
 data class TestingSnapshot(
     val testing: Boolean,
@@ -168,8 +172,9 @@ data class TestingSnapshot(
     val thermoReading: String?,
     val thermoAge: Long?,
     val thermoLine: String,
-    val relayPlugged: Boolean,
-    val lastCutAge: Long?,
+    val ykushPlugged: Boolean,
+    val ykushPorts: List<YkushPortView>,
+    val inventory: DeviceInventory.Snapshot,
     val url: String?,
     val preview: String?,
     val console: List<String>,
