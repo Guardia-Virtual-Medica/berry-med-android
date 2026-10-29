@@ -182,8 +182,19 @@
                 style="@style/Widget.Material3.Button.OutlinedButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
                 android:layout_weight="1"
                 android:text="@string/testing"
+                android:textColor="@color/vital_on"
+                app:strokeColor="@color/vital_dim" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/localPanelButton"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/local_panel"
                 android:textColor="@color/vital_on"
                 app:strokeColor="@color/vital_dim" />
         </LinearLayout>
@@ -524,6 +535,21 @@
                                 android:inputType="number"
                                 android:singleLine="true"
                                 android:text="3" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <TextView style="@style/FormTitle" android:layout_marginTop="16dp" android:text="@string/section_local" />
+                        <TextView style="@style/Help" android:text="@string/help_local" />
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Field"
+                            android:hint="@string/hint_local_pin">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/localPin"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="number"
+                                android:singleLine="true"
+                                android:text="1515" />
                         </com.google.android.material.textfield.TextInputLayout>
                     </LinearLayout>
                 </ViewFlipper>

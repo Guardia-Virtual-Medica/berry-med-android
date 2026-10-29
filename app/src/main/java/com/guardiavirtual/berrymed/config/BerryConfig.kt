@@ -25,6 +25,8 @@ data class BerryConfig(
     val ykushOtoscopePort: Int = 1,
     val ykushStethoscopePort: Int = 2,
     val ykushHeadsetPort: Int = 3,
+    /** El PIN que pide el Panel Local al abrirse. */
+    val localPanelPin: String = DEFAULT_LOCAL_PIN,
 ) {
     /** Qué equipo va en cada puerto del YKUSH3, para la pantalla. Un puerto sin equipo queda "libre". */
     fun ykushPortRoles(): List<String> = (1..YKUSH_PORTS).map { port ->
@@ -70,6 +72,13 @@ data class BerryConfig(
 }
 
 const val YKUSH_PORTS = 3
+const val DEFAULT_LOCAL_PIN = "1515"
+
+/** Un PIN vacío en la configuración vuelve al de fábrica; los espacios no cuentan. */
+fun pinAccepted(entered: String?, configured: String?): Boolean {
+    val expected = configured?.trim().orEmpty().ifEmpty { DEFAULT_LOCAL_PIN }
+    return entered?.trim() == expected
+}
 
 /** Un número de puerto del YKUSH3 escrito a mano: fuera de 1 a 3 vuelve al valor por defecto. */
 fun ykushPortOrDefault(text: String?, default: Int): Int {

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- El mismo dibujo que Berry Med sobre otro fondo: en la tablet se distinguen los dos íconos sin leer el texto. -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/local_icon" />
+    <foreground android:drawable="@drawable/ic_launcher_fg" />
+</adaptive-icon>

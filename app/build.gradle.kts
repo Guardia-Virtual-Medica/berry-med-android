@@ -63,6 +63,11 @@ dependencies {
     implementation("com.pusher:pusher-java-client:2.4.4")
     implementation("com.github.mik3y:usb-serial-for-android:3.8.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    // La cámara de la tablet en el Panel Local.
+    implementation("androidx.camera:camera-core:1.4.1")
+    implementation("androidx.camera:camera-camera2:1.4.1")
+    implementation("androidx.camera:camera-lifecycle:1.4.1")
+    implementation("androidx.camera:camera-view:1.4.1")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:2.0.21")
