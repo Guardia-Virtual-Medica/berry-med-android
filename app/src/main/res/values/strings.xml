@@ -83,8 +83,16 @@
     <string name="testing_usb">USB</string>
     <string name="testing_audio">Audio</string>
     <string name="testing_cameras">Cámaras</string>
+    <string name="kiosk_missing_url">Falta la URL del kiosco. Cargala en la configuración de Berry Med (paso Destino).</string>
+    <string name="kiosk_open_settings">Abrir la configuración</string>
+    <string name="kiosk_exit_title">PIN para salir del kiosco</string>
+    <string name="kiosk_pin_hint">PIN</string>
+    <string name="kiosk_cancel">Cancelar</string>
+    <string name="kiosk_enter">Entrar</string>
+    <string name="hint_kiosk_url">URL del kiosco</string>
+    <string name="help_kiosk_url">La que abría Chrome, con el slug de la organización. Berry Med la muestra como app de inicio de la tablet.</string>
     <string name="testing_tele">Teleconsulta (LiveKit)</string>
-    <string name="testing_tele_help">Lo que Berry Med publica en la sala del encuentro cuando el kiosco enciende el otoscopio o el estetoscopio. La prueba manual usa un servidor y un token propios (lk token create), sin pedirle nada a la API. Sigue con Testing cerrado (para probar con Chrome adelante) hasta Cortar o hasta que se abra el Panel Local.</string>
+    <string name="testing_tele_help">Berry Med entra a la sala del encuentro cuando el kiosco muestra el token y publica el otoscopio o el estetoscopio cuando el kiosco los enciende. El token no se muestra: sólo cuándo se vio y cuándo vence para entrar. La prueba manual usa un servidor y un token propios (lk token create); sigue con Testing cerrado hasta Cortar, hasta que se abra el Panel Local o hasta que el kiosco muestre un token.</string>
     <string name="testing_tele_manual">Prueba manual</string>
     <string name="testing_tele_server">Servidor (ws:// o wss://)</string>
     <string name="testing_tele_token">Token</string>

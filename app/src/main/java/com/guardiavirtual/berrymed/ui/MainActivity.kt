@@ -58,8 +58,7 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         ContextCompat.startForegroundService(this, Intent(this, MonitorService::class.java))
-        // Abierta por el encendido de la tablet: sólo para habilitar cámara y micrófono, sin diálogos.
-        if (!fromBoot()) askPermissions()
+        askPermissions()
         showStep(0)
         val watcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
@@ -110,26 +109,11 @@ class MainActivity : AppCompatActivity() {
         handler.post(tick)
     }
 
-    /**
-     * Con la pantalla adelante el servicio suma cámara y micrófono para la
-     * teleconsulta. Si la abrió el encendido de la tablet, se manda atrás
-     * enseguida: Chrome tiene que quedar adelante.
-     */
+    /** Con la pantalla adelante el servicio suma cámara y micrófono para la teleconsulta. */
     override fun onResume() {
         super.onResume()
         MonitorService.promote(this)
-        if (fromBoot()) {
-            intent.removeExtra(EXTRA_FROM_BOOT)
-            handler.postDelayed({ moveTaskToBack(true) }, BOOT_BACK_DELAY_MS)
-        }
     }
-
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        setIntent(intent)
-    }
-
-    private fun fromBoot(): Boolean = intent?.getBooleanExtra(EXTRA_FROM_BOOT, false) == true
 
     /**
      * Las notificaciones, y la cámara y el micrófono para el otoscopio y el
@@ -174,6 +158,7 @@ class MainActivity : AppCompatActivity() {
         binding.localPin.setText(config.localPanelPin)
         binding.stethoInputName.setText(config.stethoInputName)
         binding.headsetName.setText(config.headsetName)
+        binding.kioskUrl.setText(config.kioskUrl)
         select(binding.ecgGain, GAIN_VALUES, config.ecgGain)
         select(binding.ecgMode, MODE_VALUES, config.ecgMode)
         select(binding.respGain, GAIN_VALUES, config.respGain)
@@ -304,6 +289,7 @@ class MainActivity : AppCompatActivity() {
             localPanelPin = binding.localPin.text?.toString()?.trim().orEmpty().ifBlank { DEFAULT_LOCAL_PIN },
             stethoInputName = binding.stethoInputName.text?.toString()?.trim().orEmpty().ifBlank { DEFAULT_STETHO_INPUT },
             headsetName = binding.headsetName.text?.toString()?.trim().orEmpty().ifBlank { DEFAULT_HEADSET },
+            kioskUrl = binding.kioskUrl.text?.toString()?.trim().orEmpty(),
         )
     }
 
@@ -373,12 +359,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
-        /** La abrió [com.guardiavirtual.berrymed.service.BootReceiver] al encender la tablet. */
-        const val EXTRA_FROM_BOOT = "com.guardiavirtual.berrymed.FROM_BOOT"
-
-        /** Lo que espera adelante, abierta por el encendido, para que el servicio sume cámara y micrófono. */
-        private const val BOOT_BACK_DELAY_MS = 1_500L
-
         /** En el orden de los chips: Producción, Dev. */
         private val ENVIRONMENT_VALUES = arrayOf(Environment.Prod.key, Environment.Dev.key)
         private val GAIN_VALUES = arrayOf("x0.25", "x0.5", "x1", "x2")

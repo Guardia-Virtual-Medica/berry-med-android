@@ -19,17 +19,12 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
     <!--
-        La teleconsulta: el servicio publica el otoscopio y el estetoscopio en LiveKit
-        con Chrome adelante. Para eso, además de connectedDevice, va como camera y
-        microphone (ver MonitorService).
+        La teleconsulta: el servicio publica el otoscopio y el estetoscopio en LiveKit.
+        Para eso, además de connectedDevice, va como camera y microphone (ver
+        MonitorService); los suma con el kiosco o cualquier pantalla de Berry Med adelante.
     -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
-    <!--
-        "Mostrar sobre otras apps", que se otorga a mano en Ajustes: con él, al encender
-        la tablet se abre Berry Med un momento para habilitar cámara y micrófono.
-    -->
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <application
         android:name=".BerryMedApp"
@@ -63,6 +58,26 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--
+            El kiosco de OnDoctor dentro de Berry Med, como hacía la app del proveedor:
+            un WebView a pantalla completa. Es la app de inicio de la tablet (HOME):
+            Android la abre al encender y el botón de inicio vuelve a ella.
+        -->
+        <activity
+            android:name=".ui.KioskActivity"
+            android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|smallestScreenSize"
+            android:excludeFromRecents="false"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:screenOrientation="landscape"
+            android:theme="@style/Theme.BerryMed.Panel">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
 

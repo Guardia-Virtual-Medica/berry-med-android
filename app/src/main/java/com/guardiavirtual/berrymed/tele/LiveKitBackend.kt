@@ -79,7 +79,6 @@ class LiveKitBackend(
 ) : TeleBackend {
     private val appContext = context.applicationContext
     private val audio = appContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-    private val tokens = TeleTokenClient()
 
     /** Lo avisa el SDK cuando la sala se cae del todo; lo conecta el runtime con [TeleStreamer.roomLost]. */
     var onRoomLost: (String) -> Unit = {}
@@ -115,11 +114,6 @@ class LiveKitBackend(
     private var fpsMark = Pair(0L, System.nanoTime())
 
     override fun blocked(instrument: Instrument): String? = blockedBy(instrument)
-
-    override fun fetchToken(encounterId: String): TokenOutcome {
-        val url = config().livekitTokenUrl() ?: return TokenOutcome.Failed("Falta configurar la URL de la API o el tótem")
-        return tokens.fetch(url, encounterId)
-    }
 
     override fun connect(credentials: TeleCredentials): String? {
         disconnect()
@@ -158,7 +152,7 @@ class LiveKitBackend(
             null
         } catch (error: Throwable) {
             disconnect()
-            "No se pudo entrar a la sala: ${error.message ?: error.javaClass.simpleName}"
+            "No se pudo entrar a la sala: ${redact(error.message ?: error.javaClass.simpleName, credentials.token)}"
         }
     }
 
@@ -471,6 +465,10 @@ class LiveKitBackend(
     }
 
     companion object {
+        /** Saca el token de un mensaje de error (la dirección del websocket lo lleva como `access_token`). */
+        fun redact(text: String, token: String): String =
+            text.replace(token, "…").replace(Regex("access_token=[^&\\s]+"), "access_token=…")
+
         const val OTOSCOPE_TRACK = "otoscopio"
         const val STETHO_TRACK = "estetoscopio"
         private const val SAMPLE_RATE = 48_000

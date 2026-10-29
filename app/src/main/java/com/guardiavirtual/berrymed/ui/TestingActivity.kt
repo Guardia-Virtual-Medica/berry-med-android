@@ -278,7 +278,12 @@ class TestingActivity : AppCompatActivity() {
         binding.teleDetail.text = buildString {
             append("Servicio: ${t.serviceTypes} · cámara ${yesNo(t.serviceCamera)} · micrófono ${yesNo(t.serviceMicrophone)}\n")
             append("Sala: ${status.room.label}")
-            status.encounterId?.let { append(" · encuentro $it") }
+            status.roomName?.let { append(" · $it") }
+            if (status.tokenSeenAtMillis != 0L) {
+                // Nunca el token: sólo cuándo se vio y cuándo vence para entrar.
+                append(" · token visto a las ${clock(status.tokenSeenAtMillis)}")
+                status.tokenExpiresAtMillis?.let { append(", vence a las ${clock(it)}") }
+            }
             append("\nPublica: ")
             append(
                 when (status.instrument) {
@@ -301,6 +306,9 @@ class TestingActivity : AppCompatActivity() {
             if (status.message.isNotBlank()) append("\nÚltimo error: ${status.message}")
         }
     }
+
+    private fun clock(millis: Long): String =
+        java.text.SimpleDateFormat("HH:mm", Locale("es")).format(java.util.Date(millis))
 
     private fun yesNo(value: Boolean) = if (value) "sí" else "no"
 
