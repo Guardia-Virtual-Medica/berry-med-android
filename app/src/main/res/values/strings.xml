@@ -17,7 +17,6 @@
     <string name="hint_channel">Canal público</string>
     <string name="hint_start">Evento de inicio</string>
     <string name="hint_stop">Evento de fin</string>
-    <string name="hint_minutes">Minutos máximos de sesión</string>
     <string name="hint_nibp_target">Presión de inflado, en mmHg</string>
     <string name="label_ecg_gain">Ganancia de ECG</string>
     <string name="label_ecg_mode">Modo de ECG</string>
@@ -42,7 +41,6 @@
     <string name="help_known_values">Estos valores ya vienen cargados. Cambialos solo si te indicaron otros.</string>
     <string name="help_device">Si nadie te indicó otra cosa, dejá la ganancia en x1 y el modo en Monitor.</string>
     <string name="help_nibp_target">Opcional. Si lo dejás vacío, el equipo usa su presión de inflado.</string>
-    <string name="help_minutes">Si no llega la orden de parar, la sesión se corta sola. 0 para no cortarla.</string>
     <string name="next">Siguiente</string>
     <string name="back">Atrás</string>
     <string name="missing_api">Falta la dirección del servicio.</string>
@@ -50,6 +48,7 @@
     <string name="missing_totem">Falta el identificador del tótem.</string>
     <string name="missing_pusher">Falta la clave de Pusher.</string>
     <string name="missing_channel">Falta el nombre del canal.</string>
+    <string name="ykush_shared">Cada equipo va en un puerto distinto del YKUSH3: el otoscopio, el estetoscopio y el auricular no pueden compartir puerto.</string>
     <string name="save">Guardar y aplicar</string>
     <string name="saving">Guardando…</string>
     <string name="saved">Configuración guardada. El tótem la usa desde ahora.</string>

@@ -127,7 +127,6 @@ class MainActivity : AppCompatActivity() {
         binding.channel.setText(config.publicChannel)
         binding.startEvent.setText(config.startEventName)
         binding.stopEvent.setText(config.stopEventName)
-        binding.maxMinutes.setText(config.maxSessionMinutes.toString())
         binding.nibpTarget.setText(config.nibpTargetPressureMmhg)
         binding.ykushOtoscope.setText(config.ykushOtoscopePort.toString())
         binding.ykushStethoscope.setText(config.ykushStethoscopePort.toString())
@@ -206,6 +205,7 @@ class MainActivity : AppCompatActivity() {
             binding.channel.text.isNullOrBlank() -> R.string.missing_channel
             else -> null
         }
+        2 -> if (readForm().ykushPortsShared()) R.string.ykush_shared else null
         else -> null
     }
 
@@ -214,7 +214,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun save() {
-        val blocked = (0..1).firstNotNullOfOrNull { index ->
+        val blocked = (0..2).firstNotNullOfOrNull { index ->
             missingField(index)?.let { index to it }
         }
         if (blocked != null) {
@@ -258,7 +258,6 @@ class MainActivity : AppCompatActivity() {
             respGain = value(binding.respGain, GAIN_VALUES),
             nibpMode = value(binding.nibpMode, NIBP_VALUES),
             nibpTargetPressureMmhg = binding.nibpTarget.text?.toString()?.trim().orEmpty(),
-            maxSessionMinutes = binding.maxMinutes.text?.toString()?.trim()?.toIntOrNull() ?: 30,
             ykushOtoscopePort = ykushPortOrDefault(binding.ykushOtoscope.text?.toString(), 1),
             ykushStethoscopePort = ykushPortOrDefault(binding.ykushStethoscope.text?.toString(), 2),
             ykushHeadsetPort = ykushPortOrDefault(binding.ykushHeadset.text?.toString(), 3),

@@ -120,16 +120,24 @@ fun applyThermometer(vitals: VitalSigns, reading: ThermoReading?) {
     vitals.temperature = formatCelsius(celsius)
 }
 
+/**
+ * La ventana tal como sale: con la lectura del termómetro en lugar de la
+ * temperatura de la plaqueta, o null si no hay nada útil para mandar. El
+ * termómetro se aplica antes de validar: con la plaqueta caída o muda (sus
+ * valores se borran a los 5 s) una lectura del termómetro sola tiene que
+ * llegar al médico, y también sirve de prueba sin consulta. No toca [window].
+ */
+fun sendableWindow(window: SampleWindow, thermometer: ThermoReading?): SampleWindow? {
+    val vitals = window.vitalSigns.copy()
+    applyThermometer(vitals, thermometer)
+    return window.copy(vitalSigns = vitals).takeIf(::isValidSample)
+}
+
 fun formatCelsius(value: Double): String {
     if (value == 0.0) return "-"
     val rounded = java.lang.Math.round(value * 10.0) / 10.0
     if (rounded == 0.0) return "-"
     return String.format(Locale.US, "%.1f", rounded)
-}
-
-fun sessionExpired(active: Boolean, startedAtNano: Long, nowNano: Long, maxMinutes: Int): Boolean {
-    if (!active || maxMinutes <= 0 || startedAtNano == 0L) return false
-    return nowNano - startedAtNano >= maxMinutes.toLong() * 60L * 1_000_000_000L
 }
 
 fun metricsEnvelope(timestampMillis: Long, window: SampleWindow): String {

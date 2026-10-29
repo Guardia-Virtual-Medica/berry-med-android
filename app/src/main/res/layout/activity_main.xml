@@ -381,19 +381,6 @@
                                 android:singleLine="true"
                                 android:text="stop-monitoring" />
                         </com.google.android.material.textfield.TextInputLayout>
-
-                        <com.google.android.material.textfield.TextInputLayout
-                            style="@style/Field"
-                            android:hint="@string/hint_minutes"
-                            app:helperText="@string/help_minutes">
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/maxMinutes"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:inputType="number"
-                                android:singleLine="true"
-                                android:text="30" />
-                        </com.google.android.material.textfield.TextInputLayout>
                     </LinearLayout>
 
                     <LinearLayout

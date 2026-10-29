@@ -6,6 +6,7 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -284,13 +285,21 @@ class ProtocolTest {
     }
 
     @Test
-    fun sessionExpiresOnlyAfterTheCap() {
-        val start = 1_000L
-        val minute = 60L * 1_000_000_000L
-        assertFalse(sessionExpired(false, start, start + 31 * minute, 30))
-        assertFalse(sessionExpired(true, start, start + 29 * minute, 30))
-        assertTrue(sessionExpired(true, start, start + 30 * minute, 30))
-        assertFalse(sessionExpired(true, start, start + 90 * minute, 0))
+    fun aThermometerReadingAloneIsSentEvenWithTheBoardSilent() {
+        val empty = SampleWindow(
+            spo2 = emptyList(),
+            ecg = emptyMap(),
+            ecgPeaks = emptyList(),
+            ecgInfo = EcgInfo(),
+            resp = emptyList(),
+            vitalSigns = VitalSigns(),
+        )
+        assertNull(sendableWindow(empty, null))
+        val ready = assertNotNull(sendableWindow(empty, ThermoReading(36.6, "C")))
+        assertEquals("36.6", ready.vitalSigns.temperature)
+        assertTrue(metricsEnvelope(0, ready).contains("\"temperature\":\"36.6\""))
+        // La ventana original queda como vino: Testing la vuelve a mirar.
+        assertEquals("- -", empty.vitalSigns.temperature)
     }
 
     @Test

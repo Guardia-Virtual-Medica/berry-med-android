@@ -76,4 +76,6 @@ dependencies {
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:2.0.21")
+    // El envío contra un servidor de mentira; la misma versión que OkHttp.
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
 }

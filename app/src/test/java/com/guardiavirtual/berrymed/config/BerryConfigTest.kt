@@ -33,6 +33,16 @@ class BerryConfigTest {
     }
 
     @Test
+    fun twoDevicesCannotShareAHubPortAndTheScreenSaysWhy() {
+        assertFalse(ready.ykushPortsShared())
+        assertTrue(ready.missingFields().none { "YKUSH3" in it })
+        val shared = ready.copy(ykushOtoscopePort = 2, ykushStethoscopePort = 2)
+        assertTrue(shared.ykushPortsShared())
+        assertTrue(shared.missingFields().any { "YKUSH3" in it })
+        assertTrue(ready.copy(ykushHeadsetPort = 1).ykushPortsShared())
+    }
+
+    @Test
     fun theLocalPanelPinIgnoresSpacesAndFallsBackTo1515() {
         assertTrue(pinAccepted("2468", "2468"))
         assertTrue(pinAccepted(" 2468 ", "2468 "))

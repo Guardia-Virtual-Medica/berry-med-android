@@ -20,7 +20,6 @@ data class BerryConfig(
     val respGain: String = "x1",
     val nibpMode: String = "adulto",
     val nibpTargetPressureMmhg: String = "",
-    val maxSessionMinutes: Int = 30,
     /** En qué puerto del hub YKUSH3 va cada equipo (1 a 3). */
     val ykushOtoscopePort: Int = 1,
     val ykushStethoscopePort: Int = 2,
@@ -43,6 +42,14 @@ data class BerryConfig(
             "auricular".takeIf { ykushHeadsetPort == port },
         ).joinToString(" y ").ifBlank { "libre" }
     }
+
+    /**
+     * Cada equipo va en su propio puerto del YKUSH3. Si dos comparten, el
+     * Panel Local los mezcla: apagar el otoscopio al salir cortaría el
+     * estetoscopio, y al revés.
+     */
+    fun ykushPortsShared(): Boolean =
+        anyPortRepeated(ykushOtoscopePort, ykushStethoscopePort, ykushHeadsetPort)
 
     fun tuning(): DeviceTuning = DeviceTuning(
         ecgGain = ecgGain,
@@ -74,6 +81,7 @@ data class BerryConfig(
         if (pusherKey.isBlank()) missing += "clave de Pusher"
         if (publicChannel.isBlank()) missing += "canal"
         if (!channelIsPublic()) missing += "un canal público (sin private- ni presence-)"
+        if (ykushPortsShared()) missing += "un puerto distinto del YKUSH3 para cada equipo"
         return missing
     }
 }
@@ -96,6 +104,9 @@ fun ykushPortOrDefault(text: String?, default: Int): Int {
     val port = text?.trim()?.toIntOrNull() ?: return default
     return if (port in 1..YKUSH_PORTS) port else default
 }
+
+/** Si alguno de los puertos del YKUSH3 se repite entre el otoscopio, el estetoscopio y el auricular. */
+fun anyPortRepeated(vararg ports: Int): Boolean = ports.distinct().size != ports.size
 
 /** Sin http:// o https:// el POST no puede armar la dirección y no sale nunca. */
 fun hasWebScheme(url: String): Boolean {
