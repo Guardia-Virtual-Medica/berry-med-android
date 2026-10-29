@@ -182,13 +182,19 @@ JAVA_HOME=/opt/homebrew/opt/openjdk@17 ./gradlew test assembleDebug
 
 Los tests no necesitan la plaqueta. `local.properties` (la ruta del SDK) es de cada máquina y no se commitea.
 
-El APK no se publica en GitHub: no hay releases ni CI. Se compila y se instala en la tablet conectada por USB:
+Cada versión publicada tiene su APK en [Releases](https://github.com/Guardia-Virtual-Medica/berry-med-android/releases), con el SHA-256 en las notas. No hay CI: el APK de la release se compila a mano (`assembleDebug`) y se sube con `gh release create v<versionName> <apk>`. Para instalarlo en la tablet conectada por USB:
+
+```bash
+adb install -r berry-med-1.2.2.apk
+```
+
+O, recién compilado:
 
 ```bash
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Siempre firmado con la misma clave: si cambia, hay que desinstalar y eso borra la configuración (ver [Instalar y dejarla sola](#instalar-y-dejarla-sola)).
+El APK es debug y lleva la clave debug de la máquina que lo compiló. Siempre firmado con la misma clave: si cambia, hay que desinstalar y eso borra la configuración (ver [Instalar y dejarla sola](#instalar-y-dejarla-sola)).
 
 Para probar sin tablet está el emulador `berry_tablet`: Android 15, 2560×1600 a 320 dpi, que son los 1280×800 dp para los que está pensado el Panel Local.
 
