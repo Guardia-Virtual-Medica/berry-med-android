@@ -5,9 +5,10 @@
     cada vez que el dispositivo aparece, también tras un reinicio. Los puertos
     serie van por fabricante porque el chip del termómetro puede variar.
 
-    El otoscopio, el adaptador del estetoscopio y el auricular no van acá a
-    propósito: la app no los abre por USB (Android los maneja como cámara y
-    como audio), y pedirles permiso sólo pondría un diálogo de más arriba de Chrome.
+    El otoscopio sí va: si la tablet no lo lista como cámara, el Panel Local lo
+    abre por USB (UVC) y necesita el permiso. El adaptador del estetoscopio y
+    el auricular no van a propósito: Android los maneja como audio, y pedirles
+    permiso sólo pondría un diálogo de más arriba de Chrome.
 -->
 <resources>
     <!-- Plaqueta PM6750 (STM32 VCP, 0483) -->
@@ -27,4 +28,6 @@
     <usb-device vendor-id="10755" />
     <usb-device vendor-id="11914" />
     <usb-device vendor-id="1240" />
+    <!-- Otoscopio, cámara UVC "HD video" (349C:3301) -->
+    <usb-device vendor-id="13468" product-id="13057" />
 </resources>

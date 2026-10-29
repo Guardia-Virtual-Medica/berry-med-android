@@ -10,10 +10,11 @@ import com.guardiavirtual.berrymed.service.MonitorService
 import com.guardiavirtual.berrymed.service.TotemRuntime
 
 /**
- * Lo que Android abre al conectarse la plaqueta, el termómetro o el hub YKUSH3. No
- * muestra nada y se cierra enseguida: adelante tiene que seguir Chrome con la
- * plataforma médica. Con "Usar de forma predeterminada", Android da el permiso
- * USB antes de abrirla, así que no hace falta nada más que existir.
+ * Lo que Android abre al conectarse la plaqueta, el termómetro, el hub YKUSH3
+ * o el otoscopio. No muestra nada y se cierra enseguida: adelante tiene que
+ * seguir Chrome con la plataforma médica, o el Panel Local si se está
+ * encendiendo el otoscopio. Con "Usar de forma predeterminada", Android da el
+ * permiso USB antes de abrirla, así que no hace falta nada más que existir.
  */
 class UsbAttachActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {

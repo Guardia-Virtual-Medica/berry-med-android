@@ -125,4 +125,23 @@
     <string name="local_camera_missing">Esta tablet no tiene esa cámara.</string>
     <string name="local_camera_failed">No se pudo abrir la cámara.</string>
     <string name="local_camera_frozen">Imagen congelada: no se guarda.</string>
+    <string name="section_stetho">Estetoscopio</string>
+    <string name="help_stetho">Cómo se llaman para Android el adaptador del estetoscopio y el auricular. Se leen en Testing → Dispositivos que ve Android. El Panel Local los busca por estos nombres y nunca usa el micrófono ni el parlante de la tablet.</string>
+    <string name="hint_stetho_input">Nombre del adaptador del estetoscopio</string>
+    <string name="hint_headset_name">Nombre del auricular</string>
+    <string name="local_stetho">Estetoscopio</string>
+    <string name="local_stetho_listen">Escuchar</string>
+    <string name="local_stetho_stop">Parar</string>
+    <string name="local_stetho_gain">Ganancia x%1$d</string>
+    <string name="local_stetho_starting">Encendiendo…</string>
+    <string name="local_stetho_denied">Sin permiso para el micrófono. Se da en Ajustes, Apps, Berry Med.</string>
+    <string name="local_stetho_level">Nivel</string>
+    <string name="local_otoscope">Otoscopio</string>
+    <string name="local_otoscope_on">Encender</string>
+    <string name="local_otoscope_off">Apagar</string>
+    <string name="local_otoscope_starting">Encendiendo…</string>
+    <string name="local_otoscope_ready">Otoscopio encendido · %1$s</string>
+    <string name="local_otoscope_done">Otoscopio apagado</string>
+    <string name="local_otoscope_denied">El otoscopio necesita el permiso de la cámara. Se da en Ajustes, Apps, Berry Med.</string>
+    <string name="local_camera_paused">En pausa mientras el otoscopio está encendido.</string>
 </resources>

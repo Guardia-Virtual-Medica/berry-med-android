@@ -20,12 +20,18 @@ object KnownDevices {
     fun isYkush3(vendorId: Int, productId: Int): Boolean =
         vendorId == YKUSH_VENDOR && productId == YKUSH3_PRODUCT
 
+    fun isOtoscope(vendorId: Int, productId: Int): Boolean =
+        vendorId == OTOSCOPE_VENDOR && productId == OTOSCOPE_PRODUCT
+
+    fun isStethoAdapter(vendorId: Int, productId: Int): Boolean =
+        vendorId == STETHO_ADAPTER_VENDOR && productId == STETHO_ADAPTER_PRODUCT
+
     /** Cómo se llama el equipo en el tótem, o null si no es uno conocido. */
     fun name(vendorId: Int, productId: Int): String? = when {
         isYkush3(vendorId, productId) -> "hub YKUSH3"
         vendorId == UsbHub.STM32_VENDOR -> "plaqueta PM6750"
-        vendorId == OTOSCOPE_VENDOR && productId == OTOSCOPE_PRODUCT -> "otoscopio"
-        vendorId == STETHO_ADAPTER_VENDOR && productId == STETHO_ADAPTER_PRODUCT -> "adaptador del estetoscopio"
+        isOtoscope(vendorId, productId) -> "otoscopio"
+        isStethoAdapter(vendorId, productId) -> "adaptador del estetoscopio"
         vendorId == LOGITECH_VENDOR -> "auricular Logitech"
         else -> null
     }

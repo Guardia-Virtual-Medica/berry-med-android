@@ -15,6 +15,9 @@
     <!-- La cámara de la tablet, sólo en el Panel Local. -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera.any" android:required="false" />
+    <!-- El estetoscopio del Panel Local, por el adaptador de audio USB. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
 
     <application
         android:name=".BerryMedApp"
@@ -25,6 +28,19 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BerryMed"
         android:usesCleartextTraffic="true">
+
+        <!--
+            Desde Android 14, al abrir la cámara en una pantalla de orientación fija
+            el sistema puede girar la tablet y reiniciar la pantalla ("compatibilidad
+            de cámara"). Eso cerraba el Panel Local y volvía a pedir el PIN apenas
+            arrancaba la cámara. Son propiedades de la aplicación, no de la pantalla.
+        -->
+        <property
+            android:name="android.window.PROPERTY_CAMERA_COMPAT_ALLOW_FORCE_ROTATION"
+            android:value="false" />
+        <property
+            android:name="android.window.PROPERTY_CAMERA_COMPAT_ALLOW_REFRESH"
+            android:value="false" />
 
         <activity
             android:name=".ui.MainActivity"

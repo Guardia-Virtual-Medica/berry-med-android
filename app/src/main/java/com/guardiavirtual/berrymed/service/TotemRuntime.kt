@@ -4,9 +4,12 @@ package com.guardiavirtual.berrymed.service
 import android.content.Context
 import android.hardware.usb.UsbDevice
 import android.util.Log
+import com.guardiavirtual.berrymed.audio.StethoscopeLink
 import com.guardiavirtual.berrymed.config.BerryConfig
 import com.guardiavirtual.berrymed.config.ConfigStore
 import com.guardiavirtual.berrymed.net.MetricsPoster
+import com.guardiavirtual.berrymed.otoscope.OtoscopePower
+import com.guardiavirtual.berrymed.otoscope.OtoscopeProbe
 import com.guardiavirtual.berrymed.net.PostOutcome
 import com.guardiavirtual.berrymed.net.SessionPusher
 import com.guardiavirtual.berrymed.protocol.BmDataParser
@@ -32,6 +35,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import java.util.Locale
 import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -74,6 +78,47 @@ class TotemRuntime(context: Context) {
     private val nibpStopper = Executors.newSingleThreadExecutor { runnable ->
         Thread(runnable, "berry-nibp-stop").apply { isDaemon = true }
     }
+
+    /**
+     * Lo que hace el Panel Local con el estetoscopio y el YKUSH3: el hub
+     * bloquea hasta un segundo por orden y después se espera a que Android
+     * vea las placas de audio. Un solo hilo, así encender, parar y apagar al
+     * cerrar el panel salen en el orden en que se pidieron.
+     */
+    private val stethoWorker = Executors.newSingleThreadExecutor { runnable ->
+        Thread(runnable, "berry-panel-stetho").apply { isDaemon = true }
+    }
+    private val stethoPorts = PanelPorts()
+
+    /** Cambia con cada Parar y cada cierre del panel: una espera de Escuchar que quedó atrás se abandona. */
+    @Volatile private var stethoEpoch = 0L
+    @Volatile private var stethoStarting = false
+
+    /**
+     * Lo mismo para el otoscopio: el YKUSH3, la espera de la cámara y, en el
+     * camino UVC, abrir y cerrar la cámara. Al ser un solo hilo, el puerto se
+     * apaga siempre después de soltar la cámara.
+     */
+    private val otoscopeWorker = Executors.newSingleThreadExecutor { runnable ->
+        Thread(runnable, "berry-panel-oto").apply { isDaemon = true }
+    }
+    private val otoscope = OtoscopePower(OTOSCOPE_WAIT_NANOS, CAMERA2_GRACE_NANOS)
+    val otoscopeProbe = OtoscopeProbe(appContext, hub)
+
+    /**
+     * El puerto del otoscopio, si lo encendió el panel: sólo ése se apaga. Al
+     * encender la tablet el hub arranca con los tres prendidos y la
+     * teleconsulta usa el otoscopio por ahí; apagarlo al salir lo dejaría
+     * desenchufado para Chrome. Guarda el número, así se apaga el puerto que
+     * se encendió aunque la configuración cambie mientras tanto.
+     */
+    private val otoscopePorts = PanelPorts()
+
+    val otoscopeState: OtoscopePower.State get() = otoscope.state
+
+    /** Donde la cámara UVC del otoscopio se abre y se cierra, en orden con el puerto. */
+    val otoscopeExecutor: Executor get() = otoscopeWorker
+
     private val watch = SessionWatch()
     private val sessionLock = Any()
 
@@ -100,6 +145,10 @@ class TotemRuntime(context: Context) {
 
     /** Las muestras en vivo para el Panel Local; el parser las copia acá apenas las decodifica. */
     val live = LiveFeed()
+
+    /** El estetoscopio del Panel Local; sólo suena con el panel abierto. */
+    val stetho = StethoscopeLink(appContext, live.stetho, ::log)
+
     @Volatile private var lastWindow: SampleWindow? = null
     @Volatile private var inventoryCache: DeviceInventory.Snapshot? = null
     val console = ConsoleLog()
@@ -445,11 +494,14 @@ class TotemRuntime(context: Context) {
         return null
     }
 
-    /** Corta el modo local en el acto; el STOP de la presión sale en otro hilo. */
+    /** Corta el modo local en el acto; el STOP de la presión y el YKUSH3 salen en otros hilos. */
     fun stopLocal() {
         if (!gate.closeLocal()) return
         // Una presión pedida desde el panel no queda inflando el manguito.
         stopNibpInBackground()
+        stopStethoscope(closing = true)
+        // La pantalla ya soltó la cámara del otoscopio; acá se apaga su puerto.
+        localOtoscopeOff()
         log("[LOCAL] Panel Local cerrado")
         publish()
     }
@@ -467,10 +519,216 @@ class TotemRuntime(context: Context) {
         return "Medición detenida"
     }
 
+    /**
+     * Escuchar: enciende en el YKUSH3 los puertos del adaptador y del
+     * auricular que estén apagados y, si encendió alguno, espera hasta 5 s a
+     * que Android vea las dos placas de audio antes de abrir el audio. Si no
+     * encendió nada, abre con lo que hay. Sin YKUSH3 se intenta directo. Todo en otro hilo; [done] se llama desde ese hilo con el
+     * mensaje para la tarjeta.
+     */
+    fun localStethoStart(done: (String) -> Unit) {
+        if (!localMode) {
+            done("El panel no está activo.")
+            return
+        }
+        if (stetho.running || stethoStarting) {
+            done(if (stethoStarting) "Encendiendo…" else "Ya está escuchando.")
+            return
+        }
+        stethoStarting = true
+        val epoch = stethoEpoch
+        stethoWorker.execute {
+            try {
+                done(startStethoscope(epoch))
+            } catch (error: Exception) {
+                log("[ESTETO] Falló al empezar: $error")
+                done("No se pudo empezar: ${error.message ?: error.javaClass.simpleName}")
+            } finally {
+                stethoStarting = false
+            }
+        }
+    }
+
+    private fun startStethoscope(epoch: Long): String {
+        val cfg = config
+        val notes = ArrayList<String>()
+        val hubPresent = ykush.plugged()
+        var poweredSome = false
+        if (hubPresent) {
+            val ports = listOf(cfg.ykushStethoscopePort, cfg.ykushHeadsetPort)
+            for (port in stethoPorts.toTurnOn(ports, ykush.readAll())) {
+                if (stethoEpoch != epoch) return ""
+                if (ykush.setPort(port, true)) {
+                    stethoPorts.turnedOn(port)
+                    poweredSome = true
+                } else {
+                    notes += "El YKUSH3 no encendió el puerto $port."
+                }
+            }
+        } else {
+            notes += "Sin YKUSH3: se intenta directo."
+        }
+        var found = stetho.devices(cfg)
+        // Encender un puerto es enchufar el equipo: Android tarda un momento en ver
+        // la placa de audio. Si no se encendió nada, lo que no está no va a aparecer
+        // solo; sin YKUSH3 sí se le da tiempo al adaptador, que pudo recién enchufarse.
+        val wait = poweredSome || (!hubPresent && found.input == null)
+        val deadline = System.nanoTime() + if (wait) STETHO_WAIT_NANOS else 0L
+        while ((found.input == null || found.output == null) && System.nanoTime() < deadline) {
+            if (stethoEpoch != epoch || !localMode) return ""
+            sleep(DEVICE_POLL_MS)
+            found = stetho.devices(cfg)
+        }
+        // Parar o cerrar el panel durante la espera: no se abre nada.
+        if (stethoEpoch != epoch || !localMode) return ""
+        val reason = stetho.start(cfg)
+        if (reason != null) return (notes + reason).joinToString(" ")
+        if (!stetho.playing) notes += "Sin auricular: sólo se ve la onda."
+        return (listOf("Escuchando.") + notes).joinToString(" ")
+    }
+
+    /** Parar: deja de escuchar; los puertos del YKUSH3 quedan como están. */
+    fun localStethoStop(done: (String) -> Unit) {
+        stopStethoscope(closing = false)
+        stethoWorker.execute { done("Detenido.") }
+    }
+
+    /**
+     * Corta el audio en el hilo del estetoscopio y, al cerrar el panel,
+     * apaga los puertos que el panel encendió. Cambiar el epoch primero hace
+     * que una espera de Escuchar en curso se abandone enseguida.
+     */
+    private fun stopStethoscope(closing: Boolean) {
+        stethoEpoch++
+        stethoWorker.execute {
+            stetho.stop()
+            if (!closing) return@execute
+            val ports = stethoPorts.takeToTurnOff()
+            if (ports.isEmpty() || !ykush.plugged()) return@execute
+            for (port in ports) ykush.setPort(port, false)
+            log("[ESTETO] Panel cerrado: se apagaron los puertos ${ports.joinToString(", ")} del YKUSH3")
+        }
+    }
+
+    /**
+     * Encender el otoscopio: prende su puerto en el YKUSH3 (y con él la luz)
+     * si estaba apagado, espera hasta 8 s a que Android lo vea como cámara
+     * externa o como dispositivo USB con permiso, y avisa por cuál camino
+     * abrirlo. Si no aparece, apaga el puerto si lo encendió el panel. Todo en el hilo del otoscopio; [progress] y
+     * [done] se llaman desde ahí.
+     */
+    fun localOtoscopeOn(progress: (String) -> Unit, done: (OtoscopePower.Path?, String) -> Unit) {
+        if (!localMode) {
+            done(null, "El panel no está activo.")
+            return
+        }
+        val hubPresent = ykush.plugged()
+        val actions = otoscope.switchOn(hubPresent, System.nanoTime())
+        if (actions == null) {
+            done(null, "El otoscopio se está encendiendo o apagando: esperá un momento.")
+            return
+        }
+        val port = config.ykushOtoscopePort
+        otoscopeWorker.execute {
+            try {
+                waitForOtoscope(actions, port, progress, done)
+            } catch (error: Exception) {
+                log("[OTOSCOPIO] Falló al encender: $error")
+                // Lo que haya quedado encendido se apaga como siempre.
+                localOtoscopeOff()
+                done(null, "No se pudo encender: ${error.message ?: error.javaClass.simpleName}")
+            }
+        }
+    }
+
+    private fun waitForOtoscope(
+        actions: List<OtoscopePower.Action>,
+        port: Int,
+        progress: (String) -> Unit,
+        done: (OtoscopePower.Path?, String) -> Unit,
+    ) {
+        if (OtoscopePower.Action.PORT_ON in actions) {
+            progress("Encendiendo…")
+            // Un estado que no se pudo leer cuenta como apagado: encender de más no rompe nada.
+            if (otoscopePorts.toTurnOn(listOf(port), ykush.readAll()).isEmpty()) {
+                log("[OTOSCOPIO] El puerto $port ya está encendido")
+            } else if (ykush.setPort(port, true)) {
+                otoscopePorts.turnedOn(port)
+            } else {
+                log("[OTOSCOPIO] El YKUSH3 no encendió el puerto $port: se espera igual")
+            }
+            if (!otoscope.portReady(System.nanoTime())) return
+            progress("Esperando la cámara…")
+        } else {
+            progress("Sin YKUSH3: se intenta directo. Esperando la cámara…")
+        }
+        while (true) {
+            when (val poll = otoscope.poll(System.nanoTime(), otoscopeProbe.cameraSeen(), otoscopeProbe.usbReady())) {
+                OtoscopePower.Poll.Waiting -> sleep(DEVICE_POLL_MS)
+                OtoscopePower.Poll.Cancelled -> return
+                is OtoscopePower.Poll.Open -> {
+                    log("[OTOSCOPIO] Apareció: se abre ${if (poll.path == OtoscopePower.Path.CAMERA2) "por Camera2" else "por UVC"}")
+                    done(poll.path, "Abriendo la imagen…")
+                    return
+                }
+                is OtoscopePower.Poll.TimedOut -> {
+                    if (otoscopeProbe.usbPresent() && !otoscopeProbe.usbReady()) {
+                        // Enchufado pero sin permiso: el pedido sale una vez por dispositivo y
+                        // alguien lo cerró. Se pide de nuevo y el puerto queda encendido, porque
+                        // apagarlo desenchufa el otoscopio y el pedido no serviría. Si lo
+                        // encendió el panel, se apaga al salir.
+                        log("[OTOSCOPIO] Está enchufado pero sin permiso USB: se vuelve a pedir")
+                        hub.forgetAsked()
+                        done(
+                            null,
+                            "Falta aceptar el permiso USB del otoscopio: aceptá el pedido que aparece " +
+                                "o, si no aparece, tocá «Pedir permiso USB» en Berry Med. Después, Encender otra vez.",
+                        )
+                        return
+                    }
+                    if (OtoscopePower.Action.PORT_OFF in poll.actions) turnOffOtoscopePort()
+                    log("[OTOSCOPIO] No apareció en ${OTOSCOPE_WAIT_NANOS / 1_000_000_000L} s")
+                    done(null, "El otoscopio no aparece como cámara.")
+                    return
+                }
+            }
+        }
+    }
+
+    /**
+     * Apagar el otoscopio, también al cerrar el panel o si la imagen no
+     * abrió. La pantalla suelta la cámara antes de llamar; acá queda apagar
+     * el puerto, en el hilo del otoscopio y después de cualquier cierre UVC
+     * que esté en la cola. Sólo si lo encendió el panel: si ya estaba
+     * encendido, queda como estaba.
+     *
+     * Aunque el otoscopio ya esté apagado se pasa por el hilo: un puerto que
+     * quedó encendido esperando el permiso USB también se apaga al salir.
+     */
+    fun localOtoscopeOff() {
+        val powering = OtoscopePower.Action.PORT_OFF in otoscope.switchOff()
+        otoscopeWorker.execute {
+            try {
+                turnOffOtoscopePort()
+            } finally {
+                if (powering) otoscope.poweredOff()
+            }
+        }
+    }
+
+    /** Apaga el puerto del otoscopio si lo encendió el panel, y lo olvida. En el hilo del otoscopio. */
+    private fun turnOffOtoscopePort() {
+        val ports = otoscopePorts.takeToTurnOff()
+        if (ports.isEmpty() || !ykush.plugged()) return
+        for (port in ports) ykush.setPort(port, false)
+        log("[OTOSCOPIO] Se apagó el puerto ${ports.joinToString(", ")} del YKUSH3, que había encendido el panel")
+    }
+
     fun localSnapshot(): LocalSnapshot {
         val stats = parser.stats()
         val reading = thermo.latest()
         val thermoAt = thermo.lastReadingAtNano
+        val plugged = hub.panelDevices()
         return LocalSnapshot(
             berryUp = berry.connected,
             lastDataAge = berry.lastDataAgeSeconds(),
@@ -481,6 +739,12 @@ class TotemRuntime(context: Context) {
             thermoAge = if (thermoAt == 0L) null else (System.nanoTime() - thermoAt) / 1_000_000_000L,
             nibpRunning = berry.nibpRunning,
             nibp = live.nibp,
+            stethoAvailable = stetho.running || plugged.ykush || plugged.stethoAdapter,
+            stethoStarting = stethoStarting,
+            stethoRunning = stetho.running,
+            stethoPlaying = stetho.playing,
+            otoscopeAvailable = otoscope.state != OtoscopePower.State.OFF || plugged.ykush || plugged.otoscope,
+            otoscopeState = otoscope.state,
         )
     }
 
@@ -562,7 +826,11 @@ class TotemRuntime(context: Context) {
         return vitals.temperature
     }
 
-    private fun log(message: String) {
+    /**
+     * Al logcat y a la consola de Testing. Lo usan también las pantallas para
+     * lo que pasa en ellas y conviene ver ahí, como una imagen que no abrió.
+     */
+    internal fun log(message: String) {
         Log.i(TAG, message)
         console.add(message)
     }
@@ -579,5 +847,11 @@ class TotemRuntime(context: Context) {
         const val TAG = "BerryMed"
         private const val TICK_NANOS = 1_000_000_000L
         private const val INVENTORY_NANOS = 3L * 1_000_000_000L
+        private const val STETHO_WAIT_NANOS = 5L * 1_000_000_000L
+        private const val DEVICE_POLL_MS = 250L
+        private const val OTOSCOPE_WAIT_NANOS = 8L * 1_000_000_000L
+
+        /** Visto el USB del otoscopio, cuánto se espera a que la tablet lo liste como cámara antes de ir por UVC. */
+        private const val CAMERA2_GRACE_NANOS = 2L * 1_000_000_000L
     }
 }

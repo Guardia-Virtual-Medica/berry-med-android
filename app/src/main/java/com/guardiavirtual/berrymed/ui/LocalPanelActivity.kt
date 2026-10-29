@@ -21,10 +21,16 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.guardiavirtual.berrymed.BerryMedApp
 import com.guardiavirtual.berrymed.R
+import com.guardiavirtual.berrymed.audio.StethoDsp
 import com.guardiavirtual.berrymed.config.pinAccepted
 import com.guardiavirtual.berrymed.databinding.ActivityLocalPanelBinding
+import com.guardiavirtual.berrymed.otoscope.CameraXOtoscope
+import com.guardiavirtual.berrymed.otoscope.OtoscopePower
+import com.guardiavirtual.berrymed.otoscope.OtoscopeSource
+import com.guardiavirtual.berrymed.otoscope.UvcOtoscope
 import com.guardiavirtual.berrymed.service.LocalSnapshot
 import com.guardiavirtual.berrymed.service.MonitorService
+import com.guardiavirtual.berrymed.ui.panel.FreezeFrame
 import com.guardiavirtual.berrymed.ui.panel.PanelFormat
 import kotlin.concurrent.thread
 
@@ -40,7 +46,14 @@ class LocalPanelActivity : AppCompatActivity() {
     private var lastRenderAt = 0L
     private var cameraProvider: ProcessCameraProvider? = null
     private var lensFacing = CameraSelector.LENS_FACING_BACK
-    private var frozen = false
+    private lateinit var cameraFreeze: FreezeFrame
+    private lateinit var otoscopeFreeze: FreezeFrame
+
+    /** La imagen del otoscopio abierta en la tarjeta, por Camera2 o por UVC. */
+    private var otoscope: OtoscopeSource? = null
+
+    /** Camera2 no garantiza dos cámaras abiertas a la vez: con el otoscopio encendido, la de la tablet espera. */
+    private var cameraPaused = false
 
     private val frame = object : Runnable {
         override fun run() {
@@ -48,6 +61,10 @@ class LocalPanelActivity : AppCompatActivity() {
             binding.ecgPaper.tick()
             binding.spo2Wave.tick()
             binding.respWave.tick()
+            if (binding.stethoCard.visibility == View.VISIBLE) {
+                binding.stethoWave.tick()
+                binding.stethoLevel.progress = StethoDsp.levelPercent(runtime().stetho.level)
+            }
             val now = SystemClock.uptimeMillis()
             if (now - lastRenderAt >= RENDER_MS) {
                 lastRenderAt = now
@@ -60,6 +77,16 @@ class LocalPanelActivity : AppCompatActivity() {
     private val cameraPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (!unlocked) return@registerForActivityResult
         if (granted) bindCamera() else binding.cameraMessage.setText(R.string.local_camera_denied)
+    }
+
+    private val otoscopeCameraPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (!unlocked) return@registerForActivityResult
+        if (granted) otoscopeOn() else binding.otoscopeMessage.setText(R.string.local_otoscope_denied)
+    }
+
+    private val micPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (!unlocked) return@registerForActivityResult
+        if (granted) listen() else binding.stethoMessage.setText(R.string.local_stetho_denied)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -78,6 +105,10 @@ class LocalPanelActivity : AppCompatActivity() {
         binding.spo2Wave.samplesPerScreen = SPO2_SAMPLES
         binding.respWave.samplesPerScreen = RESP_SAMPLES
         binding.respWave.traceColor = getColor(R.color.vital_on)
+        binding.stethoWave.attach(live.stetho)
+        // Dos segundos a 500 por segundo: entran dos o tres latidos.
+        binding.stethoWave.samplesPerScreen = STETHO_SAMPLES
+        binding.stethoWave.traceColor = getColor(R.color.status_live)
 
         binding.enterButton.setOnClickListener { tryUnlock() }
         binding.pinInput.setOnEditorActionListener { _, action, _ ->
@@ -114,10 +145,58 @@ class LocalPanelActivity : AppCompatActivity() {
             } else {
                 CameraSelector.LENS_FACING_BACK
             }
-            unfreeze()
+            cameraFreeze.unfreeze()
             bindCamera()
         }
-        binding.freezeButton.setOnClickListener { if (frozen) unfreeze() else freeze() }
+        cameraFreeze = FreezeFrame(
+            binding.frozenImage,
+            binding.freezeButton,
+            binding.cameraMessage,
+            R.string.local_freeze,
+            R.string.local_resume,
+            R.string.local_camera_frozen,
+        )
+        otoscopeFreeze = FreezeFrame(
+            binding.otoscopeFrozen,
+            binding.otoscopeFreezeButton,
+            binding.otoscopeMessage,
+            R.string.local_freeze,
+            R.string.local_resume,
+            R.string.local_camera_frozen,
+        )
+        binding.freezeButton.setOnClickListener {
+            if (cameraFreeze.frozen) cameraFreeze.unfreeze() else cameraFreeze.freeze(binding.cameraPreview.bitmap)
+        }
+        binding.otoscopePowerButton.setOnClickListener {
+            if (otoscope != null || runtime().otoscopeState != OtoscopePower.State.OFF) {
+                otoscopeOff(R.string.local_otoscope_done)
+            } else if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                // Camera2 y UVC piden el permiso de la cámara: en Android 9 en adelante también para un USB de video.
+                otoscopeOn()
+            } else {
+                otoscopeCameraPermission.launch(Manifest.permission.CAMERA)
+            }
+        }
+        binding.otoscopeFreezeButton.setOnClickListener {
+            if (otoscopeFreeze.frozen) otoscopeFreeze.unfreeze() else otoscopeFreeze.freeze(otoscope?.snapshot())
+        }
+
+        binding.stethoListenButton.setOnClickListener {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                listen()
+            } else {
+                micPermission.launch(Manifest.permission.RECORD_AUDIO)
+            }
+        }
+        binding.stethoStopButton.setOnClickListener {
+            runtime().localStethoStop { text -> runOnUiThread { binding.stethoMessage.text = text } }
+        }
+        binding.stethoGainButton.setOnClickListener {
+            val stetho = runtime().stetho
+            stetho.gain = StethoDsp.nextGain(stetho.gain)
+            showStethoGain()
+        }
+        showStethoGain()
     }
 
     /** Cada vez que el panel vuelve al frente pide el PIN de nuevo. */
@@ -129,12 +208,17 @@ class LocalPanelActivity : AppCompatActivity() {
 
     /** Al cerrar con Salir o el gesto de atrás el modo se corta ya: onStop puede tardar segundos. */
     override fun onPause() {
-        if (isFinishing) runtime().stopLocal()
+        if (isFinishing) {
+            releaseOtoscope()
+            runtime().stopLocal()
+        }
         super.onPause()
     }
 
     override fun onStop() {
         binding.ecgPaper.removeCallbacks(frame)
+        // Primero la cámara del otoscopio: stopLocal apaga su puerto, y antes tiene que estar suelta.
+        releaseOtoscope()
         cameraProvider?.unbindAll()
         runtime().stopLocal()
         lock()
@@ -160,7 +244,8 @@ class LocalPanelActivity : AppCompatActivity() {
         binding.lock.visibility = View.VISIBLE
         binding.pinInput.setText("")
         binding.lockMessage.text = ""
-        unfreeze()
+        cameraFreeze.unfreeze()
+        otoscopeFreeze.unfreeze()
     }
 
     private fun tryUnlock() {
@@ -184,6 +269,9 @@ class LocalPanelActivity : AppCompatActivity() {
         binding.ecgPaper.restart()
         binding.spo2Wave.restart()
         binding.respWave.restart()
+        binding.stethoWave.restart()
+        binding.stethoMessage.text = ""
+        binding.otoscopeMessage.text = ""
         unlocked = true
         lastRenderAt = 0L
         binding.ecgPaper.postOnAnimation(frame)
@@ -198,6 +286,16 @@ class LocalPanelActivity : AppCompatActivity() {
         }
     }
 
+    /** El YKUSH3 y la espera de las placas de audio van en el hilo del estetoscopio, nunca acá. */
+    private fun listen() {
+        binding.stethoMessage.setText(R.string.local_stetho_starting)
+        runtime().localStethoStart { text -> runOnUiThread { if (unlocked) binding.stethoMessage.text = text } }
+    }
+
+    private fun showStethoGain() {
+        binding.stethoGainButton.text = getString(R.string.local_stetho_gain, runtime().stetho.gain)
+    }
+
     private fun startCamera() {
         binding.cameraMessage.text = ""
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
@@ -209,14 +307,18 @@ class LocalPanelActivity : AppCompatActivity() {
 
     private fun bindCamera() {
         if (!unlocked) return
+        if (cameraPaused) {
+            binding.cameraMessage.setText(R.string.local_camera_paused)
+            return
+        }
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             binding.cameraMessage.setText(R.string.local_camera_denied)
             return
         }
         val future = ProcessCameraProvider.getInstance(this)
         future.addListener({
-            // Pudo haberse bloqueado mientras la cámara arrancaba.
-            if (!unlocked) return@addListener
+            // Pudo haberse bloqueado, o encendido el otoscopio, mientras la cámara arrancaba.
+            if (!unlocked || cameraPaused) return@addListener
             val provider = try {
                 future.get()
             } catch (_: Exception) {
@@ -241,23 +343,80 @@ class LocalPanelActivity : AppCompatActivity() {
         }, ContextCompat.getMainExecutor(this))
     }
 
-    /** Sólo para mirar con calma: la imagen no se guarda en ningún lado. */
-    private fun freeze() {
-        val bitmap = binding.cameraPreview.bitmap ?: return
-        binding.frozenImage.setImageBitmap(bitmap)
-        binding.frozenImage.visibility = View.VISIBLE
-        binding.freezeButton.setText(R.string.local_resume)
-        binding.cameraMessage.setText(R.string.local_camera_frozen)
-        frozen = true
+    /**
+     * Encender: la cámara de la tablet se suelta, el servicio prende el puerto
+     * y espera al otoscopio en su hilo, y cuando aparece se abre por el camino
+     * que corresponde. Ninguna orden al YKUSH3 sale de este hilo.
+     */
+    private fun otoscopeOn() {
+        pauseTabletCamera()
+        binding.otoscopeMessage.setText(R.string.local_otoscope_starting)
+        val runtime = runtime()
+        runtime.localOtoscopeOn(
+            progress = { text -> runOnUiThread { if (unlocked) binding.otoscopeMessage.text = text } },
+            done = { path, text -> runOnUiThread { onOtoscopeFound(path, text) } },
+        )
     }
 
-    private fun unfreeze() {
-        if (!frozen) return
-        binding.frozenImage.setImageDrawable(null)
-        binding.frozenImage.visibility = View.GONE
-        binding.freezeButton.setText(R.string.local_freeze)
+    private fun onOtoscopeFound(path: OtoscopePower.Path?, text: String) {
+        // Si el panel se bloqueó mientras esperaba, el servicio ya apagó el puerto.
+        if (!unlocked) return
+        binding.otoscopeMessage.text = text
+        if (path == null) {
+            resumeTabletCamera()
+            return
+        }
+        val runtime = runtime()
+        val source = when (path) {
+            OtoscopePower.Path.CAMERA2 -> CameraXOtoscope(this, binding.otoscopePreview)
+            OtoscopePower.Path.UVC ->
+                UvcOtoscope(this, binding.otoscopeTexture, runtime.otoscopeProbe, runtime.otoscopeExecutor, runtime::log)
+        }
+        otoscope = source
+        source.open { reason ->
+            if (otoscope !== source || !unlocked) return@open
+            if (reason == null) {
+                binding.otoscopeMessage.text = getString(R.string.local_otoscope_ready, source.label)
+            } else {
+                runtime.log("[OTOSCOPIO] No abrió ${source.label}: $reason")
+                otoscopeOff(null)
+                binding.otoscopeMessage.text = reason
+            }
+        }
+    }
+
+    /** Apagar: primero se suelta la cámara y recién después el servicio apaga el puerto. */
+    private fun otoscopeOff(message: Int?) {
+        releaseOtoscope()
+        if (message != null) binding.otoscopeMessage.setText(message)
+        resumeTabletCamera()
+    }
+
+    private fun releaseOtoscope() {
+        otoscopeFreeze.unfreeze()
+        val source = otoscope
+        otoscope = null
+        val runtime = runtime()
+        if (source == null) {
+            runtime.localOtoscopeOff()
+        } else {
+            source.close { runtime.localOtoscopeOff() }
+        }
+        cameraPaused = false
+    }
+
+    private fun pauseTabletCamera() {
+        cameraPaused = true
+        cameraFreeze.unfreeze()
+        cameraProvider?.unbindAll()
+        binding.cameraMessage.setText(R.string.local_camera_paused)
+    }
+
+    private fun resumeTabletCamera() {
+        cameraPaused = false
+        if (!unlocked) return
         binding.cameraMessage.text = ""
-        frozen = false
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) bindCamera()
     }
 
     private fun render(s: LocalSnapshot) {
@@ -285,6 +444,16 @@ class LocalPanelActivity : AppCompatActivity() {
         binding.nibpDetail.text = PanelFormat.nibpDetail(s.nibpRunning, s.nibp, pressure)
         binding.measureButton.isEnabled = s.berryUp && !s.nibpRunning
         binding.stopButton.isEnabled = s.nibpRunning
+
+        binding.stethoCard.visibility = if (s.stethoAvailable) View.VISIBLE else View.GONE
+        binding.stethoListenButton.isEnabled = !s.stethoRunning && !s.stethoStarting
+        binding.stethoStopButton.isEnabled = s.stethoRunning || s.stethoStarting
+
+        binding.otoscopeCard.visibility = if (s.otoscopeAvailable) View.VISIBLE else View.GONE
+        val otoscopeIdle = s.otoscopeState == OtoscopePower.State.OFF && otoscope == null
+        binding.otoscopePowerButton.setText(if (otoscopeIdle) R.string.local_otoscope_on else R.string.local_otoscope_off)
+        binding.otoscopePowerButton.isEnabled = s.otoscopeState != OtoscopePower.State.POWERING_OFF
+        binding.otoscopeFreezeButton.isEnabled = otoscope != null && s.otoscopeState == OtoscopePower.State.ON
     }
 
     companion object {
@@ -293,5 +462,6 @@ class LocalPanelActivity : AppCompatActivity() {
         private const val SLOW_MM_S = 12.5f
         private const val SPO2_SAMPLES = 300
         private const val RESP_SAMPLES = 500
+        private const val STETHO_SAMPLES = 1_000
     }
 }

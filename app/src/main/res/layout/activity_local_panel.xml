@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     Panel Local, apaisado: el ECG a la izquierda, los signos en el medio y la
-    cámara con la presión a la derecha. El candado va arriba de todo y tapa el
-    panel hasta que se escribe el PIN.
+    cámara, el otoscopio, la presión y el estetoscopio a la derecha. El
+    candado va arriba de todo y tapa el panel hasta que se escribe el PIN.
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -192,7 +192,7 @@
             </LinearLayout>
         </ScrollView>
 
-        <!-- Derecha: cámara y presión. -->
+        <!-- Derecha: cámara, otoscopio, presión y estetoscopio; si no entran, se desplaza. -->
         <ScrollView
             android:layout_width="0dp"
             android:layout_height="match_parent"
@@ -263,6 +263,79 @@
                     <TextView android:id="@+id/cameraMessage" style="@style/LocalDetail" />
                 </LinearLayout>
 
+                <!-- Debajo de la cámara, que queda en pausa mientras el otoscopio está encendido. -->
+                <LinearLayout
+                    android:id="@+id/otoscopeCard"
+                    style="@style/LocalCard"
+                    android:visibility="gone">
+
+                    <TextView style="@style/LocalCardTitle" android:text="@string/local_otoscope" />
+
+                    <!--
+                        Cuadrado, como la imagen del otoscopio. Una sola de las dos vistas
+                        se muestra: PreviewView si va por Camera2, TextureView si va por
+                        UVC. Las dos dejan sacar la imagen para Congelar.
+                    -->
+                    <FrameLayout
+                        android:layout_width="220dp"
+                        android:layout_height="220dp"
+                        android:layout_gravity="center_horizontal"
+                        android:layout_marginTop="6dp"
+                        android:background="@color/monitor">
+
+                        <androidx.camera.view.PreviewView
+                            android:id="@+id/otoscopePreview"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:visibility="gone"
+                            app:implementationMode="compatible"
+                            app:scaleType="fitCenter" />
+
+                        <TextureView
+                            android:id="@+id/otoscopeTexture"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:visibility="gone" />
+
+                        <ImageView
+                            android:id="@+id/otoscopeFrozen"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@color/monitor"
+                            android:contentDescription="@string/local_camera_frozen"
+                            android:scaleType="fitCenter"
+                            android:visibility="gone" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/otoscopePowerButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="6dp"
+                            android:layout_weight="1"
+                            android:text="@string/local_otoscope_on" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/otoscopeFreezeButton"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:enabled="false"
+                            android:text="@string/local_freeze"
+                            android:textColor="@color/vital_on"
+                            app:strokeColor="@color/vital_dim" />
+                    </LinearLayout>
+
+                    <TextView android:id="@+id/otoscopeMessage" style="@style/LocalDetail" />
+                </LinearLayout>
+
                 <LinearLayout style="@style/LocalCard">
 
                     <TextView style="@style/LocalCardTitle" android:text="@string/local_nibp" />
@@ -300,6 +373,72 @@
                     </LinearLayout>
 
                     <TextView android:id="@+id/nibpMessage" style="@style/LocalDetail" />
+                </LinearLayout>
+
+                <!--
+                    Debajo de la presión: en 1280×800 dp la cámara, el otoscopio y la
+                    presión ya llenan la columna, y la presión se usa más.
+                -->
+                <LinearLayout
+                    android:id="@+id/stethoCard"
+                    style="@style/LocalCard"
+                    android:visibility="gone">
+
+                    <TextView style="@style/LocalCardTitle" android:text="@string/local_stetho" />
+
+                    <com.guardiavirtual.berrymed.ui.panel.WaveformView
+                        android:id="@+id/stethoWave"
+                        android:layout_width="match_parent"
+                        android:layout_height="64dp"
+                        android:layout_marginTop="4dp" />
+
+                    <com.google.android.material.progressindicator.LinearProgressIndicator
+                        android:id="@+id/stethoLevel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:contentDescription="@string/local_stetho_level"
+                        android:max="100"
+                        app:indicatorColor="@color/status_live"
+                        app:trackColor="@color/monitor"
+                        app:trackThickness="6dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/stethoListenButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="6dp"
+                            android:layout_weight="1"
+                            android:text="@string/local_stetho_listen" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/stethoStopButton"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="6dp"
+                            android:layout_weight="1"
+                            android:text="@string/local_stetho_stop"
+                            android:textColor="@color/vital_on"
+                            app:strokeColor="@color/vital_dim" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/stethoGainButton"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:minWidth="0dp"
+                            android:textColor="@color/vital_on"
+                            app:strokeColor="@color/vital_dim" />
+                    </LinearLayout>
+
+                    <TextView android:id="@+id/stethoMessage" style="@style/LocalDetail" />
                 </LinearLayout>
             </LinearLayout>
         </ScrollView>
