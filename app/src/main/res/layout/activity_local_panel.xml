@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     Panel Local, apaisado: el ECG a la izquierda, los signos en el medio y la
-    cámara con la presión a la derecha. El candado va arriba de todo y tapa el
-    panel hasta que se escribe el PIN.
+    cámara, la presión y el estetoscopio a la derecha. El candado va arriba de
+    todo y tapa el panel hasta que se escribe el PIN.
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -192,7 +192,7 @@
             </LinearLayout>
         </ScrollView>
 
-        <!-- Derecha: cámara y presión. -->
+        <!-- Derecha: cámara, presión y estetoscopio. -->
         <ScrollView
             android:layout_width="0dp"
             android:layout_height="match_parent"
@@ -300,6 +300,72 @@
                     </LinearLayout>
 
                     <TextView android:id="@+id/nibpMessage" style="@style/LocalDetail" />
+                </LinearLayout>
+
+                <!--
+                    Debajo de la presión: en 1280×800 dp la cámara y la presión ya
+                    llenan la columna, y la presión se usa más que el estetoscopio.
+                -->
+                <LinearLayout
+                    android:id="@+id/stethoCard"
+                    style="@style/LocalCard"
+                    android:visibility="gone">
+
+                    <TextView style="@style/LocalCardTitle" android:text="@string/local_stetho" />
+
+                    <com.guardiavirtual.berrymed.ui.panel.WaveformView
+                        android:id="@+id/stethoWave"
+                        android:layout_width="match_parent"
+                        android:layout_height="64dp"
+                        android:layout_marginTop="4dp" />
+
+                    <com.google.android.material.progressindicator.LinearProgressIndicator
+                        android:id="@+id/stethoLevel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:contentDescription="@string/local_stetho_level"
+                        android:max="100"
+                        app:indicatorColor="@color/status_live"
+                        app:trackColor="@color/monitor"
+                        app:trackThickness="6dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/stethoListenButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="6dp"
+                            android:layout_weight="1"
+                            android:text="@string/local_stetho_listen" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/stethoStopButton"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="6dp"
+                            android:layout_weight="1"
+                            android:text="@string/local_stetho_stop"
+                            android:textColor="@color/vital_on"
+                            app:strokeColor="@color/vital_dim" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/stethoGainButton"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:minWidth="0dp"
+                            android:textColor="@color/vital_on"
+                            app:strokeColor="@color/vital_dim" />
+                    </LinearLayout>
+
+                    <TextView android:id="@+id/stethoMessage" style="@style/LocalDetail" />
                 </LinearLayout>
             </LinearLayout>
         </ScrollView>

@@ -58,6 +58,9 @@ class LiveFeed {
     val spo2 = Channel(WAVE_CAPACITY)
     val resp = Channel(WAVE_CAPACITY)
 
+    /** La onda del estetoscopio, ya reducida a 500 muestras por segundo. La escribe su propio hilo, no el parser. */
+    val stetho = Channel(STETHO_CAPACITY)
+
     @Volatile var nibp: NibpState = NibpState(status = -1, cuffMmhg = 0)
         private set
 
@@ -84,6 +87,7 @@ class LiveFeed {
         ecg.values.forEach(Channel::clear)
         spo2.clear()
         resp.clear()
+        stetho.clear()
         nibp = NibpState(status = -1, cuffMmhg = 0)
     }
 
@@ -91,5 +95,8 @@ class LiveFeed {
         /** Diez segundos de ECG a 250 muestras por segundo: más que lo que entra en pantalla. */
         const val ECG_CAPACITY = 2_500
         const val WAVE_CAPACITY = 2_500
+
+        /** Diez segundos del estetoscopio a 500 por segundo. */
+        const val STETHO_CAPACITY = 5_000
     }
 }

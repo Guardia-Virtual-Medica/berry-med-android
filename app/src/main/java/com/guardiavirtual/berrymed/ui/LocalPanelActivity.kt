@@ -21,6 +21,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.guardiavirtual.berrymed.BerryMedApp
 import com.guardiavirtual.berrymed.R
+import com.guardiavirtual.berrymed.audio.StethoDsp
 import com.guardiavirtual.berrymed.config.pinAccepted
 import com.guardiavirtual.berrymed.databinding.ActivityLocalPanelBinding
 import com.guardiavirtual.berrymed.service.LocalSnapshot
@@ -48,6 +49,10 @@ class LocalPanelActivity : AppCompatActivity() {
             binding.ecgPaper.tick()
             binding.spo2Wave.tick()
             binding.respWave.tick()
+            if (binding.stethoCard.visibility == View.VISIBLE) {
+                binding.stethoWave.tick()
+                binding.stethoLevel.progress = StethoDsp.levelPercent(runtime().stetho.level)
+            }
             val now = SystemClock.uptimeMillis()
             if (now - lastRenderAt >= RENDER_MS) {
                 lastRenderAt = now
@@ -60,6 +65,11 @@ class LocalPanelActivity : AppCompatActivity() {
     private val cameraPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (!unlocked) return@registerForActivityResult
         if (granted) bindCamera() else binding.cameraMessage.setText(R.string.local_camera_denied)
+    }
+
+    private val micPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (!unlocked) return@registerForActivityResult
+        if (granted) listen() else binding.stethoMessage.setText(R.string.local_stetho_denied)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -78,6 +88,10 @@ class LocalPanelActivity : AppCompatActivity() {
         binding.spo2Wave.samplesPerScreen = SPO2_SAMPLES
         binding.respWave.samplesPerScreen = RESP_SAMPLES
         binding.respWave.traceColor = getColor(R.color.vital_on)
+        binding.stethoWave.attach(live.stetho)
+        // Dos segundos a 500 por segundo: entran dos o tres latidos.
+        binding.stethoWave.samplesPerScreen = STETHO_SAMPLES
+        binding.stethoWave.traceColor = getColor(R.color.status_live)
 
         binding.enterButton.setOnClickListener { tryUnlock() }
         binding.pinInput.setOnEditorActionListener { _, action, _ ->
@@ -118,6 +132,23 @@ class LocalPanelActivity : AppCompatActivity() {
             bindCamera()
         }
         binding.freezeButton.setOnClickListener { if (frozen) unfreeze() else freeze() }
+
+        binding.stethoListenButton.setOnClickListener {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                listen()
+            } else {
+                micPermission.launch(Manifest.permission.RECORD_AUDIO)
+            }
+        }
+        binding.stethoStopButton.setOnClickListener {
+            runtime().localStethoStop { text -> runOnUiThread { binding.stethoMessage.text = text } }
+        }
+        binding.stethoGainButton.setOnClickListener {
+            val stetho = runtime().stetho
+            stetho.gain = StethoDsp.nextGain(stetho.gain)
+            showStethoGain()
+        }
+        showStethoGain()
     }
 
     /** Cada vez que el panel vuelve al frente pide el PIN de nuevo. */
@@ -184,6 +215,8 @@ class LocalPanelActivity : AppCompatActivity() {
         binding.ecgPaper.restart()
         binding.spo2Wave.restart()
         binding.respWave.restart()
+        binding.stethoWave.restart()
+        binding.stethoMessage.text = ""
         unlocked = true
         lastRenderAt = 0L
         binding.ecgPaper.postOnAnimation(frame)
@@ -196,6 +229,16 @@ class LocalPanelActivity : AppCompatActivity() {
             val text = action()
             runOnUiThread { binding.nibpMessage.text = text }
         }
+    }
+
+    /** El YKUSH3 y la espera de las placas de audio van en el hilo del estetoscopio, nunca acá. */
+    private fun listen() {
+        binding.stethoMessage.setText(R.string.local_stetho_starting)
+        runtime().localStethoStart { text -> runOnUiThread { if (unlocked) binding.stethoMessage.text = text } }
+    }
+
+    private fun showStethoGain() {
+        binding.stethoGainButton.text = getString(R.string.local_stetho_gain, runtime().stetho.gain)
     }
 
     private fun startCamera() {
@@ -285,6 +328,10 @@ class LocalPanelActivity : AppCompatActivity() {
         binding.nibpDetail.text = PanelFormat.nibpDetail(s.nibpRunning, s.nibp, pressure)
         binding.measureButton.isEnabled = s.berryUp && !s.nibpRunning
         binding.stopButton.isEnabled = s.nibpRunning
+
+        binding.stethoCard.visibility = if (s.stethoAvailable) View.VISIBLE else View.GONE
+        binding.stethoListenButton.isEnabled = !s.stethoRunning && !s.stethoStarting
+        binding.stethoStopButton.isEnabled = s.stethoRunning || s.stethoStarting
     }
 
     companion object {
@@ -293,5 +340,6 @@ class LocalPanelActivity : AppCompatActivity() {
         private const val SLOW_MM_S = 12.5f
         private const val SPO2_SAMPLES = 300
         private const val RESP_SAMPLES = 500
+        private const val STETHO_SAMPLES = 1_000
     }
 }

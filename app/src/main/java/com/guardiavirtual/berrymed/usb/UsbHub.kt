@@ -90,6 +90,10 @@ class UsbHub(context: Context) {
 
     fun ykushPlugged(): Boolean = manager.deviceList.values.any { isYkush(it) }
 
+    /** Si hay enchufado un dispositivo con ese fabricante y producto, tenga permiso o no. */
+    fun plugged(vendorId: Int, productId: Int): Boolean =
+        manager.deviceList.values.any { it.vendorId == vendorId && it.productId == productId }
+
     fun isPresent(device: UsbDevice): Boolean =
         manager.deviceList.values.any { it.deviceId == device.deviceId }
 

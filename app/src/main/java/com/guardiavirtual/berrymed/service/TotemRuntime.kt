@@ -4,6 +4,7 @@ package com.guardiavirtual.berrymed.service
 import android.content.Context
 import android.hardware.usb.UsbDevice
 import android.util.Log
+import com.guardiavirtual.berrymed.audio.StethoscopeLink
 import com.guardiavirtual.berrymed.config.BerryConfig
 import com.guardiavirtual.berrymed.config.ConfigStore
 import com.guardiavirtual.berrymed.net.MetricsPoster
@@ -22,6 +23,7 @@ import com.guardiavirtual.berrymed.protocol.splitWindow
 import com.guardiavirtual.berrymed.protocol.summarize
 import com.guardiavirtual.berrymed.usb.BerryLink
 import com.guardiavirtual.berrymed.usb.DeviceInventory
+import com.guardiavirtual.berrymed.usb.KnownDevices
 import com.guardiavirtual.berrymed.usb.ThermometerLink
 import com.guardiavirtual.berrymed.usb.UsbHub
 import com.guardiavirtual.berrymed.usb.YkushHub
@@ -74,6 +76,22 @@ class TotemRuntime(context: Context) {
     private val nibpStopper = Executors.newSingleThreadExecutor { runnable ->
         Thread(runnable, "berry-nibp-stop").apply { isDaemon = true }
     }
+
+    /**
+     * Lo que hace el Panel Local con el estetoscopio y el YKUSH3: el hub
+     * bloquea hasta un segundo por orden y después se espera a que Android
+     * vea las placas de audio. Un solo hilo, así encender, parar y apagar al
+     * cerrar el panel salen en el orden en que se pidieron.
+     */
+    private val stethoWorker = Executors.newSingleThreadExecutor { runnable ->
+        Thread(runnable, "berry-panel-stetho").apply { isDaemon = true }
+    }
+    private val stethoPorts = PanelPorts()
+
+    /** Cambia con cada Parar y cada cierre del panel: una espera de Escuchar que quedó atrás se abandona. */
+    @Volatile private var stethoEpoch = 0L
+    @Volatile private var stethoStarting = false
+
     private val watch = SessionWatch()
     private val sessionLock = Any()
 
@@ -100,6 +118,10 @@ class TotemRuntime(context: Context) {
 
     /** Las muestras en vivo para el Panel Local; el parser las copia acá apenas las decodifica. */
     val live = LiveFeed()
+
+    /** El estetoscopio del Panel Local; sólo suena con el panel abierto. */
+    val stetho = StethoscopeLink(appContext, live.stetho, ::log)
+
     @Volatile private var lastWindow: SampleWindow? = null
     @Volatile private var inventoryCache: DeviceInventory.Snapshot? = null
     val console = ConsoleLog()
@@ -445,11 +467,12 @@ class TotemRuntime(context: Context) {
         return null
     }
 
-    /** Corta el modo local en el acto; el STOP de la presión sale en otro hilo. */
+    /** Corta el modo local en el acto; el STOP de la presión y el YKUSH3 salen en otros hilos. */
     fun stopLocal() {
         if (!gate.closeLocal()) return
         // Una presión pedida desde el panel no queda inflando el manguito.
         stopNibpInBackground()
+        stopStethoscope(closing = true)
         log("[LOCAL] Panel Local cerrado")
         publish()
     }
@@ -467,6 +490,91 @@ class TotemRuntime(context: Context) {
         return "Medición detenida"
     }
 
+    /**
+     * Escuchar: enciende en el YKUSH3 los puertos del adaptador y del
+     * auricular que estén apagados, espera hasta 5 s a que Android vea las
+     * dos placas de audio y recién ahí abre el audio. Sin YKUSH3 se intenta
+     * directo. Todo en otro hilo; [done] se llama desde ese hilo con el
+     * mensaje para la tarjeta.
+     */
+    fun localStethoStart(done: (String) -> Unit) {
+        if (!localMode) {
+            done("El panel no está activo.")
+            return
+        }
+        if (stetho.running || stethoStarting) {
+            done(if (stethoStarting) "Encendiendo…" else "Ya está escuchando.")
+            return
+        }
+        stethoStarting = true
+        val epoch = stethoEpoch
+        stethoWorker.execute {
+            try {
+                done(startStethoscope(epoch))
+            } catch (error: Exception) {
+                log("[ESTETO] Falló al empezar: $error")
+                done("No se pudo empezar: ${error.message ?: error.javaClass.simpleName}")
+            } finally {
+                stethoStarting = false
+            }
+        }
+    }
+
+    private fun startStethoscope(epoch: Long): String {
+        val cfg = config
+        val notes = ArrayList<String>()
+        if (ykush.plugged()) {
+            val ports = listOf(cfg.ykushStethoscopePort, cfg.ykushHeadsetPort)
+            for (port in stethoPorts.toTurnOn(ports, ykush.readAll())) {
+                if (stethoEpoch != epoch) return ""
+                if (ykush.setPort(port, true)) {
+                    stethoPorts.turnedOn(port)
+                } else {
+                    notes += "El YKUSH3 no encendió el puerto $port."
+                }
+            }
+        } else {
+            notes += "Sin YKUSH3: se intenta directo."
+        }
+        // Encender un puerto es enchufar el equipo: Android tarda un momento en ver la placa de audio.
+        val deadline = System.nanoTime() + STETHO_WAIT_NANOS
+        var found = stetho.devices(cfg)
+        while ((found.input == null || found.output == null) && System.nanoTime() < deadline) {
+            if (stethoEpoch != epoch || !localMode) return ""
+            sleep(DEVICE_POLL_MS)
+            found = stetho.devices(cfg)
+        }
+        // Parar o cerrar el panel durante la espera: no se abre nada.
+        if (stethoEpoch != epoch || !localMode) return ""
+        val reason = stetho.start(cfg)
+        if (reason != null) return (notes + reason).joinToString(" ")
+        if (!stetho.playing) notes += "Sin auricular: sólo se ve la onda."
+        return (listOf("Escuchando.") + notes).joinToString(" ")
+    }
+
+    /** Parar: deja de escuchar; los puertos del YKUSH3 quedan como están. */
+    fun localStethoStop(done: (String) -> Unit) {
+        stopStethoscope(closing = false)
+        stethoWorker.execute { done("Detenido.") }
+    }
+
+    /**
+     * Corta el audio en el hilo del estetoscopio y, al cerrar el panel,
+     * apaga los puertos que el panel encendió. Cambiar el epoch primero hace
+     * que una espera de Escuchar en curso se abandone enseguida.
+     */
+    private fun stopStethoscope(closing: Boolean) {
+        stethoEpoch++
+        stethoWorker.execute {
+            stetho.stop()
+            if (!closing) return@execute
+            val ports = stethoPorts.takeToTurnOff()
+            if (ports.isEmpty() || !ykush.plugged()) return@execute
+            for (port in ports) ykush.setPort(port, false)
+            log("[ESTETO] Panel cerrado: se apagaron los puertos ${ports.joinToString(", ")} del YKUSH3")
+        }
+    }
+
     fun localSnapshot(): LocalSnapshot {
         val stats = parser.stats()
         val reading = thermo.latest()
@@ -481,6 +589,11 @@ class TotemRuntime(context: Context) {
             thermoAge = if (thermoAt == 0L) null else (System.nanoTime() - thermoAt) / 1_000_000_000L,
             nibpRunning = berry.nibpRunning,
             nibp = live.nibp,
+            stethoAvailable = stetho.running || ykush.plugged() ||
+                hub.plugged(KnownDevices.STETHO_ADAPTER_VENDOR, KnownDevices.STETHO_ADAPTER_PRODUCT),
+            stethoStarting = stethoStarting,
+            stethoRunning = stetho.running,
+            stethoPlaying = stetho.playing,
         )
     }
 
@@ -579,5 +692,7 @@ class TotemRuntime(context: Context) {
         const val TAG = "BerryMed"
         private const val TICK_NANOS = 1_000_000_000L
         private const val INVENTORY_NANOS = 3L * 1_000_000_000L
+        private const val STETHO_WAIT_NANOS = 5L * 1_000_000_000L
+        private const val DEVICE_POLL_MS = 250L
     }
 }

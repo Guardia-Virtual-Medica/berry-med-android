@@ -17,4 +17,9 @@ data class LocalSnapshot(
     val thermoAge: Long?,
     val nibpRunning: Boolean,
     val nibp: LiveFeed.NibpState,
+    /** La tarjeta del estetoscopio se muestra si está el adaptador o el YKUSH3 que lo enciende. */
+    val stethoAvailable: Boolean,
+    val stethoStarting: Boolean,
+    val stethoRunning: Boolean,
+    val stethoPlaying: Boolean,
 )
