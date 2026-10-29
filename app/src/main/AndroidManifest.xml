@@ -26,6 +26,18 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
 
+    <!--
+        El paso Kiosco del configurador pregunta qué app de inicio está elegida.
+        Desde Android 11 las otras apps no se ven sin declararlas: sin esto, con
+        otro launcher elegido Android contesta Berry Med, la única que ve.
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.HOME" />
+        </intent>
+    </queries>
+
     <application
         android:name=".BerryMedApp"
         android:allowBackup="false"

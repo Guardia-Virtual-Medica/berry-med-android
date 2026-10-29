@@ -52,4 +52,16 @@ class BerryConfigTest {
         assertFalse(pinAccepted("", "2468"))
         assertFalse(pinAccepted(null, null))
     }
+
+    @Test
+    fun theKioskUrlIsEmptyOrHttpWithAHost() {
+        assertTrue(kioskUrlAccepted(""))
+        assertTrue(kioskUrlAccepted("   "))
+        assertTrue(kioskUrlAccepted("https://kiosco.example.com/clinica"))
+        assertTrue(kioskUrlAccepted(" HTTP://10.0.2.2:8000/kiosco.html "))
+        assertFalse(kioskUrlAccepted("kiosco.example.com/clinica"))
+        assertFalse(kioskUrlAccepted("ftp://kiosco.example.com"))
+        assertFalse(kioskUrlAccepted("https://"))
+        assertFalse(kioskUrlAccepted("https://kiosco example.com"))
+    }
 }

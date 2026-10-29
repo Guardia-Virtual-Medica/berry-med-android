@@ -247,6 +247,12 @@
                         style="@style/StepLabel"
                         android:text="@string/step_device"
                         android:textColor="@color/ink_soft" />
+
+                    <TextView
+                        android:id="@+id/stepKiosk"
+                        style="@style/StepLabel"
+                        android:text="@string/step_kiosk"
+                        android:textColor="@color/ink_soft" />
                 </LinearLayout>
 
                 <ViewFlipper
@@ -297,18 +303,6 @@
                             app:helperText="@string/help_from_environment">
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/apiUrl"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:inputType="textUri"
-                                android:singleLine="true" />
-                        </com.google.android.material.textfield.TextInputLayout>
-
-                        <com.google.android.material.textfield.TextInputLayout
-                            style="@style/Field"
-                            android:hint="@string/hint_kiosk_url"
-                            app:helperText="@string/help_kiosk_url">
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/kioskUrl"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:inputType="textUri"
@@ -577,6 +571,46 @@
                                 android:singleLine="true"
                                 android:text="1515" />
                         </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
+
+                    <!--
+                        El paso Kiosco: la URL y lo que hace falta para que el kiosco
+                        corra dentro de Berry Med. El estado de cada ítem se recalcula
+                        al volver a la pantalla y al mostrar el paso.
+                    -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <TextView style="@style/FormTitle" android:layout_marginTop="8dp" android:text="@string/section_kiosk" />
+                        <TextView style="@style/Help" android:text="@string/help_kiosk" />
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Field"
+                            android:hint="@string/hint_kiosk_url"
+                            app:helperText="@string/help_kiosk_url">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/kioskUrl"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="textUri"
+                                android:singleLine="true" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <TextView style="@style/FormTitle" android:layout_marginTop="16dp" android:text="@string/section_kiosk_checklist" />
+                        <TextView style="@style/Help" android:text="@string/help_kiosk_checklist" />
+
+                        <include android:id="@+id/checkPermissions" layout="@layout/item_kiosk_check" />
+                        <include android:id="@+id/checkHome" layout="@layout/item_kiosk_check" />
+                        <include android:id="@+id/checkService" layout="@layout/item_kiosk_check" />
+                        <include android:id="@+id/checkBattery" layout="@layout/item_kiosk_check" />
+                        <include android:id="@+id/checkTotem" layout="@layout/item_kiosk_check" />
+
+                        <TextView style="@style/FormTitle" android:layout_marginTop="20dp" android:text="@string/section_kiosk_outside" />
+                        <TextView style="@style/Help" android:layout_marginTop="6dp" android:text="@string/kiosk_outside_ondoctor" />
+                        <TextView style="@style/Help" android:layout_marginTop="6dp" android:text="@string/kiosk_outside_chrome" />
+                        <TextView style="@style/Help" android:layout_marginTop="6dp" android:text="@string/kiosk_outside_exit" />
                     </LinearLayout>
                 </ViewFlipper>
 

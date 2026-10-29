@@ -10,6 +10,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.PowerManager
 import android.provider.Settings
 import android.text.Editable
 import android.text.TextWatcher
@@ -33,8 +34,11 @@ import com.guardiavirtual.berrymed.config.Environment
 import com.guardiavirtual.berrymed.config.buildMetricsUrl
 import com.guardiavirtual.berrymed.config.defaultChannel
 import com.guardiavirtual.berrymed.config.hasWebScheme
+import com.guardiavirtual.berrymed.config.kioskUrlAccepted
 import com.guardiavirtual.berrymed.config.ykushPortOrDefault
 import com.guardiavirtual.berrymed.databinding.ActivityMainBinding
+import com.guardiavirtual.berrymed.databinding.ItemKioskCheckBinding
+import com.guardiavirtual.berrymed.service.ForegroundAccess
 import com.guardiavirtual.berrymed.service.MonitorService
 import com.guardiavirtual.berrymed.service.TotemRuntime
 import com.guardiavirtual.berrymed.service.TotemState
@@ -45,10 +49,16 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private var step = 0
     private var filling = false
+    /** La URL del kiosco guardada: "Abrir el kiosco" sólo con la del campo ya guardada. */
+    private var savedKioskUrl = ""
     private val handler = Handler(Looper.getMainLooper())
     private val tick = object : Runnable {
         override fun run() {
-            if (::binding.isInitialized) render(runtime().state.value)
+            if (::binding.isInitialized) {
+                render(runtime().state.value)
+                // Los tipos del servicio cambian un rato después de promote: el paso los sigue.
+                if (step == STEP_KIOSK) renderChecklist()
+            }
             handler.postDelayed(this, 500)
         }
     }
@@ -68,6 +78,12 @@ class MainActivity : AppCompatActivity() {
         binding.apiUrl.addTextChangedListener(watcher)
         binding.totemId.addTextChangedListener(watcher)
         binding.totemId.addTextChangedListener(ChannelFollower())
+        // "Abrir el kiosco" se habilita sólo con la URL del campo ya guardada.
+        binding.kioskUrl.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = renderChecklist()
+            override fun afterTextChanged(s: Editable?) = Unit
+        })
         binding.environment.setOnCheckedStateChangeListener { _, _ ->
             if (!filling) applyEnvironment()
         }
@@ -76,7 +92,7 @@ class MainActivity : AppCompatActivity() {
             clearMessage()
             showStep(step - 1)
         }
-        listOf(binding.stepDestination, binding.stepOrders, binding.stepDevice).forEachIndexed { index, label ->
+        stepLabels().forEachIndexed { index, label ->
             label.setOnClickListener {
                 clearMessage()
                 showStep(index)
@@ -87,6 +103,11 @@ class MainActivity : AppCompatActivity() {
         binding.usbButton.setOnClickListener { runtime().requestUsbPermissionAgain() }
         binding.testingButton.setOnClickListener { startActivity(Intent(this, TestingActivity::class.java)) }
         binding.localPanelButton.setOnClickListener { startActivity(Intent(this, LocalPanelActivity::class.java)) }
+        binding.checkPermissions.action.setOnClickListener { askMediaPermissions() }
+        binding.checkHome.action.setOnClickListener { openHomeSettings() }
+        // El mismo pedido que el botón "Evitar que se duerma" de arriba.
+        binding.checkBattery.action.setOnClickListener { askBatteryExemption() }
+        binding.checkTotem.action.setOnClickListener { startActivity(Intent(this, KioskActivity::class.java)) }
         thread(name = "berry-config-load") {
             val saved = try {
                 runBlocking { runtime().store.load() }
@@ -95,6 +116,7 @@ class MainActivity : AppCompatActivity() {
                 null
             }
             handler.post {
+                savedKioskUrl = saved?.kioskUrl?.trim().orEmpty()
                 fill(saved ?: BerryConfig())
                 if (saved == null) {
                     binding.formMessage.setTextColor(getColor(R.color.form_error))
@@ -113,6 +135,8 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         MonitorService.promote(this)
+        // Al volver de Ajustes (app de inicio, batería, permisos) la lista muestra lo nuevo.
+        renderChecklist()
     }
 
     /**
@@ -125,13 +149,125 @@ class MainActivity : AppCompatActivity() {
             add(Manifest.permission.CAMERA)
             add(Manifest.permission.RECORD_AUDIO)
         }.filter { ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED }
-        if (wanted.isNotEmpty()) ActivityCompat.requestPermissions(this, wanted.toTypedArray(), 1)
+        if (wanted.isNotEmpty()) ActivityCompat.requestPermissions(this, wanted.toTypedArray(), REQUEST_STARTUP)
+    }
+
+    /** "Dar permisos" del paso Kiosco: cámara y micrófono, los que falten. */
+    private fun askMediaPermissions() {
+        val missing = MEDIA_PERMISSIONS.filterNot(::granted)
+        if (missing.isEmpty()) return renderChecklist()
+        ActivityCompat.requestPermissions(this, missing.toTypedArray(), REQUEST_MEDIA)
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         // Recién otorgados: el servicio los suma ahora, con la pantalla todavía adelante.
         MonitorService.promote(this)
+        renderChecklist()
+        if (requestCode != REQUEST_MEDIA || grantResults.isEmpty()) return
+        // Negado y sin explicación pendiente: Android ya no muestra el diálogo
+        // (se negó dos veces o "No volver a preguntar"). Sólo quedan los ajustes de la app.
+        val blocked = permissions.indices.any { i ->
+            grantResults.getOrNull(i) != PackageManager.PERMISSION_GRANTED &&
+                !ActivityCompat.shouldShowRequestPermissionRationale(this, permissions[i])
+        }
+        if (blocked) openAppSettings()
+    }
+
+    private fun granted(permission: String): Boolean =
+        ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
+
+    private fun openAppSettings() {
+        try {
+            startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+        } catch (_: ActivityNotFoundException) {
+            startActivity(Intent(Settings.ACTION_SETTINGS))
+        }
+    }
+
+    /** La lista de apps de inicio; algunas tablets no la tienen y queda Ajustes a secas. */
+    private fun openHomeSettings() {
+        try {
+            startActivity(Intent(Settings.ACTION_HOME_SETTINGS))
+        } catch (_: ActivityNotFoundException) {
+            startActivity(Intent(Settings.ACTION_SETTINGS))
+        }
+    }
+
+    /** La app que abre el botón de inicio. Con otra elegida, o sin elegir (el selector), no es Berry Med. */
+    private fun berryMedIsHome(): Boolean {
+        val home = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+        val resolved = packageManager.resolveActivity(home, PackageManager.MATCH_DEFAULT_ONLY)
+        return resolved?.activityInfo?.packageName == packageName
+    }
+
+    private fun ignoringBatteryOptimizations(): Boolean =
+        getSystemService(PowerManager::class.java)?.isIgnoringBatteryOptimizations(packageName) == true
+
+    /** Junta lo que dice Android y pinta la lista; qué está hecho lo decide [KioskChecklist]. */
+    private fun renderChecklist() {
+        if (!::binding.isInitialized) return
+        val types = runtime().foregroundTypes
+        val typed = binding.kioskUrl.text?.toString()?.trim().orEmpty()
+        val input = KioskChecklistInput(
+            cameraGranted = granted(Manifest.permission.CAMERA),
+            microphoneGranted = granted(Manifest.permission.RECORD_AUDIO),
+            berryMedIsHome = berryMedIsHome(),
+            sdkInt = Build.VERSION.SDK_INT,
+            serviceCamera = ForegroundAccess.hasCamera(types),
+            serviceMicrophone = ForegroundAccess.hasMicrophone(types),
+            ignoringBatteryOptimizations = ignoringBatteryOptimizations(),
+            kioskUrlSaved = typed.isNotEmpty() && kioskUrlAccepted(typed) && typed == savedKioskUrl,
+        )
+        for (item in KioskChecklist.items(input)) {
+            val done = item.done == true
+            when (item.check) {
+                KioskCheck.PERMISSIONS -> paintCheck(
+                    binding.checkPermissions, item, R.string.check_permissions,
+                    getString(if (done) R.string.check_permissions_done else R.string.check_permissions_missing),
+                    R.string.check_permissions_action,
+                )
+                KioskCheck.HOME -> paintCheck(
+                    binding.checkHome, item, R.string.check_home,
+                    getString(if (done) R.string.check_home_done else R.string.check_home_missing),
+                    R.string.check_home_action,
+                )
+                KioskCheck.SERVICE -> paintCheck(
+                    binding.checkService, item, R.string.check_service,
+                    getString(if (done) R.string.check_service_done else R.string.check_service_missing),
+                    null,
+                )
+                KioskCheck.BATTERY -> paintCheck(
+                    binding.checkBattery, item, R.string.check_battery,
+                    getString(if (done) R.string.check_battery_done else R.string.check_battery_missing),
+                    R.string.battery,
+                )
+                KioskCheck.TOTEM -> paintCheck(
+                    binding.checkTotem, item, R.string.check_totem,
+                    if (item.actionEnabled) {
+                        getString(R.string.check_totem_detail)
+                    } else {
+                        getString(R.string.check_totem_detail) + "\n" + getString(R.string.check_totem_needs_url)
+                    },
+                    R.string.check_totem_action,
+                )
+            }
+        }
+    }
+
+    /** Verde hecho, ámbar falta; gris cuando Berry Med no lo puede saber. */
+    private fun paintCheck(row: ItemKioskCheckBinding, item: KioskCheckItem, title: Int, detail: String, action: Int?) {
+        val color = when (item.done) {
+            true -> R.color.ok
+            false -> R.color.warn
+            null -> R.color.ink_soft
+        }
+        row.dot.backgroundTintList = ColorStateList.valueOf(getColor(color))
+        row.title.setText(title)
+        row.detail.text = detail
+        row.action.visibility = if (item.action && action != null) View.VISIBLE else View.GONE
+        if (action != null) row.action.setText(action)
+        row.action.isEnabled = item.actionEnabled
     }
 
     override fun onStop() {
@@ -204,14 +340,21 @@ class MainActivity : AppCompatActivity() {
         showStep(step + 1)
     }
 
+    /** Las etiquetas de arriba, en el orden de los hijos de `steps`. */
+    private fun stepLabels() = listOf(binding.stepDestination, binding.stepOrders, binding.stepDevice, binding.stepKiosk)
+
+    /** El último paso sale de los hijos del `ViewFlipper`: sumar un paso no obliga a tocar los topes. */
+    private fun lastStep() = binding.steps.childCount - 1
+
     private fun showStep(index: Int) {
-        step = index.coerceIn(0, 2)
+        val last = lastStep()
+        step = index.coerceIn(0, last)
         binding.steps.displayedChild = step
         binding.backButton.visibility = if (step == 0) View.GONE else View.VISIBLE
-        binding.nextButton.visibility = if (step == 2) View.GONE else View.VISIBLE
-        binding.saveButton.visibility = if (step == 2) View.VISIBLE else View.GONE
-        val labels = listOf(binding.stepDestination, binding.stepOrders, binding.stepDevice)
-        labels.forEachIndexed { i, label ->
+        binding.nextButton.visibility = if (step == last) View.GONE else View.VISIBLE
+        binding.saveButton.visibility = if (step == last) View.VISIBLE else View.GONE
+        if (step == STEP_KIOSK) renderChecklist()
+        stepLabels().forEachIndexed { i, label ->
             val current = i == step
             label.setTextColor(getColor(if (current) R.color.signal else R.color.ink_soft))
             label.setTypeface(null, if (current) Typeface.BOLD else Typeface.NORMAL)
@@ -231,6 +374,7 @@ class MainActivity : AppCompatActivity() {
             else -> null
         }
         2 -> if (readForm().ykushPortsShared()) R.string.ykush_shared else null
+        STEP_KIOSK -> if (kioskUrlAccepted(binding.kioskUrl.text?.toString().orEmpty())) null else R.string.missing_kiosk_url
         else -> null
     }
 
@@ -239,7 +383,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun save() {
-        val blocked = (0..2).firstNotNullOfOrNull { index ->
+        val blocked = (0..lastStep()).firstNotNullOfOrNull { index ->
             missingField(index)?.let { index to it }
         }
         if (blocked != null) {
@@ -260,6 +404,10 @@ class MainActivity : AppCompatActivity() {
                 false
             }
             handler.post {
+                if (saved) {
+                    savedKioskUrl = config.kioskUrl
+                    renderChecklist()
+                }
                 binding.formMessage.setTextColor(getColor(if (saved) R.color.signal else R.color.form_error))
                 binding.formMessage.setText(if (saved) R.string.saved else R.string.save_failed)
             }
@@ -359,6 +507,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
+        /** El paso Kiosco, el cuarto hijo de `steps`. */
+        private const val STEP_KIOSK = 3
+        private const val REQUEST_STARTUP = 1
+        private const val REQUEST_MEDIA = 2
+        private val MEDIA_PERMISSIONS = listOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
         /** En el orden de los chips: Producción, Dev. */
         private val ENVIRONMENT_VALUES = arrayOf(Environment.Prod.key, Environment.Dev.key)
         private val GAIN_VALUES = arrayOf("x0.25", "x0.5", "x1", "x2")
