@@ -277,6 +277,7 @@
                         UVC. Las dos dejan sacar la imagen para Congelar.
                     -->
                     <FrameLayout
+                        android:id="@+id/otoscopeStage"
                         android:layout_width="220dp"
                         android:layout_height="220dp"
                         android:layout_gravity="center_horizontal"
@@ -307,6 +308,20 @@
                             android:visibility="gone" />
                     </FrameLayout>
 
+                    <!-- El hueco que deja el cuadro mientras está ampliado: así la tarjeta no salta. -->
+                    <TextView
+                        android:id="@+id/otoscopePlaceholder"
+                        android:layout_width="220dp"
+                        android:layout_height="220dp"
+                        android:layout_gravity="center_horizontal"
+                        android:layout_marginTop="6dp"
+                        android:background="@color/monitor"
+                        android:gravity="center"
+                        android:text="@string/local_otoscope_zoomed"
+                        android:textColor="@color/vital_dim"
+                        android:textSize="15sp"
+                        android:visibility="gone" />
+
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -315,22 +330,22 @@
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/otoscopePowerButton"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
+                            style="@style/LocalRowButton"
                             android:layout_marginEnd="6dp"
-                            android:layout_weight="1"
                             android:text="@string/local_otoscope_on" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/otoscopeFreezeButton"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
+                            style="@style/LocalRowButton.Outlined"
+                            android:layout_marginEnd="6dp"
                             android:enabled="false"
-                            android:text="@string/local_freeze"
-                            android:textColor="@color/vital_on"
-                            app:strokeColor="@color/vital_dim" />
+                            android:text="@string/local_freeze" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/otoscopeZoomButton"
+                            style="@style/LocalRowButton.Outlined"
+                            android:enabled="false"
+                            android:text="@string/local_otoscope_zoom" />
                     </LinearLayout>
 
                     <TextView android:id="@+id/otoscopeMessage" style="@style/LocalDetail" />
@@ -411,31 +426,24 @@
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/stethoListenButton"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
+                            style="@style/LocalRowButton"
                             android:layout_marginEnd="6dp"
-                            android:layout_weight="1"
                             android:text="@string/local_stetho_listen" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/stethoStopButton"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
+                            style="@style/LocalRowButton.Outlined"
                             android:layout_marginEnd="6dp"
-                            android:layout_weight="1"
-                            android:text="@string/local_stetho_stop"
-                            android:textColor="@color/vital_on"
-                            app:strokeColor="@color/vital_dim" />
+                            android:text="@string/local_stetho_stop" />
 
+                        <!-- Dice sólo "x1": con "Ganancia x1" Escuchar no entraba en una línea. -->
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/stethoGainButton"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            style="@style/LocalRowButton.Outlined"
                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:minWidth="0dp"
-                            android:textColor="@color/vital_on"
-                            app:strokeColor="@color/vital_dim" />
+                            android:layout_weight="0"
+                            android:contentDescription="@string/local_stetho_gain_label"
+                            android:minWidth="0dp" />
                     </LinearLayout>
 
                     <TextView android:id="@+id/stethoMessage" style="@style/LocalDetail" />
@@ -443,6 +451,61 @@
             </LinearLayout>
         </ScrollView>
     </LinearLayout>
+
+    <!--
+        El otoscopio ampliado: el cuadro de la tarjeta se muda acá adentro, al
+        centro, y el panel de atrás queda oscurecido y, en Android 12 o más,
+        desenfocado. Clickable para que los toques no pasen al panel. Va antes
+        del candado, que tiene que seguir tapando todo.
+    -->
+    <FrameLayout
+        android:id="@+id/otoscopeZoom"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/zoom_scrim"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone">
+
+        <!-- El cuadro se agrega primero, con el lado calculado al abrir; abajo, los botones. -->
+        <LinearLayout
+            android:id="@+id/otoscopeZoomBox"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/otoscopeZoomFreezeButton"
+                    style="@style/LocalRowButton.Outlined"
+                    android:layout_marginEnd="8dp"
+                    android:text="@string/local_freeze" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/otoscopeZoomPowerButton"
+                    style="@style/LocalRowButton.Outlined"
+                    android:layout_marginEnd="8dp"
+                    android:text="@string/local_otoscope_off" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/otoscopeZoomCloseButton"
+                    style="@style/LocalRowButton"
+                    android:text="@string/local_otoscope_reduce" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/otoscopeZoomMessage"
+                style="@style/LocalDetail"
+                android:gravity="center"
+                android:minHeight="20dp" />
+        </LinearLayout>
+    </FrameLayout>
 
     <!-- El candado: clickable para que los toques no pasen al panel de abajo. -->
     <LinearLayout

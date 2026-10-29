@@ -4,12 +4,18 @@ package com.guardiavirtual.berrymed.ui
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.RenderEffect
+import android.graphics.Shader
+import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
 import android.view.View
+import android.view.ViewGroup
 import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
+import android.widget.LinearLayout
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
@@ -31,6 +37,7 @@ import com.guardiavirtual.berrymed.otoscope.UvcOtoscope
 import com.guardiavirtual.berrymed.service.LocalSnapshot
 import com.guardiavirtual.berrymed.service.MonitorService
 import com.guardiavirtual.berrymed.ui.panel.FreezeFrame
+import com.guardiavirtual.berrymed.ui.panel.OtoscopeZoom
 import com.guardiavirtual.berrymed.ui.panel.PanelFormat
 import kotlin.concurrent.thread
 
@@ -54,6 +61,18 @@ class LocalPanelActivity : AppCompatActivity() {
 
     /** Camera2 no garantiza dos cámaras abiertas a la vez: con el otoscopio encendido, la de la tablet espera. */
     private var cameraPaused = false
+
+    /** El cuadro del otoscopio está en el centro de la pantalla en vez de en la tarjeta. */
+    private var zoomed = false
+
+    /** Dónde y cómo va el cuadro en la tarjeta, para devolverlo igual al reducir. */
+    private var stageIndex = 0
+    private lateinit var stageParams: ViewGroup.LayoutParams
+
+    /** Atrás con el otoscopio ampliado sólo reduce; con el panel normal hace lo de siempre. */
+    private val zoomBack = object : OnBackPressedCallback(false) {
+        override fun handleOnBackPressed() = closeZoom()
+    }
 
     private val frame = object : Runnable {
         override fun run() {
@@ -81,7 +100,7 @@ class LocalPanelActivity : AppCompatActivity() {
 
     private val otoscopeCameraPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (!unlocked) return@registerForActivityResult
-        if (granted) otoscopeOn() else binding.otoscopeMessage.setText(R.string.local_otoscope_denied)
+        if (granted) otoscopeOn() else setOtoscopeMessage(getString(R.string.local_otoscope_denied))
     }
 
     private val micPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -150,16 +169,16 @@ class LocalPanelActivity : AppCompatActivity() {
         }
         cameraFreeze = FreezeFrame(
             binding.frozenImage,
-            binding.freezeButton,
-            binding.cameraMessage,
+            listOf(binding.freezeButton),
+            listOf(binding.cameraMessage),
             R.string.local_freeze,
             R.string.local_resume,
             R.string.local_camera_frozen,
         )
         otoscopeFreeze = FreezeFrame(
             binding.otoscopeFrozen,
-            binding.otoscopeFreezeButton,
-            binding.otoscopeMessage,
+            listOf(binding.otoscopeFreezeButton, binding.otoscopeZoomFreezeButton),
+            listOf(binding.otoscopeMessage, binding.otoscopeZoomMessage),
             R.string.local_freeze,
             R.string.local_resume,
             R.string.local_camera_frozen,
@@ -167,19 +186,18 @@ class LocalPanelActivity : AppCompatActivity() {
         binding.freezeButton.setOnClickListener {
             if (cameraFreeze.frozen) cameraFreeze.unfreeze() else cameraFreeze.freeze(binding.cameraPreview.bitmap)
         }
-        binding.otoscopePowerButton.setOnClickListener {
-            if (otoscope != null || runtime().otoscopeState != OtoscopePower.State.OFF) {
-                otoscopeOff(R.string.local_otoscope_done)
-            } else if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-                // Camera2 y UVC piden el permiso de la cámara: en Android 9 en adelante también para un USB de video.
-                otoscopeOn()
-            } else {
-                otoscopeCameraPermission.launch(Manifest.permission.CAMERA)
-            }
-        }
-        binding.otoscopeFreezeButton.setOnClickListener {
-            if (otoscopeFreeze.frozen) otoscopeFreeze.unfreeze() else otoscopeFreeze.freeze(otoscope?.snapshot())
-        }
+        binding.otoscopePowerButton.setOnClickListener { otoscopePower() }
+        binding.otoscopeFreezeButton.setOnClickListener { toggleOtoscopeFreeze() }
+        stageIndex = binding.otoscopeCard.indexOfChild(binding.otoscopeStage)
+        stageParams = binding.otoscopeStage.layoutParams
+        binding.otoscopeZoomButton.setOnClickListener { openZoom() }
+        // Tocar la imagen en la tarjeta también la amplía, si se puede.
+        binding.otoscopeStage.setOnClickListener { if (binding.otoscopeZoomButton.isEnabled) openZoom() }
+        binding.otoscopeZoomFreezeButton.setOnClickListener { toggleOtoscopeFreeze() }
+        // Apagar desde el ampliado: releaseOtoscope cierra el ampliado antes de soltar la cámara.
+        binding.otoscopeZoomPowerButton.setOnClickListener { otoscopeOff(R.string.local_otoscope_done) }
+        binding.otoscopeZoomCloseButton.setOnClickListener { closeZoom() }
+        onBackPressedDispatcher.addCallback(this, zoomBack)
 
         binding.stethoListenButton.setOnClickListener {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
@@ -241,6 +259,7 @@ class LocalPanelActivity : AppCompatActivity() {
 
     private fun lock() {
         unlocked = false
+        closeZoom()
         binding.lock.visibility = View.VISIBLE
         binding.pinInput.setText("")
         binding.lockMessage.text = ""
@@ -271,7 +290,7 @@ class LocalPanelActivity : AppCompatActivity() {
         binding.respWave.restart()
         binding.stethoWave.restart()
         binding.stethoMessage.text = ""
-        binding.otoscopeMessage.text = ""
+        setOtoscopeMessage("")
         unlocked = true
         lastRenderAt = 0L
         binding.ecgPaper.postOnAnimation(frame)
@@ -285,6 +304,65 @@ class LocalPanelActivity : AppCompatActivity() {
             runOnUiThread { binding.nibpMessage.text = text }
         }
     }
+
+    private fun otoscopePower() {
+        if (otoscope != null || runtime().otoscopeState != OtoscopePower.State.OFF) {
+            otoscopeOff(R.string.local_otoscope_done)
+        } else if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            // Camera2 y UVC piden el permiso de la cámara: en Android 9 en adelante también para un USB de video.
+            otoscopeOn()
+        } else {
+            otoscopeCameraPermission.launch(Manifest.permission.CAMERA)
+        }
+    }
+
+    private fun toggleOtoscopeFreeze() {
+        if (otoscopeFreeze.frozen) otoscopeFreeze.unfreeze() else otoscopeFreeze.freeze(otoscope?.snapshot())
+    }
+
+    /** El mensaje del otoscopio va en la tarjeta y, repetido, debajo del ampliado. */
+    private fun setOtoscopeMessage(text: CharSequence) {
+        binding.otoscopeMessage.text = text
+        binding.otoscopeZoomMessage.text = text
+    }
+
+    /**
+     * Ampliar: el cuadro del otoscopio se muda de la tarjeta al centro de la
+     * pantalla. Es la misma vista, así que la imagen sigue y Congelar también
+     * (la imagen congelada viaja con el cuadro). En la tarjeta queda un hueco
+     * del mismo tamaño para que la columna no salte.
+     */
+    private fun openZoom() {
+        if (zoomed) return
+        val stage = binding.otoscopeStage
+        val root = binding.root
+        val side = OtoscopeZoom.stageSide(root.width, root.height, dp(ZOOM_MARGIN_DP), dp(ZOOM_BUTTONS_DP))
+        binding.otoscopeCard.removeView(stage)
+        binding.otoscopePlaceholder.visibility = View.VISIBLE
+        binding.otoscopeZoomBox.addView(stage, 0, LinearLayout.LayoutParams(side, side))
+        binding.otoscopeZoom.visibility = View.VISIBLE
+        // El desenfoque es de Android 12 en adelante; antes queda sólo el oscurecido de la capa.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            binding.panel.setRenderEffect(RenderEffect.createBlurEffect(ZOOM_BLUR, ZOOM_BLUR, Shader.TileMode.CLAMP))
+        }
+        zoomed = true
+        zoomBack.isEnabled = true
+    }
+
+    /** Reducir: el cuadro vuelve a la tarjeta, en su lugar y con sus 220 dp. Sin efecto si no estaba ampliado. */
+    private fun closeZoom() {
+        if (!zoomed) return
+        zoomed = false
+        zoomBack.isEnabled = false
+        val stage = binding.otoscopeStage
+        binding.otoscopeZoomBox.removeView(stage)
+        binding.otoscopePlaceholder.visibility = View.GONE
+        binding.otoscopeCard.addView(stage, stageIndex, stageParams)
+        binding.otoscopeZoom.visibility = View.GONE
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) binding.panel.setRenderEffect(null)
+    }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     /** El YKUSH3 y la espera de las placas de audio van en el hilo del estetoscopio, nunca acá. */
     private fun listen() {
@@ -350,10 +428,10 @@ class LocalPanelActivity : AppCompatActivity() {
      */
     private fun otoscopeOn() {
         pauseTabletCamera()
-        binding.otoscopeMessage.setText(R.string.local_otoscope_starting)
+        setOtoscopeMessage(getString(R.string.local_otoscope_starting))
         val runtime = runtime()
         runtime.localOtoscopeOn(
-            progress = { text -> runOnUiThread { if (unlocked) binding.otoscopeMessage.text = text } },
+            progress = { text -> runOnUiThread { if (unlocked) setOtoscopeMessage(text) } },
             done = { path, text -> runOnUiThread { onOtoscopeFound(path, text) } },
         )
     }
@@ -361,7 +439,7 @@ class LocalPanelActivity : AppCompatActivity() {
     private fun onOtoscopeFound(path: OtoscopePower.Path?, text: String) {
         // Si el panel se bloqueó mientras esperaba, el servicio ya apagó el puerto.
         if (!unlocked) return
-        binding.otoscopeMessage.text = text
+        setOtoscopeMessage(text)
         if (path == null) {
             resumeTabletCamera()
             return
@@ -376,11 +454,11 @@ class LocalPanelActivity : AppCompatActivity() {
         source.open { reason ->
             if (otoscope !== source || !unlocked) return@open
             if (reason == null) {
-                binding.otoscopeMessage.text = getString(R.string.local_otoscope_ready, source.label)
+                setOtoscopeMessage(getString(R.string.local_otoscope_ready, source.label))
             } else {
                 runtime.log("[OTOSCOPIO] No abrió ${source.label}: $reason")
                 otoscopeOff(null)
-                binding.otoscopeMessage.text = reason
+                setOtoscopeMessage(reason)
             }
         }
     }
@@ -388,11 +466,13 @@ class LocalPanelActivity : AppCompatActivity() {
     /** Apagar: primero se suelta la cámara y recién después el servicio apaga el puerto. */
     private fun otoscopeOff(message: Int?) {
         releaseOtoscope()
-        if (message != null) binding.otoscopeMessage.setText(message)
+        if (message != null) setOtoscopeMessage(getString(message))
         resumeTabletCamera()
     }
 
     private fun releaseOtoscope() {
+        // Primero el cuadro vuelve a la tarjeta: sin cámara no hay nada que ampliar.
+        closeZoom()
         otoscopeFreeze.unfreeze()
         val source = otoscope
         otoscope = null
@@ -453,7 +533,11 @@ class LocalPanelActivity : AppCompatActivity() {
         val otoscopeIdle = s.otoscopeState == OtoscopePower.State.OFF && otoscope == null
         binding.otoscopePowerButton.setText(if (otoscopeIdle) R.string.local_otoscope_on else R.string.local_otoscope_off)
         binding.otoscopePowerButton.isEnabled = s.otoscopeState != OtoscopePower.State.POWERING_OFF
-        binding.otoscopeFreezeButton.isEnabled = otoscope != null && s.otoscopeState == OtoscopePower.State.ON
+        val otoscopeLive = otoscope != null && s.otoscopeState == OtoscopePower.State.ON
+        binding.otoscopeFreezeButton.isEnabled = otoscopeLive
+        binding.otoscopeZoomButton.isEnabled = otoscopeLive
+        binding.otoscopeZoomFreezeButton.isEnabled = otoscopeLive
+        binding.otoscopeZoomPowerButton.isEnabled = s.otoscopeState != OtoscopePower.State.POWERING_OFF
     }
 
     companion object {
@@ -463,5 +547,10 @@ class LocalPanelActivity : AppCompatActivity() {
         private const val SPO2_SAMPLES = 300
         private const val RESP_SAMPLES = 500
         private const val STETHO_SAMPLES = 1_000
+
+        /** El ampliado deja 24 dp por lado y unos 80 dp abajo para los botones y el mensaje. */
+        private const val ZOOM_MARGIN_DP = 24
+        private const val ZOOM_BUTTONS_DP = 80
+        private const val ZOOM_BLUR = 24f
     }
 }

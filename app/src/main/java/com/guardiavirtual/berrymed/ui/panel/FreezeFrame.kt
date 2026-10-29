@@ -11,11 +11,14 @@ import android.widget.TextView
  * Congelar y Seguir, el mismo mecanismo para la cámara de la tablet y para el
  * otoscopio: la imagen de ese momento queda encima de la vista previa en un
  * `ImageView`. Sólo para mirar con calma: no se guarda en ningún lado.
+ *
+ * Puede tener más de un botón y más de un mensaje: el otoscopio ampliado
+ * repite los de la tarjeta, y así el estado congelado vive en un solo lugar.
  */
 class FreezeFrame(
     private val image: ImageView,
-    private val button: Button,
-    private val message: TextView,
+    private val buttons: List<Button>,
+    private val messages: List<TextView>,
     private val freezeText: Int,
     private val resumeText: Int,
     private val frozenText: Int,
@@ -28,8 +31,8 @@ class FreezeFrame(
         if (bitmap == null) return false
         image.setImageBitmap(bitmap)
         image.visibility = View.VISIBLE
-        button.setText(resumeText)
-        message.setText(frozenText)
+        buttons.forEach { it.setText(resumeText) }
+        messages.forEach { it.setText(frozenText) }
         frozen = true
         return true
     }
@@ -38,8 +41,8 @@ class FreezeFrame(
         if (!frozen) return
         image.setImageDrawable(null)
         image.visibility = View.GONE
-        button.setText(freezeText)
-        message.text = ""
+        buttons.forEach { it.setText(freezeText) }
+        messages.forEach { it.text = "" }
         frozen = false
     }
 }

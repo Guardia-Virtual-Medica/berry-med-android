@@ -137,4 +137,33 @@
         <item name="android:textColor">@color/vital_dim</item>
         <item name="android:textSize">13sp</item>
     </style>
+
+    <!--
+        Los botones de una fila de tarjeta, a partes iguales. Sin el margen
+        lateral de Material y con menos relleno: en 1280×800 dp entran tres en
+        la columna derecha sin partir el texto en dos líneas.
+    -->
+    <style name="LocalRowButton" parent="Widget.Material3.Button">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:insetLeft">0dp</item>
+        <item name="android:insetRight">0dp</item>
+        <item name="android:paddingStart">8dp</item>
+        <item name="android:paddingEnd">8dp</item>
+        <item name="android:maxLines">1</item>
+    </style>
+
+    <style name="LocalRowButton.Outlined" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:insetLeft">0dp</item>
+        <item name="android:insetRight">0dp</item>
+        <item name="android:paddingStart">8dp</item>
+        <item name="android:paddingEnd">8dp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:textColor">@color/vital_on</item>
+        <item name="strokeColor">@color/vital_dim</item>
+    </style>
 </resources>
