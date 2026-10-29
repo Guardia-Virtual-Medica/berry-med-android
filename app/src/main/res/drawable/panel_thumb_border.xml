@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- El borde de la miniatura, con un velo abajo para que la hora se lea sobre cualquier imagen. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="90"
+                android:centerColor="#000B0F14"
+                android:centerY="0.35"
+                android:endColor="#000B0F14"
+                android:startColor="#B30B0F14" />
+            <corners android:radius="8dp" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <stroke android:width="1dp" android:color="@color/line2" />
+            <corners android:radius="8dp" />
+        </shape>
+    </item>
+</layer-list>
