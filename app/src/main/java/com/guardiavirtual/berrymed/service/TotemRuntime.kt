@@ -18,9 +18,8 @@ import com.guardiavirtual.berrymed.protocol.SampleWindow
 import com.guardiavirtual.berrymed.protocol.ThermoReading
 import com.guardiavirtual.berrymed.protocol.VitalSigns
 import com.guardiavirtual.berrymed.protocol.applyThermometer
-import com.guardiavirtual.berrymed.protocol.isValidSample
 import com.guardiavirtual.berrymed.protocol.metricsEnvelope
-import com.guardiavirtual.berrymed.protocol.sessionExpired
+import com.guardiavirtual.berrymed.protocol.sendableWindow
 import com.guardiavirtual.berrymed.protocol.splitWindow
 import com.guardiavirtual.berrymed.protocol.summarize
 import com.guardiavirtual.berrymed.usb.BerryLink
@@ -37,9 +36,11 @@ import java.util.Locale
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionHandler
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.concurrent.thread
 
 class TotemRuntime(context: Context) {
@@ -54,10 +55,16 @@ class TotemRuntime(context: Context) {
     private val thermo = ThermometerLink(hub, { berry.connected }, ::log)
     private val poster = MetricsPoster()
 
+    /** Paquetes de la consulta en curso que la cola llena tiró sin mandar. */
+    private val droppedPackets = AtomicLong()
+
     /**
      * Los POST salen de dos hilos aparte: el ciclo de envío no espera la
      * respuesta, así cada paquete lleva un segundo aunque el servidor tarde más.
-     * Si la red se traba, quedan a lo sumo 10 paquetes y se descartan los más viejos.
+     * Si la red se traba, quedan a lo sumo 10 paquetes y se descartan los más
+     * viejos (un segundo de ECG que llega tarde ya no le sirve al médico, que
+     * mira en vivo). Cada descarte queda en la consola y en el último envío:
+     * antes se tiraban sin dejar rastro y el hueco no se explicaba.
      */
     private val sender = ThreadPoolExecutor(
         2,
@@ -66,7 +73,16 @@ class TotemRuntime(context: Context) {
         TimeUnit.MILLISECONDS,
         ArrayBlockingQueue(10),
         { runnable -> Thread(runnable, "berry-send").apply { isDaemon = true } },
-        ThreadPoolExecutor.DiscardOldestPolicy(),
+        RejectedExecutionHandler { runnable, executor ->
+            // Lo mismo que DiscardOldestPolicy, contando.
+            if (executor.isShutdown) return@RejectedExecutionHandler
+            if (executor.queue.poll() != null) {
+                droppedPackets.incrementAndGet()
+                log("[POST] Se descartó un paquete: la cola estaba llena")
+                lastPost = withDropped("La red está lenta: se llenó la cola de envío")
+            }
+            executor.execute(runnable)
+        },
     )
     /**
      * El STOP de la presión al cerrar el Panel Local o Testing. Escribir en el
@@ -139,7 +155,6 @@ class TotemRuntime(context: Context) {
 
     @Volatile var config: BerryConfig = BerryConfig()
     val sessionActive: Boolean get() = gate.sessionActive
-    @Volatile private var sessionStartNano: Long = 0L
     @Volatile var lastPost: String = "Todavía no se envió"
     @Volatile var pusherUp: Boolean = false
 
@@ -255,7 +270,6 @@ class TotemRuntime(context: Context) {
         var next = System.nanoTime()
         while (true) {
             try {
-                stopSessionIfExpired()
                 sendOnce()
             } catch (error: Exception) {
                 log("[DATA] Error en el envío: $error")
@@ -279,16 +293,17 @@ class TotemRuntime(context: Context) {
      */
     private fun sendOnce() {
         val now = System.nanoTime()
-        val (active, epoch, window) = synchronized(sessionLock) {
+        val (active, epoch, taken) = synchronized(sessionLock) {
             Triple(gate.sessionActive, gate.epoch, parser.takePayload())
         }
-        lastWindow = window
+        lastWindow = taken
         if (!active && (testing || localMode || !watch.probeDue(now))) return
         val cfg = config
         val url = cfg.metricsUrl() ?: return
-        if (!cfg.postReady() || !isValidSample(window)) return
+        if (!cfg.postReady()) return
+        // El termómetro va antes de validar: su lectura sola también se manda.
+        val window = sendableWindow(taken, thermo.latest()) ?: return
         if (!active) watch.probed(now)
-        applyThermometer(window.vitalSigns, thermo.latest())
         // Tramos de a lo sumo un segundo, por el límite de Pusher. La prueba lleva sólo el último.
         val parts = splitWindow(window)
         val toSend = if (active) parts else listOf(parts.last())
@@ -306,13 +321,13 @@ class TotemRuntime(context: Context) {
         } catch (error: Exception) {
             PostOutcome.Failed(error.message ?: error.javaClass.simpleName)
         }
-        lastPost = describe(outcome, active)
+        lastPost = withDropped(describe(outcome, active))
         // Si mientras viajaba el POST llegó un inicio o un fin, la respuesta ya no cuenta.
         if (!active) {
             if (outcome == PostOutcome.Ok) resumeSession(epoch)
             return
         }
-        if (!watch.sent(outcome)) return
+        if (!watch.sent(outcome, epoch, System.nanoTime())) return
         stopSession("la plataforma no tiene la toma abierta") { gate.epoch == epoch }
     }
 
@@ -325,6 +340,13 @@ class TotemRuntime(context: Context) {
         else -> "No se pudo enviar"
     }
 
+    /** Si la cola tiró paquetes en esta consulta, el último envío lo dice. */
+    private fun withDropped(text: String): String {
+        val dropped = droppedPackets.get()
+        if (dropped == 0L) return text
+        return "$text · $dropped ${if (dropped == 1L) "paquete descartado" else "paquetes descartados"} por cola llena"
+    }
+
     private fun startSession() {
         // Se mira dentro del lock, igual que en startLocal: nunca quedan abiertos los dos.
         val opened = synchronized(sessionLock) {
@@ -332,7 +354,9 @@ class TotemRuntime(context: Context) {
             berry.stopNibp()
             parser.resetData()
             thermo.resetLatest()
-            sessionStartNano = System.nanoTime()
+            droppedPackets.set(0)
+            // En el mismo paso que el epoch: los 404 de la consulta anterior ya no cuentan.
+            watch.started(gate.epoch, System.nanoTime())
             true
         }
         if (!opened) {
@@ -344,7 +368,6 @@ class TotemRuntime(context: Context) {
             endTesting()
             log("[TEST] Llegó el inicio de una consulta: se corta la prueba")
         }
-        watch.started()
         log("[SESIÓN] Envío iniciado")
         publish()
     }
@@ -357,31 +380,27 @@ class TotemRuntime(context: Context) {
         synchronized(sessionLock) {
             // Un POST de prueba que salió justo antes de abrir el Panel Local no arranca la consulta.
             if (!gate.resumeSession(epoch)) return
-            sessionStartNano = System.nanoTime()
+            droppedPackets.set(0)
+            watch.started(gate.epoch, System.nanoTime())
         }
-        watch.started()
         log("[SESIÓN] Envío iniciado: la plataforma tenía la toma abierta")
         publish()
     }
 
-    /** Se mira dentro del lock: un inicio que llega justo antes no se corta. */
-    private fun stopSessionIfExpired() {
-        val minutes = config.maxSessionMinutes
-        stopSession("sin stop tras $minutes min") {
-            sessionExpired(sessionActive, sessionStartNano, System.nanoTime(), minutes)
-        }
-    }
-
+    /**
+     * La consulta termina sólo por el stop-monitoring o por tres 404 seguidos
+     * (la plataforma cerró la toma). No hay tope de minutos: cortaba unos
+     * 10 s de datos y la prueba siguiente la reabría igual.
+     */
     private fun stopSession(reason: String, byPlatform: Boolean = false, stillDue: () -> Boolean = { true }) {
         synchronized(sessionLock) {
             if (!stillDue()) return
             gate.stopSession()
-            sessionStartNano = 0L
             berry.stopNibp()
             parser.resetData()
             thermo.resetLatest()
+            watch.stopped(System.nanoTime(), byPlatform)
         }
-        watch.stopped(System.nanoTime(), byPlatform)
         log("[SESIÓN] Envío detenido ($reason)")
         publish()
     }
@@ -584,10 +603,14 @@ class TotemRuntime(context: Context) {
         var poweredSome = false
         if (hubPresent) {
             val ports = listOf(cfg.ykushStethoscopePort, cfg.ykushHeadsetPort)
-            for (port in stethoPorts.toTurnOn(ports, ykush.readAll())) {
+            val states = ykush.readAll()
+            for (port in stethoPorts.toTurnOn(ports, states)) {
                 if (stethoEpoch != epoch) return ""
                 if (ykush.setPort(port, true)) {
-                    stethoPorts.turnedOn(port)
+                    // Sólo si se leyó apagado se apaga al salir; si no se pudo leer, queda encendido.
+                    if (!stethoPorts.claim(port, states.getOrNull(port - 1))) {
+                        log("[ESTETO] No se pudo leer el puerto $port antes de encenderlo: queda encendido al salir")
+                    }
                     poweredSome = true
                 } else {
                     notes += "El YKUSH3 no encendió el puerto $port."
@@ -677,11 +700,15 @@ class TotemRuntime(context: Context) {
     ) {
         if (OtoscopePower.Action.PORT_ON in actions) {
             progress("Encendiendo…")
-            // Un estado que no se pudo leer cuenta como apagado: encender de más no rompe nada.
-            if (otoscopePorts.toTurnOn(listOf(port), ykush.readAll()).isEmpty()) {
+            // Un estado que no se pudo leer se enciende igual, pero no se apaga al salir:
+            // pudo estar encendido desde el arranque, para la teleconsulta.
+            val states = ykush.readAll()
+            if (otoscopePorts.toTurnOn(listOf(port), states).isEmpty()) {
                 log("[OTOSCOPIO] El puerto $port ya está encendido")
             } else if (ykush.setPort(port, true)) {
-                otoscopePorts.turnedOn(port)
+                if (!otoscopePorts.claim(port, states.getOrNull(port - 1))) {
+                    log("[OTOSCOPIO] No se pudo leer el puerto $port antes de encenderlo: queda encendido al salir")
+                }
             } else {
                 log("[OTOSCOPIO] El YKUSH3 no encendió el puerto $port: se espera igual")
             }
@@ -818,13 +845,9 @@ class TotemRuntime(context: Context) {
         val reading = thermo.latest()
         val thermoAt = thermo.lastReadingAtNano
         val cfg = config
-        val window = lastWindow
-        val preview = if (window != null && isValidSample(window)) {
-            val vitals = window.vitalSigns.copy()
-            applyThermometer(vitals, reading)
-            metricsEnvelope(System.currentTimeMillis(), splitWindow(window.copy(vitalSigns = vitals)).last())
-        } else {
-            null
+        // Lo mismo que saldría: con el termómetro aplicado antes de validar.
+        val preview = lastWindow?.let { window -> sendableWindow(window, reading) }?.let { ready ->
+            metricsEnvelope(System.currentTimeMillis(), splitWindow(ready).last())
         }
         return TestingSnapshot(
             testing = testing,

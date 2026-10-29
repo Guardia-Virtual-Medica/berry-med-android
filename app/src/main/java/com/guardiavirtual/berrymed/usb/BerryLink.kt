@@ -71,9 +71,32 @@ class BerryLink(
 
     fun portName(): String? = current?.device?.deviceName
 
+    /**
+     * Baja la bandera y escribe STOP en el mismo paso del lock. Si la bandera
+     * se bajaba afuera, un [startNibp] que tenía el lock podía arrancar en el
+     * medio: subía la bandera, después salía este STOP y el equipo quedaba
+     * parado con la bandera arriba, bloqueando la presión 3 minutos.
+     */
     fun stopNibp() {
-        nibpRunning = false
-        write(Pm6750Protocol.nibpStop())
+        synchronized(writeLock) {
+            nibpRunning = false
+            write(Pm6750Protocol.nibpStop())
+        }
+    }
+
+    /**
+     * Se fue la plaqueta (o se vuelve a abrir): la medición en curso se
+     * perdió, porque el equipo arranca de cero. Sin esto la bandera quedaba
+     * arriba: el panel mostraba "Midiendo" congelado y se rechazaba cualquier
+     * pedido de presión hasta que volviera la plaqueta y venciera un plazo.
+     * Con la bandera abajo, el panel muestra la última medición sin resultado.
+     */
+    private fun forgetNibp() {
+        synchronized(writeLock) {
+            if (nibpRunning) log("[NIBP] Se perdió la plaqueta midiendo la presión: la medición queda sin resultado")
+            nibpRunning = false
+            lastNibpFrameAt = 0L
+        }
     }
 
     /** Devuelve true si la medición arrancó. */
@@ -161,6 +184,7 @@ class BerryLink(
             }
             appliedStartup = startup
             parser.resetData()
+            forgetNibp()
             connected = true
             log("[USB] Plaqueta en ${driver.device.deviceName}")
             Probe.Berry(handle)
@@ -292,6 +316,10 @@ class BerryLink(
             current = null
             connected = false
         }
+        // Cuando llega acá la plaqueta ya no es `current` (lo baja el final de
+        // readLoop), así que se olvida la presión sin mirar de qué puerto era:
+        // mientras se prueban puertos no puede haber una medición andando.
+        forgetNibp()
         try {
             handle.close()
         } catch (_: Exception) {
