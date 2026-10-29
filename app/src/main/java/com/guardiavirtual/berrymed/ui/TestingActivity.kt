@@ -15,7 +15,11 @@ import com.guardiavirtual.berrymed.databinding.ActivityTestingBinding
 import com.guardiavirtual.berrymed.databinding.ItemTestCardBinding
 import com.guardiavirtual.berrymed.service.TestingSession.Measure
 import com.guardiavirtual.berrymed.service.TestingSession.Verdict
+import com.guardiavirtual.berrymed.service.MonitorService
 import com.guardiavirtual.berrymed.service.TestingSnapshot
+import com.guardiavirtual.berrymed.tele.Instrument
+import com.guardiavirtual.berrymed.tele.RoomState
+import com.guardiavirtual.berrymed.tele.TeleView
 import java.util.Locale
 import kotlin.concurrent.thread
 
@@ -104,11 +108,30 @@ class TestingActivity : AppCompatActivity() {
             runtime().console.clear()
             binding.consoleText.text = ""
         }
+
+        binding.teleOtoscopeButton.setOnClickListener { publishManually(Instrument.OTOSCOPE) }
+        binding.teleStethoButton.setOnClickListener { publishManually(Instrument.STETHOSCOPE) }
+        binding.teleStopButton.setOnClickListener { runtime().teleManualStop() }
+    }
+
+    /** La prueba manual: el mismo streamer, con el servidor y el token escritos acá. */
+    private fun publishManually(instrument: Instrument) {
+        runtime().teleManualStart(
+            binding.teleServer.text?.toString().orEmpty(),
+            binding.teleToken.text?.toString().orEmpty(),
+            instrument,
+        )
     }
 
     override fun onStart() {
         super.onStart()
         handler.post(tick)
+    }
+
+    /** Con Testing adelante el servicio suma cámara y micrófono, para la prueba de la teleconsulta. */
+    override fun onResume() {
+        super.onResume()
+        MonitorService.promote(this)
     }
 
     /**
@@ -124,6 +147,7 @@ class TestingActivity : AppCompatActivity() {
     override fun onStop() {
         handler.removeCallbacks(tick)
         runtime().stopTesting()
+        // La prueba manual de la teleconsulta sigue: sirve justamente para probar con Chrome adelante.
         super.onStop()
     }
 
@@ -236,6 +260,8 @@ class TestingActivity : AppCompatActivity() {
         binding.audioList.text = s.inventory.audio.joinToString("\n")
         binding.cameraList.text = s.inventory.cameras.joinToString("\n")
 
+        renderTele(s.tele)
+
         binding.previewUrl.text = s.url?.let { "POST $it" } ?: "Falta configurar la URL o el tótem"
         lastPreview = s.preview
         binding.previewBody.text = s.preview?.let { body ->
@@ -244,6 +270,39 @@ class TestingActivity : AppCompatActivity() {
 
         if (!consolePaused) binding.consoleText.text = s.console.take(CONSOLE_LINES).joinToString("\n")
     }
+
+    private fun renderTele(t: TeleView) {
+        val status = t.status
+        dot(binding.teleDot, status.room == RoomState.CONNECTED && status.instrument != null)
+        binding.teleState.text = status.room.label + if (status.manual) " · prueba manual" else ""
+        binding.teleDetail.text = buildString {
+            append("Servicio: ${t.serviceTypes} · cámara ${yesNo(t.serviceCamera)} · micrófono ${yesNo(t.serviceMicrophone)}\n")
+            append("Sala: ${status.room.label}")
+            status.encounterId?.let { append(" · encuentro $it") }
+            append("\nPublica: ")
+            append(
+                when (status.instrument) {
+                    null -> "nada"
+                    Instrument.OTOSCOPE ->
+                        "otoscopio ${t.videoPath.orEmpty()} ${t.videoSize.orEmpty()} · " +
+                            "${"%.1f".format(Locale("es"), t.framesPerSecond)} cuadros/s"
+                    Instrument.STETHOSCOPE -> "estetoscopio · nivel ${t.levelPercent} %"
+                },
+            )
+            if (status.instrument == Instrument.STETHOSCOPE) {
+                append(
+                    "\nAndroid: " + when (t.silenced) {
+                        true -> "SILENCIA la captura (otra app tiene el micrófono)"
+                        false -> "la captura no está silenciada"
+                        null -> "sin datos de la captura"
+                    },
+                )
+            }
+            if (status.message.isNotBlank()) append("\nÚltimo error: ${status.message}")
+        }
+    }
+
+    private fun yesNo(value: Boolean) = if (value) "sí" else "no"
 
     private fun ItemTestCardBinding.setup(title: String, button: String?, button2: String? = null) {
         cardTitle.text = title

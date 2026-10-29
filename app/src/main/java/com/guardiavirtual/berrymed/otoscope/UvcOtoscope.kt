@@ -4,14 +4,11 @@ package com.guardiavirtual.berrymed.otoscope
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
-import android.hardware.usb.UsbDevice
 import android.os.Handler
 import android.os.Looper
 import android.view.Surface
 import android.view.TextureView
 import android.view.View
-import com.serenegiant.usb.USBMonitor
-import com.serenegiant.usb.UVCCamera
 import java.util.concurrent.Executor
 
 /**
@@ -47,8 +44,7 @@ class UvcOtoscope(
     private val main = Handler(Looper.getMainLooper())
 
     // Sólo los toca [worker].
-    private var monitor: USBMonitor? = null
-    private var camera: UVCCamera? = null
+    private var handle: UvcHandle? = null
     private var surface: Surface? = null
 
     @Volatile private var closed = false
@@ -106,28 +102,17 @@ class UvcOtoscope(
     }
 
     private fun openCamera(texture: SurfaceTexture): String? {
-        val device: UsbDevice = probe.usbDevice() ?: return "El otoscopio no aparece por USB."
-        if (!probe.usbReady()) return "Falta el permiso USB del otoscopio: tocá «Pedir permiso USB» en Berry Med."
-        val usb = USBMonitor(appContext, IGNORE_EVENTS)
-        monitor = usb
-        val uvc = UVCCamera()
-        camera = uvc
-        uvc.open(usb.openDevice(device))
-        val offered = uvc.getSupportedSizeList(UVCCamera.FRAME_FORMAT_MJPEG).orEmpty()
-            .map { OtoscopeResolution.Size(it.width, it.height) }
-        val size = OtoscopeResolution.best(offered)
-            ?: OtoscopeResolution.Size(OtoscopeResolution.TARGET, OtoscopeResolution.TARGET)
-        try {
-            uvc.setPreviewSize(size.width, size.height, MIN_FPS, MAX_FPS, UVCCamera.FRAME_FORMAT_MJPEG, UVCCamera.DEFAULT_BANDWIDTH)
-        } catch (_: IllegalArgumentException) {
-            // Algunas cámaras no aceptan el rango de cuadros: se deja que elija ella.
-            uvc.setPreviewSize(size.width, size.height, UVCCamera.FRAME_FORMAT_MJPEG)
+        val opened = when (val result = UvcHandle.open(appContext, probe)) {
+            is UvcHandle.Opened.Refused -> return result.reason
+            is UvcHandle.Opened.Ok -> result.handle
         }
+        handle = opened
+        val size = opened.size
         texture.setDefaultBufferSize(size.width, size.height)
         val target = Surface(texture)
         surface = target
-        uvc.setPreviewDisplay(target)
-        uvc.startPreview()
+        opened.camera.setPreviewDisplay(target)
+        opened.camera.startPreview()
         log("[OTOSCOPIO] Imagen por UVC a ${size.width}×${size.height} MJPEG")
         return null
     }
@@ -148,41 +133,11 @@ class UvcOtoscope(
     }
 
     private fun release() {
-        try {
-            camera?.stopPreview()
-        } catch (_: Throwable) {
-        }
-        try {
-            camera?.destroy()
-        } catch (_: Throwable) {
-        }
-        camera = null
-        try {
-            monitor?.destroy()
-        } catch (_: Throwable) {
-        }
-        monitor = null
+        handle?.release()
+        handle = null
         surface?.release()
         surface = null
     }
 
     override fun snapshot(): Bitmap? = textureView.bitmap
-
-    companion object {
-        private const val MIN_FPS = 1
-        private const val MAX_FPS = 30
-
-        /** El registro de la librería no se usa (ver arriba): sus avisos no llegan nunca. */
-        private val IGNORE_EVENTS = object : USBMonitor.OnDeviceConnectListener {
-            override fun onAttach(device: UsbDevice?) = Unit
-
-            override fun onDetach(device: UsbDevice?) = Unit
-
-            override fun onConnect(device: UsbDevice?, ctrlBlock: USBMonitor.UsbControlBlock?, createNew: Boolean) = Unit
-
-            override fun onDisconnect(device: UsbDevice?, ctrlBlock: USBMonitor.UsbControlBlock?) = Unit
-
-            override fun onCancel(device: UsbDevice?) = Unit
-        }
-    }
 }

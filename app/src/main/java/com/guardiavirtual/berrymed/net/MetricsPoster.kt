@@ -30,12 +30,7 @@ class MetricsPoster(
     callTimeoutMs: Long = CALL_TIMEOUT_MS,
     private val retryPauseMs: Long = RETRY_PAUSE_MS,
 ) {
-    private val client = OkHttpClient.Builder()
-        .callTimeout(callTimeoutMs, TimeUnit.MILLISECONDS)
-        .connectTimeout(callTimeoutMs, TimeUnit.MILLISECONDS)
-        .readTimeout(callTimeoutMs, TimeUnit.MILLISECONDS)
-        .writeTimeout(callTimeoutMs, TimeUnit.MILLISECONDS)
-        .build()
+    private val client = webhookClient(callTimeoutMs)
 
     fun post(url: String, username: String, password: String, json: String): PostOutcome {
         val builder = Request.Builder()
@@ -68,3 +63,11 @@ class MetricsPoster(
         const val RETRY_PAUSE_MS = 500L
     }
 }
+
+/** El cliente de los webhooks del tótem: [callTimeoutMs] en total por intento. Lo usan las métricas y el token de LiveKit. */
+fun webhookClient(callTimeoutMs: Long = MetricsPoster.CALL_TIMEOUT_MS): OkHttpClient = OkHttpClient.Builder()
+    .callTimeout(callTimeoutMs, TimeUnit.MILLISECONDS)
+    .connectTimeout(callTimeoutMs, TimeUnit.MILLISECONDS)
+    .readTimeout(callTimeoutMs, TimeUnit.MILLISECONDS)
+    .writeTimeout(callTimeoutMs, TimeUnit.MILLISECONDS)
+    .build()

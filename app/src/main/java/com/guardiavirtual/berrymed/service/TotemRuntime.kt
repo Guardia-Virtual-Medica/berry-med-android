@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package com.guardiavirtual.berrymed.service
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import android.hardware.usb.UsbDevice
 import android.util.Log
+import androidx.core.content.ContextCompat
+import com.guardiavirtual.berrymed.audio.StethoDsp
 import com.guardiavirtual.berrymed.audio.StethoscopeLink
 import com.guardiavirtual.berrymed.config.BerryConfig
 import com.guardiavirtual.berrymed.config.ConfigStore
@@ -22,6 +27,11 @@ import com.guardiavirtual.berrymed.protocol.metricsEnvelope
 import com.guardiavirtual.berrymed.protocol.sendableWindow
 import com.guardiavirtual.berrymed.protocol.splitWindow
 import com.guardiavirtual.berrymed.protocol.summarize
+import com.guardiavirtual.berrymed.tele.Instrument
+import com.guardiavirtual.berrymed.tele.LiveKitBackend
+import com.guardiavirtual.berrymed.tele.TeleOrder
+import com.guardiavirtual.berrymed.tele.TeleStreamer
+import com.guardiavirtual.berrymed.tele.TeleView
 import com.guardiavirtual.berrymed.usb.BerryLink
 import com.guardiavirtual.berrymed.usb.DeviceInventory
 import com.guardiavirtual.berrymed.usb.ThermometerLink
@@ -180,10 +190,34 @@ class TotemRuntime(context: Context) {
 
     var onNotification: (text: String) -> Unit = {}
 
+    /**
+     * Los tipos con los que el servicio está en primer plano (los pone
+     * [MonitorService]). Sin cámara o sin micrófono, la teleconsulta no puede
+     * capturar ese instrumento con Chrome adelante.
+     */
+    @Volatile var foregroundTypes: Int = 0
+
+    private val teleBackend = LiveKitBackend(
+        context = appContext,
+        config = { config },
+        ykush = ykush,
+        probe = otoscopeProbe,
+        stethoInput = { cfg -> stetho.devices(cfg).input },
+        blockedBy = ::teleBlocked,
+        log = ::log,
+    )
+
+    /** La sala de LiveKit de la teleconsulta: el otoscopio y el estetoscopio para el médico. */
+    val tele = TeleStreamer(teleBackend, ::log).also { streamer ->
+        teleBackend.onRoomLost = streamer::roomLost
+    }
+
     private val pusher = SessionPusher(::log, object : SessionPusher.Listener {
         override fun onStart() = startSession()
 
         override fun onStop() {
+            // El fin de la consulta cierra también la sala de los instrumentos.
+            tele.stopAll("fin de la consulta")
             if (localMode) {
                 log("[SESIÓN] Llegó un fin de consulta con el Panel Local abierto: se ignora")
                 return
@@ -203,6 +237,8 @@ class TotemRuntime(context: Context) {
         override fun onConnection(connected: Boolean) {
             pusherUp = connected
         }
+
+        override fun onInstrument(order: TeleOrder) = tele.order(order)
     })
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -514,6 +550,8 @@ class TotemRuntime(context: Context) {
         synchronized(sessionLock) {
             if (!gate.openLocal()) return "Hay una consulta enviando: el Panel Local espera a que termine."
         }
+        // El panel usa el otoscopio y el estetoscopio: la teleconsulta (o su prueba) los suelta.
+        tele.stopAll("se abrió el Panel Local", includeManual = true)
         // El panel arranca en blanco: ni ondas ni el estado de una presión de antes.
         live.clear()
         if (testing) {
@@ -858,6 +896,45 @@ class TotemRuntime(context: Context) {
         )
     }
 
+    /**
+     * Si la teleconsulta puede usar [instrument] ahora; si no, el motivo. Con
+     * el Panel Local abierto los instrumentos son del panel. Sin el permiso o
+     * sin el tipo de servicio, Android le da a Berry Med una cámara que no
+     * abre o un micrófono mudo.
+     */
+    private fun teleBlocked(instrument: Instrument): String? {
+        if (localMode) return "el Panel Local está abierto"
+        val (permission, type, what) = when (instrument) {
+            Instrument.OTOSCOPE -> Triple(Manifest.permission.CAMERA, ForegroundAccess.CAMERA, "la cámara")
+            Instrument.STETHOSCOPE -> Triple(Manifest.permission.RECORD_AUDIO, ForegroundAccess.MICROPHONE, "el micrófono")
+        }
+        if (ContextCompat.checkSelfPermission(appContext, permission) != PackageManager.PERMISSION_GRANTED) {
+            return "falta el permiso de $what: abrí Berry Med y aceptalo"
+        }
+        if (Build.VERSION.SDK_INT >= 30 && foregroundTypes and type == 0) {
+            return "el servicio no tiene $what en segundo plano. ${MonitorService.TELE_HINT}"
+        }
+        return null
+    }
+
+    /** La prueba manual de Testing: publica [instrument] con un servidor y un token hechos a mano. */
+    fun teleManualStart(serverUrl: String, token: String, instrument: Instrument) =
+        tele.startManual(serverUrl, token, instrument)
+
+    fun teleManualStop() = tele.stopManual()
+
+    fun teleView(): TeleView = TeleView(
+        status = tele.status,
+        serviceTypes = ForegroundAccess.describe(foregroundTypes),
+        serviceCamera = Build.VERSION.SDK_INT < 30 || ForegroundAccess.hasCamera(foregroundTypes),
+        serviceMicrophone = Build.VERSION.SDK_INT < 30 || ForegroundAccess.hasMicrophone(foregroundTypes),
+        videoPath = teleBackend.videoPath,
+        videoSize = teleBackend.videoSize,
+        framesPerSecond = teleBackend.framesPerSecond(),
+        levelPercent = StethoDsp.levelPercent(teleBackend.dsp.level),
+        silenced = teleBackend.captureSilenced(),
+    )
+
     /** Lee los tres puertos del YKUSH3 sin cambiarlos. Bloquea hasta un segundo: llamarlo fuera del hilo de la pantalla. */
     fun testYkushRead(): String {
         if (!ykush.plugged()) return "No hay hub YKUSH3 conectado."
@@ -921,6 +998,7 @@ class TotemRuntime(context: Context) {
             },
             inventory = inventorySnapshot(),
             url = cfg.metricsUrl(),
+            tele = teleView(),
             preview = preview,
             console = console.snapshot(),
         )
