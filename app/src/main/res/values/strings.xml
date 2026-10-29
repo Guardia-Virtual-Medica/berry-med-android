@@ -58,7 +58,7 @@
     <string name="battery">Evitar que se duerma</string>
     <string name="battery_unavailable">Esta tablet no tiene el ajuste de batería. Buscalo a mano en Ajustes, Batería.</string>
     <string name="usb_permission">Pedir permiso USB</string>
-    <string name="help_usb_default">Al aceptar el permiso USB, marcá «Usar de forma predeterminada» para la plaqueta, el termómetro y el relé. Si no, Android lo vuelve a pedir arriba de Chrome después de cada reinicio o corte del relé.</string>
+    <string name="help_usb_default">Al aceptar el permiso USB, marcá «Usar de forma predeterminada» para la plaqueta, el termómetro y el hub YKUSH3. Si no, Android lo vuelve a pedir arriba de Chrome después de cada reinicio.</string>
     <string name="testing">Testing</string>
     <string name="testing_title">Testing</string>
     <string name="testing_back">← Volver</string>
@@ -74,8 +74,19 @@
     <string name="testing_resume">Seguir</string>
     <string name="testing_clear">Limpiar</string>
     <string name="testing_first">Iniciá la prueba primero.</string>
-    <string name="testing_cut_title">¿Cortar la plaqueta?</string>
-    <string name="testing_cut_body">El relé le corta los 12 V durante 5 s. Si hay una medición de presión en curso, se pierde.</string>
-    <string name="testing_cut_confirm">Cortar 5 s</string>
-    <string name="testing_cancel">Cancelar</string>
+    <string name="testing_ykush">Hub YKUSH3</string>
+    <string name="testing_ykush_help">Cada puerto lleva un equipo. Apagar un puerto es desenchufar ese equipo para Android; encenderlo, enchufarlo de nuevo. Con una consulta enviando no se cambia nada.</string>
+    <string name="testing_ykush_read">Leer estado</string>
+    <string name="testing_on">Encender</string>
+    <string name="testing_off">Apagar</string>
+    <string name="testing_devices">Dispositivos que ve Android</string>
+    <string name="testing_devices_help">Para validar el armado: si las placas de audio USB conviven y si el otoscopio aparece como cámara externa. Se actualiza cada 3 s.</string>
+    <string name="testing_usb">USB</string>
+    <string name="testing_audio">Audio</string>
+    <string name="testing_cameras">Cámaras</string>
+    <string name="section_ykush">Hub YKUSH3</string>
+    <string name="help_ykush">En qué puerto del hub (1 a 3) va cada equipo. Si no sabés, dejá los valores que vienen.</string>
+    <string name="hint_ykush_otoscope">Puerto del otoscopio</string>
+    <string name="hint_ykush_stethoscope">Puerto del estetoscopio</string>
+    <string name="hint_ykush_headset">Puerto del auricular</string>
 </resources>

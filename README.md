@@ -7,7 +7,7 @@ Adelante, en la tablet, va Google Chrome con la plataforma médica. Berry Med tr
 ## Cómo funciona
 
 1. **Al encender la tablet** arranca el servicio de Berry Med, sin abrir ninguna pantalla. Queda en primer plano para Android (con una notificación fija) y sigue andando con la pantalla apagada. También arranca solo después de instalar una versión nueva.
-2. **Conecta los equipos USB**: la plaqueta, el termómetro y el relé (ver [Equipos](#equipos)). Si falta alguno, sigue con los demás.
+2. **Conecta los equipos USB**: la plaqueta, el termómetro y el hub YKUSH3 (ver [Equipos](#equipos)). Si falta alguno, sigue con los demás.
 3. **Escucha las órdenes por Pusher.** Se suscribe al canal público del tótem y espera tres eventos. Pusher no transporta las mediciones.
 
    | Evento | Qué hace |
@@ -28,13 +28,18 @@ Adelante, en la tablet, va Google Chrome con la plataforma médica. Berry Med tr
 
 ## Equipos
 
-Van los tres a un hub USB con alimentación.
+La tablet va a un dock USB-C con carga (un solo puerto USB-C no alcanza para todo). Del dock salen la plaqueta, el termómetro y el hub YKUSH3; del hub, un equipo por puerto.
 
 | Equipo | Cómo lo reconoce la app |
 |---|---|
-| Plaqueta PM6750 | Puerto serie que manda tramas `55 AA` a 115200 baudios. Es un STM32 (fabricante `0483`): un puerto de ST que no contesta se trata como plaqueta trabada. |
+| Plaqueta PM6750 | Puerto serie que manda tramas `55 AA` a 115200 baudios. Es un STM32 (fabricante `0483`): un puerto de ST que no contesta sigue siendo la plaqueta, y se vuelve a probar hasta que arranque. |
 | Termómetro infrarrojo | Como sólo manda cuando alguien mide, no se lo puede reconocer por lo que transmite: toma el puerto serie que no es la plaqueta y lo deja abierto esperando. Un puerto de ST nunca va al termómetro. |
-| Relé `USBRelay2` | HID `16C0:05DF`. Su contacto corta los 12 V de la plaqueta para reiniciarla cuando se traba. |
+| Hub YKUSH3 (Yepkit) | HID `04D8:F11B`. Tres puertos USB que se encienden y apagan por comando. En qué puerto va cada equipo se configura en la pantalla (por defecto 1 otoscopio, 2 estetoscopio, 3 auricular). Esta versión sólo los cambia a mano desde Testing. |
+| Otoscopio | Cámara UVC `349C:3301` (MJPEG). Android la lista como cámara externa si el fabricante de la tablet lo habilitó; la app todavía no la muestra. |
+| Adaptador del estetoscopio | Placa de audio USB `3302:29E3` con jack de 3,5 mm; el estetoscopio Dalia StethoAI va al jack. Android la lista como audio USB; la app todavía no la lee. |
+| Auricular Logitech H390 | Audio USB. Android la lista como auricular USB; la app todavía no lo usa. |
+
+El relé `USBRelay2` que cortaba los 12 V de la plaqueta ya no va: el firmware de la plaqueta se corrigió y no se traba.
 
 ## Cómo se recupera sola
 
@@ -44,16 +49,12 @@ Van los tres a un hub USB con alimentación.
 | Se perdió el `start-monitoring` o el `stop-monitoring` | Lo detecta por la respuesta de la plataforma al `POST` de prueba (cada 10 s mientras espera) o a los envíos (tres `404` seguidos). Ver el punto 4 de [Cómo funciona](#cómo-funciona). |
 | Se corta el wifi | La librería de Pusher reintenta unos 85 s y se rinde. A los 30 s la app le pide otra tanda, y así mientras no haya conexión. Si queda más de 5 min conectando sin respuesta, arma una conexión nueva (cada vez espera el doble, hasta una hora). |
 | La plaqueta deja de mandar datos 5 s (colgada, o apagada con el USB conectado) | Borra sus valores (frecuencia, SpO₂, presión, ondas) para no mandarlos congelados como si fueran actuales. La temperatura del termómetro sigue llegando. |
-| La plaqueta deja de mandar datos 20 s | Corta los 12 V durante 5 s con el relé y vuelve a conectar. |
-| El puerto de la plaqueta abre pero no transmite, no abre, o no acepta la secuencia de arranque tres veces seguidas | Igual: corte de 5 s con el relé. |
-| La plaqueta no aparece en el USB durante 3 min | Corta igual (puede tener alimentación y no llegar a enumerar), y mientras siga sin aparecer, como mucho cada 30 min. Con la plaqueta apagada a propósito y el relé enchufado, el relé conmuta cada media hora. |
-| Un corte no devolvió los 12 V (falló el relé o la app se cerró en medio) | Mientras la plaqueta no aparezca, le pide al relé una vez por minuto que deje pasar la alimentación. |
-| Se desenchufa el cable de la plaqueta | No corta enseguida: espera que vuelva. Si no vuelve en 3 min, aplica la regla de arriba. |
-| Un puerto que no es de ST no contesta | No toca el relé nunca: queda para el termómetro. |
+| La plaqueta deja de mandar datos 20 s | Cierra el puerto, lo vuelve a abrir y repite la secuencia de arranque. |
+| El puerto de la plaqueta abre pero no transmite, no abre, o no acepta la secuencia de arranque | Lo vuelve a probar cada 5 s hasta que arranque. |
+| Se desenchufa el cable de la plaqueta | Espera que vuelva y la toma de nuevo apenas aparece. |
+| Un puerto que no es de ST no contesta | No es la plaqueta: queda para el termómetro. |
 | Llega un byte cortado o una trama rota | Se descarta sin cortar la lectura ni cerrar la app. |
 | El archivo de configuración se corrompe | Vuelve a la configuración vacía y la pantalla avisa, en lugar de cerrar la app. |
-
-Entre un corte del relé y el siguiente pasa como mínimo un minuto, para no cortar la plaqueta mientras arranca. Cada orden al relé se confirma leyendo su estado. El relé recibe 8 bytes `[comando, relé, 0…]`, que es lo que le llega desde el exe cuando éste manda 9 con el report ID 0.
 
 ## Configuración
 
@@ -68,20 +69,20 @@ En la pantalla de Berry Med, en tres pasos:
 
   La URL base tiene que empezar con `https://` y no terminar en `/metrics`; la pantalla muestra cómo queda armada. La ruta `medical_devices` del `readme.txt` del exe es de la plataforma anterior. OnDoctor no pide usuario ni contraseña para recibir mediciones, así que el `POST` va sin autenticación.
 - **Órdenes**: la clave de Pusher (viene del entorno), el cluster (un desplegable, `us2` o `sa1`; por defecto `sa1`), el canal, los nombres de los eventos de inicio y fin, y los minutos máximos de una consulta (30 por defecto, `0` sin tope). El canal se arma solo como `totem.<external_id>` con el identificador de Destino, y lo sigue mientras nadie lo cambie a mano. Tiene que ser público: un canal `private-` o `presence-` no se conecta y la pantalla lo marca. La clave del exe viejo es de otra plataforma y no recibe las órdenes de OnDoctor.
-- **Plaqueta**: la ganancia y el modo de ECG, la ganancia de respiración, el modo de presión y la presión de inflado. La ganancia y el modo se aplican apenas se guardan, sin reconectar.
+- **Plaqueta**: la ganancia y el modo de ECG, la ganancia de respiración, el modo de presión y la presión de inflado. La ganancia y el modo se aplican apenas se guardan, sin reconectar. Abajo, en qué puerto del hub YKUSH3 va el otoscopio, el estetoscopio y el auricular.
 
-Todo queda guardado en la tablet. La pantalla también muestra los signos vitales, si la plaqueta está funcional, el último dato, la conexión con Pusher, el termómetro, el relé y el resultado del último envío.
+Todo queda guardado en la tablet. La pantalla también muestra los signos vitales, si la plaqueta está funcional, el último dato, la conexión con Pusher, el termómetro, el hub YKUSH3 y el resultado del último envío.
 
 ## Instalar y dejarla sola
 
 1. **Abrir Berry Med una vez después de instalarla.** Android no le avisa el encendido a una app que nunca se abrió.
-2. **Aceptar el permiso USB de la plaqueta, el termómetro y el relé marcando "Usar de forma predeterminada".** Android da el permiso por cada conexión: después de un reinicio o de un corte del relé, la plaqueta vuelve como un dispositivo nuevo. Con la casilla marcada lo da solo. Para eso abre una pantalla de Berry Med que no muestra nada y se cierra enseguida, así que Chrome queda adelante. Sin la casilla, cada reinicio o corte del relé muestra un pedido de permiso arriba de Chrome.
+2. **Aceptar el permiso USB de la plaqueta, el termómetro y el hub YKUSH3 marcando "Usar de forma predeterminada".** Android da el permiso por cada conexión: después de un reinicio, cada equipo vuelve como un dispositivo nuevo. Con la casilla marcada lo da solo. Para eso abre una pantalla de Berry Med que no muestra nada y se cierra enseguida, así que Chrome queda adelante. Sin la casilla, cada reinicio muestra un pedido de permiso arriba de Chrome. El otoscopio, el adaptador del estetoscopio y el auricular no piden permiso: Android los maneja como cámara y como audio.
 
    Cada equipo se pide una sola vez, para no tapar Chrome una y otra vez. Si alguien rechaza o cierra el pedido, la pantalla de Berry Med dice "Falta aceptar el permiso USB" y se resuelve con **Pedir permiso USB**. Un equipo sin permiso no frena a los demás.
 3. **Tocar "Evitar que se duerma"** para excluir la app de la optimización de batería. Con Chrome adelante es imprescindible: si Android cierra el servicio, sólo puede volver a levantarlo si la app está excluida. Algunas marcas tienen además su propia lista de apps que se duermen: sacarla de ahí también.
 4. **Sin bloqueo con PIN, patrón ni contraseña.** Con bloqueo seguro Android no avisa el encendido hasta que alguien desbloquea, y la app no arranca.
 5. **Instalar siempre un APK firmado con la misma clave.** Si cambia la clave hay que desinstalar, y eso borra la configuración.
-6. **Probarlo con Chrome adelante**: reiniciar la tablet con todo enchufado y, con una consulta andando, forzar un corte del relé apagando la plaqueta. En los dos casos la plaqueta tiene que volver sola, sin tocar la pantalla y sin que Chrome quede tapado.
+6. **Probarlo con Chrome adelante**: reiniciar la tablet con todo enchufado y, con una consulta andando, desenchufar y volver a enchufar la plaqueta. En los dos casos la plaqueta tiene que volver sola, sin tocar la pantalla y sin que Chrome quede tapado.
 
 Para ver qué está haciendo, con la tablet conectada a una computadora:
 
@@ -108,7 +109,8 @@ El botón **Testing** de la pantalla principal abre un panel para comprobar, en 
   Los umbrales de SpO₂ y respiración son provisorios: alcanza con que llegue la onda.
 - **Presión**: **Medir** y **Parar** infla y desinfla de verdad, con los mismos plazos que una medición pedida por Pusher.
 - **Termómetro**: la última lectura, hace cuánto llegó y la última línea cruda. Sólo manda cuando alguien aprieta el gatillo.
-- **Relé**: **Leer estado** no cambia nada; **Cortar 5 s** pide confirmación, reinicia la plaqueta y respeta el minuto entre cortes.
+- **Hub YKUSH3**: **Leer estado** consulta los tres puertos sin cambiarlos; **Encender** y **Apagar** conmutan cada puerto, y la pantalla dice qué equipo lleva cada uno según la configuración. Con una consulta enviando no se cambia ningún puerto. La app no toca los puertos sola: al encender la tablet el hub arranca con los tres encendidos.
+- **Dispositivos que ve Android**: los dispositivos USB con sus interfaces y permiso, los dispositivos de audio (tipo, nombre, entrada o salida, frecuencia) y las cámaras con su orientación. Sirve para validar el armado antes del Panel Local: si las placas de audio USB conviven y si el otoscopio aparece como cámara externa. Se renueva cada 3 s.
 - **Transmisión (no se envía)**: la URL y el JSON que saldría, con su tamaño, y **Copiar JSON**.
 - **Consola**: los últimos logs del servicio, los mismos de `adb logcat -s BerryMed`.
 

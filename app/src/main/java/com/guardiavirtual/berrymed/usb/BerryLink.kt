@@ -11,14 +11,13 @@ import java.io.IOException
 /**
  * Abre la plaqueta, manda la secuencia de arranque y lee tramas.
  * Si el puerto de ST abre y no aparecen cabeceras 55 AA, o si después se queda
- * muda 20 s, corta la alimentación con el relé. Si el cable desaparece, no lo
- * toca enseguida: sólo si la plaqueta no vuelve a aparecer en 3 minutos. Un
- * puerto de otro fabricante que no contesta no es la plaqueta: queda para el
- * termómetro y no dispara el relé.
+ * muda 20 s, cierra el puerto y vuelve a empezar: abre de nuevo y repite la
+ * secuencia de arranque. La plaqueta ya no necesita que le corten la
+ * alimentación: con el firmware corregido se recupera sola. Un puerto de otro
+ * fabricante que no contesta no es la plaqueta: queda para el termómetro.
  */
 class BerryLink(
     private val hub: UsbHub,
-    private val relay: UsbRelay,
     private val parser: BmDataParser,
     private val tuning: () -> DeviceTuning,
     private val log: (String) -> Unit,
@@ -33,12 +32,6 @@ class BerryLink(
     @Volatile private var nibpStartedAt: Long = 0L
     @Volatile private var lastNibpFrameAt: Long = 0L
     private var appliedStartup: List<Pair<Int, Int>> = emptyList()
-    @Volatile private var lastPowerCycleAt: Long = 0L
-    private var lastPowerCheckAt: Long = 0L
-    private var powerCheckLogged = false
-    private var stSeenAt: Long = System.nanoTime()
-    private var absentCutAt: Long = 0L
-    private val openFailures = HashMap<Int, Int>()
 
     fun lastDataAgeSeconds(): Double? {
         val stamp = lastDataAtNano
@@ -64,14 +57,12 @@ class BerryLink(
                 try {
                     when (readLoop(found.handle)) {
                         End.UsbLost -> sleep(2_000)
-                        End.Silence, End.Stopped -> Unit
+                        // Un momento antes de reabrir, para que el puerto se cierre del todo.
+                        End.Silence -> sleep(1_000)
+                        End.Stopped -> Unit
                     }
                 } finally {
                     release(found.handle)
-                    // Mientras leía, acquire() no corrió: la plaqueta se vio hasta recién,
-                    // y si vuelve a faltar merece un corte a los 3 minutos, no a los 30.
-                    stSeenAt = System.nanoTime()
-                    absentCutAt = 0L
                 }
             }
             Acquire.None -> sleep(5_000)
@@ -79,21 +70,6 @@ class BerryLink(
     }
 
     fun portName(): String? = current?.device?.deviceName
-
-    fun lastPowerCycleAgeSeconds(): Long? {
-        val stamp = lastPowerCycleAt
-        if (stamp == 0L) return null
-        return (System.nanoTime() - stamp) / 1_000_000_000L
-    }
-
-    /**
-     * El corte que se pide a mano desde Testing. Respeta el minuto entre cortes;
-     * devuelve false si todavía no se puede. Tarda los 5 s del corte.
-     */
-    fun manualPowerCycle(): Boolean {
-        if (!relay.plugged()) return false
-        return powerCycle("corte pedido desde Testing")
-    }
 
     fun stopNibp() {
         nibpRunning = false
@@ -134,30 +110,18 @@ class BerryLink(
     }
 
     private fun acquire(): Acquire {
-        val now = System.nanoTime()
-        if (hub.stPresent()) {
-            stSeenAt = now
-            powerCheckLogged = false
-        } else {
-            ensurePowerOn()
-            cutIfLongAbsent(now)
-        }
         val drivers = hub.berryCandidates()
-        openFailures.keys.retainAll(drivers.map { it.device.deviceId }.toSet())
         if (drivers.isEmpty()) {
             connected = false
             return Acquire.None
         }
-        var mute = false
         for (driver in drivers) {
             when (val probe = probe(driver)) {
                 is Probe.Berry -> return Acquire.Ready(probe.handle)
-                Probe.Mute -> mute = true
                 Probe.Skip -> Unit
             }
         }
         connected = false
-        if (mute) powerCycle("el puerto abre pero el PM6750 no transmite")
         return Acquire.None
     }
 
@@ -167,7 +131,9 @@ class BerryLink(
         val handle = hub.open(driver)
         if (handle == null) {
             hub.unmark(id)
-            return stPortFailed(driver, "no abre")
+            // Un puerto de ST que no abre sigue siendo la plaqueta: se reintenta en la próxima vuelta.
+            if (isStPort(driver.device.vendorId)) log("[USB] ${driver.device.deviceName} no abre; se reintenta")
+            return Probe.Skip
         }
         return try {
             val early = readUntil(handle, 400) { bytes -> hasHeader(bytes) || isThermometer(bytes) }
@@ -182,9 +148,9 @@ class BerryLink(
             val sawHeader = hasHeader(early) || hasHeader(readUntil(handle, 5_000) { hasHeader(it) })
             if (!sawHeader) {
                 release(handle)
-                if (muteMeansHungBerry(driver.device.vendorId)) {
-                    log("[USB] ${driver.device.deviceName} abierto sin cabecera 55 AA")
-                    return Probe.Mute
+                if (isStPort(driver.device.vendorId)) {
+                    log("[USB] ${driver.device.deviceName} abierto sin cabecera 55 AA; se reintenta")
+                    return Probe.Skip
                 }
                 hub.markNotBerry(id)
                 log(
@@ -193,7 +159,6 @@ class BerryLink(
                 )
                 return Probe.Skip
             }
-            openFailures.remove(id)
             appliedStartup = startup
             parser.resetData()
             connected = true
@@ -202,7 +167,7 @@ class BerryLink(
         } catch (error: Exception) {
             log("[USB] Error al preparar ${driver.device.deviceName}: $error")
             release(handle)
-            stPortFailed(driver, "no acepta la secuencia de arranque")
+            Probe.Skip
         }
     }
 
@@ -241,9 +206,7 @@ class BerryLink(
                         warned = true
                     }
                     if (silentSeconds >= SILENCE_SECONDS) {
-                        log("[WATCHDOG] PM6750 sin datos durante ${SILENCE_SECONDS.toInt()} s")
-                        release(handle)
-                        powerCycle("el PM6750 se quedó mudo")
+                        log("[WATCHDOG] PM6750 sin datos durante ${SILENCE_SECONDS.toInt()} s: se cierra el puerto y se vuelve a abrir")
                         return End.Silence
                     }
                     checkNibpTimeout()
@@ -273,82 +236,9 @@ class BerryLink(
         }
     }
 
-    /**
-     * Un puerto de ST que sigue enumerado pero no abre o no acepta escrituras,
-     * varias veces seguidas, es la plaqueta trabada. Uno de otro fabricante,
-     * o un fallo suelto, no corta nada.
-     */
-    private fun stPortFailed(driver: UsbSerialDriver, what: String): Probe {
-        val device = driver.device
-        if (!muteMeansHungBerry(device.vendorId)) return Probe.Skip
-        val failures = (openFailures[device.deviceId] ?: 0) + 1
-        openFailures[device.deviceId] = failures
-        log("[USB] ${device.deviceName} $what ($failures)")
-        if (failures < OPEN_FAILURES_BEFORE_CUT || !hub.isPresent(device)) return Probe.Skip
-        return Probe.Mute
-    }
-
-    /**
-     * Si un corte anterior no repuso los 12 V (falló el relé, o la app se
-     * cerró en medio del corte), la plaqueta no vuelve a aparecer y nada
-     * más lo arreglaría. Una vez por minuto, mientras no esté, se le pide al
-     * relé que deje pasar la alimentación. Si ya pasaba, no cambia nada.
-     */
-    private fun ensurePowerOn() {
-        val now = System.nanoTime()
-        if (lastPowerCheckAt != 0L && now - lastPowerCheckAt < RELAY_COOLDOWN_NANOS) return
-        lastPowerCheckAt = now
-        if (!relay.ensurePowerOn() || powerCheckLogged) return
-        log("[WATCHDOG] No aparece la plaqueta: el relé deja pasar los 12 V")
-        powerCheckLogged = true
-    }
-
-    /**
-     * Una plaqueta con 12 V que no llega a enumerar (pasa tras una baja de
-     * tensión) no aparece nunca en el USB, y sólo un corte la recupera. Si
-     * no hay ningún dispositivo de ST hace [ABSENT_BEFORE_CUT_NANOS] se corta,
-     * y mientras siga sin aparecer, como mucho cada [ABSENT_CUT_EVERY_NANOS].
-     */
-    private fun cutIfLongAbsent(now: Long) {
-        if (!absentCutDue(stSeenAt, absentCutAt, now)) return
-        // Si el enfriamiento no dejó cortar, el turno no se gasta: se reintenta en la vuelta siguiente.
-        if (powerCycle("la plaqueta no aparece en el USB hace ${(now - stSeenAt) / 60_000_000_000L} min")) {
-            absentCutAt = now
-        }
-    }
-
     /** Un endpoint trabado puede devolver 0 sin esperar: sin esto el hilo gira sin pausa. */
     private fun pauseIfReadReturnedAtOnce(startedAt: Long) {
         if (System.nanoTime() - startedAt < EMPTY_READ_PAUSE_MS * 1_000_000L) sleep(EMPTY_READ_PAUSE_MS)
-    }
-
-    /**
-     * Devuelve false sólo si el enfriamiento no dejó cortar, para que quien
-     * llama pueda reintentar enseguida. Sin relé, o con el relé sin permiso,
-     * devuelve true: reintentar no cambiaría nada hasta que alguien lo resuelva.
-     * Sincronizado porque el corte manual de Testing llega desde otro hilo.
-     */
-    @Synchronized
-    private fun powerCycle(reason: String): Boolean {
-        if (!relay.plugged()) {
-            log("[WATCHDOG] $reason. No hay relé: no se corta la alimentación.")
-            return true
-        }
-        val now = System.nanoTime()
-        if (!relayCooldownOver(lastPowerCycleAt, now)) {
-            val seconds = (now - lastPowerCycleAt) / 1_000_000_000L
-            log("[WATCHDOG] $reason. El último corte fue hace $seconds s: se espera para no cortarla mientras arranca.")
-            return false
-        }
-        log("[WATCHDOG] $reason. Corte de 12 V durante 5 s.")
-        lastPowerCycleAt = now
-        when (relay.restart()) {
-            UsbRelay.Restart.Restored -> Unit
-            UsbRelay.Restart.NotCut -> log("[WATCHDOG] El relé no respondió. No se hizo el corte.")
-            UsbRelay.Restart.PowerNotRestored ->
-                log("[WATCHDOG] Se cortó pero el relé no devolvió los 12 V. Se reintenta mientras no aparezca la plaqueta.")
-        }
-        return true
     }
 
     /** La ganancia y el modo se aplican apenas se guardan, sin esperar a reconectar. */
@@ -416,7 +306,6 @@ class BerryLink(
 
     private sealed class Probe {
         data class Berry(val handle: SerialHandle) : Probe()
-        data object Mute : Probe()
         data object Skip : Probe()
     }
 
@@ -429,9 +318,6 @@ class BerryLink(
         const val STALE_SECONDS = 5.0
 
         fun valuesAreStale(silentSeconds: Double): Boolean = silentSeconds >= STALE_SECONDS
-
-        /** Entre un corte y el siguiente, para que el PM6750 tenga tiempo de arrancar. */
-        const val RELAY_COOLDOWN_NANOS = 60L * 1_000_000_000L
 
         /**
          * Una medición puede tardar bastante más de 40 s, contando lo que
@@ -449,22 +335,8 @@ class BerryLink(
         fun nibpWentQuiet(lastFrameAt: Long, now: Long): Boolean =
             lastFrameAt != 0L && now - lastFrameAt > NIBP_QUIET_NANOS
 
-        /** Fallos seguidos al abrir un puerto de ST antes de tratarlo como plaqueta trabada. */
-        const val OPEN_FAILURES_BEFORE_CUT = 3
-
-        const val ABSENT_BEFORE_CUT_NANOS = 3L * 60L * 1_000_000_000L
-        const val ABSENT_CUT_EVERY_NANOS = 30L * 60L * 1_000_000_000L
-
-        fun absentCutDue(seenAt: Long, lastAbsentCutAt: Long, now: Long): Boolean {
-            if (now - seenAt < ABSENT_BEFORE_CUT_NANOS) return false
-            return lastAbsentCutAt == 0L || now - lastAbsentCutAt >= ABSENT_CUT_EVERY_NANOS
-        }
-
-        fun relayCooldownOver(lastCutAt: Long, now: Long): Boolean =
-            lastCutAt == 0L || now - lastCutAt >= RELAY_COOLDOWN_NANOS
-
-        /** Sólo un puerto de ST mudo es la plaqueta trabada. Otro mudo es el termómetro esperando. */
-        fun muteMeansHungBerry(vendorId: Int): Boolean = vendorId == UsbHub.STM32_VENDOR
+        /** Sólo un puerto de ST mudo sigue siendo la plaqueta. Otro mudo es el termómetro esperando. */
+        fun isStPort(vendorId: Int): Boolean = vendorId == UsbHub.STM32_VENDOR
 
         fun hasHeader(bytes: ByteArray): Boolean {
             for (i in 0 until bytes.size - 1) {

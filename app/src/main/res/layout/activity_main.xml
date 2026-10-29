@@ -486,6 +486,45 @@
                                 android:inputType="number"
                                 android:singleLine="true" />
                         </com.google.android.material.textfield.TextInputLayout>
+
+                        <TextView style="@style/FormTitle" android:layout_marginTop="16dp" android:text="@string/section_ykush" />
+                        <TextView style="@style/Help" android:text="@string/help_ykush" />
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Field"
+                            android:hint="@string/hint_ykush_otoscope">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/ykushOtoscope"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="number"
+                                android:singleLine="true"
+                                android:text="1" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Field"
+                            android:hint="@string/hint_ykush_stethoscope">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/ykushStethoscope"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="number"
+                                android:singleLine="true"
+                                android:text="2" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Field"
+                            android:hint="@string/hint_ykush_headset">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/ykushHeadset"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="number"
+                                android:singleLine="true"
+                                android:text="3" />
+                        </com.google.android.material.textfield.TextInputLayout>
                     </LinearLayout>
                 </ViewFlipper>
 

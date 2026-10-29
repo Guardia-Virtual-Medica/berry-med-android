@@ -56,6 +56,9 @@ class ConfigStore(private val context: Context) {
             prefs[NIBP_MODE] = config.nibpMode
             prefs[NIBP_TARGET] = config.nibpTargetPressureMmhg
             prefs[MAX_MINUTES] = config.maxSessionMinutes
+            prefs[YKUSH_OTOSCOPE] = config.ykushOtoscopePort
+            prefs[YKUSH_STETHOSCOPE] = config.ykushStethoscopePort
+            prefs[YKUSH_HEADSET] = config.ykushHeadsetPort
         }
     }
 
@@ -99,6 +102,9 @@ class ConfigStore(private val context: Context) {
         nibpMode = this[NIBP_MODE] ?: "adulto",
         nibpTargetPressureMmhg = this[NIBP_TARGET].orEmpty(),
         maxSessionMinutes = this[MAX_MINUTES] ?: 30,
+        ykushOtoscopePort = this[YKUSH_OTOSCOPE] ?: 1,
+        ykushStethoscopePort = this[YKUSH_STETHOSCOPE] ?: 2,
+        ykushHeadsetPort = this[YKUSH_HEADSET] ?: 3,
     )
 
     companion object {
@@ -119,5 +125,8 @@ class ConfigStore(private val context: Context) {
         private val NIBP_MODE = stringPreferencesKey("nibp_mode")
         private val NIBP_TARGET = stringPreferencesKey("nibp_target")
         private val MAX_MINUTES = intPreferencesKey("max_session_minutes")
+        private val YKUSH_OTOSCOPE = intPreferencesKey("ykush_otoscope_port")
+        private val YKUSH_STETHOSCOPE = intPreferencesKey("ykush_stethoscope_port")
+        private val YKUSH_HEADSET = intPreferencesKey("ykush_headset_port")
     }
 }

@@ -21,7 +21,20 @@ data class BerryConfig(
     val nibpMode: String = "adulto",
     val nibpTargetPressureMmhg: String = "",
     val maxSessionMinutes: Int = 30,
+    /** En qué puerto del hub YKUSH3 va cada equipo (1 a 3). */
+    val ykushOtoscopePort: Int = 1,
+    val ykushStethoscopePort: Int = 2,
+    val ykushHeadsetPort: Int = 3,
 ) {
+    /** Qué equipo va en cada puerto del YKUSH3, para la pantalla. Un puerto sin equipo queda "libre". */
+    fun ykushPortRoles(): List<String> = (1..YKUSH_PORTS).map { port ->
+        listOfNotNull(
+            "otoscopio".takeIf { ykushOtoscopePort == port },
+            "estetoscopio".takeIf { ykushStethoscopePort == port },
+            "auricular".takeIf { ykushHeadsetPort == port },
+        ).joinToString(" y ").ifBlank { "libre" }
+    }
+
     fun tuning(): DeviceTuning = DeviceTuning(
         ecgGain = ecgGain,
         ecgMode = ecgMode,
@@ -54,6 +67,14 @@ data class BerryConfig(
         if (!channelIsPublic()) missing += "un canal público (sin private- ni presence-)"
         return missing
     }
+}
+
+const val YKUSH_PORTS = 3
+
+/** Un número de puerto del YKUSH3 escrito a mano: fuera de 1 a 3 vuelve al valor por defecto. */
+fun ykushPortOrDefault(text: String?, default: Int): Int {
+    val port = text?.trim()?.toIntOrNull() ?: return default
+    return if (port in 1..YKUSH_PORTS) port else default
 }
 
 /** Sin http:// o https:// el POST no puede armar la dirección y no sale nunca. */

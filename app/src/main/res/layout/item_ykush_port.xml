@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Un puerto del hub YKUSH3 en el panel Testing: qué equipo lleva, si está encendido, y los botones. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="6dp"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <TextView
+        android:id="@+id/portLabel"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textColor="@color/vital_on"
+        android:textSize="15sp" />
+
+    <TextView
+        android:id="@+id/portState"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="12dp"
+        android:fontFamily="monospace"
+        android:text="sin leer"
+        android:textColor="@color/vital_dim"
+        android:textSize="13sp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/portOn"
+        style="@style/Widget.Material3.Button.OutlinedButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:text="@string/testing_on"
+        android:textColor="@color/vital_on"
+        app:strokeColor="@color/vital_dim" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/portOff"
+        style="@style/Widget.Material3.Button.OutlinedButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/testing_off"
+        android:textColor="@color/vital_on"
+        app:strokeColor="@color/vital_dim" />
+</LinearLayout>

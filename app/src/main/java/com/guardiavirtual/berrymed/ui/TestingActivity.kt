@@ -9,7 +9,6 @@ import android.os.Handler
 import android.os.Looper
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.guardiavirtual.berrymed.BerryMedApp
 import com.guardiavirtual.berrymed.R
 import com.guardiavirtual.berrymed.databinding.ActivityTestingBinding
@@ -37,6 +36,8 @@ class TestingActivity : AppCompatActivity() {
         }
     }
 
+    private val ykushPorts by lazy { listOf(binding.ykushPort1, binding.ykushPort2, binding.ykushPort3) }
+
     private val measureCards by lazy {
         mapOf(
             Measure.Ecg to binding.ecgCard,
@@ -57,7 +58,6 @@ class TestingActivity : AppCompatActivity() {
         binding.tempCard.setup("Temperatura (plaqueta)", "Probar temperatura")
         binding.nibpCard.setup("Presión", "Medir", "Parar")
         binding.thermoCard.setup("Termómetro IR", null)
-        binding.relayCard.setup("Relé USBRelay2", "Leer estado", "Cortar 5 s")
 
         // Volver corta la prueba en onStop, igual que el gesto de atrás.
         binding.backButton.setOnClickListener { finish() }
@@ -79,14 +79,17 @@ class TestingActivity : AppCompatActivity() {
         binding.nibpCard.cardButton2.setOnClickListener {
             binding.nibpCard.cardResult.text = runtime().testNibpStop()
         }
-        binding.relayCard.cardButton.setOnClickListener {
-            binding.relayCard.cardResult.text = "Leyendo…"
-            thread(name = "berry-test-relay") {
-                val text = runtime().testRelayState()
-                handler.post { binding.relayCard.cardResult.text = text }
+        binding.ykushReadButton.setOnClickListener {
+            binding.ykushMessage.text = "Leyendo…"
+            thread(name = "berry-test-ykush") {
+                val text = runtime().testYkushRead()
+                handler.post { binding.ykushMessage.text = text }
             }
         }
-        binding.relayCard.cardButton2.setOnClickListener { confirmCut() }
+        ykushPorts.forEachIndexed { index, row ->
+            row.portOn.setOnClickListener { switchPort(index + 1, on = true) }
+            row.portOff.setOnClickListener { switchPort(index + 1, on = false) }
+        }
 
         binding.copyButton.setOnClickListener {
             val body = lastPreview ?: return@setOnClickListener
@@ -136,19 +139,13 @@ class TestingActivity : AppCompatActivity() {
         runtime().checkMeasure(measure)
     }
 
-    private fun confirmCut() {
-        MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.testing_cut_title)
-            .setMessage(R.string.testing_cut_body)
-            .setNegativeButton(R.string.testing_cancel, null)
-            .setPositiveButton(R.string.testing_cut_confirm) { _, _ ->
-                binding.relayCard.cardResult.text = "Cortando…"
-                thread(name = "berry-test-cut") {
-                    val text = runtime().testRelayCut()
-                    handler.post { binding.relayCard.cardResult.text = text }
-                }
-            }
-            .show()
+    /** Enciende o apaga un puerto del YKUSH3. Tarda hasta un segundo, así que va en otro hilo. */
+    private fun switchPort(port: Int, on: Boolean) {
+        binding.ykushMessage.text = if (on) "Encendiendo el puerto $port…" else "Apagando el puerto $port…"
+        thread(name = "berry-test-ykush") {
+            val text = runtime().testYkushSet(port, on)
+            handler.post { binding.ykushMessage.text = text }
+        }
     }
 
     private fun render(s: TestingSnapshot) {
@@ -222,11 +219,22 @@ class TestingActivity : AppCompatActivity() {
             binding.thermoCard.cardResult.text = ""
         }
 
-        binding.relayCard.show(
-            if (s.relayPlugged) "Presente" else "Sin conectar",
-            "16C0:05DF\núltimo corte: " + (s.lastCutAge?.let { "hace ${it / 60} min" } ?: "ninguno desde que arrancó"),
-            s.relayPlugged,
-        )
+        dot(binding.ykushDot, s.ykushPlugged)
+        binding.ykushStatus.text = if (s.ykushPlugged) "Conectado · 04D8:F11B" else "Sin conectar"
+        s.ykushPorts.forEachIndexed { index, port ->
+            val row = ykushPorts[index]
+            row.portLabel.text = "Puerto ${port.port} · ${port.role}"
+            row.portState.text = when (port.on) {
+                true -> "encendido"
+                false -> "apagado"
+                null -> "sin leer"
+            }
+            row.portState.setTextColor(getColor(if (port.on == true) R.color.status_live else R.color.vital_dim))
+        }
+
+        binding.usbList.text = s.inventory.usb.ifEmpty { listOf("Android no ve ningún dispositivo USB") }.joinToString("\n")
+        binding.audioList.text = s.inventory.audio.joinToString("\n")
+        binding.cameraList.text = s.inventory.cameras.joinToString("\n")
 
         binding.previewUrl.text = s.url?.let { "POST $it" } ?: "Falta configurar la URL o el tótem"
         lastPreview = s.preview

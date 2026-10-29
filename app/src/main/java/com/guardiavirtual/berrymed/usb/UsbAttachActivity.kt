@@ -10,7 +10,7 @@ import com.guardiavirtual.berrymed.service.MonitorService
 import com.guardiavirtual.berrymed.service.TotemRuntime
 
 /**
- * Lo que Android abre al conectarse la plaqueta, el termómetro o el relé. No
+ * Lo que Android abre al conectarse la plaqueta, el termómetro o el hub YKUSH3. No
  * muestra nada y se cierra enseguida: adelante tiene que seguir Chrome con la
  * plataforma médica. Con "Usar de forma predeterminada", Android da el permiso
  * USB antes de abrirla, así que no hace falta nada más que existir.

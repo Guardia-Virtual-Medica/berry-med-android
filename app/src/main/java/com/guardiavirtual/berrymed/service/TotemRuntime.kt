@@ -18,9 +18,10 @@ import com.guardiavirtual.berrymed.protocol.sessionExpired
 import com.guardiavirtual.berrymed.protocol.splitWindow
 import com.guardiavirtual.berrymed.protocol.summarize
 import com.guardiavirtual.berrymed.usb.BerryLink
+import com.guardiavirtual.berrymed.usb.DeviceInventory
 import com.guardiavirtual.berrymed.usb.ThermometerLink
 import com.guardiavirtual.berrymed.usb.UsbHub
-import com.guardiavirtual.berrymed.usb.UsbRelay
+import com.guardiavirtual.berrymed.usb.YkushHub
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -39,8 +40,9 @@ class TotemRuntime(context: Context) {
     val store = ConfigStore(appContext)
     private val parser = BmDataParser()
     private val hub = UsbHub(appContext)
-    private val relay = UsbRelay(hub)
-    private val berry = BerryLink(hub, relay, parser, { config.tuning() }, ::log)
+    private val ykush = YkushHub(hub, ::log)
+    private val inventory = DeviceInventory(appContext)
+    private val berry = BerryLink(hub, parser, { config.tuning() }, ::log)
     private val thermo = ThermometerLink(hub, { berry.connected }, ::log)
     private val poster = MetricsPoster()
 
@@ -74,6 +76,7 @@ class TotemRuntime(context: Context) {
     @Volatile var testing: Boolean = false
         private set
     @Volatile private var lastWindow: SampleWindow? = null
+    @Volatile private var inventoryCache: DeviceInventory.Snapshot? = null
     val console = ConsoleLog()
     private val testingSession = TestingSession()
 
@@ -307,7 +310,7 @@ class TotemRuntime(context: Context) {
                     else -> "Termómetro conectado, sin mediciones todavía. "
                 },
             )
-            append(if (relay.plugged()) "Relé presente. " else "Relé sin conectar. ")
+            append(if (ykush.plugged()) "Hub YKUSH3 presente. " else "Hub YKUSH3 sin conectar. ")
             append(if (active) "La sesión está enviando." else "La sesión está detenida.")
             val missing = config.missingFields()
             if (missing.isNotEmpty()) append(" Falta configurar: ${missing.joinToString(", ")}.")
@@ -370,25 +373,35 @@ class TotemRuntime(context: Context) {
         return "STOP enviado"
     }
 
-    /** Lee el estado del relé sin cambiarlo. Bloquea un momento: llamarlo fuera del hilo de la pantalla. */
-    fun testRelayState(): String {
-        val passing = relay.powerPassing()
-        val text = when (passing) {
-            null -> "El relé no contesta o no está conectado"
-            true -> "Relé apagado: los 12 V pasan a la plaqueta"
-            false -> "Relé encendido: la plaqueta está sin alimentación"
-        }
-        log("[RELÉ] $text")
-        return text
+    /** Lee los tres puertos del YKUSH3 sin cambiarlos. Bloquea hasta un segundo: llamarlo fuera del hilo de la pantalla. */
+    fun testYkushRead(): String {
+        if (!ykush.plugged()) return "No hay hub YKUSH3 conectado."
+        if (hub.permissionMissing() && ykush.lastStates.all { it == null }) hub.forgetAsked()
+        val states = ykush.readAll()
+        if (states.all { it == null }) return "El hub no contesta. Si recién lo enchufaste, aceptá el permiso USB."
+        return "Estado leído"
     }
 
-    /** Tarda los 5 s del corte: llamarlo fuera del hilo de la pantalla. */
-    fun testRelayCut(): String = when {
-        !testing -> "Iniciá la prueba primero."
-        sessionActive -> "Hay una consulta enviando: no se corta la plaqueta."
-        !relay.plugged() -> "No hay relé conectado."
-        !berry.manualPowerCycle() -> "El último corte fue hace menos de un minuto. Esperá y probá de nuevo."
-        else -> "Corte hecho. La plaqueta se vuelve a conectar sola."
+    /**
+     * Enciende o apaga un puerto del YKUSH3 desde Testing. Con una consulta
+     * enviando no se toca nada: podría dejar al médico sin un equipo.
+     * Bloquea hasta un segundo: llamarlo fuera del hilo de la pantalla.
+     */
+    fun testYkushSet(port: Int, on: Boolean): String = when {
+        sessionActive -> "Hay una consulta enviando: no se cambia ningún puerto."
+        !ykush.plugged() -> "No hay hub YKUSH3 conectado."
+        !ykush.setPort(port, on) -> "El hub no aceptó la orden. Mirá la consola."
+        else -> "Puerto $port ${if (on) "encendido" else "apagado"}"
+    }
+
+    /** Lo que Android ve enchufado, renovado cada [INVENTORY_NANOS] mientras Testing lo mira. */
+    private fun inventorySnapshot(): DeviceInventory.Snapshot {
+        val cached = inventoryCache
+        val now = System.nanoTime()
+        if (cached != null && now - cached.takenAtNano < INVENTORY_NANOS) return cached
+        val fresh = inventory.snapshot()
+        inventoryCache = fresh
+        return fresh
     }
 
     fun testingSnapshot(): TestingSnapshot {
@@ -421,8 +434,11 @@ class TotemRuntime(context: Context) {
             thermoReading = reading?.let { "${it.value} ${it.unit}" },
             thermoAge = if (thermoAt == 0L) null else (System.nanoTime() - thermoAt) / 1_000_000_000L,
             thermoLine = thermo.lastLine,
-            relayPlugged = relay.plugged(),
-            lastCutAge = berry.lastPowerCycleAgeSeconds(),
+            ykushPlugged = ykush.plugged(),
+            ykushPorts = cfg.ykushPortRoles().mapIndexed { index, role ->
+                YkushPortView(port = index + 1, role = role, on = ykush.lastStates.getOrNull(index))
+            },
+            inventory = inventorySnapshot(),
             url = cfg.metricsUrl(),
             preview = preview,
             console = console.snapshot(),
@@ -445,5 +461,6 @@ class TotemRuntime(context: Context) {
     companion object {
         const val TAG = "BerryMed"
         private const val TICK_NANOS = 1_000_000_000L
+        private const val INVENTORY_NANOS = 3L * 1_000_000_000L
     }
 }
