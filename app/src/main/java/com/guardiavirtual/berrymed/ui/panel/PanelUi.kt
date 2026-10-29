@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package com.guardiavirtual.berrymed.ui.panel
 
+import com.guardiavirtual.berrymed.audio.StethoDsp
+import com.guardiavirtual.berrymed.audio.StethoFilter
+import com.guardiavirtual.berrymed.audio.StethoRecorder
 import com.guardiavirtual.berrymed.otoscope.OtoscopePower
 import com.guardiavirtual.berrymed.protocol.Pm6750Protocol
 import com.guardiavirtual.berrymed.service.LocalSnapshot
 import java.time.ZoneId
+import kotlin.math.ceil
 
 /** El dispositivo abierto en el área principal, en lugar del ECG. */
 enum class PanelDevice { OTOSCOPE, STETHOSCOPE, CAMERA }
@@ -14,9 +18,10 @@ enum class Link { CONNECTED, CONNECTING, DISCONNECTED }
 
 /**
  * El color de un texto de estado. Color es estado: ok es conectado o en
- * vivo, warn es conectando o señal débil, y faint es desconectado.
+ * vivo, warn es conectando o señal débil, faint es desconectado y recording
+ * es el rojo de "Grabando" (no es una alarma: el panel no tiene alarmas).
  */
-enum class Tone { OK, WARN, MUTED, FAINT }
+enum class Tone { OK, WARN, MUTED, FAINT, RECORDING }
 
 data class Status(val text: String, val tone: Tone)
 
@@ -83,7 +88,36 @@ enum class VideoPrimary { FREEZE, SAVE }
  * propio del dispositivo (Apagar o Cambiar cámara); [help] es la ayuda de
  * debajo de Congelar.
  */
-data class VideoButtons(val primary: VideoPrimary?, val discard: Boolean, val help: Boolean)
+data class VideoButtons(
+    val primary: VideoPrimary?,
+    val discard: Boolean,
+    val help: Boolean,
+    /** Mirando una captura ya guardada no hay nada que descartar: el botón dice "Volver al vivo". */
+    val backToLive: Boolean = false,
+)
+
+/**
+ * El botón principal del estetoscopio: Escuchar cuando no escucha, Grabar
+ * 15 s mientras escucha y "Grabando… N s" mientras graba (tocarlo corta y
+ * guarda).
+ */
+enum class StethoPrimary { LISTEN, RECORD, RECORDING }
+
+/**
+ * Los botones del estetoscopio. [remaining] son los segundos que le quedan
+ * a la grabación, para la cuenta regresiva; [filters] es si se puede cambiar
+ * de filtro (no mientras graba: la grabación lleva el nombre de su filtro).
+ */
+data class StethoButtons(
+    val primary: StethoPrimary,
+    val primaryEnabled: Boolean,
+    val stopEnabled: Boolean,
+    val remaining: Int,
+    val filters: Boolean,
+)
+
+/** Una fila de la lista de grabaciones: "Grabación 2 · Corazón", la hora y si está sonando. */
+data class RecordingRow(val number: Int, val filter: StethoFilter, val at: String, val playing: Boolean)
 
 /** Lo que sabe la pantalla y no el runtime. */
 data class ScreenState(
@@ -113,6 +147,9 @@ data class PanelState(
     val otoscopeStatus: Status,
     val stethoscopeStatus: Status,
     val cameraStatus: Status,
+    val stetho: StethoButtons,
+    val stethoFilter: StethoFilter,
+    val recordings: List<RecordingRow>,
 )
 
 /**
@@ -151,12 +188,15 @@ class PanelUi {
             ),
             stethoscopeTile = Tile(
                 enabled = s.stethoAvailable || screen.openDevice == PanelDevice.STETHOSCOPE,
-                status = stethoscopeStatus,
+                status = stethoscopeTileStatus(s),
             ),
             cameraTile = cameraTile(screen),
             otoscopeStatus = otoscopeStatus,
             stethoscopeStatus = stethoscopeStatus,
             cameraStatus = cameraStatus(screen),
+            stetho = stethoButtons(s),
+            stethoFilter = s.stethoFilter,
+            recordings = recordingRows(s, zone),
         )
     }
 
@@ -209,12 +249,6 @@ class PanelUi {
         const val DEFAULT_SPEED = 25f
         const val DEFAULT_GAIN = 10f
 
-        /**
-         * El volumen del estetoscopio, por ahora sobre las ganancias de hoy
-         * (x1, x2, x4): se muestran como 2, 5 y 10 de una escala de 0 a 10.
-         */
-        private val VOLUMES = mapOf(1 to 2, 2 to 5, 4 to 10)
-
         private val LIVE = Status("En vivo", Tone.OK)
         private val CONNECTING = Status("Conectando", Tone.WARN)
         private val CONNECTED = Status("Conectado", Tone.MUTED)
@@ -227,14 +261,40 @@ class PanelUi {
         /** La ganancia en mm/mV como factor sobre la de 10 mm/mV: 5 es x0,5 y 20 es x2. */
         fun gainFactor(mmPerMv: Float): Float = mmPerMv / DEFAULT_GAIN
 
-        fun stethoVolume(gain: Int): Int = VOLUMES[gain] ?: VOLUMES.getValue(1)
+        /** El volumen del estetoscopio con − o +: de a 1, entre 0 y 10; en los extremos se queda. */
+        fun stethoVolumeStep(volume: Int, up: Boolean): Int =
+            (volume + if (up) 1 else -1).coerceIn(StethoDsp.VOLUME_MIN, StethoDsp.VOLUME_MAX)
 
-        /** La ganancia siguiente hacia arriba o hacia abajo; en los extremos se queda. */
-        fun stethoGainStep(gain: Int, up: Boolean): Int {
-            val gains = VOLUMES.keys.sorted()
-            val index = gains.indexOf(gain).coerceAtLeast(0)
-            return gains[(if (up) index + 1 else index - 1).coerceIn(0, gains.size - 1)]
+        /** Los segundos que le quedan a la grabación, para la cuenta regresiva: 15 al empezar, 0 al llenarse. */
+        fun recordingRemaining(seconds: Double): Int =
+            ceil(StethoRecorder.MAX_SECONDS - seconds).toInt().coerceIn(0, StethoRecorder.MAX_SECONDS)
+
+        fun stethoButtons(s: LocalSnapshot): StethoButtons {
+            val seconds = s.stethoRecordingSeconds
+            val primary = when {
+                seconds != null -> StethoPrimary.RECORDING
+                s.stethoRunning -> StethoPrimary.RECORD
+                else -> StethoPrimary.LISTEN
+            }
+            return StethoButtons(
+                primary = primary,
+                primaryEnabled = primary != StethoPrimary.LISTEN || (s.stethoAvailable && !s.stethoStarting),
+                stopEnabled = s.stethoRunning || s.stethoStarting,
+                remaining = seconds?.let(::recordingRemaining) ?: StethoRecorder.MAX_SECONDS,
+                filters = seconds == null,
+            )
         }
+
+        /** Las grabaciones que se ven, la más nueva arriba, con la hora en que se empezaron. */
+        fun recordingRows(s: LocalSnapshot, zone: ZoneId = ZoneId.systemDefault()): List<RecordingRow> =
+            s.stethoRecordings.asReversed().map { recording ->
+                RecordingRow(
+                    number = recording.number,
+                    filter = recording.filter,
+                    at = PanelFormat.clock(recording.atMillis, zone),
+                    playing = recording.number == s.stethoReplaying,
+                )
+            }
 
         /**
          * Congelar y capturar no van a la vez: en vivo se congela; congelado se
@@ -244,7 +304,7 @@ class PanelUi {
         fun videoButtons(mode: VideoMode): VideoButtons = when (mode) {
             VideoMode.LIVE -> VideoButtons(VideoPrimary.FREEZE, discard = false, help = true)
             VideoMode.FROZEN -> VideoButtons(VideoPrimary.SAVE, discard = true, help = false)
-            VideoMode.REVIEW -> VideoButtons(null, discard = true, help = false)
+            VideoMode.REVIEW -> VideoButtons(null, discard = true, help = false, backToLive = true)
         }
 
         /** La plaqueta está transmitiendo: conectada y con datos en los últimos 3 s. */
@@ -308,10 +368,18 @@ class PanelUi {
         }
 
         fun stethoscopeStatus(s: LocalSnapshot): Status = when {
+            s.stethoRecordingSeconds != null -> Status("Grabando", Tone.RECORDING)
             s.stethoRunning -> Status("Escuchando", Tone.OK)
+            s.stethoReplaying != null -> Status("Reproduciendo", Tone.OK)
             s.stethoStarting -> CONNECTING
             s.stethoAvailable -> CONNECTED
             else -> DISCONNECTED
+        }
+
+        /** El tile del dock: lo mismo que el encabezado, y mientras graba la cuenta regresiva. */
+        fun stethoscopeTileStatus(s: LocalSnapshot): Status {
+            val seconds = s.stethoRecordingSeconds ?: return stethoscopeStatus(s)
+            return Status("Grabando · ${recordingRemaining(seconds)} s", Tone.RECORDING)
         }
 
         fun cameraTile(screen: ScreenState): Tile = when (screen.camera) {

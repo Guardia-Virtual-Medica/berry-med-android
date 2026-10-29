@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package com.guardiavirtual.berrymed.service
 
+import com.guardiavirtual.berrymed.audio.StethoFilter
+import com.guardiavirtual.berrymed.audio.StethoRecording
 import com.guardiavirtual.berrymed.otoscope.OtoscopePower
 import com.guardiavirtual.berrymed.protocol.EcgInfo
 import com.guardiavirtual.berrymed.protocol.LiveFeed
@@ -28,6 +30,13 @@ data class LocalSnapshot(
     val stethoStarting: Boolean,
     val stethoRunning: Boolean,
     val stethoPlaying: Boolean,
+    val stethoFilter: StethoFilter = StethoFilter.DEFAULT,
+    /** Los segundos que lleva la grabación en curso, o null si no está grabando. */
+    val stethoRecordingSeconds: Double? = null,
+    /** Las grabaciones que se ven, de la más vieja a la más nueva. */
+    val stethoRecordings: List<StethoRecording> = emptyList(),
+    /** El número de la grabación que está sonando, o null. */
+    val stethoReplaying: Int? = null,
     /** El otoscopio está enchufado por USB (sin contar el YKUSH3). */
     val otoscopePlugged: Boolean,
     /** El tile del otoscopio se abre si está el otoscopio o el YKUSH3 que lo enciende. */

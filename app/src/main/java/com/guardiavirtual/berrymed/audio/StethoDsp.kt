@@ -21,21 +21,24 @@ object StethoDsp {
     /** El centro de la onda en el [com.guardiavirtual.berrymed.protocol.LiveFeed]: así se dibuja como las de la plaqueta. */
     const val WAVE_CENTER = 32_768
 
-    /** Las ganancias que ofrece la tarjeta, en el orden en que las recorre el botón. */
-    val GAINS = intArrayOf(1, 2, 4)
+    /** El volumen del panel va de 0 a 10; arranca en 6, un poco arriba de la señal tal como llega. */
+    const val VOLUME_MIN = 0
+    const val VOLUME_MAX = 10
+    const val DEFAULT_VOLUME = 6
 
-    /** La siguiente ganancia: x1 → x2 → x4 → x1. */
-    fun nextGain(current: Int): Int {
-        val index = GAINS.indexOf(current)
-        return GAINS[(index + 1) % GAINS.size]
-    }
+    /**
+     * El volumen como ganancia: 0 es silencio, 5 deja la señal como llega y
+     * 10 la duplica. Más de x2 ya satura con un roce del diafragma, y el
+     * recorte suave de [amplify] se oye antes que el latido.
+     */
+    fun volumeGain(volume: Int): Double = volume.coerceIn(VOLUME_MIN, VOLUME_MAX) / 5.0
 
     /**
      * Ganancia y recorte suave: hasta la mitad de la escala pasa igual, y de
      * ahí se curva hacia el tope sin llegar. Un recorte duro en el auricular
      * suena como un chasquido cada vez que el diafragma roza algo.
      */
-    fun amplify(sample: Double, gain: Int): Double {
+    fun amplify(sample: Double, gain: Double): Double {
         val x = sample * gain
         val knee = FULL_SCALE / 2.0
         val magnitude = abs(x)

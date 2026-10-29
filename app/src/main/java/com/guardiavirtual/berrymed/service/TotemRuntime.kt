@@ -638,22 +638,68 @@ class TotemRuntime(context: Context) {
         return (listOf("Escuchando.") + notes).joinToString(" ")
     }
 
-    /** Parar: deja de escuchar; los puertos del YKUSH3 quedan como están. */
+    /**
+     * Parar: deja de escuchar; los puertos del YKUSH3 quedan como están. Si
+     * estaba grabando, la grabación se guarda con lo que tenga (o se descarta
+     * si no llegó a 1 s).
+     */
     fun localStethoStop(done: (String) -> Unit) {
         stopStethoscope(closing = false)
         stethoWorker.execute { done("Detenido.") }
     }
 
+    /** Grabar 15 s de lo que se está escuchando, en memoria. */
+    fun localStethoRecord(): String =
+        if (stetho.startRecording()) "Grabando." else "Para grabar hay que estar escuchando."
+
+    /** Corta la grabación en curso y la guarda si pasó de 1 s. */
+    fun localStethoStopRecording(): String =
+        if (stetho.stopRecording() != null) "Grabación guardada." else "Grabación muy corta: se descartó."
+
+    /**
+     * Reproduce una grabación por el auricular. Si se está escuchando, primero
+     * se para la escucha (y lo que se estuviera grabando se guarda): las dos
+     * no se superponen y el adaptador no queda abierto mientras suena la
+     * grabación. En el hilo del estetoscopio, después de parar; [done] se
+     * llama desde ahí con el mensaje para el panel.
+     */
+    fun localStethoPlay(number: Int, done: (String) -> Unit) {
+        if (!localMode) {
+            done("El panel no está activo.")
+            return
+        }
+        if (stetho.running || stethoStarting) stopStethoscope(closing = false)
+        stethoWorker.execute {
+            if (!localMode) return@execute
+            done(stetho.play(number, config) ?: "Reproduciendo la grabación $number.")
+        }
+    }
+
+    fun localStethoStopPlayback(done: (String) -> Unit) {
+        stethoWorker.execute {
+            stetho.stopPlayback()
+            done("")
+        }
+    }
+
+    /** Al bloquear el panel: las grabaciones se descartan, igual que las capturas. */
+    fun localStethoDiscard() {
+        stethoWorker.execute { stetho.clearRecordings() }
+    }
+
     /**
      * Corta el audio en el hilo del estetoscopio y, al cerrar el panel,
-     * apaga los puertos que el panel encendió. Cambiar el epoch primero hace
-     * que una espera de Escuchar en curso se abandone enseguida.
+     * descarta las grabaciones y apaga los puertos que el panel encendió.
+     * Cambiar el epoch primero hace que una espera de Escuchar en curso se
+     * abandone enseguida.
      */
     private fun stopStethoscope(closing: Boolean) {
         stethoEpoch++
         stethoWorker.execute {
             stetho.stop()
             if (!closing) return@execute
+            // Después de stop(), que guarda lo que se estaba grabando: así no sobrevive nada.
+            stetho.clearRecordings()
             val ports = stethoPorts.takeToTurnOff()
             if (ports.isEmpty() || !ykush.plugged()) return@execute
             for (port in ports) ykush.setPort(port, false)
@@ -801,6 +847,10 @@ class TotemRuntime(context: Context) {
             stethoStarting = stethoStarting,
             stethoRunning = stetho.running,
             stethoPlaying = stetho.playing,
+            stethoFilter = stetho.filter,
+            stethoRecordingSeconds = stetho.recording,
+            stethoRecordings = stetho.recordings(),
+            stethoReplaying = stetho.replaying,
             otoscopePlugged = plugged.otoscope,
             otoscopeAvailable = otoscope.state != OtoscopePower.State.OFF || plugged.ykush || plugged.otoscope,
             otoscopeState = otoscope.state,

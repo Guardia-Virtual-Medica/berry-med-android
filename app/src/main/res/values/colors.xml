@@ -51,9 +51,14 @@
     <color name="temp">#FF9F5A</color>
     <color name="phono">#8FB8FF</color>
 
-    <!-- Estado. Los de alarma quedan definidos para cuando se decidan; hoy nada los usa. -->
+    <!--
+        Estado. Los de alarma quedan definidos para cuando se decidan; hoy
+        sólo el rojo de alarm se usa, y no como alarma: es el fondo de
+        "Grabando…" del estetoscopio, y recording su texto en el dock.
+    -->
     <color name="primary">#4C9BFF</color>
     <color name="onPrimary">#06101C</color>
+    <color name="recording">#FF6B6B</color>
     <color name="alarm">#FF4D4F</color>
     <color name="alarmBg">#2A1013</color>
     <color name="alarmText">#FF8A8A</color>

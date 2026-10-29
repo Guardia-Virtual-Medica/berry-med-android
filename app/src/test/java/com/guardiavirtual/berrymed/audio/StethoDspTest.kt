@@ -44,14 +44,24 @@ class StethoDspTest {
     }
 
     @Test
-    fun theGainCyclesAndTheSoftClipNeverReachesFullScale() {
-        assertEquals(2, StethoDsp.nextGain(1))
-        assertEquals(4, StethoDsp.nextGain(2))
-        assertEquals(1, StethoDsp.nextGain(4))
-        assertEquals(2_000.0, StethoDsp.amplify(1_000.0, 2))
-        val loud = StethoDsp.amplify(30_000.0, 4)
+    fun theSoftClipNeverReachesFullScale() {
+        assertEquals(2_000.0, StethoDsp.amplify(1_000.0, 2.0))
+        assertEquals(1_200.0, StethoDsp.amplify(1_000.0, 1.2), 1e-9)
+        val loud = StethoDsp.amplify(30_000.0, 2.0)
         assertTrue(loud > 16_384 && loud < StethoDsp.FULL_SCALE, "quedó en $loud")
-        assertEquals(-loud, StethoDsp.amplify(-30_000.0, 4))
+        assertEquals(-loud, StethoDsp.amplify(-30_000.0, 2.0))
         assertEquals(Short.MAX_VALUE, StethoDsp.toPcm(40_000.0))
+    }
+
+    @Test
+    fun theVolumeIsTheGainOverFive() {
+        assertEquals(0.0, StethoDsp.volumeGain(0))
+        assertEquals(1.0, StethoDsp.volumeGain(5))
+        assertEquals(1.2, StethoDsp.volumeGain(StethoDsp.DEFAULT_VOLUME), 1e-9)
+        assertEquals(2.0, StethoDsp.volumeGain(10))
+        // Fuera de la escala queda en el extremo.
+        assertEquals(2.0, StethoDsp.volumeGain(14))
+        assertEquals(0.0, StethoDsp.volumeGain(-3))
+        assertEquals(0.0, StethoDsp.amplify(12_000.0, StethoDsp.volumeGain(0)))
     }
 }

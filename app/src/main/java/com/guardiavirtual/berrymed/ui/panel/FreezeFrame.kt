@@ -37,7 +37,7 @@ class FreezeFrame(
         val help: View,
         /** El botón propio del dispositivo: Apagar o Cambiar cámara. */
         val own: View,
-        val discard: View,
+        val discard: MaterialButton,
         val capturesLabel: TextView,
         val capturesEmpty: View,
         val capturesGrid: View,
@@ -173,6 +173,7 @@ class FreezeFrame(
         views.help.visibility = if (buttons.help) View.VISIBLE else View.GONE
         views.own.visibility = if (buttons.discard) View.GONE else View.VISIBLE
         views.discard.visibility = if (buttons.discard) View.VISIBLE else View.GONE
+        views.discard.setText(if (buttons.backToLive) R.string.local_capture_back_live else R.string.local_capture_discard)
         views.badge.visibility = if (mode == VideoMode.LIVE) View.GONE else View.VISIBLE
     }
 

@@ -578,36 +578,92 @@
                             android:orientation="horizontal"
                             android:padding="11dp">
 
-                            <FrameLayout
+                            <!--
+                                El visor y, debajo, las grabaciones en una fila: en la columna
+                                de controles no entran tres filas de 44 dp con Parar a 800 dp.
+                            -->
+                            <LinearLayout
                                 android:layout_width="0dp"
                                 android:layout_height="match_parent"
                                 android:layout_weight="1"
-                                android:background="@drawable/panel_viewer">
+                                android:orientation="vertical">
 
-                                <com.guardiavirtual.berrymed.ui.panel.WaveformView
-                                    android:id="@+id/stethoWave"
+                                <FrameLayout
                                     android:layout_width="match_parent"
-                                    android:layout_height="match_parent" />
+                                    android:layout_height="0dp"
+                                    android:layout_weight="1"
+                                    android:background="@drawable/panel_viewer">
+    
+                                    <com.guardiavirtual.berrymed.ui.panel.WaveformView
+                                        android:id="@+id/stethoWave"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="match_parent" />
+    
+                                    <TextView
+                                        android:id="@+id/phonoLabel"
+                                        style="@style/Panel.Text.Caps"
+                                        android:layout_gravity="top|start"
+                                        android:layout_marginStart="14dp"
+                                        android:layout_marginTop="12dp"
+                                        tools:text="Fonocardiograma · filtro corazón" />
+    
+                                    <!-- Lo que dice el estetoscopio al empezar o si algo falla. -->
+                                    <TextView
+                                        android:id="@+id/stethoMessage"
+                                        style="@style/Panel.Text.Small"
+                                        android:layout_width="match_parent"
+                                        android:layout_gravity="bottom|start"
+                                        android:layout_marginStart="14dp"
+                                        android:layout_marginEnd="14dp"
+                                        android:layout_marginBottom="12dp"
+                                        android:lineSpacingMultiplier="1.2"
+                                        tools:text="Escuchando. Sin auricular: sólo se ve la onda." />
+                                </FrameLayout>
 
-                                <TextView
-                                    style="@style/Panel.Text.Caps"
-                                    android:layout_gravity="top|start"
-                                    android:layout_marginStart="14dp"
-                                    android:layout_marginTop="12dp"
-                                    android:text="@string/local_phono_label" />
-
-                                <!-- Lo que dice el estetoscopio al empezar o si algo falla. -->
-                                <TextView
-                                    android:id="@+id/stethoMessage"
-                                    style="@style/Panel.Text.Small"
+                                <!-- Las últimas tres grabaciones, la más nueva a la izquierda. -->
+                                <FrameLayout
                                     android:layout_width="match_parent"
-                                    android:layout_gravity="bottom|start"
-                                    android:layout_marginStart="14dp"
-                                    android:layout_marginEnd="14dp"
-                                    android:layout_marginBottom="12dp"
-                                    android:lineSpacingMultiplier="1.2"
-                                    tools:text="Escuchando. Sin auricular: sólo se ve la onda." />
-                            </FrameLayout>
+                                    android:layout_height="44dp"
+                                    android:layout_marginTop="12dp">
+
+                                    <TextView
+                                        android:id="@+id/recordingsEmpty"
+                                        style="@style/Panel.Text"
+                                        android:layout_gravity="center_vertical|start"
+                                        android:layout_marginStart="4dp"
+                                        android:text="@string/local_recordings_empty"
+                                        android:textColor="@color/faint"
+                                        android:textSize="14sp" />
+
+                                    <LinearLayout
+                                        android:id="@+id/recordingsRow"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="match_parent"
+                                        android:orientation="horizontal"
+                                        android:visibility="gone">
+
+                                        <include
+                                            android:id="@+id/recording0"
+                                            layout="@layout/panel_recording_row" />
+
+                                        <Space
+                                            android:layout_width="8dp"
+                                            android:layout_height="0dp" />
+
+                                        <include
+                                            android:id="@+id/recording1"
+                                            layout="@layout/panel_recording_row" />
+
+                                        <Space
+                                            android:layout_width="8dp"
+                                            android:layout_height="0dp" />
+
+                                        <include
+                                            android:id="@+id/recording2"
+                                            layout="@layout/panel_recording_row" />
+                                    </LinearLayout>
+                                </FrameLayout>
+                            </LinearLayout>
 
                             <LinearLayout
                                 android:layout_width="208dp"
@@ -619,7 +675,7 @@
                                     style="@style/Panel.Text.Caps"
                                     android:text="@string/local_stetho_filter" />
 
-                                <!-- El filtro queda fijo en Corazón hasta que se pueda cambiar en vivo. -->
+                                <!-- Se cambia en vivo; mientras graba queda fijo, porque la grabación lleva su nombre. -->
                                 <LinearLayout
                                     style="@style/Panel.Segments"
                                     android:layout_width="match_parent"
@@ -629,19 +685,16 @@
                                     <TextView
                                         android:id="@+id/filterHeart"
                                         style="@style/Panel.Segment.Wide"
-                                        android:enabled="false"
                                         android:text="@string/local_stetho_heart" />
 
                                     <TextView
                                         android:id="@+id/filterLung"
                                         style="@style/Panel.Segment.Wide"
-                                        android:enabled="false"
                                         android:text="@string/local_stetho_lung" />
 
                                     <TextView
                                         android:id="@+id/filterWide"
                                         style="@style/Panel.Segment.Wide"
-                                        android:enabled="false"
                                         android:text="@string/local_stetho_wide" />
                                 </LinearLayout>
 
@@ -696,13 +749,6 @@
                                     android:layout_width="0dp"
                                     android:layout_height="0dp"
                                     android:layout_weight="1" />
-
-                                <TextView
-                                    style="@style/Panel.Text"
-                                    android:layout_marginBottom="12dp"
-                                    android:text="@string/local_recordings_empty"
-                                    android:textColor="@color/faint"
-                                    android:textSize="14sp" />
 
                                 <com.google.android.material.button.MaterialButton
                                     android:id="@+id/stethoListenButton"
