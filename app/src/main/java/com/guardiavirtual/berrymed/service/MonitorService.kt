@@ -205,7 +205,7 @@ class MonitorService : Service() {
         private const val CHANNEL = "berrymed"
         private const val NOTIFICATION_ID = 1
         const val ACTION_PROMOTE = "com.guardiavirtual.berrymed.PROMOTE"
-        const val TELE_HINT = "Abrí Berry Med una vez para habilitar otoscopio y estetoscopio en la teleconsulta."
+        const val TELE_HINT = "Abrí el kiosco de Berry Med para habilitar otoscopio y estetoscopio en la teleconsulta."
 
         /**
          * Lo llaman las pantallas de Berry Med en onResume: con la app visible,

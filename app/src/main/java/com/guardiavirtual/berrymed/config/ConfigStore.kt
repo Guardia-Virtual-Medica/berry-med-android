@@ -61,6 +61,7 @@ class ConfigStore(private val context: Context) {
             prefs[LOCAL_PIN] = config.localPanelPin
             prefs[STETHO_INPUT] = config.stethoInputName
             prefs[HEADSET] = config.headsetName
+            prefs[KIOSK_URL] = config.kioskUrl
         }
     }
 
@@ -109,6 +110,7 @@ class ConfigStore(private val context: Context) {
         localPanelPin = this[LOCAL_PIN] ?: DEFAULT_LOCAL_PIN,
         stethoInputName = this[STETHO_INPUT]?.takeIf { it.isNotBlank() } ?: DEFAULT_STETHO_INPUT,
         headsetName = this[HEADSET]?.takeIf { it.isNotBlank() } ?: DEFAULT_HEADSET,
+        kioskUrl = this[KIOSK_URL].orEmpty(),
     )
 
     companion object {
@@ -134,5 +136,6 @@ class ConfigStore(private val context: Context) {
         private val LOCAL_PIN = stringPreferencesKey("local_panel_pin")
         private val STETHO_INPUT = stringPreferencesKey("stetho_input_name")
         private val HEADSET = stringPreferencesKey("headset_name")
+        private val KIOSK_URL = stringPreferencesKey("kiosk_url")
     }
 }

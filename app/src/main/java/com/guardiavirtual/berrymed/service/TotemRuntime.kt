@@ -28,6 +28,7 @@ import com.guardiavirtual.berrymed.protocol.sendableWindow
 import com.guardiavirtual.berrymed.protocol.splitWindow
 import com.guardiavirtual.berrymed.protocol.summarize
 import com.guardiavirtual.berrymed.tele.Instrument
+import com.guardiavirtual.berrymed.tele.KioskUrls
 import com.guardiavirtual.berrymed.tele.LiveKitBackend
 import com.guardiavirtual.berrymed.tele.TeleOrder
 import com.guardiavirtual.berrymed.tele.TeleStreamer
@@ -216,8 +217,8 @@ class TotemRuntime(context: Context) {
         override fun onStart() = startSession()
 
         override fun onStop() {
-            // El fin de la consulta cierra también la sala de los instrumentos.
-            tele.stopAll("fin de la consulta")
+            // Llega también al completar los signos, antes de la videollamada: sólo se despublica, la sala sigue.
+            tele.unpublishAll("fin de la toma de signos")
             if (localMode) {
                 log("[SESIÓN] Llegó un fin de consulta con el Panel Local abierto: se ignora")
                 return
@@ -282,6 +283,7 @@ class TotemRuntime(context: Context) {
         while (true) {
             guarded("permisos USB") { hub.requestMissingPermissions() }
             guarded("Pusher") { pusher.keepAlive() }
+            guarded("teleconsulta") { tele.tick() }
             guarded("pantalla") { publish() }
             sleep(1_000)
         }
@@ -551,7 +553,7 @@ class TotemRuntime(context: Context) {
             if (!gate.openLocal()) return "Hay una consulta enviando: el Panel Local espera a que termine."
         }
         // El panel usa el otoscopio y el estetoscopio: la teleconsulta (o su prueba) los suelta.
-        tele.stopAll("se abrió el Panel Local", includeManual = true)
+        tele.unpublishAll("se abrió el Panel Local", includeManual = true)
         // El panel arranca en blanco: ni ondas ni el estado de una presión de antes.
         live.clear()
         if (testing) {
@@ -915,6 +917,20 @@ class TotemRuntime(context: Context) {
             return "el servicio no tiene $what en segundo plano. ${MonitorService.TELE_HINT}"
         }
         return null
+    }
+
+    /**
+     * Cada dirección que carga el kiosco: si trae `serverUrl` y `token`, se
+     * entra a la sala del encuentro; si es el inicio, el login o el setup, se
+     * sale. Lo llama la pantalla del kiosco; el token no se escribe en ningún lado.
+     */
+    fun onKioskUrl(url: String) {
+        val found = KioskUrls.credentials(url)
+        if (found != null) {
+            tele.onKioskToken(found)
+            return
+        }
+        if (KioskUrls.isHome(url, config.kioskUrl)) tele.onKioskHome()
     }
 
     /** La prueba manual de Testing: publica [instrument] con un servidor y un token hechos a mano. */
