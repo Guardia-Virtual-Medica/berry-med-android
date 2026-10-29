@@ -61,7 +61,7 @@ El relé `USBRelay2` que cortaba los 12 V de la plaqueta ya no va: el firmware d
 
 ## Configuración
 
-En la pantalla de Berry Med, en tres pasos:
+En la pantalla de Berry Med, en cuatro pasos:
 
 - **Destino**: el entorno de OnDoctor, el identificador del tótem (su `external_id`) y la URL base de la API. Elegir el entorno completa la URL base, la clave y el cluster de Pusher; se pueden cambiar a mano antes de guardar:
 
@@ -73,6 +73,14 @@ En la pantalla de Berry Med, en tres pasos:
   La URL base tiene que empezar con `https://` y no terminar en `/metrics`; la pantalla muestra cómo queda armada. La ruta `medical_devices` del `readme.txt` del exe es de la plataforma anterior. OnDoctor no pide usuario ni contraseña para recibir mediciones, así que el `POST` va sin autenticación.
 - **Órdenes**: la clave de Pusher (viene del entorno), el cluster (un desplegable, `us2` o `sa1`; por defecto `sa1`), el canal y los nombres de los eventos de inicio y fin. El canal se arma solo como `totem.<external_id>` con el identificador de Destino, y lo sigue mientras nadie lo cambie a mano. Tiene que ser público: un canal `private-` o `presence-` no se conecta y la pantalla lo marca. La clave del exe viejo es de otra plataforma y no recibe las órdenes de OnDoctor.
 - **Plaqueta**: la ganancia y el modo de ECG, la ganancia de respiración, el modo de presión y la presión de inflado. La ganancia y el modo se aplican apenas se guardan, sin reconectar. Abajo, en qué puerto del hub YKUSH3 va el otoscopio, el estetoscopio y el auricular (uno distinto para cada uno); bajo **Estetoscopio**, cómo se llaman para Android el adaptador y el auricular (se leen en Testing → Dispositivos que ve Android; por defecto `USB Audio` y `H390`); y el PIN del [Panel Local](#panel-local) (`1515` si se deja vacío).
+- **Kiosco**: la **URL del kiosco** (la misma que abría Chrome, con el slug de la organización; vacía o `http(s)://` con dominio) y la **puesta en marcha**, una lista con un punto verde (hecho) o ámbar (falta) que se recalcula al volver a la pantalla:
+  - **Cámara y micrófono**: los dos permisos otorgados. **Dar permisos** pide los que faltan; si Android ya no muestra el diálogo, abre los ajustes de la app.
+  - **Berry Med como app de inicio**: el botón de inicio abre Berry Med. **Elegir app de inicio** abre la lista de apps de inicio de Android.
+  - **Servicio con cámara y micrófono para la teleconsulta**: el servicio ya los sumó (en Android 10 o menos no hace falta). Se resuelve solo con esta pantalla adelante y los permisos dados.
+  - **Sin optimización de batería**: lo mismo que **Evitar que se duerma**.
+  - **Configurar el tótem en el kiosco**: Berry Med no lo puede saber. La primera vez el kiosco pide el identificador y la contraseña del tótem, porque no usa la sesión de Chrome. **Abrir el kiosco** se habilita con la URL guardada.
+
+  Abajo, lo que va **fuera de la tablet**: en OnDoctor, el otoscopio o el estetoscopio habilitados para el tótem; sacar lo que abra Chrome al prender (modo kiosco, app de administración); y cómo volver a la configuración desde el kiosco.
 
 Todo queda guardado en la tablet. La pantalla también muestra los signos vitales, si la plaqueta está funcional, el último dato, la conexión con Pusher, el termómetro, el hub YKUSH3 y el resultado del último envío.
 
@@ -84,8 +92,8 @@ Todo queda guardado en la tablet. La pantalla también muestra los signos vitale
    Conviene abrir el Panel Local una vez y aceptar el permiso de la cámara **antes** de aceptar el permiso USB del otoscopio: en Android 10 o más, Android puede negar sin diálogo el permiso USB de un dispositivo de video si la app todavía no tiene el de cámara.
 
    Cada equipo se pide una sola vez, para no tapar el kiosco una y otra vez. Si alguien rechaza o cierra el pedido, la pantalla de Berry Med dice "Falta aceptar el permiso USB" y se resuelve con **Pedir permiso USB**. Un equipo sin permiso no frena a los demás.
-3. **Cargar la URL del kiosco** (Configuración → Destino, la misma que abría Chrome, con el slug de la organización), **aceptar los permisos de cámara y micrófono** (los usan la videollamada del kiosco y la [teleconsulta](#teleconsulta-otoscopio-y-estetoscopio)) y **elegir Berry Med como app de inicio**: tocar el botón de inicio de la tablet y elegir Berry Med con "Siempre" (o Ajustes → Apps → Apps predeterminadas → App de inicio). Así Android la abre al encender y el botón de inicio vuelve al kiosco.
-4. **Tocar "Evitar que se duerma"** para excluir la app de la optimización de batería. Es imprescindible: si Android cierra el servicio, sólo puede volver a levantarlo si la app está excluida. Algunas marcas tienen además su propia lista de apps que se duermen: sacarla de ahí también.
+3. **Completar el paso Kiosco de la configuración** (ver [Configuración](#configuración)): cargar la URL del kiosco, guardar y dejar en verde la lista de puesta en marcha (permisos de cámara y micrófono, Berry Med como app de inicio, el servicio con cámara y micrófono y sin optimización de batería), abrir el kiosco para configurar el tótem y resolver lo que va fuera de la tablet. La optimización de batería es imprescindible: si Android cierra el servicio, sólo puede volver a levantarlo si la app está excluida.
+4. **Sacar a Berry Med de las listas propias de la marca.** Algunas marcas tienen, además de la optimización de batería de Android, su propia lista de apps que se duermen.
 5. **Sin bloqueo con PIN, patrón ni contraseña.** Con bloqueo seguro Android no avisa el encendido hasta que alguien desbloquea, y la app no arranca.
 6. **Instalar siempre un APK firmado con la misma clave.** Si cambia la clave hay que desinstalar, y eso borra la configuración.
 7. **Probarlo con el kiosco adelante**: reiniciar la tablet con todo enchufado (tiene que abrir el kiosco solo) y, con una consulta andando, desenchufar y volver a enchufar la plaqueta. En los dos casos la plaqueta tiene que volver sola, sin tocar la pantalla y sin que el kiosco quede tapado.

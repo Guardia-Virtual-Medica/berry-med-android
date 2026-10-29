@@ -2,6 +2,7 @@
 package com.guardiavirtual.berrymed.config
 
 import com.guardiavirtual.berrymed.protocol.DeviceTuning
+import java.net.URI
 
 data class BerryConfig(
     val environment: String = Environment.Prod.key,
@@ -117,6 +118,22 @@ fun anyPortRepeated(vararg ports: Int): Boolean = ports.distinct().size != ports
 fun hasWebScheme(url: String): Boolean {
     val clean = url.trim().lowercase()
     return clean.startsWith("https://") || clean.startsWith("http://")
+}
+
+/**
+ * La URL del kiosco puede quedar vacía (el kiosco lo dice y ofrece abrir la
+ * configuración); si no, tiene que ser http(s) con dominio: sin eso el
+ * `WebView` no tiene origen al que darle cámara y micrófono.
+ */
+fun kioskUrlAccepted(url: String): Boolean {
+    val clean = url.trim()
+    if (clean.isEmpty()) return true
+    if (!hasWebScheme(clean)) return false
+    return try {
+        !URI(clean).host.isNullOrBlank()
+    } catch (_: Exception) {
+        false
+    }
 }
 
 fun buildMetricsUrl(base: String, totemId: String, endpoint: String = "metrics"): String {
