@@ -14,4 +14,6 @@
     <color name="test_fail">#F2A38F</color>
     <!-- Fondo del ícono del Panel Local: distinto del verde de Berry Med para no confundirlos. -->
     <color name="local_icon">#1E4E8C</color>
+    <!-- Lo que tapa el panel detrás del otoscopio ampliado: el azul del monitor, casi opaco. -->
+    <color name="zoom_scrim">#CC0B1A2B</color>
 </resources>

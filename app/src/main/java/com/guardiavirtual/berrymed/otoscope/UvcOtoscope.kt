@@ -28,6 +28,12 @@ import java.util.concurrent.Executor
  * Abrir y cerrar bloquean (transferencias de control USB) y van en [worker],
  * el hilo del otoscopio en el servicio: así el puerto se apaga siempre
  * después de soltar la cámara.
+ *
+ * El cuadro del otoscopio se muda de lugar al ampliarlo. Al sacar el
+ * `TextureView` de la ventana Android destruye su `SurfaceTexture` y al
+ * volver a ponerlo crea otro, pero libuvc sigue dibujando en el primero:
+ * por eso, mientras está abierto, se guarda el primero, no se deja que la
+ * vista lo libere y se le vuelve a poner cuando reaparece. libuvc ni se entera.
  */
 class UvcOtoscope(
     context: Context,
@@ -47,27 +53,39 @@ class UvcOtoscope(
 
     @Volatile private var closed = false
 
+    /** El `SurfaceTexture` en el que dibuja libuvc. Sólo lo toca el hilo de la pantalla. */
+    private var kept: SurfaceTexture? = null
+
     override fun open(done: (String?) -> Unit) {
         closed = false
+        kept = null
         textureView.visibility = View.VISIBLE
-        val texture = textureView.surfaceTexture
-        if (textureView.isAvailable && texture != null) {
-            start(texture, done)
-            return
-        }
-        // La superficie existe recién cuando la vista se dibuja por primera vez.
+        // Queda puesto hasta close(): atiende la primera superficie y también las que vengan al mudar la vista.
         textureView.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
             override fun onSurfaceTextureAvailable(texture: SurfaceTexture, width: Int, height: Int) {
-                textureView.surfaceTextureListener = null
-                if (!closed) start(texture, done)
+                val previous = kept
+                when {
+                    previous == null -> if (!closed) use(texture, done)
+                    // setSurfaceTexture libera solo el nuevo, que no llegó a usarse.
+                    previous !== texture && !previous.isReleased -> textureView.setSurfaceTexture(previous)
+                }
             }
 
             override fun onSurfaceTextureSizeChanged(texture: SurfaceTexture, width: Int, height: Int) = Unit
 
-            override fun onSurfaceTextureDestroyed(texture: SurfaceTexture): Boolean = true
+            // El guardado no lo libera la vista: lo sigue usando libuvc, y lo suelta close().
+            override fun onSurfaceTextureDestroyed(texture: SurfaceTexture): Boolean = texture !== kept
 
             override fun onSurfaceTextureUpdated(texture: SurfaceTexture) = Unit
         }
+        val texture = textureView.surfaceTexture
+        // Si no, la superficie existe recién cuando la vista se dibuja por primera vez y llega por el listener.
+        if (textureView.isAvailable && texture != null) use(texture, done)
+    }
+
+    private fun use(texture: SurfaceTexture, done: (String?) -> Unit) {
+        kept = texture
+        start(texture, done)
     }
 
     private fun start(texture: SurfaceTexture, done: (String?) -> Unit) {
@@ -117,8 +135,13 @@ class UvcOtoscope(
     override fun close(done: () -> Unit) {
         closed = true
         textureView.surfaceTextureListener = null
+        // Si la vista lo tiene puesto, ahora es de ella y lo libera al irse. Si no (estaba
+        // fuera de la ventana o ya se dibujó con otro), nadie más lo suelta: va después de libuvc.
+        val orphan = kept?.takeIf { it !== textureView.surfaceTexture }
+        kept = null
         worker.execute {
             release()
+            orphan?.release()
             main.post { if (closed) textureView.visibility = View.GONE }
             done()
         }
