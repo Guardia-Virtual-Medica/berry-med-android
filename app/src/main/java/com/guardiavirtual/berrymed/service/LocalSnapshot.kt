@@ -15,15 +15,22 @@ data class LocalSnapshot(
     val thermoConnected: Boolean,
     /** La última lectura del termómetro infrarrojo, ya en °C, o null si no midió. */
     val thermoReading: String?,
-    val thermoAge: Long?,
+    /** Cuándo llegó esa lectura, en hora del reloj (milisegundos), o null si no midió. */
+    val thermoAtMillis: Long?,
     val nibpRunning: Boolean,
     val nibp: LiveFeed.NibpState,
-    /** La tarjeta del estetoscopio se muestra si está el adaptador o el YKUSH3 que lo enciende. */
+    /** Cuándo llegó la última presión, en hora del reloj, o null si no se sabe. */
+    val nibpAtMillis: Long?,
+    /** El adaptador del estetoscopio está enchufado (sin contar el YKUSH3). */
+    val stethoPlugged: Boolean,
+    /** El tile del estetoscopio se abre si está el adaptador o el YKUSH3 que lo enciende. */
     val stethoAvailable: Boolean,
     val stethoStarting: Boolean,
     val stethoRunning: Boolean,
     val stethoPlaying: Boolean,
-    /** La tarjeta del otoscopio se muestra si está el otoscopio o el YKUSH3 que lo enciende. */
+    /** El otoscopio está enchufado por USB (sin contar el YKUSH3). */
+    val otoscopePlugged: Boolean,
+    /** El tile del otoscopio se abre si está el otoscopio o el YKUSH3 que lo enciende. */
     val otoscopeAvailable: Boolean,
     val otoscopeState: OtoscopePower.State,
 )

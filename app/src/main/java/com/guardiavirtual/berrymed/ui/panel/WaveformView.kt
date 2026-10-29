@@ -10,9 +10,10 @@ import android.view.View
 import com.guardiavirtual.berrymed.protocol.LiveFeed
 
 /**
- * Una onda sin escala fija (SpO₂ o respiración), con barrido y la altura
- * ajustada a lo que hay en pantalla. Cuántas muestras entran se fija a mano,
- * porque la plaqueta no documenta la frecuencia de estas ondas.
+ * Una onda sin escala fija (el fonocardiograma), con barrido y la altura
+ * ajustada a lo que hay en pantalla. Cuántas muestras entran se fija a mano.
+ * Sirvió también para las ondas de SpO₂ y respiración, cuya escala la
+ * plaqueta no documenta; el diseño nuevo ya no las muestra.
  */
 class WaveformView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) : View(context, attrs) {
     private var trace = SweepTrace(DEFAULT_SAMPLES)
@@ -31,6 +32,13 @@ class WaveformView @JvmOverloads constructor(context: Context, attrs: AttributeS
         set(value) {
             field = value
             tracePaint.color = value
+        }
+
+    /** El grosor del trazo, en píxeles. */
+    var traceWidth: Float = 2f
+        set(value) {
+            field = value
+            tracePaint.strokeWidth = value
         }
 
     private val tracePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {

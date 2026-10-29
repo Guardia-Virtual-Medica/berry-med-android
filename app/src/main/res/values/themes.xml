@@ -87,83 +87,270 @@
         <item name="android:textSize">15sp</item>
     </style>
 
-    <!-- Las tarjetas del Panel Local, del mismo color que las de Testing. -->
-    <style name="LocalCard">
-        <item name="android:layout_width">match_parent</item>
+    <!--
+        El Panel Local, con los tokens, las tipografías y las medidas del
+        handoff de diseño (a 1280×800 dp). Siempre oscuro.
+    -->
+    <style name="Theme.BerryMed.Panel" parent="Theme.BerryMed">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorOnPrimary">@color/onPrimary</item>
+        <item name="android:statusBarColor">@color/bg</item>
+        <item name="android:navigationBarColor">@color/bg</item>
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:fontFamily">@font/barlow_medium</item>
+    </style>
+
+    <style name="Panel" />
+
+    <style name="Panel.Text">
+        <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_marginBottom">8dp</item>
-        <item name="android:background">@color/line</item>
+        <item name="android:fontFamily">@font/barlow_medium</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:textColor">@color/text</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <style name="Panel.Text.Small">
+        <item name="android:textColor">@color/muted</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+    <!-- Los rótulos chicos en mayúsculas: FILTRO, VOLUMEN, FONOCARDIOGRAMA. -->
+    <style name="Panel.Text.Caps">
+        <item name="android:fontFamily">@font/barlow_semibold</item>
+        <item name="android:letterSpacing">0.08</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:textColor">@color/muted</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+
+    <style name="Panel.Text.Title">
+        <item name="android:fontFamily">@font/barlow_semibold</item>
+        <item name="android:letterSpacing">0.03</item>
+        <item name="android:textSize">18sp</item>
+    </style>
+
+    <!-- Punto de 8 dp y texto de 13 sp del mismo color: el estado de la señal o del dispositivo. -->
+    <style name="Panel.Text.Status">
+        <item name="android:drawableStart">@drawable/panel_dot</item>
+        <item name="android:drawablePadding">6dp</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+    <!-- Los números grandes: Barlow Semi Condensed con numerales tabulares, para que no bailen. -->
+    <style name="Panel.Value">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:fontFamily">@font/barlow_semi_condensed_semibold</item>
+        <item name="android:fontFeatureSettings">tnum</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:text">—</item>
+    </style>
+
+    <style name="Panel.Card">
+        <item name="android:background">@drawable/panel_card</item>
         <item name="android:orientation">vertical</item>
-        <item name="android:padding">10dp</item>
+        <item name="android:paddingStart">18dp</item>
+        <item name="android:paddingEnd">14dp</item>
+        <item name="android:paddingTop">12dp</item>
+        <item name="android:paddingBottom">12dp</item>
     </style>
 
-    <style name="LocalCardTitle">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:textColor">@color/vital_dim</item>
-        <item name="android:textSize">14sp</item>
-    </style>
-
-    <style name="LocalValueRow">
+    <!-- La fila de arriba de una tarjeta de vitales, alineada por baseline. -->
+    <style name="Panel.CardTop">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:baselineAligned">true</item>
         <item name="android:orientation">horizontal</item>
     </style>
 
-    <style name="LocalValue">
-        <item name="android:layout_width">wrap_content</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_marginEnd">6dp</item>
-        <item name="android:fontFamily">sans-serif-light</item>
-        <item name="android:includeFontPadding">false</item>
-        <item name="android:text">—</item>
-        <item name="android:textColor">@color/vital_on</item>
-        <item name="android:textSize">40sp</item>
-    </style>
-
-    <style name="LocalUnit">
-        <item name="android:layout_width">wrap_content</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:textColor">@color/vital_dim</item>
+    <style name="Panel.CardLabel" parent="Panel.Text">
+        <item name="android:fontFamily">@font/barlow_bold</item>
+        <item name="android:letterSpacing">0.04</item>
         <item name="android:textSize">16sp</item>
     </style>
 
-    <style name="LocalDetail">
-        <item name="android:layout_width">match_parent</item>
+    <style name="Panel.CardSource" parent="Panel.Text.Small">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:layout_marginStart">8dp</item>
+        <item name="android:maxLines">1</item>
+    </style>
+
+    <style name="Panel.CardUnit" parent="Panel.Text">
+        <item name="android:textColor">@color/muted</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <!-- Los chips de la cabecera: 30 dp, radio 15, punto de 8 dp y texto de 14 sp. -->
+    <style name="Panel.Chip" parent="Panel.Text">
+        <item name="android:layout_height">30dp</item>
+        <item name="android:layout_marginStart">8dp</item>
+        <item name="android:background">@drawable/panel_chip_on</item>
+        <item name="android:drawableStart">@drawable/panel_dot</item>
+        <item name="android:drawablePadding">7dp</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:paddingStart">12dp</item>
+        <item name="android:paddingEnd">12dp</item>
+        <item name="android:textColor">@color/text2</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <!-- Un control segmentado: contenedor de 46 dp con segmentos de 40. -->
+    <style name="Panel.Segments">
+        <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_marginTop">2dp</item>
-        <item name="android:lineSpacingExtra">2dp</item>
-        <item name="android:textColor">@color/vital_dim</item>
-        <item name="android:textSize">13sp</item>
+        <item name="android:background">@drawable/panel_segments</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:padding">3dp</item>
+    </style>
+
+    <style name="Panel.Segment">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">40dp</item>
+        <item name="android:background">@drawable/panel_segment</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:fontFamily">@font/barlow_semi_condensed_semibold</item>
+        <item name="android:fontFeatureSettings">tnum</item>
+        <item name="android:gravity">center</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:minWidth">46dp</item>
+        <item name="android:paddingStart">10dp</item>
+        <item name="android:paddingEnd">10dp</item>
+        <item name="android:textColor">@color/panel_segment_text</item>
+        <item name="android:textSize">15sp</item>
+    </style>
+
+    <!-- El segmentado vertical del filtro del estetoscopio: segmentos de 44 dp a lo ancho. -->
+    <style name="Panel.Segment.Wide">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">44dp</item>
+        <item name="android:fontFamily">@font/barlow_semibold</item>
     </style>
 
     <!--
-        Los botones de una fila de tarjeta, a partes iguales. Sin el margen
-        lateral de Material y con menos relleno: en 1280×800 dp entran tres en
-        la columna derecha sin partir el texto en dos líneas.
+        Los botones: MaterialButton sin los márgenes ni la altura mínima de
+        Material, para que midan lo que dice el diseño.
     -->
-    <style name="LocalRowButton" parent="Widget.Material3.Button">
-        <item name="android:layout_width">0dp</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_weight">1</item>
+    <style name="Panel.Button" parent="Widget.Material3.Button">
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
         <item name="android:insetLeft">0dp</item>
         <item name="android:insetRight">0dp</item>
-        <item name="android:paddingStart">8dp</item>
-        <item name="android:paddingEnd">8dp</item>
+        <item name="android:minWidth">0dp</item>
+        <item name="android:minHeight">0dp</item>
+        <item name="android:letterSpacing">0</item>
         <item name="android:maxLines">1</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="iconGravity">textStart</item>
+        <item name="iconPadding">8dp</item>
+        <item name="rippleColor">#1FFFFFFF</item>
     </style>
 
-    <style name="LocalRowButton.Outlined" parent="Widget.Material3.Button.OutlinedButton">
+    <!-- Con contorno: Finalizar, Congelar el ECG, Cancelar. -->
+    <style name="Panel.Button.Outline">
+        <item name="android:layout_height">44dp</item>
+        <item name="android:fontFamily">@font/barlow_semibold</item>
+        <item name="android:paddingStart">20dp</item>
+        <item name="android:paddingEnd">20dp</item>
+        <item name="android:textColor">@color/panel_button_text</item>
+        <item name="android:textSize">16sp</item>
+        <item name="backgroundTint">@color/panel_outline_bg</item>
+        <item name="cornerRadius">10dp</item>
+        <item name="iconTint">@color/panel_button_text</item>
+        <item name="strokeColor">@color/line3</item>
+        <item name="strokeWidth">1dp</item>
+    </style>
+
+    <!-- La acción principal de cada contexto, una sola por panel. -->
+    <style name="Panel.Button.Primary">
+        <item name="android:layout_height">68dp</item>
+        <item name="android:fontFamily">@font/barlow_bold</item>
+        <item name="android:paddingStart">12dp</item>
+        <item name="android:paddingEnd">12dp</item>
+        <item name="android:textColor">@color/panel_primary_text</item>
+        <item name="android:textSize">18sp</item>
+        <item name="backgroundTint">@color/panel_primary_bg</item>
+        <item name="cornerRadius">12dp</item>
+        <item name="iconSize">24dp</item>
+        <item name="iconTint">@color/panel_primary_text</item>
+    </style>
+
+    <style name="Panel.Button.Secondary">
+        <item name="android:layout_height">52dp</item>
+        <item name="android:fontFamily">@font/barlow_semibold</item>
+        <item name="android:paddingStart">12dp</item>
+        <item name="android:paddingEnd">12dp</item>
+        <item name="android:textColor">@color/panel_button_text</item>
+        <item name="android:textSize">16sp</item>
+        <item name="backgroundTint">@color/panel_secondary_bg</item>
+        <item name="cornerRadius">12dp</item>
+        <item name="iconSize">22dp</item>
+        <item name="iconTint">@color/panel_button_text</item>
+        <item name="strokeColor">@color/line2</item>
+        <item name="strokeWidth">1dp</item>
+    </style>
+
+    <!-- Medir y Cancelar en la tarjeta de la presión. -->
+    <style name="Panel.Button.Card" parent="Panel.Button.Secondary">
+        <item name="android:layout_height">48dp</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingEnd">14dp</item>
+        <item name="android:textSize">15sp</item>
+        <item name="cornerRadius">10dp</item>
+        <item name="strokeColor">@color/line3</item>
+    </style>
+
+    <!-- El botón claro del diálogo: Finalizar sesión. -->
+    <style name="Panel.Button.Light">
+        <item name="android:layout_height">48dp</item>
+        <item name="android:fontFamily">@font/barlow_bold</item>
+        <item name="android:paddingStart">20dp</item>
+        <item name="android:paddingEnd">20dp</item>
+        <item name="android:textColor">@color/bg</item>
+        <item name="android:textSize">16sp</item>
+        <item name="backgroundTint">@color/panel_light_bg</item>
+        <item name="cornerRadius">10dp</item>
+    </style>
+
+    <!-- Los tiles del dock. -->
+    <style name="Panel.Tile">
         <item name="android:layout_width">0dp</item>
-        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_height">match_parent</item>
         <item name="android:layout_weight">1</item>
-        <item name="android:insetLeft">0dp</item>
-        <item name="android:insetRight">0dp</item>
-        <item name="android:paddingStart">8dp</item>
-        <item name="android:paddingEnd">8dp</item>
-        <item name="android:maxLines">1</item>
-        <item name="android:textColor">@color/vital_on</item>
-        <item name="strokeColor">@color/vital_dim</item>
+        <item name="android:background">@drawable/panel_tile</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingEnd">12dp</item>
+    </style>
+
+    <style name="Panel.TileIcon">
+        <item name="android:layout_width">52dp</item>
+        <item name="android:layout_height">52dp</item>
+        <item name="android:background">@drawable/panel_icon_box</item>
+        <item name="android:importantForAccessibility">no</item>
+        <item name="android:padding">13dp</item>
+        <item name="tint">@color/text2</item>
+    </style>
+
+    <style name="Panel.Badge" parent="Panel.Text">
+        <item name="android:layout_height">28dp</item>
+        <item name="android:background">@drawable/panel_badge</item>
+        <item name="android:fontFamily">@font/barlow_bold</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:letterSpacing">0.06</item>
+        <item name="android:paddingStart">12dp</item>
+        <item name="android:paddingEnd">12dp</item>
+        <item name="android:textColor">@color/bg</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:visibility">gone</item>
     </style>
 </resources>

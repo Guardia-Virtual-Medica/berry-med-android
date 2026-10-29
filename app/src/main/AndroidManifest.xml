@@ -72,7 +72,8 @@
             android:label="@string/local_panel"
             android:launchMode="singleTask"
             android:screenOrientation="landscape"
-            android:taskAffinity="com.guardiavirtual.berrymed.local">
+            android:taskAffinity="com.guardiavirtual.berrymed.local"
+            android:theme="@style/Theme.BerryMed.Panel">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

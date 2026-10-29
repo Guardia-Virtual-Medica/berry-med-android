@@ -98,7 +98,7 @@ class MainActivity : AppCompatActivity() {
             handler.post {
                 fill(saved ?: BerryConfig())
                 if (saved == null) {
-                    binding.formMessage.setTextColor(getColor(R.color.warn))
+                    binding.formMessage.setTextColor(getColor(R.color.form_error))
                     binding.formMessage.setText(R.string.load_failed)
                 }
             }
@@ -172,7 +172,7 @@ class MainActivity : AppCompatActivity() {
         val missing = missingField(step)
         if (missing != null) {
             binding.formMessage.setText(missing)
-            binding.formMessage.setTextColor(getColor(R.color.warn))
+            binding.formMessage.setTextColor(getColor(R.color.form_error))
             return
         }
         clearMessage()
@@ -220,7 +220,7 @@ class MainActivity : AppCompatActivity() {
         if (blocked != null) {
             showStep(blocked.first)
             binding.formMessage.setText(blocked.second)
-            binding.formMessage.setTextColor(getColor(R.color.warn))
+            binding.formMessage.setTextColor(getColor(R.color.form_error))
             return
         }
         val config = readForm()
@@ -235,7 +235,7 @@ class MainActivity : AppCompatActivity() {
                 false
             }
             handler.post {
-                binding.formMessage.setTextColor(getColor(if (saved) R.color.signal else R.color.warn))
+                binding.formMessage.setTextColor(getColor(if (saved) R.color.signal else R.color.form_error))
                 binding.formMessage.setText(if (saved) R.string.saved else R.string.save_failed)
             }
         }
@@ -317,7 +317,7 @@ class MainActivity : AppCompatActivity() {
             } catch (_: ActivityNotFoundException) {
             }
         }
-        binding.formMessage.setTextColor(getColor(R.color.warn))
+        binding.formMessage.setTextColor(getColor(R.color.form_error))
         binding.formMessage.setText(R.string.battery_unavailable)
     }
 

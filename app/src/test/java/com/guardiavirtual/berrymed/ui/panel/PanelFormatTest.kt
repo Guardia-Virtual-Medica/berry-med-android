@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package com.guardiavirtual.berrymed.ui.panel
 
-import com.guardiavirtual.berrymed.protocol.EcgInfo
-import com.guardiavirtual.berrymed.protocol.LiveFeed
 import com.guardiavirtual.berrymed.protocol.NO_PAIR
-import com.guardiavirtual.berrymed.protocol.Pm6750Protocol
+import java.time.LocalDateTime
+import java.time.ZoneId
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 class PanelFormatTest {
+    private val zone = ZoneId.of("America/Argentina/Buenos_Aires")
+
+    private fun at(hour: Int, minute: Int, second: Int = 0): Long =
+        LocalDateTime.of(2026, 10, 29, hour, minute, second).atZone(zone).toInstant().toEpochMilli()
+
     @Test
     fun theBoardDashesShowAsALongDash() {
         for (raw in listOf("-", "- -", NO_PAIR, "- -/- -", "", null)) assertEquals("—", PanelFormat.value(raw))
@@ -33,44 +36,37 @@ class PanelFormatTest {
     }
 
     @Test
-    fun berryLineSaysHowOldTheLastDataIs() {
-        assertEquals("Plaqueta sin conectar", PanelFormat.berryLine(false, 0.2))
-        assertEquals("Plaqueta conectada · último dato hace 0,2 s", PanelFormat.berryLine(true, 0.2))
-        assertEquals("Plaqueta conectada · sin datos hace 7 s", PanelFormat.berryLine(true, 7.4))
+    fun meanPressureIsOneThirdSystolicTwoThirdsDiastolic() {
+        assertEquals(93, PanelFormat.meanPressure("120/80"))
+        // (116 + 158) / 3 = 91,33: se redondea.
+        assertEquals(91, PanelFormat.meanPressure("116/79"))
+        assertEquals(97, PanelFormat.meanPressure("125/83"))
+        assertNull(PanelFormat.meanPressure(NO_PAIR))
     }
 
     @Test
-    fun electrodesAndArrhythmia() {
-        assertEquals("Electrodos sueltos", PanelFormat.electrodes(EcgInfo(leadOff = true)))
-        assertEquals("Sin señal de ECG", PanelFormat.electrodes(EcgInfo()))
+    fun arrhythmia() {
         assertNull(PanelFormat.arrhythmia("analizando"))
         assertNull(PanelFormat.arrhythmia(null))
         assertEquals("fibrilacion ventricular", PanelFormat.arrhythmia("fibrilacion_ventricular"))
     }
 
     @Test
-    fun thermometerLine() {
-        assertEquals("Termómetro IR: sin conectar", PanelFormat.thermometer(false, "36.8", 5))
-        assertEquals("Termómetro IR: apretá el gatillo para medir", PanelFormat.thermometer(true, null, null))
-        assertEquals("Termómetro IR: 36,8 °C · hace 5 s", PanelFormat.thermometer(true, "36.8", 5))
+    fun clockAndDateInArgentineSpanish() {
+        assertEquals("10:07", PanelFormat.clock(at(10, 7), zone))
+        assertEquals("09:05", PanelFormat.clock(at(9, 5), zone))
+        assertEquals("10:12:09", PanelFormat.clockSeconds(at(10, 12, 9), zone))
+        assertEquals("Jueves 29 de octubre de 2026", PanelFormat.date(at(10, 12), zone))
     }
 
     @Test
-    fun nibpDetail() {
-        val none = LiveFeed.NibpState(status = -1, cuffMmhg = 0)
-        assertEquals("Midiendo · manguito 80 mmHg", PanelFormat.nibpDetail(true, LiveFeed.NibpState(0x04, 80), "—"))
-        assertEquals("Sin medir todavía", PanelFormat.nibpDetail(false, none, "—"))
-        assertEquals("Última medición terminada", PanelFormat.nibpDetail(false, LiveFeed.NibpState(0x00, 0), "120/80"))
-    }
-
-    @Test
-    fun aMeasurementThatEndedInErrorIsNotShownAsNeverMeasured() {
-        // BIT5~2 = 0x4: manguito flojo, un final de la plaqueta sin presión.
-        val looseCuff = LiveFeed.NibpState(status = 0x4 shl 2, cuffMmhg = 0)
-        assertTrue(Pm6750Protocol.nibpIsTerminal(looseCuff.status))
-        assertEquals("Última medición sin resultado", PanelFormat.nibpDetail(false, looseCuff, "—"))
-        // Cortada con Parar mientras inflaba: la plaqueta no llegó a mandar un final.
-        val inflating = LiveFeed.NibpState(status = 0x1 shl 2, cuffMmhg = 120)
-        assertEquals("Última medición sin resultado", PanelFormat.nibpDetail(false, inflating, "—"))
+    fun agoSaysRecienUnderAMinute() {
+        val now = at(10, 12)
+        assertEquals("recién", PanelFormat.ago(now, now - 59_000))
+        assertEquals("hace 1 min", PanelFormat.ago(now, now - 60_000))
+        assertEquals("hace 4 min", PanelFormat.ago(now, at(10, 7, 30)))
+        assertEquals("hace 2 h", PanelFormat.ago(now, at(8, 0)))
+        // Un reloj que vuelve atrás no da minutos negativos.
+        assertEquals("recién", PanelFormat.ago(now, now + 5_000))
     }
 }

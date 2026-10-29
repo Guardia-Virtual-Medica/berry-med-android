@@ -106,6 +106,15 @@ class TotemRuntime(context: Context) {
     }
     private val stethoPorts = PanelPorts()
 
+    /**
+     * Cuándo llegó la última presión, en hora de la tablet, para que el Panel
+     * Local diga "10:07 · hace 4 min". La plaqueta repite el resultado en cada
+     * trama de presión: la hora se toma sólo cuando el par cambia o es el
+     * primero después de pedir una medición. 0 si no hay.
+     */
+    @Volatile private var nibpResultAtMillis = 0L
+    @Volatile private var nibpResultSeen: Pair<Int, Int>? = null
+
     /** Cambia con cada Parar y cada cierre del panel: una espera de Escuchar que quedó atrás se abandona. */
     @Volatile private var stethoEpoch = 0L
     @Volatile private var stethoStarting = false
@@ -189,7 +198,7 @@ class TotemRuntime(context: Context) {
                 return
             }
             // Sólo si arrancó: un pedido rechazado no borra la presión que se está mostrando.
-            if (berry.startNibp()) parser.resetNibp()
+            if (berry.startNibp()) resetNibp()
         }
         override fun onConnection(connected: Boolean) {
             pusherUp = connected
@@ -201,7 +210,10 @@ class TotemRuntime(context: Context) {
 
     fun start() {
         if (!started.compareAndSet(false, true)) return
-        parser.onNibp = { status, _, _, _, _ -> berry.onNibpStatus(status) }
+        parser.onNibp = { status, _, sys, _, dia ->
+            berry.onNibpStatus(status)
+            noteNibpResult(sys, dia)
+        }
         parser.live = live
         scope.launch {
             store.flow.collect { saved ->
@@ -485,7 +497,7 @@ class TotemRuntime(context: Context) {
         if (!testing) return "Iniciá la prueba primero."
         if (sessionActive) return "Hay una consulta enviando."
         if (!berry.startNibp()) return "No se pudo iniciar: plaqueta sin conectar o ya está midiendo."
-        parser.resetNibp()
+        resetNibp()
         return "Midiendo…"
     }
 
@@ -528,8 +540,24 @@ class TotemRuntime(context: Context) {
     fun localNibpStart(): String {
         if (!localMode) return "El panel no está activo."
         if (!berry.startNibp()) return "No se pudo iniciar: plaqueta sin conectar o ya está midiendo."
-        parser.resetNibp()
+        resetNibp()
         return "Midiendo…"
+    }
+
+    /** Una medición nueva: la presión anterior se borra y su hora también. */
+    private fun resetNibp() {
+        parser.resetNibp()
+        nibpResultSeen = null
+        nibpResultAtMillis = 0L
+    }
+
+    /** En el hilo del USB, con cada trama de presión. */
+    private fun noteNibpResult(sys: Int, dia: Int) {
+        if (sys == 0 && dia == 0) return
+        val pair = sys to dia
+        if (pair == nibpResultSeen) return
+        nibpResultSeen = pair
+        nibpResultAtMillis = System.currentTimeMillis()
     }
 
     fun localNibpStop(): String {
@@ -763,13 +791,17 @@ class TotemRuntime(context: Context) {
             ecgInfo = stats.ecgInfo,
             thermoConnected = thermo.connected,
             thermoReading = reading?.let { r -> formatThermo(r) },
-            thermoAge = if (thermoAt == 0L) null else (System.nanoTime() - thermoAt) / 1_000_000_000L,
+            // El termómetro guarda el instante en nanoTime; la pantalla quiere la hora del reloj.
+            thermoAtMillis = if (thermoAt == 0L) null else System.currentTimeMillis() - (System.nanoTime() - thermoAt) / 1_000_000L,
             nibpRunning = berry.nibpRunning,
             nibp = live.nibp,
+            nibpAtMillis = nibpResultAtMillis.takeIf { it != 0L },
+            stethoPlugged = plugged.stethoAdapter,
             stethoAvailable = stetho.running || plugged.ykush || plugged.stethoAdapter,
             stethoStarting = stethoStarting,
             stethoRunning = stetho.running,
             stethoPlaying = stetho.playing,
+            otoscopePlugged = plugged.otoscope,
             otoscopeAvailable = otoscope.state != OtoscopePower.State.OFF || plugged.ykush || plugged.otoscope,
             otoscopeState = otoscope.state,
         )
