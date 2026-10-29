@@ -68,6 +68,23 @@ data class Tile(val enabled: Boolean, val status: Status)
 /** La cámara de la tablet, que la maneja la pantalla y no el runtime. */
 enum class CameraState { STARTING, LIVE, PAUSED, UNAVAILABLE, MISSING }
 
+/**
+ * El visor del otoscopio o de la cámara: en vivo, congelado esperando que se
+ * guarde o se descarte, o mostrando una captura ya guardada.
+ */
+enum class VideoMode { LIVE, FROZEN, REVIEW }
+
+/** El botón principal del visor de video. */
+enum class VideoPrimary { FREEZE, SAVE }
+
+/**
+ * Qué botones tiene el visor de video en cada modo. [primary] null es sin
+ * botón principal; [discard] es "Descartar y volver" en lugar del botón
+ * propio del dispositivo (Apagar o Cambiar cámara); [help] es la ayuda de
+ * debajo de Congelar.
+ */
+data class VideoButtons(val primary: VideoPrimary?, val discard: Boolean, val help: Boolean)
+
 /** Lo que sabe la pantalla y no el runtime. */
 data class ScreenState(
     /** La imagen del otoscopio abierta, con su camino ("por UVC"), o null si no hay. */
@@ -217,6 +234,17 @@ class PanelUi {
             val gains = VOLUMES.keys.sorted()
             val index = gains.indexOf(gain).coerceAtLeast(0)
             return gains[(if (up) index + 1 else index - 1).coerceIn(0, gains.size - 1)]
+        }
+
+        /**
+         * Congelar y capturar no van a la vez: en vivo se congela; congelado se
+         * guarda o se descarta; y una captura ya guardada sólo se deja de mirar,
+         * no se vuelve a guardar.
+         */
+        fun videoButtons(mode: VideoMode): VideoButtons = when (mode) {
+            VideoMode.LIVE -> VideoButtons(VideoPrimary.FREEZE, discard = false, help = true)
+            VideoMode.FROZEN -> VideoButtons(VideoPrimary.SAVE, discard = true, help = false)
+            VideoMode.REVIEW -> VideoButtons(null, discard = true, help = false)
         }
 
         /** La plaqueta está transmitiendo: conectada y con datos en los últimos 3 s. */

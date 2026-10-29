@@ -268,4 +268,19 @@ class PanelUiTest {
         assertEquals(1, PanelUi.stethoGainStep(1, up = false))
         assertEquals(2, PanelUi.stethoGainStep(4, up = false))
     }
+
+    @Test
+    fun liveVideoFreezesWithHelpAndItsOwnButton() {
+        assertEquals(VideoButtons(VideoPrimary.FREEZE, discard = false, help = true), PanelUi.videoButtons(VideoMode.LIVE))
+    }
+
+    @Test
+    fun frozenVideoSavesOrDiscards() {
+        assertEquals(VideoButtons(VideoPrimary.SAVE, discard = true, help = false), PanelUi.videoButtons(VideoMode.FROZEN))
+    }
+
+    @Test
+    fun aSavedCaptureIsNotSavedAgain() {
+        assertEquals(VideoButtons(null, discard = true, help = false), PanelUi.videoButtons(VideoMode.REVIEW))
+    }
 }

@@ -405,6 +405,13 @@
                                     android:layout_gravity="top|start"
                                     android:layout_marginStart="12dp"
                                     android:layout_marginTop="12dp" />
+
+                                <TextView
+                                    android:id="@+id/otoscopeToast"
+                                    style="@style/Panel.Toast"
+                                    android:layout_gravity="bottom|center_horizontal"
+                                    android:layout_marginBottom="16dp"
+                                    tools:text="Captura guardada · 10:12:19" />
                             </FrameLayout>
 
                             <LinearLayout
@@ -422,6 +429,7 @@
                                     app:icon="@drawable/ic_pause" />
 
                                 <TextView
+                                    android:id="@+id/otoscopeHelp"
                                     style="@style/Panel.Text.Small"
                                     android:layout_width="match_parent"
                                     android:layout_marginTop="10dp"
@@ -435,6 +443,81 @@
                                     android:layout_marginTop="12dp"
                                     android:text="@string/local_otoscope_on"
                                     app:icon="@drawable/ic_power_settings_new" />
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/otoscopeDiscardButton"
+                                    style="@style/Panel.Button.Secondary"
+                                    android:layout_width="match_parent"
+                                    android:layout_marginTop="12dp"
+                                    android:text="@string/local_capture_discard"
+                                    android:visibility="gone"
+                                    app:icon="@drawable/ic_close" />
+
+                                <Space
+                                    android:layout_width="0dp"
+                                    android:layout_height="0dp"
+                                    android:layout_weight="1" />
+
+                                <TextView
+                                    android:id="@+id/otoscopeCapturesLabel"
+                                    style="@style/Panel.Text.Caps"
+                                    android:fontFeatureSettings="tnum"
+                                    tools:text="Capturas · 3" />
+
+                                <TextView
+                                    android:id="@+id/otoscopeCapturesEmpty"
+                                    style="@style/Panel.Text"
+                                    android:layout_marginTop="8dp"
+                                    android:text="@string/local_captures_empty"
+                                    android:textColor="@color/faint"
+                                    android:textSize="14sp" />
+
+                                <!-- Las últimas cuatro capturas, en una grilla de 2 × 2 de miniaturas cuadradas. -->
+                                <LinearLayout
+                                    android:id="@+id/otoscopeCapturesGrid"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="8dp"
+                                    android:orientation="vertical"
+                                    android:visibility="gone">
+
+                                    <LinearLayout
+                                        android:layout_width="match_parent"
+                                        android:layout_height="100dp"
+                                        android:orientation="horizontal">
+
+                                        <include
+                                            android:id="@+id/otoscopeThumb0"
+                                            layout="@layout/panel_capture_thumb" />
+
+                                        <Space
+                                            android:layout_width="8dp"
+                                            android:layout_height="0dp" />
+
+                                        <include
+                                            android:id="@+id/otoscopeThumb1"
+                                            layout="@layout/panel_capture_thumb" />
+                                    </LinearLayout>
+
+                                    <LinearLayout
+                                        android:layout_width="match_parent"
+                                        android:layout_height="100dp"
+                                        android:layout_marginTop="8dp"
+                                        android:orientation="horizontal">
+
+                                        <include
+                                            android:id="@+id/otoscopeThumb2"
+                                            layout="@layout/panel_capture_thumb" />
+
+                                        <Space
+                                            android:layout_width="8dp"
+                                            android:layout_height="0dp" />
+
+                                        <include
+                                            android:id="@+id/otoscopeThumb3"
+                                            layout="@layout/panel_capture_thumb" />
+                                    </LinearLayout>
+                                </LinearLayout>
                             </LinearLayout>
                         </LinearLayout>
                     </LinearLayout>
@@ -737,6 +820,13 @@
                                     android:layout_gravity="top|start"
                                     android:layout_marginStart="12dp"
                                     android:layout_marginTop="12dp" />
+
+                                <TextView
+                                    android:id="@+id/cameraToast"
+                                    style="@style/Panel.Toast"
+                                    android:layout_gravity="bottom|center_horizontal"
+                                    android:layout_marginBottom="16dp"
+                                    tools:text="Captura guardada · 10:12:19" />
                             </FrameLayout>
 
                             <LinearLayout
@@ -753,6 +843,7 @@
                                     app:icon="@drawable/ic_pause" />
 
                                 <TextView
+                                    android:id="@+id/cameraHelp"
                                     style="@style/Panel.Text.Small"
                                     android:layout_width="match_parent"
                                     android:layout_marginTop="10dp"
@@ -766,6 +857,81 @@
                                     android:layout_marginTop="12dp"
                                     android:text="@string/local_camera_switch"
                                     app:icon="@drawable/ic_cameraswitch" />
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/cameraDiscardButton"
+                                    style="@style/Panel.Button.Secondary"
+                                    android:layout_width="match_parent"
+                                    android:layout_marginTop="12dp"
+                                    android:text="@string/local_capture_discard"
+                                    android:visibility="gone"
+                                    app:icon="@drawable/ic_close" />
+
+                                <Space
+                                    android:layout_width="0dp"
+                                    android:layout_height="0dp"
+                                    android:layout_weight="1" />
+
+                                <TextView
+                                    android:id="@+id/cameraCapturesLabel"
+                                    style="@style/Panel.Text.Caps"
+                                    android:fontFeatureSettings="tnum"
+                                    tools:text="Capturas · 3" />
+
+                                <TextView
+                                    android:id="@+id/cameraCapturesEmpty"
+                                    style="@style/Panel.Text"
+                                    android:layout_marginTop="8dp"
+                                    android:text="@string/local_captures_empty"
+                                    android:textColor="@color/faint"
+                                    android:textSize="14sp" />
+
+                                <!-- Las últimas cuatro capturas, en una grilla de 2 × 2 de miniaturas cuadradas. -->
+                                <LinearLayout
+                                    android:id="@+id/cameraCapturesGrid"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="8dp"
+                                    android:orientation="vertical"
+                                    android:visibility="gone">
+
+                                    <LinearLayout
+                                        android:layout_width="match_parent"
+                                        android:layout_height="100dp"
+                                        android:orientation="horizontal">
+
+                                        <include
+                                            android:id="@+id/cameraThumb0"
+                                            layout="@layout/panel_capture_thumb" />
+
+                                        <Space
+                                            android:layout_width="8dp"
+                                            android:layout_height="0dp" />
+
+                                        <include
+                                            android:id="@+id/cameraThumb1"
+                                            layout="@layout/panel_capture_thumb" />
+                                    </LinearLayout>
+
+                                    <LinearLayout
+                                        android:layout_width="match_parent"
+                                        android:layout_height="100dp"
+                                        android:layout_marginTop="8dp"
+                                        android:orientation="horizontal">
+
+                                        <include
+                                            android:id="@+id/cameraThumb2"
+                                            layout="@layout/panel_capture_thumb" />
+
+                                        <Space
+                                            android:layout_width="8dp"
+                                            android:layout_height="0dp" />
+
+                                        <include
+                                            android:id="@+id/cameraThumb3"
+                                            layout="@layout/panel_capture_thumb" />
+                                    </LinearLayout>
+                                </LinearLayout>
                             </LinearLayout>
                         </LinearLayout>
                     </LinearLayout>

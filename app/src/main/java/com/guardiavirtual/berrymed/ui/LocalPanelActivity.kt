@@ -196,35 +196,39 @@ class LocalPanelActivity : AppCompatActivity() {
         }
 
         cameraFreeze = FreezeFrame(
-            binding.frozenImage,
-            listOf(binding.freezeButton),
-            emptyList(),
-            R.string.local_freeze,
-            R.string.local_video_resume,
-            R.string.local_camera_frozen,
-            badge = binding.cameraBadge,
-            freezeIcon = R.drawable.ic_pause,
-            resumeIcon = R.drawable.ic_play_arrow,
+            FreezeFrame.Views(
+                image = binding.frozenImage,
+                badge = binding.cameraBadge,
+                toast = binding.cameraToast,
+                primary = binding.freezeButton,
+                help = binding.cameraHelp,
+                own = binding.cameraSwitchButton,
+                discard = binding.cameraDiscardButton,
+                capturesLabel = binding.cameraCapturesLabel,
+                capturesEmpty = binding.cameraCapturesEmpty,
+                capturesGrid = binding.cameraCapturesGrid,
+                thumbs = listOf(binding.cameraThumb0, binding.cameraThumb1, binding.cameraThumb2, binding.cameraThumb3)
+                    .map { FreezeFrame.Thumb(it.root, it.thumbImage, it.thumbTime) },
+            ),
+            grab = { binding.cameraPreview.bitmap },
         )
         otoscopeFreeze = FreezeFrame(
-            binding.otoscopeFrozen,
-            listOf(binding.otoscopeFreezeButton),
-            emptyList(),
-            R.string.local_freeze,
-            R.string.local_video_resume,
-            R.string.local_camera_frozen,
-            badge = binding.otoscopeBadge,
-            freezeIcon = R.drawable.ic_pause,
-            resumeIcon = R.drawable.ic_play_arrow,
+            FreezeFrame.Views(
+                image = binding.otoscopeFrozen,
+                badge = binding.otoscopeBadge,
+                toast = binding.otoscopeToast,
+                primary = binding.otoscopeFreezeButton,
+                help = binding.otoscopeHelp,
+                own = binding.otoscopePowerButton,
+                discard = binding.otoscopeDiscardButton,
+                capturesLabel = binding.otoscopeCapturesLabel,
+                capturesEmpty = binding.otoscopeCapturesEmpty,
+                capturesGrid = binding.otoscopeCapturesGrid,
+                thumbs = listOf(binding.otoscopeThumb0, binding.otoscopeThumb1, binding.otoscopeThumb2, binding.otoscopeThumb3)
+                    .map { FreezeFrame.Thumb(it.root, it.thumbImage, it.thumbTime) },
+            ),
+            grab = { otoscope?.snapshot() },
         )
-        binding.freezeButton.setOnClickListener {
-            if (cameraFreeze.frozen) {
-                cameraFreeze.unfreeze()
-            } else {
-                binding.cameraBadge.text = frozenLabel()
-                cameraFreeze.freeze(binding.cameraPreview.bitmap)
-            }
-        }
         binding.cameraSwitchButton.setOnClickListener {
             lensFacing = if (lensFacing == CameraSelector.LENS_FACING_BACK) {
                 CameraSelector.LENS_FACING_FRONT
@@ -235,14 +239,6 @@ class LocalPanelActivity : AppCompatActivity() {
             bindCamera()
         }
         binding.otoscopePowerButton.setOnClickListener { otoscopePower() }
-        binding.otoscopeFreezeButton.setOnClickListener {
-            if (otoscopeFreeze.frozen) {
-                otoscopeFreeze.unfreeze()
-            } else {
-                binding.otoscopeBadge.text = frozenLabel()
-                otoscopeFreeze.freeze(otoscope?.snapshot())
-            }
-        }
 
         binding.stethoListenButton.setOnClickListener {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
@@ -451,8 +447,9 @@ class LocalPanelActivity : AppCompatActivity() {
         binding.lock.visibility = View.VISIBLE
         binding.pinInput.setText("")
         binding.lockMessage.text = ""
-        cameraFreeze.unfreeze()
-        otoscopeFreeze.unfreeze()
+        // Las capturas se descartan al bloquearse, y Finalizar pasa por acá (onStop): no se guardan en ningún lado.
+        cameraFreeze.clear()
+        otoscopeFreeze.clear()
     }
 
     private fun tryUnlock() {
@@ -809,7 +806,7 @@ class LocalPanelActivity : AppCompatActivity() {
         binding.otoscopePowerButton.isEnabled = s.otoscopeState != OtoscopePower.State.POWERING_OFF &&
             (s.otoscopeAvailable || !otoscopeIdle)
         val otoscopeLive = otoscopeOpened && s.otoscopeState == OtoscopePower.State.ON
-        binding.otoscopeFreezeButton.isEnabled = otoscopeLive
+        otoscopeFreeze.setCanFreeze(otoscopeLive)
         // Mientras hay imagen el mensaje se va: lo dice el estado del encabezado.
         binding.otoscopeMessage.visibility = if (otoscopeLive) View.GONE else View.VISIBLE
         if (otoscopeIdle && otoscopeText.isEmpty()) {
@@ -821,7 +818,7 @@ class LocalPanelActivity : AppCompatActivity() {
         binding.stethoListenButton.isEnabled = s.stethoAvailable && !s.stethoRunning && !s.stethoStarting
         binding.stethoStopButton.isEnabled = s.stethoRunning || s.stethoStarting
 
-        binding.freezeButton.isEnabled = cameraState == CameraState.LIVE
+        cameraFreeze.setCanFreeze(cameraState == CameraState.LIVE)
         binding.cameraSwitchButton.isEnabled = cameraState != CameraState.MISSING && !cameraPaused
         binding.cameraMessage.visibility = if (cameraState == CameraState.LIVE) View.GONE else View.VISIBLE
     }

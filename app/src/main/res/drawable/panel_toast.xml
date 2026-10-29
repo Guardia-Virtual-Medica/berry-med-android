@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- El aviso de "Captura guardada", abajo en el visor. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/text" />
+    <corners android:radius="20dp" />
+</shape>
