@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@500;600&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0&display=block" rel="stylesheet"><style>body{margin:0;background:#05070A}a{color:#4C9BFF}a:hover{color:#8FB8FF}button{-webkit-tap-highlight-color:transparent}@keyframes spin{to{transform:rotate(360deg)}}@keyframes blink{50%{opacity:.25}}</style></helmet>
+<div style="min-height:100vh;display:flex;align-items:safe center;justify-content:safe center;padding:32px;box-sizing:border-box;min-width:max-content">
+<div data-screen-label="Panel" style="width:1280px;height:800px;flex:none;background:#0B0F14;border-radius:18px;overflow:hidden;display:flex;flex-direction:column;font-family:'Barlow',sans-serif;color:#E8EDF2;box-shadow:0 0 0 12px #000,0 40px 90px rgba(0,0,0,.6);position:relative">
+
+<div style="height:64px;flex:none;display:flex;align-items:center;gap:20px;padding:0 16px 0 24px;border-bottom:1px solid #1E2731">
+<div style="display:flex;align-items:baseline;gap:12px">
+<span style="font:600 30px/1 'Barlow Semi Condensed',sans-serif;font-variant-numeric:tabular-nums">{{ time }}</span>
+<span style="font:500 16px 'Barlow',sans-serif;color:#8A97A6">{{ date }}</span>
+</div>
+<div style="flex:1"></div>
+<sc-if value="{{ showChips }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;gap:8px">
+<sc-for list="{{ chips }}" as="c" hint-placeholder-count="6">
+<span style="display:flex;align-items:center;gap:7px;height:30px;padding:0 12px;border-radius:15px;border:1px solid {{ c.border }};font:500 14px 'Barlow',sans-serif;color:{{ c.fg }}"><i style="width:8px;height:8px;border-radius:50%;background:{{ c.dot }}"></i>{{ c.name }}</span>
+</sc-for>
+</div>
+</sc-if>
+<button onClick="{{ askFinish }}" style="height:44px;padding:0 20px;margin-left:8px;border-radius:10px;border:1px solid #3A4654;background:transparent;color:#E8EDF2;font:600 16px 'Barlow',sans-serif;cursor:pointer" style-hover="background:#1A232D">Finalizar</button>
+</div>
+
+<div style="flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 312px;gap:12px;padding:12px">
+
+<div style="display:flex;flex-direction:column;gap:12px;min-height:0">
+
+<sc-if value="{{ ecgView }}" hint-placeholder-val="{{ true }}">
+<div style="flex:1;min-height:0;background:#11171E;border:1px solid #1E2731;border-radius:14px;display:flex;flex-direction:column;overflow:hidden">
+<div style="height:64px;flex:none;display:flex;align-items:center;gap:16px;padding:0 12px 0 18px;border-bottom:1px solid #1E2731">
+<span style="font:600 18px 'Barlow',sans-serif;letter-spacing:.03em">ECG</span>
+<span style="display:flex;align-items:center;gap:6px;font:500 13px 'Barlow',sans-serif;color:#45D483"><i style="width:8px;height:8px;border-radius:50%;background:#45D483"></i>Señal buena</span>
+<div style="flex:1"></div>
+<div style="display:flex;padding:3px;gap:2px;background:#0B0F14;border:1px solid #1E2731;border-radius:11px">
+<sc-for list="{{ segLeads }}" as="s" hint-placeholder-count="3"><button onClick="{{ s.onClick }}" style="height:40px;min-width:46px;padding:0 10px;border:0;border-radius:8px;background:{{ s.bg }};color:{{ s.fg }};font:600 15px 'Barlow Semi Condensed',sans-serif;cursor:pointer">{{ s.label }}</button></sc-for>
+</div>
+<div style="display:flex;align-items:center;gap:8px">
+<div style="display:flex;padding:3px;gap:2px;background:#0B0F14;border:1px solid #1E2731;border-radius:11px">
+<sc-for list="{{ segSpeed }}" as="s" hint-placeholder-count="3"><button onClick="{{ s.onClick }}" style="height:40px;min-width:46px;padding:0 10px;border:0;border-radius:8px;background:{{ s.bg }};color:{{ s.fg }};font:600 15px 'Barlow Semi Condensed',sans-serif;cursor:pointer">{{ s.label }}</button></sc-for>
+</div>
+<span style="font:500 13px 'Barlow',sans-serif;color:#8A97A6">mm/s</span>
+</div>
+<div style="display:flex;align-items:center;gap:8px">
+<div style="display:flex;padding:3px;gap:2px;background:#0B0F14;border:1px solid #1E2731;border-radius:11px">
+<sc-for list="{{ segGain }}" as="s" hint-placeholder-count="3"><button onClick="{{ s.onClick }}" style="height:40px;min-width:46px;padding:0 10px;border:0;border-radius:8px;background:{{ s.bg }};color:{{ s.fg }};font:600 15px 'Barlow Semi Condensed',sans-serif;cursor:pointer">{{ s.label }}</button></sc-for>
+</div>
+<span style="font:500 13px 'Barlow',sans-serif;color:#8A97A6">mm/mV</span>
+</div>
+<button onClick="{{ toggleFreeze }}" style="height:46px;padding:0 16px 0 12px;border-radius:10px;border:1px solid {{ freeze.border }};background:{{ freeze.bg }};color:{{ freeze.fg }};font:600 15px 'Barlow',sans-serif;display:flex;align-items:center;gap:6px;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1">{{ freeze.icon }}</span>{{ freeze.label }}</button>
+</div>
+<div style="flex:1;min-height:0;position:relative;background-color:#0D1318;background-image:linear-gradient(#1A242D 1px,transparent 1px),linear-gradient(90deg,#1A242D 1px,transparent 1px),linear-gradient(#121A20 1px,transparent 1px),linear-gradient(90deg,#121A20 1px,transparent 1px);background-size:20px 20px,20px 20px,4px 4px,4px 4px">
+<canvas ref="{{ ecgRef }}" style="position:absolute;inset:0;width:100%;height:100%;display:block"></canvas>
+<sc-for list="{{ leadRows }}" as="r" hint-placeholder-count="7"><span style="position:absolute;left:14px;top:{{ r.top }};margin-top:6px;font:600 14px 'Barlow Semi Condensed',sans-serif;color:#8A97A6">{{ r.name }}</span></sc-for>
+<sc-if value="{{ frozen }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;right:14px;top:12px;height:28px;padding:0 12px;border-radius:14px;background:#FFB020;color:#0B0F14;font:700 13px/28px 'Barlow',sans-serif;letter-spacing:.06em">CONGELADO · {{ frozenAt }}</span></sc-if>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ deviceView }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;min-height:0;background:#11171E;border:1px solid #1E2731;border-radius:14px;display:flex;flex-direction:column;overflow:hidden">
+<div style="height:64px;flex:none;display:flex;align-items:center;gap:14px;padding:0 12px;border-bottom:1px solid #1E2731">
+<button onClick="{{ closeDevice }}" style="height:44px;padding:0 14px 0 10px;border-radius:10px;border:1px solid #26313D;background:transparent;color:#E8EDF2;font:600 15px 'Barlow',sans-serif;display:flex;align-items:center;gap:6px;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1">arrow_back</span>ECG</button>
+<span style="font:600 18px 'Barlow',sans-serif">{{ dev.title }}</span>
+<span style="display:flex;align-items:center;gap:6px;font:500 13px 'Barlow',sans-serif;color:{{ dev.statusColor }}"><i style="width:8px;height:8px;border-radius:50%;background:{{ dev.statusColor }}"></i>{{ dev.status }}</span>
+</div>
+<div style="flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 208px;gap:12px;padding:12px">
+
+<sc-if value="{{ isVideo }}" hint-placeholder-val="{{ true }}">
+<div style="background:#05080B;border-radius:10px;position:relative;display:flex;align-items:center;justify-content:center">
+<div style="width:{{ dev.vidW }};height:{{ dev.vidH }};border-radius:{{ dev.vidR }};border:1px dashed #2A3440;display:flex;align-items:center;justify-content:center;color:#5B6775;font:500 15px 'Barlow',sans-serif;text-align:center">{{ dev.placeholder }}</div>
+<sc-if value="{{ devFrozen }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;left:14px;top:12px;height:28px;padding:0 12px;border-radius:14px;background:#FFB020;color:#0B0F14;font:700 13px/28px 'Barlow',sans-serif;letter-spacing:.06em">CONGELADO · sin guardar</span></sc-if>
+<sc-if value="{{ savedMsg }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;left:50%;bottom:16px;transform:translateX(-50%);height:40px;padding:0 16px;border-radius:20px;background:#E8EDF2;color:#0B0F14;font:600 15px/40px 'Barlow',sans-serif;white-space:nowrap">Captura guardada · {{ savedMsg }}</span></sc-if>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;min-height:0">
+<sc-if value="{{ devLive }}" hint-placeholder-val="{{ true }}">
+<button onClick="{{ toggleDevFreeze }}" style="height:68px;flex:none;border-radius:12px;border:0;background:#4C9BFF;color:#06101C;font:700 18px 'Barlow',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:24px;line-height:1">pause</span>Congelar</button>
+<span style="font:500 13px/1.35 'Barlow',sans-serif;color:#8A97A6;padding:0 2px">Congelá la imagen para revisarla antes de guardarla.</span>
+<button onClick="{{ dev.altAction }}" style="height:52px;flex:none;border-radius:12px;border:1px solid #26313D;background:#1A232D;color:#E8EDF2;font:600 16px 'Barlow',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1">{{ dev.altIcon }}</span>{{ dev.altLabel }}</button>
+</sc-if>
+<sc-if value="{{ devFrozen }}" hint-placeholder-val="{{ false }}">
+<button onClick="{{ capture }}" style="height:68px;flex:none;border-radius:12px;border:0;background:#4C9BFF;color:#06101C;font:700 18px 'Barlow',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:24px;line-height:1">save</span>Guardar captura</button>
+<button onClick="{{ toggleDevFreeze }}" style="height:52px;flex:none;border-radius:12px;border:1px solid #26313D;background:#1A232D;color:#E8EDF2;font:600 16px 'Barlow',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1">close</span>Descartar y volver</button>
+</sc-if>
+<div style="flex:1"></div>
+<span style="font:600 12px 'Barlow',sans-serif;color:#8A97A6;letter-spacing:.08em;text-transform:uppercase">Capturas · {{ dev.capCount }}</span>
+<sc-if value="{{ dev.noCaps }}" hint-placeholder-val="{{ true }}"><span style="font:500 14px 'Barlow',sans-serif;color:#5B6775">Todavía no hay capturas</span></sc-if>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+<sc-for list="{{ dev.caps }}" as="cp" hint-placeholder-count="0"><div style="aspect-ratio:1;background:#1A232D;border:1px solid #26313D;border-radius:8px;position:relative"><span style="position:absolute;left:6px;bottom:5px;font:600 12px 'Barlow Semi Condensed',sans-serif;color:#8A97A6">{{ cp }}</span></div></sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isEsteto }}" hint-placeholder-val="{{ false }}">
+<div style="background:#05080B;border-radius:10px;position:relative;overflow:hidden">
+<canvas ref="{{ phonoRef }}" style="position:absolute;inset:0;width:100%;height:100%;display:block"></canvas>
+<span style="position:absolute;left:14px;top:12px;font:600 12px 'Barlow',sans-serif;color:#8A97A6;letter-spacing:.08em;text-transform:uppercase">Fonocardiograma · filtro {{ filterName }}</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;min-height:0">
+<span style="font:600 12px 'Barlow',sans-serif;color:#8A97A6;letter-spacing:.08em;text-transform:uppercase">Filtro</span>
+<div style="display:flex;flex-direction:column;padding:3px;gap:2px;background:#0B0F14;border:1px solid #1E2731;border-radius:11px">
+<sc-for list="{{ segFilter }}" as="s" hint-placeholder-count="3"><button onClick="{{ s.onClick }}" style="height:44px;border:0;border-radius:8px;background:{{ s.bg }};color:{{ s.fg }};font:600 15px 'Barlow',sans-serif;cursor:pointer">{{ s.label }}</button></sc-for>
+</div>
+<span style="font:600 12px 'Barlow',sans-serif;color:#8A97A6;letter-spacing:.08em;text-transform:uppercase;margin-top:4px">Volumen</span>
+<div style="display:flex;align-items:center;gap:8px">
+<button onClick="{{ volDown }}" style="width:52px;height:52px;border-radius:12px;border:1px solid #26313D;background:#1A232D;color:#E8EDF2;font-family:'Material Symbols Rounded';font-size:24px;cursor:pointer">remove</button>
+<span style="flex:1;text-align:center;font:600 26px 'Barlow Semi Condensed',sans-serif">{{ vol }}</span>
+<button onClick="{{ volUp }}" style="width:52px;height:52px;border-radius:12px;border:1px solid #26313D;background:#1A232D;color:#E8EDF2;font-family:'Material Symbols Rounded';font-size:24px;cursor:pointer">add</button>
+</div>
+<div style="flex:1"></div>
+<button onClick="{{ record }}" style="height:68px;flex:none;border-radius:12px;border:0;background:{{ rec.bg }};color:{{ rec.fg }};font:700 18px 'Barlow',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:24px;line-height:1">{{ rec.icon }}</span>{{ rec.label }}</button>
+<sc-for list="{{ recs }}" as="g" hint-placeholder-count="0"><div style="height:44px;display:flex;align-items:center;gap:8px;padding:0 10px;border-radius:10px;background:#1A232D;font:500 14px 'Barlow',sans-serif;color:#C9D2DC"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1;color:#8FB8FF">play_arrow</span><span style="flex:1">{{ g.name }}</span><span style="color:#8A97A6;font-family:'Barlow Semi Condensed',sans-serif">{{ g.time }}</span></div></sc-for>
+</div>
+</sc-if>
+
+</div>
+</div>
+<div style="height:72px;flex:none;background:#11171E;border:1px solid #1E2731;border-radius:14px;display:flex;align-items:center;gap:14px;padding:0 8px 0 16px">
+<div style="display:flex;flex-direction:column;line-height:1.15;width:70px">
+<span style="font:600 13px 'Barlow',sans-serif;color:#8A97A6">ECG · II</span>
+<span style="font:600 18px 'Barlow Semi Condensed',sans-serif;color:{{ fc.labelColor }}">FC {{ hr }}</span>
+</div>
+<div style="flex:1;height:56px;position:relative;border-radius:6px;overflow:hidden;background-color:#0D1318;background-image:linear-gradient(#1A242D 1px,transparent 1px),linear-gradient(90deg,#1A242D 1px,transparent 1px);background-size:20px 14px,20px 14px">
+<canvas ref="{{ stripRef }}" style="position:absolute;inset:0;width:100%;height:100%;display:block"></canvas>
+</div>
+<button onClick="{{ closeDevice }}" style="height:52px;padding:0 16px 0 12px;border-radius:10px;border:1px solid #26313D;background:#1A232D;color:#E8EDF2;font:600 15px 'Barlow',sans-serif;display:flex;align-items:center;gap:6px;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1">open_in_full</span>Ver ECG</button>
+</div>
+</sc-if>
+
+<div style="height:80px;flex:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px">
+<sc-for list="{{ dock }}" as="d" hint-placeholder-count="3">
+<button onClick="{{ d.onClick }}" style="display:flex;align-items:center;gap:14px;padding:0 14px 0 12px;border-radius:14px;border:1px solid {{ d.border }};background:{{ d.bg }};color:#E8EDF2;text-align:left;cursor:pointer" style-hover="border-color:#3A4654">
+<span style="width:52px;height:52px;flex:none;border-radius:11px;background:#1A232D;display:flex;align-items:center;justify-content:center;font-family:'Material Symbols Rounded';font-size:26px;color:#C9D2DC">{{ d.icon }}</span>
+<span style="flex:1;display:flex;flex-direction:column;gap:2px">
+<span style="font:600 17px 'Barlow',sans-serif">{{ d.name }}</span>
+<span style="font:500 13px 'Barlow',sans-serif;color:{{ d.statusColor }}">{{ d.status }}</span>
+</span>
+<span style="font-family:'Material Symbols Rounded';font-size:24px;color:#5B6775">{{ d.chev }}</span>
+</button>
+</sc-for>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:10px;min-height:0">
+
+<div style="flex:1.65;min-height:0;background:{{ fc.bg }};border:1px solid {{ fc.border }};border-radius:14px;padding:14px 18px 14px;display:flex;flex-direction:column">
+<div style="display:flex;align-items:baseline;gap:8px"><span style="font:700 16px 'Barlow',sans-serif;color:{{ fc.labelColor }};letter-spacing:.04em">FC</span><span style="font:500 13px 'Barlow',sans-serif;color:#8A97A6">desde ECG</span><div style="flex:1"></div><span style="font:500 14px 'Barlow',sans-serif;color:#8A97A6">lpm</span></div>
+<div style="flex:1;display:flex;align-items:center"><span style="font:600 112px/1 'Barlow Semi Condensed',sans-serif;color:{{ fc.color }};font-variant-numeric:tabular-nums;letter-spacing:-.01em">{{ hr }}</span></div>
+<div style="display:flex;align-items:center;gap:8px;font:500 13px 'Barlow',sans-serif;color:#8A97A6">
+<sc-if value="{{ alarm }}" hint-placeholder-val="{{ false }}"><span style="height:26px;padding:0 10px;border-radius:13px;background:#FF4D4F;color:#FFFFFF;font:700 13px/26px 'Barlow',sans-serif;letter-spacing:.05em;animation:blink 1.2s steps(2) infinite">▲ ALTA</span></sc-if>
+<span style="flex:1"></span><span>Límites 50–120</span>
+</div>
+</div>
+
+<div style="flex:1;min-height:0;background:#11171E;border:1px solid #1E2731;border-radius:14px;padding:12px 18px;display:flex;flex-direction:column">
+<div style="display:flex;align-items:baseline;gap:8px"><span style="font:700 16px 'Barlow',sans-serif;color:#3CC8E8;letter-spacing:.04em">SpO₂</span><div style="flex:1"></div><span style="font:500 14px 'Barlow',sans-serif;color:#8A97A6">%</span></div>
+<div style="flex:1;display:flex;align-items:center;justify-content:space-between"><span style="font:600 64px/1 'Barlow Semi Condensed',sans-serif;color:#3CC8E8;font-variant-numeric:tabular-nums">{{ spo2 }}</span><span style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1"><span style="font:500 13px 'Barlow',sans-serif;color:#8A97A6">Pulso</span><span style="font:600 26px 'Barlow Semi Condensed',sans-serif;color:#C9D2DC">{{ pulse }}</span></span></div>
+</div>
+
+<div style="flex:.85;min-height:0;background:#11171E;border:1px solid #1E2731;border-radius:14px;padding:12px 18px;display:flex;flex-direction:column">
+<div style="display:flex;align-items:baseline;gap:8px"><span style="font:700 16px 'Barlow',sans-serif;color:#F2C94C;letter-spacing:.04em">Resp</span><div style="flex:1"></div><span style="font:500 14px 'Barlow',sans-serif;color:#8A97A6">rpm</span></div>
+<div style="flex:1;display:flex;align-items:center"><span style="font:600 52px/1 'Barlow Semi Condensed',sans-serif;color:#F2C94C;font-variant-numeric:tabular-nums">{{ rr }}</span></div>
+</div>
+
+<div style="flex:1.1;min-height:0;background:#11171E;border:1px solid #1E2731;border-radius:14px;padding:12px 12px 12px 18px;display:flex;flex-direction:column">
+<div style="display:flex;align-items:baseline;gap:8px;padding-right:6px"><span style="font:700 16px 'Barlow',sans-serif;color:#B9A6FF;letter-spacing:.04em">PA</span><span style="font:500 13px 'Barlow',sans-serif;color:#8A97A6">{{ pa.sub }}</span><div style="flex:1"></div><span style="font:500 14px 'Barlow',sans-serif;color:#8A97A6">mmHg</span></div>
+<sc-if value="{{ pa.done }}" hint-placeholder-val="{{ true }}">
+<div style="flex:1;display:flex;align-items:center;gap:8px"><span style="font:600 52px/1 'Barlow Semi Condensed',sans-serif;color:#B9A6FF;font-variant-numeric:tabular-nums">{{ pa.value }}</span><span style="font:500 20px 'Barlow Semi Condensed',sans-serif;color:#8A97A6">({{ pa.map }})</span><div style="flex:1"></div><button onClick="{{ measurePA }}" style="height:48px;padding:0 16px;border-radius:10px;border:1px solid #3A4654;background:#1A232D;color:#E8EDF2;font:600 15px 'Barlow',sans-serif;cursor:pointer">Medir</button></div>
+</sc-if>
+<sc-if value="{{ pa.measuring }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;align-items:center;gap:10px"><span style="font:600 44px/1 'Barlow Semi Condensed',sans-serif;color:#E8EDF2;font-variant-numeric:tabular-nums">{{ pa.cuff }}</span><div style="flex:1;display:flex;flex-direction:column;gap:6px"><span style="font:500 13px 'Barlow',sans-serif;color:#8A97A6">{{ pa.phase }}</span><div style="height:6px;border-radius:3px;background:#1E2731;overflow:hidden"><div style="height:100%;width:{{ pa.pct }};background:#B9A6FF"></div></div></div><button onClick="{{ measurePA }}" style="height:48px;padding:0 12px;border-radius:10px;border:1px solid #3A4654;background:transparent;color:#E8EDF2;font:600 15px 'Barlow',sans-serif;cursor:pointer">Cancelar</button></div>
+</sc-if>
+</div>
+
+<sc-if value="{{ temp.off }}" hint-placeholder-val="{{ true }}">
+<div style="flex:.95;min-height:0;border:1.5px dashed #2E3946;border-radius:14px;padding:12px 12px 12px 18px;display:flex;flex-direction:column">
+<div style="display:flex;align-items:baseline;gap:8px;padding-right:6px"><span style="font:700 16px 'Barlow',sans-serif;color:#5B6775;letter-spacing:.04em">Temp</span><div style="flex:1"></div><span style="font:500 14px 'Barlow',sans-serif;color:#5B6775">°C</span></div>
+<div style="flex:1;display:flex;align-items:center;gap:10px"><span style="flex:1;font:500 15px/1.25 'Barlow',sans-serif;color:#8A97A6">{{ temp.msg }}</span><button onClick="{{ connectTemp }}" style="height:48px;padding:0 16px;border-radius:10px;border:0;background:#4C9BFF;color:#06101C;font:700 15px 'Barlow',sans-serif;cursor:pointer;display:flex;align-items:center;gap:8px">{{ spinner }}{{ temp.btn }}</button></div>
+</div>
+</sc-if>
+<sc-if value="{{ temp.on }}" hint-placeholder-val="{{ false }}">
+<div style="flex:.95;min-height:0;background:#11171E;border:1px solid #1E2731;border-radius:14px;padding:12px 12px 12px 18px;display:flex;flex-direction:column">
+<div style="display:flex;align-items:baseline;gap:8px;padding-right:6px"><span style="font:700 16px 'Barlow',sans-serif;color:#FF9F5A;letter-spacing:.04em">Temp</span><span style="font:500 13px 'Barlow',sans-serif;color:#8A97A6">{{ temp.sub }}</span><div style="flex:1"></div><span style="font:500 14px 'Barlow',sans-serif;color:#8A97A6">°C</span></div>
+<div style="flex:1;display:flex;align-items:center;gap:8px"><span style="font:600 52px/1 'Barlow Semi Condensed',sans-serif;color:#FF9F5A;font-variant-numeric:tabular-nums">{{ temp.value }}</span><div style="flex:1"></div><button onClick="{{ measureTemp }}" style="height:48px;padding:0 16px;border-radius:10px;border:1px solid #3A4654;background:#1A232D;color:#E8EDF2;font:600 15px 'Barlow',sans-serif;cursor:pointer;display:flex;align-items:center;gap:8px">{{ spinner }}Medir</button></div>
+</div>
+</sc-if>
+
+</div>
+</div>
+
+<sc-if value="{{ confirm }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;background:rgba(3,5,8,.72);display:flex;align-items:center;justify-content:center">
+<div style="width:440px;background:#131A22;border:1px solid #26313D;border-radius:18px;padding:28px;display:flex;flex-direction:column;gap:12px">
+<span style="font:600 22px 'Barlow',sans-serif">¿Finalizar la sesión?</span>
+<span style="font:400 16px/1.45 'Barlow',sans-serif;color:#A9B4C0">Se detiene el ECG y se apagan el otoscopio y la cámara. Las capturas y mediciones de esta sesión quedan guardadas.</span>
+<div style="display:flex;justify-content:flex-end;gap:10px;margin-top:10px">
+<button onClick="{{ cancelFinish }}" style="height:48px;padding:0 20px;border-radius:10px;border:1px solid #3A4654;background:transparent;color:#E8EDF2;font:600 16px 'Barlow',sans-serif;cursor:pointer">Cancelar</button>
+<button onClick="{{ doFinish }}" style="height:48px;padding:0 20px;border-radius:10px;border:0;background:#E8EDF2;color:#0B0F14;font:700 16px 'Barlow',sans-serif;cursor:pointer">Finalizar sesión</button>
+</div>
+</div>
+</div>
+</sc-if>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;alarmaFC&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Demo de estados&quot;},&quot;tempConectada&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Demo de estados&quot;},&quot;chipsCabecera&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Layout&quot;},&quot;derivaciones&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;II&quot;,&quot;3&quot;,&quot;7&quot;],&quot;default&quot;:&quot;7&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Layout&quot;}}">
+const LEADS = { I:[.8,1,.7,1,.8], II:[1,1,1.2,1,1], III:[.4,1,.5,1,.3], aVR:[-.8,-1,-.9,-1,-.8], aVL:[.3,1,.35,1,.2], aVF:[.7,1,.8,1,.6], V:[.6,1,.5,3,1.1] };
+const LEAD_SETS = { II:['II'], '3':['I','II','III'], '7':['I','II','III','aVR','aVL','aVF','V'] };
+const g = (x, a, mu, w) => a * Math.exp(-((x - mu) ** 2) / (2 * w * w));
+const fmt = d => d ? d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
+const fmtS = d => d ? d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) : '';
+
+class Component extends DCLogic {
+  state = {
+    now: new Date(), leads: this.props.derivaciones ?? '7', speed: 25, gain: 10, frozen: false, frozenAt: null,
+    device: null, otoOn: true, camRear: true, devFrozen: false, caps: { oto: [], cam: [] },
+    filter: 'Corazón', vol: 6, recLeft: 0, recs: [],
+    pa: { status: 'done', sys: 120, dia: 80, map: 93, at: new Date(Date.now() - 4 * 60000) }, cuff: 0, paPhase: '',
+    temp: { status: this.props.tempConectada ? 'on' : 'off', value: 36.6, at: new Date() },
+    hrJ: 0, spo2: 98, pulse: 73, rr: 16, confirm: false
+  };
+  sweeps = {};
+  simT = 0;
+  ecgRef = el => this.attach('ecg', el, 'ecg');
+  stripRef = el => this.attach('strip', el, 'strip');
+  phonoRef = el => this.attach('phono', el, 'phono');
+
+  componentDidMount() { this.startLoops(); }
+  startLoops() {
+    if (this.clock) return;
+    this.clock = setInterval(() => {
+      const s = { now: new Date() };
+      if (Math.random() < .4) s.hrJ = Math.round(Math.random() * 2 - 1);
+      if (Math.random() < .15) s.spo2 = 97 + Math.round(Math.random());
+      if (Math.random() < .3) s.pulse = this.hr() + Math.round(Math.random() * 2);
+      if (Math.random() < .1) s.rr = 15 + Math.round(Math.random() * 2);
+      this.setState(s);
+    }, 1000);
+    this.lastTs = performance.now();
+    const loop = ts => { const dt = Math.min(.05, (ts - this.lastTs) / 1000); this.lastTs = ts; this.tick(dt); this.raf = requestAnimationFrame(loop); };
+    this.raf = requestAnimationFrame(loop);
+  }
+  componentWillUnmount() {
+    clearInterval(this.clock); clearInterval(this.paTimer); clearInterval(this.recTimer); cancelAnimationFrame(this.raf); this.clock = null;
+    Object.values(this.sweeps).forEach(s => s && s.ro && s.ro.disconnect());
+  }
+  hr() { return (this.props.alarmaFC ? 132 : 72) + this.state.hrJ; }
+
+  attach(key, el, kind) {
+    const old = this.sweeps[key];
+    if (old && old.el === el) return;
+    if (old && old.ro) old.ro.disconnect();
+    if (!el) { delete this.sweeps[key]; return; }
+    const s = { el, kind, ctx: el.getContext('2d'), x: 0, acc: 0, t: 0, prev: null, w: 0, h: 0, n: 0, dpr: window.devicePixelRatio || 1 };
+    const fit = () => { s.w = el.clientWidth; s.h = el.clientHeight; el.width = Math.round(s.w * s.dpr); el.height = Math.round(s.h * s.dpr); s.ctx.setTransform(s.dpr, 0, 0, s.dpr, 0, 0); s.x = 0; s.prev = null; };
+    s.fit = fit;
+    s.ro = new ResizeObserver(fit); s.ro.observe(el); fit();
+    this.sweeps[key] = s;
+    this.startLoops();
+  }
+  ecgV(t, lead, hr) {
+    const T = 60 / hr, k = Math.min(1, T / .75), x = t % T, c = LEADS[lead];
+    return c[0] * g(x, .12, .12 * k, .025 * k) + c[1] * g(x, -.1, .22 * k, .01) + c[2] * g(x, 1, .25 * k, .012) + c[3] * g(x, -.25, .28 * k, .012) + c[4] * g(x, .3, .46 * k, .045 * k) + (Math.random() - .5) * .025;
+  }
+  phonoV(t, hr) {
+    const T = 60 / hr, k = Math.min(1, T / .75), x = t % T, f = this.state.filter;
+    const heart = (g(x, 1, .03, .018) + g(x, .7, .33 * k, .014)) * Math.sin(2 * Math.PI * 55 * t) * (.6 + .4 * Math.random());
+    const breath = (.5 + .5 * Math.sin(2 * Math.PI * t / 4)) * (Math.random() - .5) * .5;
+    const v = f === 'Corazón' ? heart : f === 'Pulmón' ? heart * .3 + breath : heart * .8 + breath * .6;
+    return v * (.35 + this.state.vol / 10 * .65);
+  }
+  tick(dt) {
+    const hr = this.hr();
+    for (const key in this.sweeps) {
+      const s = this.sweeps[key]; if (!s) continue;
+      if (!s.el.isConnected) { delete this.sweeps[key]; continue; }
+      if (s.w !== s.el.clientWidth || s.h !== s.el.clientHeight || !s.el.width) s.fit();
+      if (!s.w) continue;
+      const isEcg = s.kind !== 'phono';
+      if (isEcg && this.state.frozen) continue;
+      const speedPx = isEcg ? this.state.speed * 4 : 160;
+      const leads = s.kind === 'ecg' ? LEAD_SETS[this.state.leads] : s.kind === 'strip' ? ['II'] : ['ph'];
+      const ctx = s.ctx;
+      if (s.n !== leads.length) { ctx.clearRect(0, 0, s.w, s.h); s.x = 0; s.prev = null; s.n = leads.length; }
+      s.acc += speedPx * dt; const steps = Math.floor(s.acc); s.acc -= steps;
+      if (!steps) continue;
+      const rowH = s.h / leads.length;
+      const gainPx = s.kind === 'ecg' ? this.state.gain * 4 : s.kind === 'strip' ? Math.min(this.state.gain * 4, rowH * .38) : rowH * .42;
+      ctx.lineWidth = s.kind === 'phono' ? 1.2 : 1.6; ctx.lineJoin = 'round';
+      ctx.strokeStyle = s.kind === 'phono' ? '#8FB8FF' : (this.props.alarmaFC ? '#FF8A8A' : '#45D483');
+      const erase = (x0, wid) => { ctx.clearRect(x0, 0, wid, s.h); if (x0 + wid > s.w) ctx.clearRect(0, 0, x0 + wid - s.w, s.h); };
+      for (let i = 0; i < steps; i++) {
+        s.t += 1 / speedPx;
+        const x1 = s.x + 1;
+        erase(x1 + 1, 18);
+        const ys = leads.map((ld, j) => {
+          const base = rowH * j + rowH * (s.kind === 'phono' ? .5 : .58);
+          const v = s.kind === 'phono' ? this.phonoV(s.t, hr) : this.ecgV(s.t, ld, hr);
+          return base - v * gainPx;
+        });
+        if (s.prev) { ctx.beginPath(); ys.forEach((y, j) => { ctx.moveTo(s.x, s.prev[j]); ctx.lineTo(x1, y); }); ctx.stroke(); }
+        s.prev = ys;
+        s.x = x1;
+        if (s.x >= s.w) { s.x = 0; s.prev = null; }
+      }
+    }
+  }
+
+  seg(opts, cur, key) {
+    return opts.map(o => ({ label: o[0], bg: o[1] === cur ? '#E8EDF2' : 'transparent', fg: o[1] === cur ? '#0B0F14' : '#8A97A6', onClick: () => this.setState({ [key]: o[1] }) }));
+  }
+  measurePA = () => {
+    if (this.state.pa.status === 'measuring') { clearInterval(this.paTimer); this.setState(s => ({ pa: { ...s.pa, status: 'done' } })); return; }
+    let ph = 'inf', c = 0;
+    this.setState(s => ({ pa: { ...s.pa, status: 'measuring' }, cuff: 0, paPhase: 'Inflando…' }));
+    this.paTimer = setInterval(() => {
+      if (ph === 'inf') { c += 12; if (c >= 175) ph = 'def'; }
+      else { c -= 3; if (c <= 60) {
+        clearInterval(this.paTimer);
+        const sys = 114 + Math.round(Math.random() * 10), dia = 74 + Math.round(Math.random() * 8);
+        this.setState({ pa: { status: 'done', sys, dia, map: Math.round(dia + (sys - dia) / 3), at: new Date() } }); return;
+      } }
+      this.setState({ cuff: c, paPhase: ph === 'inf' ? 'Inflando…' : 'Midiendo…' });
+    }, 100);
+  };
+  connectTemp = () => {
+    if (this.state.temp.status !== 'off') return;
+    this.setState(s => ({ temp: { ...s.temp, status: 'connecting' } }));
+    setTimeout(() => this.setState({ temp: { status: 'on', value: 36.6, at: new Date() } }), 1600);
+  };
+  measureTemp = () => {
+    if (this.state.temp.status === 'measuring') return;
+    this.setState(s => ({ temp: { ...s.temp, status: 'measuring' } }));
+    setTimeout(() => this.setState({ temp: { status: 'on', value: +(36.3 + Math.random() * .6).toFixed(1), at: new Date() } }), 900);
+  };
+  record = () => {
+    if (this.state.recLeft > 0) return;
+    this.setState({ recLeft: 15 });
+    this.recTimer = setInterval(() => {
+      const left = this.state.recLeft - 1;
+      if (left <= 0) { clearInterval(this.recTimer); this.setState(s => ({ recLeft: 0, recs: [{ name: `Grabación ${s.recs.length + 1} · ${s.filter}`, time: fmt(new Date()) }, ...s.recs].slice(0, 3) })); }
+      else this.setState({ recLeft: left });
+    }, 1000);
+  };
+
+  renderVals() {
+    if (!this.clock) setTimeout(() => this.startLoops(), 0);
+    const st = this.state, hr = this.hr(), alarm = !!this.props.alarmaFC, now = st.now;
+    let date = now.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).replace(',', '');
+    date = date.charAt(0).toUpperCase() + date.slice(1);
+    const leads = LEAD_SETS[st.leads];
+    const ago = d => { const m = Math.max(0, Math.round((now - d) / 60000)); return m < 1 ? 'recién' : `hace ${m} min`; };
+    const tempOff = st.temp.status === 'off' || st.temp.status === 'connecting';
+    const spin = React.createElement('span', { style: { width: 16, height: 16, borderRadius: '50%', border: '2px solid rgba(6,16,28,.25)', borderTopColor: tempOff ? '#06101C' : '#E8EDF2', animation: 'spin .8s linear infinite', display: 'inline-block' } });
+    const showSpin = st.temp.status === 'connecting' || st.temp.status === 'measuring';
+    const chip = (name, on, wait) => ({ name, border: on ? '#26313D' : '#1E2731', fg: on ? '#C9D2DC' : '#5B6775', dot: wait ? '#FFB020' : on ? '#45D483' : '#3A4654' });
+    const open = id => () => this.setState(s => ({ device: s.device === id ? null : id, devFrozen: false }));
+    const dockItem = (id, name, icon, status, statusColor) => ({ name, icon, status, statusColor, onClick: open(id), bg: st.device === id ? '#18212B' : '#11171E', border: st.device === id ? '#4C9BFF' : '#1E2731', chev: st.device === id ? 'close' : 'chevron_right' });
+    const d = st.device;
+    const isVideo = d === 'oto' || d === 'cam';
+    const caps = isVideo ? st.caps[d] : [];
+    let dev = {};
+    if (d === 'oto') dev = { title: 'Otoscopio', status: st.otoOn ? 'En vivo' : 'Apagado', statusColor: st.otoOn ? '#45D483' : '#5B6775', vidW: '400px', vidH: '400px', vidR: '50%', placeholder: st.otoOn ? 'Video en vivo del otoscopio' : 'Otoscopio apagado', altIcon: 'power_settings_new', altLabel: st.otoOn ? 'Apagar' : 'Encender', altAction: () => this.setState(s => ({ otoOn: !s.otoOn })) };
+    if (d === 'cam') dev = { title: 'Cámara', status: st.camRear ? 'En vivo · trasera' : 'En vivo · frontal', statusColor: '#45D483', vidW: '86%', vidH: '78%', vidR: '8px', placeholder: 'Video en vivo de la cámara', altIcon: 'cameraswitch', altLabel: 'Cambiar cámara', altAction: () => this.setState(s => ({ camRear: !s.camRear })) };
+    if (d === 'esteto') dev = { title: 'Estetoscopio', status: st.recLeft ? 'Grabando' : 'Escuchando', statusColor: st.recLeft ? '#FF4D4F' : '#45D483' };
+    Object.assign(dev, { freezeIcon: st.devFrozen ? 'play_arrow' : 'pause', freezeLabel: st.devFrozen ? 'Reanudar' : 'Congelar', caps: caps.slice(0, 4), capCount: caps.length, noCaps: !caps.length });
+    return {
+      time: fmt(now), date, showChips: this.props.chipsCabecera ?? true,
+      chips: [chip('ECG', true), chip('SpO₂', true), chip('PA', true), chip('Temp', st.temp.status !== 'off' && st.temp.status !== 'connecting', st.temp.status === 'connecting'), chip('Otoscopio', st.otoOn), chip('Estetoscopio', true)],
+      askFinish: () => this.setState({ confirm: true }), cancelFinish: () => this.setState({ confirm: false }),
+      doFinish: () => { clearInterval(this.paTimer); this.setState({ confirm: false, device: null, frozen: false, caps: { oto: [], cam: [] }, recs: [] }); },
+      ecgView: !d, deviceView: !!d, isVideo, isEsteto: d === 'esteto', dev,
+      segLeads: this.seg([['II', 'II'], ['3', '3'], ['7', '7']], st.leads, 'leads'),
+      segSpeed: this.seg([['12,5', 12.5], ['25', 25], ['50', 50]], st.speed, 'speed'),
+      segGain: this.seg([['5', 5], ['10', 10], ['20', 20]], st.gain, 'gain'),
+      segFilter: this.seg([['Corazón', 'Corazón'], ['Pulmón', 'Pulmón'], ['Amplio', 'Amplio']], st.filter, 'filter'),
+      filterName: st.filter.toLowerCase(), vol: st.vol,
+      volDown: () => this.setState(s => ({ vol: Math.max(0, s.vol - 1) })), volUp: () => this.setState(s => ({ vol: Math.min(10, s.vol + 1) })),
+      rec: st.recLeft ? { bg: '#FF4D4F', fg: '#FFFFFF', icon: 'fiber_manual_record', label: `Grabando… ${st.recLeft} s` } : { bg: '#4C9BFF', fg: '#06101C', icon: 'mic', label: 'Grabar 15 s' },
+      record: this.record, recs: st.recs,
+      frozen: st.frozen, frozenAt: fmtS(st.frozenAt),
+      freeze: st.frozen ? { bg: '#FFB020', fg: '#0B0F14', border: '#FFB020', icon: 'play_arrow', label: 'Reanudar' } : { bg: 'transparent', fg: '#E8EDF2', border: '#3A4654', icon: 'pause', label: 'Congelar' },
+      toggleFreeze: () => this.setState(s => ({ frozen: !s.frozen, frozenAt: new Date() })),
+      leadRows: leads.map((name, i) => ({ name, top: `${(i / leads.length) * 100}%` })),
+      ecgRef: this.ecgRef, stripRef: this.stripRef, phonoRef: this.phonoRef,
+      closeDevice: () => this.setState({ device: null, devFrozen: false }),
+      toggleDevFreeze: () => this.setState(s => ({ devFrozen: !s.devFrozen })),
+      capture: () => {
+        if (!isVideo) return; const t = fmtS(new Date());
+        this.setState(s => ({ caps: { ...s.caps, [d]: [t, ...s.caps[d]] }, devFrozen: false, savedMsg: t }));
+        clearTimeout(this.savedT); this.savedT = setTimeout(() => this.setState({ savedMsg: null }), 2200);
+      },
+      devFrozen: st.devFrozen, devLive: !st.devFrozen, savedMsg: st.savedMsg || null,
+      dock: [
+        dockItem('oto', 'Otoscopio', 'hearing', st.otoOn ? 'En vivo' : 'Apagado', st.otoOn ? '#45D483' : '#8A97A6'),
+        dockItem('esteto', 'Estetoscopio', 'stethoscope', st.recLeft ? `Grabando · ${st.recLeft} s` : 'Conectado', st.recLeft ? '#FF6B6B' : '#8A97A6'),
+        dockItem('cam', 'Cámara', 'videocam', 'Lista', '#8A97A6')
+      ],
+      hr, alarm,
+      fc: alarm ? { bg: '#2A1013', border: '#FF4D4F', color: '#FF8A8A', labelColor: '#FF8A8A' } : { bg: '#11171E', border: '#1E2731', color: '#45D483', labelColor: '#45D483' },
+      spo2: st.spo2, pulse: st.pulse, rr: st.rr,
+      pa: { done: st.pa.status === 'done', measuring: st.pa.status === 'measuring', value: `${st.pa.sys}/${st.pa.dia}`, map: st.pa.map, sub: st.pa.status === 'measuring' ? 'midiendo' : `${fmt(st.pa.at)} · ${ago(st.pa.at)}`, cuff: st.cuff, phase: st.paPhase, pct: `${Math.min(100, st.cuff / 175 * 100)}%` },
+      measurePA: this.measurePA,
+      temp: { off: tempOff, on: !tempOff, msg: st.temp.status === 'connecting' ? 'Buscando termómetro IR…' : 'Termómetro IR desconectado', btn: st.temp.status === 'connecting' ? 'Conectando' : 'Conectar', value: String(st.temp.value).replace('.', ','), sub: st.temp.status === 'measuring' ? 'midiendo' : `IR · ${fmt(st.temp.at)}` },
+      connectTemp: this.connectTemp, measureTemp: this.measureTemp,
+      spinner: showSpin ? spin : null,
+      confirm: st.confirm
+    };
+  }
+}
+</script>
+</body>
+</html>

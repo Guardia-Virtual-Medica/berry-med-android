@@ -8,3 +8,5 @@ captures/
 *.apk
 *.aab
 output-metadata.json
+docs/capturas/
+docs/apk/
