@@ -84,9 +84,22 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - Con el kiosco y el estetoscopio en la misma app, Android no silencia la captura del estetoscopio con Zoom en la llamada: ya no hace falta pausar el micrófono del kiosco.
 - Se sacan del PR #19 el pedido del token a la API, el permiso "Mostrar sobre otras apps" y la apertura de la pantalla principal desde el arranque.
 
+### Audio de la videollamada y puertos del YKUSH3 (plan 7)
+
+- La videollamada se escucha por defecto en el H390; en el paso Kiosco se cambia por el parlante. El micrófono acompaña a la salida. No alcanza al estetoscopio del Panel Local, que sale sólo por el auricular. Plan en `docs/planes/plan-7-audio-llamada-y-puertos.md`.
+- Si la salida elegida es el auricular y no está, la llamada sale por el parlante, con línea en el log y en Testing. Nunca el adaptador del estetoscopio, aunque sea el único USB.
+- `CallAudioRouter` fija y reafirma el dispositivo de comunicación con la llamada en `MODE_IN_COMMUNICATION`: como mucho una vez por segundo y cinco intentos seguidos. Los intentos se perdonan sólo si el último duró 10 s: en un ciclo con Chromium el dispositivo correcto vuelve siempre. Corrige lo de "Berry Med nunca toca el ruteo": el modo y el foco siguen sin tocarse.
+- Hallazgo al verificar: en el emulador una llamada WebRTC en el `WebView` queda en `MODE_NORMAL` y reproduce como `USAGE_MEDIA`, así que el router no actúa. Es una duda abierta para la tablet con Zoom, no un dato sobre Zoom. No se agregó otra forma de detectar la llamada: con esa reproducción `setCommunicationDevice` tampoco movería el audio.
+- El selector no depende sólo del modo comunicación: los puertos también eligen la salida. Con Parlante, los puertos 2 y 3 quedan apagados en reposo y no hay salida USB; con Auricular, el H390 es la única. Por razonamiento, sin probar en la tablet, en `MODE_NORMAL` debería seguir andando hasta que se encienda el puerto del estetoscopio, cuyo adaptador puede llevarse los medios de la llamada: es el riesgo principal (`docs/hardware.md`). `setCommunicationDevice` sólo agrega la distinción entre el H390 y el adaptador con modo comunicación.
+- Lo que Berry Med fijó se suelta una vez con `clearCommunicationDevice` al salir del modo comunicación, como pide Android.
+- El permiso USB del otoscopio ya no sale solo en la instalación, porque su puerto descansa apagado: es un ítem de la lista del paso Kiosco, con botón a Testing y sin estado, porque Android no dice si quedó "Usar de forma predeterminada".
+- Puertos en reposo: otoscopio y estetoscopio apagados, auricular según la salida. Cambia la regla "el servicio no toca los puertos solo". Si alguien usa un equipo se espera a que se libere y se aplica entonces; un hub que no contesta no se reintenta hasta que vuelva a conectarse o cambie la salida.
+- Protocolo según la hoja de datos: sin `0x2A`, con el comando repetido en el segundo byte. `0x41` es persistente y no se puede leer: sólo con el botón de Testing.
+
 ## Pendiente
 
 - Prueba con el hardware real en la tablet (ver "Probar el Panel Local en el tótem" en el `README.md` y los riesgos de `docs/hardware.md`).
 - Los hallazgos 8 a 26 de `docs/revisiones/revision-codigo-opus.md`.
 - Plan 6 en la tablet real: Zoom dentro del `WebView`, el camino UVC sin vista, el adaptador con `UNPROCESSED` y el kiosco como app de inicio (ver "Qué probar en la tablet" en el PR #19).
+- Plan 7 en la tablet real: modo y uso de audio de Zoom en el `WebView`, y el protocolo del hub contra el YKUSH3 (ver riesgos en `docs/hardware.md`).
 - v2 con guardado y PDF local.

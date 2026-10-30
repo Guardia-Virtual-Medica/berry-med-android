@@ -62,6 +62,7 @@ class ConfigStore(private val context: Context) {
             prefs[STETHO_INPUT] = config.stethoInputName
             prefs[HEADSET] = config.headsetName
             prefs[KIOSK_URL] = config.kioskUrl
+            prefs[CALL_AUDIO] = config.callAudioOutput
         }
     }
 
@@ -111,6 +112,7 @@ class ConfigStore(private val context: Context) {
         stethoInputName = this[STETHO_INPUT]?.takeIf { it.isNotBlank() } ?: DEFAULT_STETHO_INPUT,
         headsetName = this[HEADSET]?.takeIf { it.isNotBlank() } ?: DEFAULT_HEADSET,
         kioskUrl = this[KIOSK_URL].orEmpty(),
+        callAudioOutput = callAudioOutputOrDefault(this[CALL_AUDIO]),
     )
 
     companion object {
@@ -137,5 +139,6 @@ class ConfigStore(private val context: Context) {
         private val STETHO_INPUT = stringPreferencesKey("stetho_input_name")
         private val HEADSET = stringPreferencesKey("headset_name")
         private val KIOSK_URL = stringPreferencesKey("kiosk_url")
+        private val CALL_AUDIO = stringPreferencesKey("call_audio_output")
     }
 }

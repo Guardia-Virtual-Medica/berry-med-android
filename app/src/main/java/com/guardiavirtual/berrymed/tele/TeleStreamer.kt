@@ -74,6 +74,12 @@ class TeleStreamer(
     @Volatile var status: TeleStatus = TeleStatus()
         private set
 
+    /** Encendiendo un instrumento: todavía no figura en [status], pero el puerto ya es de la teleconsulta. */
+    @Volatile private var publishing = false
+
+    /** Si la teleconsulta tiene un instrumento en uso o lo está encendiendo. */
+    val usingInstrument: Boolean get() = publishing || status.instrument != null
+
     // Sólo desde el hilo del streamer.
     private var credentials: TeleCredentials? = null
     private var joinedAtMillis = 0L
@@ -225,6 +231,15 @@ class TeleStreamer(
 
     /** Con la sala abierta: publica [instrument] y, si había otro, primero lo despublica. */
     private fun publishOnly(instrument: Instrument) {
+        publishing = true
+        try {
+            replaceWith(instrument)
+        } finally {
+            publishing = false
+        }
+    }
+
+    private fun replaceWith(instrument: Instrument) {
         val current = status.instrument
         if (current == instrument) {
             log("[TELE] El ${instrument.label} ya se está publicando")

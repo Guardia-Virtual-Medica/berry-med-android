@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package com.guardiavirtual.berrymed.audio
 
+import com.guardiavirtual.berrymed.config.CALL_AUDIO_HEADSET
+import com.guardiavirtual.berrymed.config.CALL_AUDIO_SPEAKER
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -11,6 +13,36 @@ class AudioPickTest {
 
     private fun output(id: Int, name: String, usb: Boolean = true) =
         AudioPick.Device(id = id, type = 0, name = name, isSource = false, isSink = true, usb = usb)
+
+    private val speaker = AudioPick.Device(
+        id = 1, type = AudioPick.TYPE_BUILTIN_SPEAKER, name = "Tablet", isSource = false, isSink = true, usb = false,
+    )
+    private val h390 = output(2, "USB-Audio - Logitech USB Headset H390")
+    private val adapter = output(3, "USB Audio Device")
+
+    @Test
+    fun theCallGoesToTheHeadsetWhenItIsThere() {
+        val devices = listOf(speaker, adapter, h390)
+        assertEquals(2, AudioPick.callOutput(devices, CALL_AUDIO_HEADSET, "H390")?.id)
+    }
+
+    @Test
+    fun withoutTheHeadsetTheCallFallsBackToTheSpeakerAndNeverTheAdapter() {
+        val devices = listOf(adapter, speaker)
+        assertEquals(1, AudioPick.callOutput(devices, CALL_AUDIO_HEADSET, "H390")?.id)
+    }
+
+    @Test
+    fun theSpeakerWinsWhenChosenEvenWithTheHeadsetPlugged() {
+        val devices = listOf(h390, adapter, speaker)
+        assertEquals(1, AudioPick.callOutput(devices, CALL_AUDIO_SPEAKER, "H390")?.id)
+    }
+
+    @Test
+    fun theAdapterAloneIsNeverTheCallDevice() {
+        assertNull(AudioPick.callOutput(listOf(adapter), CALL_AUDIO_HEADSET, "H390"))
+        assertNull(AudioPick.callOutput(listOf(adapter), CALL_AUDIO_SPEAKER, "H390"))
+    }
 
     @Test
     fun theAdapterIsChosenByNameAmongSeveralUsbDevices() {

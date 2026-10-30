@@ -16,4 +16,6 @@ data class TeleView(
     val levelPercent: Int,
     /** Si Android le da silencio a la captura (otra app dueña del micrófono); null si no hay captura. */
     val silenced: Boolean?,
+    /** La salida elegida para la videollamada y el dispositivo de comunicación actual. */
+    val callAudio: String,
 )

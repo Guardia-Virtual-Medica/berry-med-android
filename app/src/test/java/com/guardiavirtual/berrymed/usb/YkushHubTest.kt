@@ -6,6 +6,7 @@ import com.guardiavirtual.berrymed.config.ykushPortOrDefault
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class YkushHubTest {
@@ -15,15 +16,24 @@ class YkushHubTest {
         assertEquals(0x13.toByte(), YkushHub.command(port = 3, on = true))
         assertEquals(0x02.toByte(), YkushHub.command(port = 2, on = false))
         assertEquals(0x21.toByte(), YkushHub.statusCommand(port = 1))
-        assertEquals(0x2A.toByte(), YkushHub.STATUS_ALL)
     }
 
     @Test
-    fun thePacketIsSixtyFourBytesWithTheCommandFirst() {
+    fun thePacketIsSixtyFourBytesAndRepeatsTheCommand() {
         val packet = YkushHub.packet(YkushHub.command(port = 2, on = true))
         assertEquals(64, packet.size)
         assertEquals(0x12.toByte(), packet[0])
-        assertTrue(packet.drop(1).all { it == 0.toByte() })
+        assertEquals(0x12.toByte(), packet[1])
+        assertTrue(packet.drop(2).all { it == 0.toByte() })
+    }
+
+    @Test
+    fun theDefaultStatePacketCarriesThePortAndTheState() {
+        val on = YkushHub.defaultStatePacket(port = 3, on = true)
+        assertEquals(64, on.size)
+        assertEquals(listOf<Byte>(0x41, 0x03, 0x01), on.take(3))
+        assertTrue(on.drop(3).all { it == 0.toByte() })
+        assertEquals(listOf<Byte>(0x41, 0x01, 0x00), YkushHub.defaultStatePacket(port = 1, on = false).take(3))
     }
 
     @Test
@@ -34,9 +44,24 @@ class YkushHubTest {
     }
 
     @Test
-    fun aPortAboveSixteenIsOnAndAShortReplyLeavesTheRestUnknown() {
-        assertEquals(listOf(true, false, true), YkushHub.statesFrom(byteArrayOf(0x01, 0x11, 0x01, 0x13)))
-        assertEquals(listOf(false, null, null), YkushHub.statesFrom(byteArrayOf(0x01, 0x01)))
+    fun theStatusReplyIsOneNOnAndZeroNOff() {
+        assertEquals(true, YkushHub.stateFrom(byteArrayOf(0x01, 0x11)))
+        assertEquals(true, YkushHub.stateFrom(byteArrayOf(0x01, 0x13)))
+        assertEquals(false, YkushHub.stateFrom(byteArrayOf(0x01, 0x02)))
+    }
+
+    @Test
+    fun aFailedStatusReplyIsUnknown() {
+        assertNull(YkushHub.stateFrom(null))
+        assertNull(YkushHub.stateFrom(byteArrayOf(0x00, 0x11)))
+        assertNull(YkushHub.stateFrom(byteArrayOf(0x01)))
+        assertNull(YkushHub.stateFrom(byteArrayOf(0x01, 0x7F)))
+    }
+
+    @Test
+    fun aPortThatFailsLeavesOnlyThatOneUnknown() {
+        val replies = listOf(byteArrayOf(0x01, 0x11), null, byteArrayOf(0x01, 0x03))
+        assertEquals(listOf(true, null, false), replies.map(YkushHub::stateFrom))
     }
 
     @Test
