@@ -444,7 +444,7 @@ Los tests no necesitan la plaqueta. `local.properties` (la ruta del SDK) es de c
 Cada versión publicada tiene su APK en [Releases](https://github.com/Guardia-Virtual-Medica/berry-med-android/releases), con el SHA-256 en las notas. No hay CI: el APK de la release se compila a mano (`assembleDebug`) y se sube con `gh release create v<versionName> <apk>`. Para instalarlo en la tablet conectada por USB:
 
 ```bash
-adb install -r berry-med-1.2.2.apk
+adb install -r berry-med-1.3.0.apk
 ```
 
 O, recién compilado:
