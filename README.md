@@ -59,6 +59,220 @@ El relé `USBRelay2` que cortaba los 12 V de la plaqueta ya no va: el firmware d
 | Llega un byte cortado o una trama rota | Se descarta sin cortar la lectura ni cerrar la app. |
 | El archivo de configuración se corrompe | Vuelve a la configuración vacía y la pantalla avisa, en lugar de cerrar la app. |
 
+## Configuración paso a paso
+
+Este procedimiento deja una tablet lista para el tótem. Hacé las tareas en orden. Hacé un solo paso por vez. La sección [Configuración](#configuración) explica cada campo.
+
+Estas palabras aparecen antes del paso al que se aplican:
+
+- **PRECAUCIÓN**: si no cumplís la instrucción, podés dañar un equipo, perder datos o interrumpir una consulta.
+- **NOTA**: da información útil para el paso que sigue.
+
+### Antes de empezar
+
+Prepará estos equipos:
+
+- La tablet Android.
+- El dock USB-C con carga.
+- La plaqueta PM6750 y el termómetro.
+- El hub YKUSH3 y su fuente de 5 V.
+- El otoscopio.
+- El adaptador de audio USB y el estetoscopio.
+- El auricular Logitech H390.
+- El APK de Berry Med.
+- Una computadora con `adb`.
+
+Pedí estos datos:
+
+- El entorno de OnDoctor: Producción o Dev.
+- El identificador del tótem (`external_id`).
+- La URL del kiosco.
+- La contraseña del tótem en el kiosco.
+
+### Tarea 1: instalar Berry Med
+
+**PRECAUCIÓN**: Instalá siempre un APK firmado con la misma clave. Con otra clave tenés que desinstalar la app, y eso borra la configuración.
+
+1. Activá la depuración USB en la tablet.
+2. Conectá la tablet a la computadora.
+3. Ejecutá este comando en la computadora:
+
+   ```bash
+   adb install -r <ruta-del-apk>
+   ```
+
+4. Controlá que el comando muestre `Success`.
+5. Desconectá la tablet de la computadora.
+
+### Tarea 2: conectar los equipos
+
+**PRECAUCIÓN**: Usá una fuente de 5,00 a 5,25 V para el hub. Otra tensión puede dañar el hub.
+
+1. Poné el jumper de alimentación del hub en `VEXT`.
+2. Conectá la fuente de 5 V al hub.
+3. Conectá el dock a la tablet.
+4. Conectá la alimentación del dock.
+5. Conectá la plaqueta al dock.
+6. Conectá el termómetro al dock.
+7. Conectá el hub al dock con un cable USB 3.0 Micro-B.
+8. Conectá el otoscopio al puerto 1 del hub.
+9. Conectá el adaptador de audio al puerto 2 del hub.
+10. Conectá el estetoscopio al jack del adaptador de audio.
+11. Conectá el auricular H390 al puerto 3 del hub.
+
+### Tarea 3: aceptar los permisos USB
+
+**PRECAUCIÓN**: Marcá siempre "Usar de forma predeterminada". Sin esa casilla, Android muestra el pedido arriba del kiosco en cada reinicio.
+
+**NOTA**: Android muestra un pedido por equipo: plaqueta, termómetro y hub YKUSH3. El orden puede cambiar.
+
+1. Tocá el ícono de Berry Med.
+2. Marcá "Usar de forma predeterminada" en el pedido.
+3. Aceptá el pedido.
+4. Hacé los pasos 2 y 3 en cada pedido que aparezca.
+
+**NOTA**: Si la pantalla dice "Falta aceptar el permiso USB", tocá **Pedir permiso USB**.
+
+### Tarea 4: completar el configurador
+
+Paso Destino:
+
+1. Tocá **Destino**.
+2. En **Entorno**, elegí Producción o Dev.
+3. En **Identificador del tótem**, escribí el `external_id`.
+4. Tocá **Siguiente**.
+
+Paso Órdenes:
+
+5. Controlá que **Canal público** diga `totem.<external_id>`.
+6. Tocá **Siguiente**.
+
+Paso Plaqueta:
+
+**NOTA**: Si nadie te indicó otro valor, dejá la ganancia en x1 y el modo en Monitor.
+
+7. Controlá que **Puerto del otoscopio** diga 1.
+8. Controlá que **Puerto del estetoscopio** diga 2.
+9. Controlá que **Puerto del auricular** diga 3.
+10. Tocá **Siguiente**.
+
+Paso Kiosco:
+
+11. En **URL del kiosco**, escribí la URL.
+12. En **Audio de la videollamada**, elegí **Auricular** o **Parlante de la tablet**.
+13. Tocá **Guardar y aplicar**.
+14. Controlá que aparezca el mensaje "Configuración guardada. El tótem la usa desde ahora."
+
+**NOTA**: Con el permiso del hub, Berry Med apaga los puertos del otoscopio y del estetoscopio. El puerto del auricular queda encendido sólo con la opción **Auricular**.
+
+### Tarea 5: controlar los nombres de audio
+
+**NOTA**: Android muestra un equipo de audio sólo con su puerto encendido.
+
+1. Tocá **Testing**.
+2. En **Hub YKUSH3**, tocá **Encender** en el puerto 2.
+3. Si elegiste **Parlante de la tablet**, tocá **Encender** en el puerto 3.
+4. Buscá la sección **Dispositivos que ve Android**.
+5. En **Audio**, leé el nombre del adaptador.
+6. En **Audio**, leé el nombre del auricular.
+7. Tocá **Apagar** en el puerto 2.
+8. Si elegiste **Parlante de la tablet**, tocá **Apagar** en el puerto 3.
+9. Tocá **← Volver**.
+10. Tocá **Plaqueta**.
+11. Controlá que **Nombre del adaptador del estetoscopio** coincida con el nombre leído.
+12. Controlá que **Nombre del auricular** coincida con el nombre leído.
+13. Tocá **Kiosco**.
+14. Si cambiaste un nombre, tocá **Guardar y aplicar**.
+
+### Tarea 6: completar la puesta en marcha
+
+Estos pasos están en la lista **Puesta en marcha** del paso Kiosco. El punto verde indica que el ítem está hecho. El punto ámbar indica que falta.
+
+**NOTA**: Si un ítem tiene el punto verde, pasá al ítem siguiente.
+
+1. En **Cámara y micrófono**, tocá **Dar permisos**.
+2. Aceptá el permiso de la cámara.
+3. Aceptá el permiso del micrófono.
+4. En **Sin optimización de batería**, tocá **Evitar que se duerma**.
+5. Aceptá el pedido de Android.
+6. Controlá que **Servicio con cámara y micrófono para la teleconsulta** tenga el punto verde.
+
+**NOTA**: El servicio suma la cámara y el micrófono solo. Si el punto sigue ámbar, volvé a abrir esta pantalla.
+
+### Tarea 7: aceptar el permiso USB del otoscopio
+
+**PRECAUCIÓN**: Hacé esta tarea después de dar el permiso de la cámara. Sin ese permiso, Android puede negar el pedido sin mostrarlo.
+
+**PRECAUCIÓN**: Si no hacés esta tarea, el pedido aparece arriba del kiosco en la primera consulta.
+
+1. En **Permiso USB del otoscopio**, tocá **Abrir Testing**.
+2. En **Hub YKUSH3**, tocá **Encender** en el puerto 1.
+3. Esperá el pedido de Android.
+4. Marcá "Usar de forma predeterminada".
+5. Aceptá el pedido.
+6. Tocá **Apagar** en el puerto 1.
+
+### Tarea 8: guardar el arranque del hub
+
+**PRECAUCIÓN**: Hacé esta tarea sólo al instalar o al cambiar el audio de la videollamada. Esta orden escribe en la memoria del hub.
+
+1. En Testing, tocá **Guardar este arranque en el hub**.
+2. Controlá que la pantalla diga "El hub guardó el arranque".
+3. Tocá **← Volver**.
+
+### Tarea 9: preparar Android y OnDoctor
+
+**PRECAUCIÓN**: Hacé esta tarea antes de elegir la app de inicio. Después, el kiosco ocupa toda la pantalla.
+
+**NOTA**: Con un bloqueo seguro, Android no avisa el encendido y Berry Med no arranca.
+
+1. Abrí los ajustes de Android.
+2. Elegí un bloqueo de pantalla sin PIN, sin patrón y sin contraseña.
+3. Sacá la app o el ajuste que abra Chrome al encender la tablet.
+4. Si la marca tiene una lista propia de apps que se duermen, sacá Berry Med de esa lista.
+5. En OnDoctor, habilitá el otoscopio o el estetoscopio para el tótem.
+6. Volvé a Berry Med.
+
+### Tarea 10: elegir Berry Med como app de inicio
+
+**NOTA**: Después de esta tarea, Android abre el kiosco. Para volver a la configuración, tocá cinco veces la esquina de arriba a la izquierda. Después escribí el PIN del Panel Local.
+
+1. En **Berry Med como app de inicio**, tocá **Elegir app de inicio**.
+2. Elegí Berry Med.
+3. Si Android pregunta, tocá **Siempre**.
+4. Tocá el botón de inicio de la tablet.
+5. Controlá que aparezca el kiosco.
+
+### Tarea 11: configurar el tótem en el kiosco
+
+1. En el kiosco, escribí el identificador del tótem.
+2. Escribí la contraseña del tótem.
+3. Confirmá el ingreso.
+
+### Tarea 12: probar la tablet
+
+1. Reiniciá la tablet con todos los equipos conectados.
+2. Controlá que el kiosco aparezca solo.
+3. Controlá que no aparezca un pedido de permiso USB.
+4. Empezá una consulta de prueba.
+5. Desconectá la plaqueta.
+6. Conectá la plaqueta.
+7. Controlá que la plaqueta vuelva sin tocar la pantalla.
+8. Controlá que el kiosco siga adelante.
+
+Para probar el audio y los instrumentos, seguí la sección [Probar el Panel Local en el tótem](#probar-el-panel-local-en-el-tótem).
+
+### Si algo falla
+
+| Problema | Causa posible | Acción |
+|---|---|---|
+| El kiosco dice "Falta la URL del kiosco". | La URL no está guardada. | Hacé la tarea 4, pasos 11 a 14. |
+| La pantalla dice "Falta aceptar el permiso USB". | Un equipo no tiene permiso. | Tocá **Pedir permiso USB**. |
+| El médico no ve el otoscopio. | El otoscopio no está habilitado para el tótem. | Hacé la tarea 9, paso 5. |
+| El médico no ve el otoscopio. | El otoscopio no tiene permiso USB. | Hacé la tarea 7. |
+| No se escucha la videollamada. | El auricular no está conectado. | Conectá el auricular al puerto 3 del hub. |
+| Un puerto no cambia. | El hub no contesta. | Mirá las líneas `[YKUSH]` con `adb logcat -s BerryMed`. |
+
 ## Configuración
 
 En la pantalla de Berry Med, en cuatro pasos:
@@ -86,6 +300,8 @@ En la pantalla de Berry Med, en cuatro pasos:
 Todo queda guardado en la tablet. La pantalla también muestra los signos vitales, si la plaqueta está funcional, el último dato, la conexión con Pusher, el termómetro, el hub YKUSH3 y el resultado del último envío.
 
 ## Instalar y dejarla sola
+
+Para preparar una tablet nueva, seguí [Configuración paso a paso](#configuración-paso-a-paso). Esta sección explica el motivo de cada requisito.
 
 1. **Abrir Berry Med una vez después de instalarla.** Android no le avisa el encendido a una app que nunca se abrió.
 2. **Aceptar el permiso USB de la plaqueta, el termómetro, el hub YKUSH3 y el otoscopio marcando "Usar de forma predeterminada".** Android da el permiso por cada conexión: después de un reinicio, cada equipo vuelve como un dispositivo nuevo. Con la casilla marcada lo da solo. Para eso abre una pantalla de Berry Med que no muestra nada y se cierra enseguida, así que el kiosco queda adelante. Sin la casilla, cada reinicio muestra un pedido de permiso arriba del kiosco. El adaptador del estetoscopio y el auricular no piden permiso: Android los maneja como audio. El otoscopio sí, por si la tablet no lo lista como cámara (ver [Panel Local](#panel-local)); como su puerto descansa apagado, el pedido no aparece solo: hay que provocarlo una vez, encendiendo el puerto en Testing → Hub YKUSH3 (el paso Kiosco lo recuerda y tiene el botón). Aceptar el permiso, marcar la casilla y apagar el puerto; si no se apaga, queda encendido hasta el próximo reposo.
