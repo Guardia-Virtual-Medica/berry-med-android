@@ -25,6 +25,12 @@ import com.guardiavirtual.berrymed.usb.DeviceInventory
  * Fuera de la llamada no hace nada: no toca el modo ni el foco. El estetoscopio
  * del Panel Local no pasa por acá; sale siempre por el auricular.
  *
+ * Depende de que el `WebView` entre en modo comunicación. En el emulador
+ * (WebView 124, Android 15) una llamada WebRTC queda en `MODE_NORMAL`, captura
+ * como `CAMCORDER` y reproduce como `USAGE_MEDIA`: ahí este router no actúa, y
+ * aunque actuara `setCommunicationDevice` no movería esa reproducción. Testing
+ * muestra el modo; ver los riesgos de `docs/hardware.md`.
+ *
  * Todo pasa en el hilo principal: los avisos de Android y las reafirmaciones
  * diferidas. `setCommunicationDevice` existe desde Android 12; en menos sólo
  * queda en el log.

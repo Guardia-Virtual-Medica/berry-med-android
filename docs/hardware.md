@@ -18,9 +18,9 @@ Croquis de Mauricio (electrónico del proyecto), 28 de octubre de 2026.
 | 4 | Auricular Logitech H390 | YKUSH3, puerto 3 |
 
 - Los puertos del YKUSH3 son los de fábrica de la app; se cambian en Configuración, paso Plaqueta (uno distinto para cada equipo).
-- Al encender la tablet el hub arranca con los tres puertos encendidos.
+- De fábrica, si no se guardó otro arranque, la placa arranca con los tres puertos encendidos (dato de la app: la hoja de datos no lo dice). El botón de Testing guarda el estado de reposo como arranque.
 - Encender un puerto es "enchufar" el equipo para Android y apagarlo es desenchufarlo. La idea de Mauricio es que así el sistema conmute solo al equipo recién enchufado, lo que sirve también para Chrome y LiveKit en la teleconsulta.
-- Dentro de la placa del hub hay un ESP32 y un chip de hub USB 2.0.
+- El hub se ve como hub USB 3.2, hub USB 2.0 y HID. Entra por USB 3.0 Micro-B; el jumper VBUS/VEXT elige la alimentación, con fuente externa recomendada de 5,00 a 5,25 V.
 - El relé `USBRelay2` que cortaba los 12 V de la plaqueta ya no va: el firmware de la plaqueta se corrigió.
 
 ## Equipos
@@ -48,19 +48,21 @@ Croquis de Mauricio (electrónico del proyecto), 28 de octubre de 2026.
 
 ### Hub YKUSH3
 
-HID `04D8:F11B` (Microchip es también fabricante de chips serie; por eso el filtro USB lo cubre por fabricante). Protocolo de pykush, la herramienta oficial de Yepkit:
+HID `04D8:F11B` (Microchip es también fabricante de chips serie; por eso el filtro USB lo cubre por fabricante). Protocolo según la hoja de datos (v1.2.1, enero de 2019):
 
-| Comando (primer byte) | Qué hace |
+| Paquete | Qué hace |
 |---|---|
-| `0x11`, `0x12`, `0x13` | Enciende el puerto 1, 2 o 3 |
-| `0x01`, `0x02`, `0x03` | Apaga el puerto 1, 2 o 3 |
-| `0x21`, `0x22`, `0x23` | Consulta el puerto 1, 2 o 3 |
-| `0x2A` | Consulta los tres |
+| `0x11`, `0x12`, `0x13` (repetido en el segundo byte) | Enciende el puerto 1, 2 o 3 |
+| `0x01`, `0x02`, `0x03` (repetido en el segundo byte) | Apaga el puerto 1, 2 o 3 |
+| `0x21`, `0x22`, `0x23` (repetido en el segundo byte) | Consulta el puerto 1, 2 o 3 |
+| `0x41`, puerto, `0x00` o `0x01` | Guarda cómo arranca ese puerto: apagado o encendido (sección 6.6) |
 
 - Paquetes de 64 bytes por la interfaz HID.
-- Respuesta: `0x01` en el primer byte si salió bien; al consultar, un byte por puerto, donde más de `0x10` es encendido.
-- Cada orden bloquea hasta 1 s: la app la manda fuera del hilo de la pantalla.
-- El servicio no toca los puertos solo. Los cambian Testing (a mano) y el Panel Local mientras está abierto; el panel sólo apaga los que encendió él.
+- Respuesta: `0x01` en el primer byte si salió bien; al consultar, `0x1N` encendido o `0x0N` apagado en el segundo.
+- `0x2A` (consultar los tres) no está en la hoja y pykush sólo lo usa con firmware 2 o superior: la app consulta de a uno. Un puerto que no contesta queda sin leer y los demás se conservan.
+- Cada comando espera hasta 1 s la respuesta y leer los tres hasta 3 s: la app los manda fuera del hilo de la pantalla.
+- `0x41` queda en la memoria del hub y no se puede leer: nunca se manda solo, sólo con el botón **Guardar este arranque en el hub** de Testing.
+- Estado de reposo: otoscopio y estetoscopio apagados; auricular encendido si la videollamada sale por él, apagado si sale por el parlante. El servicio lo aplica la primera vez que el hub se puede usar y al guardar otra salida de audio, salvo con una consulta enviando, una prueba de Testing, el Panel Local abierto o la teleconsulta publicando: en ese caso espera a que se libere. Después los cambian Testing, el Panel Local y la teleconsulta, que sólo apagan los que encendieron.
 
 ### Otoscopio
 
@@ -104,6 +106,7 @@ HID `04D8:F11B` (Microchip es también fabricante de chips serie; por eso el fil
 - Tiene micrófono propio, que nunca se usa como estetoscopio aunque su nombre coincida.
 - La app lo elige por nombre: "H390" y, si no lo encuentra, "Logitech" (configurable).
 - La salida del estetoscopio va sólo al auricular: por el parlante de la tablet se acopla con el estetoscopio.
+- Es la salida por defecto de la videollamada; en Configuración → Kiosco se cambia por el parlante.
 
 ## Permisos USB
 
@@ -133,6 +136,11 @@ El emulador no los muestra. Se revisan con Testing → "Dispositivos que ve Andr
 | Camera2 para la teleconsulta mientras Zoom usa la cámara de la tablet (límite de cámaras abiertas a la vez) | Por eso se prefiere UVC; si la tablet lo lista por Camera2, que el médico vea el otoscopio y el paciente siga viéndose en Zoom. En el emulador, con una sola cámara, abrir el otoscopio le sacó la cámara al `WebView`. |
 | Que el adaptador ofrezca `UNPROCESSED` | La línea `[TELE] Estetoscopio por …` dice la fuente. |
 | Que Android no silencie la captura del estetoscopio con Zoom en la llamada dentro del kiosco | Testing → Teleconsulta: "la captura no está silenciada". |
+| Que el `WebView` entre en modo comunicación con Zoom. En el emulador (WebView 124, Android 15) una llamada WebRTC de prueba quedó en `MODE_NORMAL`, captura `CAMCORDER` y reproducción `USAGE_MEDIA`, y `CallAudioRouter` no actuó: Chromium fijó el dispositivo solo. Sin modo comunicación el selector no surte efecto | Testing → Teleconsulta: "modo comunicación" durante la llamada, y una línea `[LLAMADA]`. Con `adb shell dumpsys audio`, `Actual mode` y el `usage` del reproductor del `WebView`. |
+| Si Zoom reproduce con uso de medios y no de comunicación, `setCommunicationDevice` no lo mueve: Android elige la salida de medios y puede ser cualquier USB | Con Parlante elegido y el H390 encendido, ¿por dónde se oye al médico? Con Auricular, que no salga por el jack del adaptador. |
+| Que el puerto del estetoscopio, al encenderse en plena llamada, se lleve la salida de medios del `WebView` | Publicar el estetoscopio durante la llamada: que se siga oyendo al médico por la misma salida. |
+| Que el micrófono del otoscopio no coincida con el nombre del estetoscopio | En Testing, los dispositivos de audio: el nombre configurado (`USB Audio`) tiene que identificar sólo al adaptador. |
+| Que el hub acepte y guarde `0x41` | Testing → **Guardar este arranque en el hub**: tiene que decir que guardó. Después cortar la alimentación del hub y ver con qué puertos arranca. |
 | Que Zoom Video SDK ande en el `WebView` (cookies, `SharedArrayBuffer`, navegador) | Que la videollamada se vea y se escuche en el kiosco de Berry Med; líneas `[KIOSCO]`. |
 
 ## El micrófono compartido
@@ -157,7 +165,7 @@ Dock USB-C con carga ("PC")
   |
   +-- Termómetro IR .......... serie USB, manda sólo al apretar el gatillo
   |
-  +-- Hub YKUSH3 ............. HID 04D8:F11B (ESP32 + hub USB 2.0)
+  +-- Hub YKUSH3 ............. HID 04D8:F11B
         |
         +-- Puerto 1: Otoscopio ............. UVC 349C:3301, MJPEG 800x800
         |
@@ -165,5 +173,5 @@ Dock USB-C con carga ("PC")
         |                 |
         |                 +-- jack 3,5 mm TRRS: Estetoscopio Dalia StethoAI
         |
-        +-- Puerto 3: Auricular Logitech H390 (046D), salida del estetoscopio
+        +-- Puerto 3: Auricular Logitech H390 (046D), salida del estetoscopio y de la llamada
 ```
