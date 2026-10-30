@@ -109,6 +109,8 @@ class MainActivity : AppCompatActivity() {
         binding.checkHome.action.setOnClickListener { openHomeSettings() }
         // El mismo pedido que el botón "Evitar que se duerma" de arriba.
         binding.checkBattery.action.setOnClickListener { askBatteryExemption() }
+        // El puerto se enciende en Testing, como cualquier otro: no hay otro camino para eso.
+        binding.checkOtoscope.action.setOnClickListener { startActivity(Intent(this, TestingActivity::class.java)) }
         binding.checkTotem.action.setOnClickListener { startActivity(Intent(this, KioskActivity::class.java)) }
         thread(name = "berry-config-load") {
             val saved = try {
@@ -243,6 +245,11 @@ class MainActivity : AppCompatActivity() {
                     binding.checkBattery, item, R.string.check_battery,
                     getString(if (done) R.string.check_battery_done else R.string.check_battery_missing),
                     R.string.battery,
+                )
+                KioskCheck.OTOSCOPE_USB -> paintCheck(
+                    binding.checkOtoscope, item, R.string.check_otoscope,
+                    getString(R.string.check_otoscope_detail),
+                    R.string.check_otoscope_action,
                 )
                 KioskCheck.TOTEM -> paintCheck(
                     binding.checkTotem, item, R.string.check_totem,

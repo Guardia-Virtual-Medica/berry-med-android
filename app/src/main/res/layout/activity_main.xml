@@ -626,6 +626,7 @@
                         <include android:id="@+id/checkHome" layout="@layout/item_kiosk_check" />
                         <include android:id="@+id/checkService" layout="@layout/item_kiosk_check" />
                         <include android:id="@+id/checkBattery" layout="@layout/item_kiosk_check" />
+                        <include android:id="@+id/checkOtoscope" layout="@layout/item_kiosk_check" />
                         <include android:id="@+id/checkTotem" layout="@layout/item_kiosk_check" />
 
                         <TextView style="@style/FormTitle" android:layout_marginTop="20dp" android:text="@string/section_kiosk_outside" />

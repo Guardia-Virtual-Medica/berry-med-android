@@ -24,15 +24,23 @@ class KioskChecklistTest {
     @Test
     fun theItemsComeInTheOrderOfTheScreen() {
         assertEquals(
-            listOf(KioskCheck.PERMISSIONS, KioskCheck.HOME, KioskCheck.SERVICE, KioskCheck.BATTERY, KioskCheck.TOTEM),
+            listOf(
+                KioskCheck.PERMISSIONS,
+                KioskCheck.HOME,
+                KioskCheck.SERVICE,
+                KioskCheck.BATTERY,
+                KioskCheck.OTOSCOPE_USB,
+                KioskCheck.TOTEM,
+            ),
             KioskChecklist.items(ready).map { it.check },
         )
     }
 
     @Test
-    fun aReadyTabletIsAllGreenWithoutButtonsButTheKiosk() {
+    fun aReadyTabletIsAllGreenWithoutButtonsButWhatBerryMedCannotKnow() {
         val items = KioskChecklist.items(ready)
-        assertTrue(items.filter { it.check != KioskCheck.TOTEM }.all { it.done == true && !it.action })
+        val known = items.filter { it.check != KioskCheck.TOTEM && it.check != KioskCheck.OTOSCOPE_USB }
+        assertTrue(known.all { it.done == true && !it.action })
         val totem = item(ready, KioskCheck.TOTEM)
         assertTrue(totem.action)
         assertTrue(totem.actionEnabled)
@@ -83,6 +91,16 @@ class KioskChecklistTest {
         assertNull(totem.done)
         assertTrue(totem.action)
         assertFalse(totem.actionEnabled)
+    }
+
+    @Test
+    fun theOtoscopePermissionCannotBeDetectedAndTheButtonIsAlwaysThere() {
+        for (input in listOf(ready, ready.copy(kioskUrlSaved = false, cameraGranted = false))) {
+            val otoscope = item(input, KioskCheck.OTOSCOPE_USB)
+            assertNull(otoscope.done)
+            assertTrue(otoscope.action)
+            assertTrue(otoscope.actionEnabled)
+        }
     }
 
     @Test

@@ -73,6 +73,38 @@ class CallReassertTest {
     }
 
     @Test
+    fun whatBerryMedFixedIsClearedOnceWhenTheCallEnds() {
+        val guard = CallReassert()
+        guard.next(0, true, 1, 2)
+        guard.applied()
+        assertEquals(Step.Clear, guard.next(second, inCall = false, wanted = null, current = null))
+        assertEquals(Step.Nothing, guard.next(2 * second, inCall = false, wanted = null, current = null))
+    }
+
+    @Test
+    fun nothingIsClearedIfBerryMedFixedNothing() {
+        val guard = CallReassert()
+        assertEquals(Step.Nothing, guard.next(0, true, 1, 1))
+        assertEquals(Step.Nothing, guard.next(second, false, null, null))
+    }
+
+    @Test
+    fun aDeviceAndroidRejectedIsNotCleared() {
+        val guard = CallReassert()
+        assertEquals(Step.Set, guard.next(0, true, 1, 2))
+        assertEquals(Step.Nothing, guard.next(second, false, null, null))
+    }
+
+    @Test
+    fun aNewChoiceDuringTheCallStillClearsAtTheEnd() {
+        val guard = CallReassert()
+        guard.next(0, true, 1, 2)
+        guard.applied()
+        guard.reset()
+        assertEquals(Step.Clear, guard.next(second, false, null, null))
+    }
+
+    @Test
     fun anotherChosenDeviceStartsFromZero() {
         val guard = CallReassert()
         (0..CallReassert.MAX_TRIES).forEach { n -> guard.next(n * second, true, 1, 2) }

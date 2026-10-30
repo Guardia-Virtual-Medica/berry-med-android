@@ -119,7 +119,20 @@ HID `04D8:F11B` (Microchip es también fabricante de chips serie; por eso el fil
 | Adaptador de audio | No | Android lo maneja como audio; pedir permiso sólo pondría un diálogo de más arriba de Chrome. |
 | Auricular H390 | No | Ídem. |
 
-Con "Usar de forma predeterminada" marcado, Android da el permiso solo cada vez que el equipo aparece, también después de un reinicio.
+Con "Usar de forma predeterminada" marcado, Android da el permiso solo cada vez que el equipo aparece, también después de un reinicio. El otoscopio descansa apagado: en la instalación hay que encender su puerto una vez desde Testing para que aparezca el pedido (lo recuerda el paso Kiosco).
+
+## Cómo se elige la salida de la llamada
+
+Lo que sigue es lo esperado por razonamiento: no se probó en la tablet ni en el emulador, que no tiene hub ni audio USB. Que los puertos queden así está en el código (`HubRestState`); que Android mande los medios a la salida USB que haya es comportamiento de Android, y en el código de Berry Med no hay nada que lo fuerce.
+
+| Salida elegida | Puertos en reposo | Salidas USB | Qué se espera en `MODE_NORMAL` |
+|---|---|---|---|
+| Parlante | 1, 2 y 3 apagados | Ninguna | Los medios van al parlante. |
+| Auricular | 1 y 2 apagados, 3 encendido | Sólo el H390 | Los medios van al H390. El otoscopio, si se enciende, sólo suma un micrófono. |
+
+- Por eso, en `MODE_NORMAL` el selector debería seguir andando **hasta que se encienda el puerto del estetoscopio**: el adaptador sí tiene salida y puede llevarse los medios de la llamada. Ése es el riesgo principal.
+- `setCommunicationDevice` sólo agrega la distinción entre el H390 y el adaptador, y sólo con modo comunicación. Con reproducción de medios no mueve el audio.
+- Vale para el hub en reposo. Antes de aplicarse (de fábrica la placa arranca con los tres encendidos, salvo que se haya guardado otro arranque) o con un puerto que quedó encendido porque no se pudo leer, hay más de una salida USB.
 
 ## Riesgos a confirmar en la tablet real
 
@@ -136,9 +149,9 @@ El emulador no los muestra. Se revisan con Testing → "Dispositivos que ve Andr
 | Camera2 para la teleconsulta mientras Zoom usa la cámara de la tablet (límite de cámaras abiertas a la vez) | Por eso se prefiere UVC; si la tablet lo lista por Camera2, que el médico vea el otoscopio y el paciente siga viéndose en Zoom. En el emulador, con una sola cámara, abrir el otoscopio le sacó la cámara al `WebView`. |
 | Que el adaptador ofrezca `UNPROCESSED` | La línea `[TELE] Estetoscopio por …` dice la fuente. |
 | Que Android no silencie la captura del estetoscopio con Zoom en la llamada dentro del kiosco | Testing → Teleconsulta: "la captura no está silenciada". |
-| Que el `WebView` entre en modo comunicación con Zoom. En el emulador (WebView 124, Android 15) una llamada WebRTC de prueba quedó en `MODE_NORMAL`, captura `CAMCORDER` y reproducción `USAGE_MEDIA`, y `CallAudioRouter` no actuó: Chromium fijó el dispositivo solo. Sin modo comunicación el selector no surte efecto | Testing → Teleconsulta: "modo comunicación" durante la llamada, y una línea `[LLAMADA]`. Con `adb shell dumpsys audio`, `Actual mode` y el `usage` del reproductor del `WebView`. |
-| Si Zoom reproduce con uso de medios y no de comunicación, `setCommunicationDevice` no lo mueve: Android elige la salida de medios y puede ser cualquier USB | Con Parlante elegido y el H390 encendido, ¿por dónde se oye al médico? Con Auricular, que no salga por el jack del adaptador. |
-| Que el puerto del estetoscopio, al encenderse en plena llamada, se lleve la salida de medios del `WebView` | Publicar el estetoscopio durante la llamada: que se siga oyendo al médico por la misma salida. |
+| **Riesgo principal.** Que el puerto del estetoscopio, al encenderse en plena llamada en `MODE_NORMAL`, se lleve la salida de medios del `WebView`. El selector ahí depende de los puertos (ver [Cómo se elige la salida de la llamada](#cómo-se-elige-la-salida-de-la-llamada)) y el adaptador sí tiene salida | Publicar el estetoscopio durante la llamada, con Parlante y con Auricular: que se siga oyendo al médico por la misma salida y no por el jack del adaptador. |
+| Que el `WebView` entre en modo comunicación con Zoom. En el emulador (WebView 124, Android 15) una llamada WebRTC de prueba quedó en `MODE_NORMAL`, captura `CAMCORDER` y reproducción `USAGE_MEDIA`, y `CallAudioRouter` no actuó: el dispositivo lo fijó Chromium | Testing → Teleconsulta: "modo comunicación" y una línea `[LLAMADA]` durante la llamada. Con `adb shell dumpsys audio`, `Actual mode` y el `usage` del reproductor del `WebView`. |
+| Que en `MODE_NORMAL` el audio de medios siga la salida USB como se espera | Con Parlante elegido y los puertos en reposo, ¿por dónde se oye al médico? Con Auricular, que salga por el H390. Qué micrófono toma la llamada en cada caso. |
 | Que el micrófono del otoscopio no coincida con el nombre del estetoscopio | En Testing, los dispositivos de audio: el nombre configurado (`USB Audio`) tiene que identificar sólo al adaptador. |
 | Que el hub acepte y guarde `0x41` | Testing → **Guardar este arranque en el hub**: tiene que decir que guardó. Después cortar la alimentación del hub y ver con qué puertos arranca. |
 | Que Zoom Video SDK ande en el `WebView` (cookies, `SharedArrayBuffer`, navegador) | Que la videollamada se vea y se escuche en el kiosco de Berry Med; líneas `[KIOSCO]`. |

@@ -119,6 +119,9 @@
     <string name="check_battery">Sin optimización de batería</string>
     <string name="check_battery_done">Android no duerme a Berry Med ni le corta el servicio.</string>
     <string name="check_battery_missing">Si Android cierra el servicio, sólo puede volver a levantarlo con la app excluida.</string>
+    <string name="check_otoscope">Permiso USB del otoscopio</string>
+    <string name="check_otoscope_detail">En reposo su puerto está apagado. Con el permiso de cámara dado, encendelo una vez en Testing → Hub YKUSH3, aceptá el permiso marcando «Usar de forma predeterminada» y apagalo. Berry Med no puede saber si quedó marcado.</string>
+    <string name="check_otoscope_action">Abrir Testing</string>
     <string name="check_totem">Configurar el tótem en el kiosco</string>
     <string name="check_totem_detail">La primera vez el kiosco pide el identificador y la contraseña del tótem: Berry Med no usa la sesión de Chrome.</string>
     <string name="check_totem_needs_url">Para abrirlo, cargá la URL del kiosco y guardá.</string>

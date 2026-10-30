@@ -19,11 +19,12 @@ data class KioskChecklistInput(
     val kioskUrlSaved: Boolean,
 )
 
-enum class KioskCheck { PERMISSIONS, HOME, SERVICE, BATTERY, TOTEM }
+enum class KioskCheck { PERMISSIONS, HOME, SERVICE, BATTERY, OTOSCOPE_USB, TOTEM }
 
 /**
  * Un ítem de la lista. [done] es null cuando Berry Med no lo puede saber (la
- * sesión del tótem vive en la página del kiosco). [action] dice si va el botón
+ * sesión del tótem vive en la página del kiosco, y Android no dice si un permiso
+ * USB quedó con "Usar de forma predeterminada"). [action] dice si va el botón
  * y [actionEnabled] si se puede tocar.
  */
 data class KioskCheckItem(
@@ -46,6 +47,8 @@ object KioskChecklist {
             // Sin botón: se resuelve solo con una pantalla de Berry Med adelante y los permisos dados.
             KioskCheckItem(KioskCheck.SERVICE, service, action = false),
             KioskCheckItem(KioskCheck.BATTERY, input.ignoringBatteryOptimizations, action = !input.ignoringBatteryOptimizations),
+            // En reposo su puerto está apagado: sin esto, el pedido saltaría arriba del kiosco en la primera consulta.
+            KioskCheckItem(KioskCheck.OTOSCOPE_USB, null, action = true),
             // Abrir el kiosco con una URL sin guardar mostraría la vieja (o ninguna).
             KioskCheckItem(KioskCheck.TOTEM, null, action = true, actionEnabled = input.kioskUrlSaved),
         )

@@ -22,14 +22,18 @@ import com.guardiavirtual.berrymed.usb.DeviceInventory
  * puede volver a elegir cuando cambian los dispositivos. Por eso se fija y se
  * reafirma. El micrófono acompaña: Android los mueve juntos.
  *
- * Fuera de la llamada no hace nada: no toca el modo ni el foco. El estetoscopio
- * del Panel Local no pasa por acá; sale siempre por el auricular.
+ * Fuera de la llamada sólo suelta, una vez, lo que haya fijado: no toca el modo
+ * ni el foco. El estetoscopio del Panel Local no pasa por acá; sale siempre por
+ * el auricular.
  *
- * Depende de que el `WebView` entre en modo comunicación. En el emulador
- * (WebView 124, Android 15) una llamada WebRTC queda en `MODE_NORMAL`, captura
- * como `CAMCORDER` y reproduce como `USAGE_MEDIA`: ahí este router no actúa, y
- * aunque actuara `setCommunicationDevice` no movería esa reproducción. Testing
- * muestra el modo; ver los riesgos de `docs/hardware.md`.
+ * Este router sólo actúa en modo comunicación, y ahí agrega la distinción entre
+ * el H390 y el adaptador. En el emulador (WebView 124, Android 15) una llamada
+ * WebRTC queda en `MODE_NORMAL`, captura como `CAMCORDER` y reproduce como
+ * `USAGE_MEDIA`: ahí no actúa, y `setCommunicationDevice` no movería esa
+ * reproducción. La elección igual llega por otro lado: los puertos en reposo
+ * (`HubRestState`) dejan como salida USB sólo el H390, o ninguna con el parlante.
+ * Por razonamiento, sin probar en la tablet, eso alcanza hasta que se enciende el
+ * puerto del estetoscopio. Ver los riesgos de `docs/hardware.md`.
  *
  * Todo pasa en el hilo principal: los avisos de Android y las reafirmaciones
  * diferidas. `setCommunicationDevice` existe desde Android 12; en menos sólo
@@ -131,10 +135,16 @@ class CallAudioRouter(
             CallReassert.Step.GiveUp -> log(
                 "[LLAMADA] No queda en ${wanted?.let(::label)} después de ${CallReassert.MAX_TRIES} intentos: se deja de insistir",
             )
+            CallReassert.Step.Clear -> {
+                audio.clearCommunicationDevice()
+                log("[LLAMADA] Terminó la llamada: se suelta el dispositivo")
+            }
             CallReassert.Step.Set -> {
                 val device = wanted ?: return
                 announce(cfg, device)
-                if (!audio.setCommunicationDevice(device)) {
+                if (audio.setCommunicationDevice(device)) {
+                    reassert.applied()
+                } else {
                     log("[LLAMADA] Android no aceptó ${label(device)} como dispositivo de la llamada")
                 }
                 // Si no quedó, no llega ningún aviso: se mira de nuevo.

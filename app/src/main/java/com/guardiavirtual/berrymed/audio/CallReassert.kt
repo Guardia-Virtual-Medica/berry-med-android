@@ -11,6 +11,10 @@ package com.guardiavirtual.berrymed.audio
  * Que el dispositivo vuelva un instante no cuenta como éxito: en un ciclo vuelve
  * siempre. Los intentos se perdonan sólo si el último duró [STABLE_NANOS].
  *
+ * Lo que Berry Med fijó se suelta una sola vez al terminar la llamada, como pide
+ * Android. Chromium limpia lo suyo, pero no está garantizado que alcance al
+ * pedido de Berry Med. Si Berry Med no fijó nada, no se limpia nada.
+ *
  * Sin Android y sin reloj propio, para probarla sola. Se llama de un solo hilo.
  */
 class CallReassert {
@@ -22,12 +26,22 @@ class CallReassert {
         data class Wait(val nanos: Long) : Step
         /** Se llegó al tope: avisar una vez y no insistir. */
         data object GiveUp : Step
+        /** Terminó la llamada y Berry Med había fijado un dispositivo: soltarlo. */
+        data object Clear : Step
     }
 
     private var tries = 0
     private var lastSetAt: Long? = null
     private var gaveUp = false
     private var lastWanted: Int? = null
+
+    /** Sobrevive a [reset]: cambiar la elección en plena llamada no suelta lo fijado. */
+    private var fixed = false
+
+    /** Android aceptó el dispositivo: hay un pedido de Berry Med que soltar al terminar. */
+    fun applied() {
+        fixed = true
+    }
 
     /** La llamada terminó o cambió la elección: se empieza de cero. */
     fun reset() {
@@ -40,7 +54,9 @@ class CallReassert {
     fun next(now: Long, inCall: Boolean, wanted: Int?, current: Int?): Step {
         if (!inCall) {
             reset()
-            return Step.Nothing
+            if (!fixed) return Step.Nothing
+            fixed = false
+            return Step.Clear
         }
         if (wanted == null) return Step.Nothing
         if (wanted != lastWanted) {
