@@ -8,6 +8,7 @@ import android.os.Build
 import android.hardware.usb.UsbDevice
 import android.util.Log
 import androidx.core.content.ContextCompat
+import com.guardiavirtual.berrymed.audio.CallAudioRouter
 import com.guardiavirtual.berrymed.audio.StethoDsp
 import com.guardiavirtual.berrymed.audio.StethoscopeLink
 import com.guardiavirtual.berrymed.config.BerryConfig
@@ -117,6 +118,12 @@ class TotemRuntime(context: Context) {
     }
     private val stethoPorts = PanelPorts()
 
+    /** Cuándo toca llevar el hub al estado de reposo; lo hace [watchLoop]. */
+    private val hubRest = HubRestState.Pending()
+
+    /** Hasta leer lo guardado, [config] es la de fábrica: con ésa no se apaga ningún puerto. */
+    @Volatile private var configLoaded = false
+
     /**
      * Cuándo llegó la última presión, en hora de la tablet, para que el Panel
      * Local diga "10:07 · hace 4 min". La plaqueta repite el resultado en cada
@@ -142,11 +149,9 @@ class TotemRuntime(context: Context) {
     val otoscopeProbe = OtoscopeProbe(appContext, hub)
 
     /**
-     * El puerto del otoscopio, si lo encendió el panel: sólo ése se apaga. Al
-     * encender la tablet el hub arranca con los tres prendidos y la
-     * teleconsulta usa el otoscopio por ahí; apagarlo al salir lo dejaría
-     * desenchufado para Chrome. Guarda el número, así se apaga el puerto que
-     * se encendió aunque la configuración cambie mientras tanto.
+     * El puerto del otoscopio, si lo encendió el panel: sólo ése se apaga. Si
+     * ya estaba encendido queda como estaba. Guarda el número, así se apaga el
+     * puerto que se encendió aunque la configuración cambie mientras tanto.
      */
     private val otoscopePorts = PanelPorts()
 
@@ -213,6 +218,9 @@ class TotemRuntime(context: Context) {
         teleBackend.onRoomLost = streamer::roomLost
     }
 
+    /** Fija la salida de la videollamada del `WebView`, que corre en este proceso. */
+    private val callAudio = CallAudioRouter(appContext, { config }, ::log)
+
     private val pusher = SessionPusher(::log, object : SessionPusher.Listener {
         override fun onStart() = startSession()
 
@@ -254,10 +262,17 @@ class TotemRuntime(context: Context) {
         parser.live = live
         scope.launch {
             store.flow.collect { saved ->
+                val outputChanged = configLoaded && saved.callAudioOutput != config.callAudioOutput
                 config = saved
+                configLoaded = true
                 pusher.apply(saved)
+                if (outputChanged) {
+                    hubRest.again()
+                    callAudio.refresh()
+                }
             }
         }
+        callAudio.start()
         thread(name = "berry-usb", isDaemon = true) { berry.run() }
         thread(name = "berry-thermo", isDaemon = true) { thermo.run() }
         thread(name = "berry-post", isDaemon = true) { postLoop() }
@@ -277,17 +292,51 @@ class TotemRuntime(context: Context) {
 
     /**
      * Lo que tiene que seguir andando aunque un POST tarde: los pedidos de
-     * permiso USB, la reconexión de Pusher y la pantalla.
+     * permiso USB, la reconexión de Pusher y la pantalla. El estado de reposo
+     * del hub va acá porque es donde se mira el USB: un hub que recién tiene
+     * permiso más tarde entra solo en la vuelta siguiente.
      */
     private fun watchLoop() {
         while (true) {
             guarded("permisos USB") { hub.requestMissingPermissions() }
+            guarded("puertos en reposo") { applyHubRest() }
             guarded("Pusher") { pusher.keepAlive() }
             guarded("teleconsulta") { tele.tick() }
             guarded("pantalla") { publish() }
             sleep(1_000)
         }
     }
+
+    /**
+     * Lleva los puertos al estado de reposo una vez por hub, o de nuevo si
+     * cambió la salida de audio. Si alguien está usando un equipo se espera,
+     * sin marcarlo hecho: se aplica apenas se libere. Un hub que no contesta
+     * no se reintenta, para no trabar este hilo cada segundo.
+     */
+    private fun applyHubRest() {
+        if (!configLoaded || hubRestBlocked()) return
+        val deviceId = ykush.usableDeviceId()
+        if (!hubRest.due(deviceId)) return
+        hubRest.done(deviceId)
+        val states = ykush.readAll()
+        if (states.all { it == null }) {
+            log("[YKUSH] El hub no contesta: los puertos quedan como están")
+            return
+        }
+        for ((port, on) in HubRestState.changes(HubRestState.wanted(config), states)) {
+            // La lectura y cada orden tardan: entre tanto pudo abrirse el panel o una consulta.
+            if (hubRestBlocked()) {
+                log("[YKUSH] Se usó un equipo mientras se llevaba el hub al reposo: se sigue después")
+                hubRest.again()
+                return
+            }
+            ykush.setPort(port, on)
+        }
+        log("[YKUSH] Puertos en reposo: ${HubRestState.describe(HubRestState.wanted(config))}")
+    }
+
+    /** No se le apaga un equipo a nadie. */
+    private fun hubRestBlocked(): Boolean = sessionActive || testing || localMode || tele.usingInstrument
 
     /** Una tarea que falla no frena a las otras del mismo hilo. */
     private fun guarded(task: String, block: () -> Unit) {
@@ -949,9 +998,10 @@ class TotemRuntime(context: Context) {
         framesPerSecond = teleBackend.framesPerSecond(),
         levelPercent = StethoDsp.levelPercent(teleBackend.dsp.level),
         silenced = teleBackend.captureSilenced(),
+        callAudio = callAudio.describe(),
     )
 
-    /** Lee los tres puertos del YKUSH3 sin cambiarlos. Bloquea hasta un segundo: llamarlo fuera del hilo de la pantalla. */
+    /** Lee los tres puertos del YKUSH3 sin cambiarlos. Bloquea hasta tres segundos: llamarlo fuera del hilo de la pantalla. */
     fun testYkushRead(): String {
         if (!ykush.plugged()) return "No hay hub YKUSH3 conectado."
         if (hub.permissionMissing() && ykush.lastStates.all { it == null }) hub.forgetAsked()
@@ -963,13 +1013,32 @@ class TotemRuntime(context: Context) {
     /**
      * Enciende o apaga un puerto del YKUSH3 desde Testing. Con una consulta
      * enviando no se toca nada: podría dejar al médico sin un equipo.
-     * Bloquea hasta un segundo: llamarlo fuera del hilo de la pantalla.
+     * Bloquea hasta cuatro segundos: llamarlo fuera del hilo de la pantalla.
      */
     fun testYkushSet(port: Int, on: Boolean): String = when {
         sessionActive -> "Hay una consulta enviando: no se cambia ningún puerto."
         !ykush.plugged() -> "No hay hub YKUSH3 conectado."
         !ykush.setPort(port, on) -> "El hub no aceptó la orden. Mirá la consola."
         else -> "Puerto $port ${if (on) "encendido" else "apagado"}"
+    }
+
+    /**
+     * Guarda el estado de reposo como arranque del hub, para los segundos entre
+     * que recibe energía y arranca el servicio. Un puerto libre no se manda. Es
+     * persistente en el hub: sale sólo con este botón. Fuera del hilo de la pantalla.
+     */
+    fun testYkushSaveBoot(): String {
+        if (!ykush.plugged()) return "No hay hub YKUSH3 conectado."
+        val wanted = HubRestState.wanted(config)
+        val rejected = wanted.mapIndexedNotNull { index, on ->
+            val port = index + 1
+            port.takeIf { on != null && !ykush.setDefaultState(port, on) }
+        }
+        return if (rejected.isEmpty()) {
+            "El hub guardó el arranque: ${HubRestState.describe(wanted)}"
+        } else {
+            "El hub no aceptó el puerto ${rejected.joinToString(", ")}. Mirá la consola."
+        }
     }
 
     /** Lo que Android ve enchufado, renovado cada [INVENTORY_NANOS] mientras Testing lo mira. */

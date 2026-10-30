@@ -3,9 +3,9 @@ package com.guardiavirtual.berrymed.service
 
 /**
  * Qué puertos del YKUSH3 prendió el Panel Local, uno para el estetoscopio y
- * otro para el otoscopio. Al apagar se apagan sólo ésos: si un puerto ya estaba encendido (al
- * encender la tablet el hub arranca con los tres prendidos), queda como
- * estaba. Sin Android, para probar la secuencia sola.
+ * otro para el otoscopio. Al apagar se apagan sólo ésos: si un puerto ya estaba
+ * encendido (el auricular en reposo, o un hub que todavía no se llevó al estado
+ * de reposo), queda como estaba. Sin Android, para probar la secuencia sola.
  */
 class PanelPorts {
     private val owned = LinkedHashSet<Int>()
@@ -23,8 +23,8 @@ class PanelPorts {
      * El panel encendió [port], que antes de encenderlo se leyó como
      * [previousState]. Se anota para apagarlo al cerrar sólo si se leyó
      * apagado de verdad. Si la lectura falló pudo estar encendido desde el
-     * arranque, con Chrome usándolo en la teleconsulta: apagarlo al salir lo
-     * desenchufaría. Es preferible dejar un puerto prendido de más.
+     * arranque, con la llamada usándolo: apagarlo al salir lo desenchufaría.
+     * Es preferible dejar un puerto prendido de más.
      * Devuelve si quedó anotado.
      */
     @Synchronized

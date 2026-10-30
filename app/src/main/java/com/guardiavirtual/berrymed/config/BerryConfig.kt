@@ -39,6 +39,11 @@ data class BerryConfig(
      * de Berry Med (la misma que abría Chrome, con el slug de la organización).
      */
     val kioskUrl: String = "",
+    /**
+     * Por dónde se escucha la videollamada del kiosco. No alcanza al
+     * estetoscopio del Panel Local, que sale sólo por el auricular.
+     */
+    val callAudioOutput: String = CALL_AUDIO_HEADSET,
 ) {
     /** Qué equipo va en cada puerto del YKUSH3, para la pantalla. Un puerto sin equipo queda "libre". */
     fun ykushPortRoles(): List<String> = (1..YKUSH_PORTS).map { port ->
@@ -98,6 +103,13 @@ const val DEFAULT_LOCAL_PIN = "1515"
 /** El nombre que declara el adaptador de audio TTGK (3302:29E3). */
 const val DEFAULT_STETHO_INPUT = "USB Audio"
 const val DEFAULT_HEADSET = "H390"
+
+const val CALL_AUDIO_HEADSET = "auricular"
+const val CALL_AUDIO_SPEAKER = "parlante"
+
+/** La salida guardada: un valor vacío o desconocido se lee como auricular, el de fábrica. */
+fun callAudioOutputOrDefault(saved: String?): String =
+    if (saved == CALL_AUDIO_SPEAKER) CALL_AUDIO_SPEAKER else CALL_AUDIO_HEADSET
 
 /** Un PIN vacío en la configuración vuelve al de fábrica; los espacios no cuentan. */
 fun pinAccepted(entered: String?, configured: String?): Boolean {

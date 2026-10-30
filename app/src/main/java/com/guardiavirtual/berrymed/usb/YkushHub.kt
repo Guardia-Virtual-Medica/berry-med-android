@@ -14,14 +14,17 @@ import java.io.Closeable
  * estetoscopio, auricular), así que apagar un puerto es desenchufar ese equipo
  * para Android, y encenderlo es enchufarlo de nuevo.
  *
- * El protocolo es el de pykush, la herramienta oficial: paquetes de 64 bytes
- * por la interfaz HID. El primer byte es el comando y el puerto va en los bits
- * bajos: 0x1N enciende el puerto N, 0x0N lo apaga, 0x2N lo consulta y 0x2A
- * consulta los tres. La respuesta trae 0x01 en el primer byte si salió bien y,
- * al consultar, un byte por puerto: más de 0x10 es encendido.
+ * El protocolo es el de la hoja de datos (v1.2.1): paquetes de 64 bytes por la
+ * interfaz HID. El primer byte es el comando y el puerto va en los bits bajos:
+ * 0x1N enciende el puerto N, 0x0N lo apaga y 0x2N lo consulta; el comando se
+ * repite en el segundo byte. La respuesta trae 0x01 en el primer byte si salió
+ * bien y, al consultar, 0x1N (encendido) o 0x0N (apagado) en el segundo. 0x41
+ * guarda en el hub cómo arranca un puerto: es persistente y la hoja no ofrece
+ * leerlo, así que sale sólo con el botón de Testing.
  *
- * Esta clase no toca los puertos sola: sólo cambia lo que le piden desde la
- * pantalla. Al encender la tablet el hub arranca con los tres puertos encendidos.
+ * Esta clase no toca los puertos sola: cambia lo que le piden. Quienes le piden
+ * son la pantalla, el Panel Local, la teleconsulta y `TotemRuntime`, que lleva
+ * los puertos al estado de reposo cuando el hub aparece.
  */
 class YkushHub(private val hub: UsbHub, private val log: (String) -> Unit) : Closeable {
     private var connection: UsbDeviceConnection? = null
@@ -39,12 +42,12 @@ class YkushHub(private val hub: UsbHub, private val log: (String) -> Unit) : Clo
 
     /**
      * Enciende o apaga un puerto y después relee los tres. Devuelve false si el
-     * hub no está, no tiene permiso o rechazó la orden. Bloquea hasta un
-     * segundo: llamarlo fuera del hilo de la pantalla.
+     * hub no está, no tiene permiso o rechazó la orden. Bloquea hasta cuatro
+     * segundos (la orden y la relectura): llamarlo fuera del hilo de la pantalla.
      */
     fun setPort(port: Int, on: Boolean): Boolean = synchronized(lock) {
         require(port in 1..PORT_COUNT) { "puerto $port" }
-        val reply = exchange(command(port, on))
+        val reply = exchange(packet(command(port, on)))
         if (reply == null) {
             log("[YKUSH] El hub no contesta: no se pudo ${if (on) "encender" else "apagar"} el puerto $port")
             return false
@@ -58,18 +61,43 @@ class YkushHub(private val hub: UsbHub, private val log: (String) -> Unit) : Clo
         true
     }
 
-    /** Lee el estado de los tres puertos sin cambiarlos. Bloquea hasta un segundo. */
+    /**
+     * Lee el estado de los tres puertos sin cambiarlos, de a uno: 0x2A no está
+     * en la hoja de datos y pykush sólo lo usa con firmware 2 o superior. Un
+     * puerto que no contesta queda null y los demás se conservan. Bloquea hasta
+     * tres segundos: llamarlo fuera del hilo de la pantalla.
+     */
     fun readAll(): List<Boolean?> = synchronized(lock) {
-        val reply = exchange(STATUS_ALL)
-        val states = if (reply == null || !ok(reply)) List(PORT_COUNT) { null } else statesFrom(reply)
+        val states = (1..PORT_COUNT).map { port -> stateFrom(exchange(packet(statusCommand(port)))) }
         lastStates = states
         states
     }
 
-    private fun exchange(cmd: Byte): ByteArray? {
+    /**
+     * Guarda en el hub cómo arranca [port] cuando recibe energía. Devuelve si
+     * el hub aceptó. Queda en su memoria: nunca se manda solo, porque no se
+     * puede leer antes y cada arranque del servicio la gastaría.
+     */
+    fun setDefaultState(port: Int, on: Boolean): Boolean = synchronized(lock) {
+        require(port in 1..PORT_COUNT) { "puerto $port" }
+        val reply = exchange(defaultStatePacket(port, on))
+        val accepted = reply != null && ok(reply)
+        log(
+            if (accepted) {
+                "[YKUSH] Puerto $port guardado para arrancar ${if (on) "encendido" else "apagado"}"
+            } else {
+                "[YKUSH] El hub no aceptó guardar el arranque del puerto $port"
+            },
+        )
+        accepted
+    }
+
+    /** El identificador del hub enchufado y con permiso; null si todavía no se puede usar. */
+    fun usableDeviceId(): Int? = hub.ykushDevice()?.deviceId
+
+    private fun exchange(packet: ByteArray): ByteArray? {
         val device = hub.ykushDevice() ?: return null
         val link = connectionFor(device) ?: return null
-        val packet = packet(cmd)
         val sent = send(link, packet)
         if (sent < 0) {
             close()
@@ -144,7 +172,7 @@ class YkushHub(private val hub: UsbHub, private val log: (String) -> Unit) : Clo
         const val PACKET_SIZE = 64
         private const val TIMEOUT_MS = 1_000
         const val OK: Byte = 0x01
-        const val STATUS_ALL: Byte = 0x2A
+        private const val SET_DEFAULT: Byte = 0x41
 
         /** 0x1N enciende el puerto N, 0x0N lo apaga. */
         fun command(port: Int, on: Boolean): Byte = ((if (on) 0x10 else 0x00) or port).toByte()
@@ -152,12 +180,29 @@ class YkushHub(private val hub: UsbHub, private val log: (String) -> Unit) : Clo
         /** 0x2N consulta el puerto N. */
         fun statusCommand(port: Int): Byte = (0x20 or port).toByte()
 
-        fun packet(cmd: Byte): ByteArray = ByteArray(PACKET_SIZE).also { it[0] = cmd }
+        /** El comando en el primer byte y repetido en el segundo, como piden las tablas 2, 4 y 6 de la hoja. */
+        fun packet(cmd: Byte): ByteArray = ByteArray(PACKET_SIZE).also {
+            it[0] = cmd
+            it[1] = cmd
+        }
+
+        /** 0x41, el puerto y 0x01 para arrancar encendido o 0x00 apagado (sección 6.6 de la hoja). */
+        fun defaultStatePacket(port: Int, on: Boolean): ByteArray = ByteArray(PACKET_SIZE).also {
+            it[0] = SET_DEFAULT
+            it[1] = port.toByte()
+            it[2] = if (on) 0x01 else 0x00
+        }
 
         fun ok(reply: ByteArray): Boolean = reply.isNotEmpty() && reply[0] == OK
 
-        /** Un byte por puerto a partir del segundo: más de 0x10 es encendido. */
-        fun statesFrom(reply: ByteArray): List<Boolean?> =
-            (1..PORT_COUNT).map { i -> if (i < reply.size) (reply[i].toInt() and 0xFF) > 0x10 else null }
+        /** La respuesta a 0x2N: 0x1N encendido, 0x0N apagado. Sin respuesta, rechazada o rara, null. */
+        fun stateFrom(reply: ByteArray?): Boolean? {
+            if (reply == null || reply.size < 2 || !ok(reply)) return null
+            return when (reply[1].toInt() and 0xF0) {
+                0x10 -> true
+                0x00 -> false
+                else -> null
+            }
+        }
     }
 }

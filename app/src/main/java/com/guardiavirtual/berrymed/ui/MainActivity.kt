@@ -27,6 +27,8 @@ import androidx.core.content.ContextCompat
 import com.guardiavirtual.berrymed.BerryMedApp
 import com.guardiavirtual.berrymed.R
 import com.guardiavirtual.berrymed.config.BerryConfig
+import com.guardiavirtual.berrymed.config.CALL_AUDIO_HEADSET
+import com.guardiavirtual.berrymed.config.CALL_AUDIO_SPEAKER
 import com.guardiavirtual.berrymed.config.DEFAULT_HEADSET
 import com.guardiavirtual.berrymed.config.DEFAULT_LOCAL_PIN
 import com.guardiavirtual.berrymed.config.DEFAULT_STETHO_INPUT
@@ -295,6 +297,7 @@ class MainActivity : AppCompatActivity() {
         binding.stethoInputName.setText(config.stethoInputName)
         binding.headsetName.setText(config.headsetName)
         binding.kioskUrl.setText(config.kioskUrl)
+        select(binding.callAudio, CALL_AUDIO_VALUES, config.callAudioOutput)
         select(binding.ecgGain, GAIN_VALUES, config.ecgGain)
         select(binding.ecgMode, MODE_VALUES, config.ecgMode)
         select(binding.respGain, GAIN_VALUES, config.respGain)
@@ -438,6 +441,7 @@ class MainActivity : AppCompatActivity() {
             stethoInputName = binding.stethoInputName.text?.toString()?.trim().orEmpty().ifBlank { DEFAULT_STETHO_INPUT },
             headsetName = binding.headsetName.text?.toString()?.trim().orEmpty().ifBlank { DEFAULT_HEADSET },
             kioskUrl = binding.kioskUrl.text?.toString()?.trim().orEmpty(),
+            callAudioOutput = value(binding.callAudio, CALL_AUDIO_VALUES),
         )
     }
 
@@ -514,6 +518,8 @@ class MainActivity : AppCompatActivity() {
         private val MEDIA_PERMISSIONS = listOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
         /** En el orden de los chips: Producción, Dev. */
         private val ENVIRONMENT_VALUES = arrayOf(Environment.Prod.key, Environment.Dev.key)
+        /** En el orden de los chips: Auricular, Parlante de la tablet. */
+        private val CALL_AUDIO_VALUES = arrayOf(CALL_AUDIO_HEADSET, CALL_AUDIO_SPEAKER)
         private val GAIN_VALUES = arrayOf("x0.25", "x0.5", "x1", "x2")
         private val MODE_VALUES = arrayOf("operacion", "monitor", "diagnostico")
         private val NIBP_VALUES = arrayOf("adulto", "nino", "neonato")

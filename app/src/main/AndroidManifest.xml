@@ -18,6 +18,8 @@
     <!-- El estetoscopio del Panel Local, por el adaptador de audio USB. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
+    <!-- Fijar el dispositivo de comunicación de la videollamada: hoy llega sólo por la fusión con LiveKit. -->
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <!--
         La teleconsulta: el servicio publica el otoscopio y el estetoscopio en LiveKit.
         Para eso, además de connectedDevice, va como camera y microphone (ver

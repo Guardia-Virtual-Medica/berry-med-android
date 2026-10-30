@@ -76,6 +76,8 @@
     <string name="testing_ykush">Hub YKUSH3</string>
     <string name="testing_ykush_help">Cada puerto lleva un equipo. Apagar un puerto es desenchufar ese equipo para Android; encenderlo, enchufarlo de nuevo. Con una consulta enviando no se cambia nada.</string>
     <string name="testing_ykush_read">Leer estado</string>
+    <string name="testing_ykush_save_boot">Guardar este arranque en el hub</string>
+    <string name="testing_ykush_save_boot_help">Guarda en el hub el estado de reposo, para los segundos entre que se prende y arranca el servicio. Queda en la memoria del hub: usarlo sólo al instalar o al cambiar la salida de audio.</string>
     <string name="testing_on">Encender</string>
     <string name="testing_off">Apagar</string>
     <string name="testing_devices">Dispositivos que ve Android</string>
@@ -97,6 +99,10 @@
     <string name="section_kiosk">Kiosco</string>
     <string name="help_kiosk">El kiosco de OnDoctor corre dentro de Berry Med, como app de inicio de la tablet. Acá queda su dirección y lo que falta para dejarlo andando.</string>
     <string name="missing_kiosk_url">La URL del kiosco tiene que empezar con https:// (o http://) y tener un dominio. Si no hay kiosco, dejala vacía.</string>
+    <string name="label_call_audio">Audio de la videollamada</string>
+    <string name="call_audio_headset">Auricular</string>
+    <string name="call_audio_speaker">Parlante de la tablet</string>
+    <string name="help_call_audio">El estetoscopio del Panel Local sale siempre por el auricular.</string>
     <string name="section_kiosk_checklist">Puesta en marcha</string>
     <string name="help_kiosk_checklist">Verde, hecho; ámbar, falta. Se actualiza al volver a esta pantalla.</string>
     <string name="check_permissions">Cámara y micrófono</string>

@@ -90,6 +90,13 @@ class TestingActivity : AppCompatActivity() {
                 handler.post { binding.ykushMessage.text = text }
             }
         }
+        binding.ykushSaveBootButton.setOnClickListener {
+            binding.ykushMessage.text = "Guardando…"
+            thread(name = "berry-test-ykush") {
+                val text = runtime().testYkushSaveBoot()
+                handler.post { binding.ykushMessage.text = text }
+            }
+        }
         ykushPorts.forEachIndexed { index, row ->
             row.portOn.setOnClickListener { switchPort(index + 1, on = true) }
             row.portOff.setOnClickListener { switchPort(index + 1, on = false) }
@@ -163,7 +170,7 @@ class TestingActivity : AppCompatActivity() {
         runtime().checkMeasure(measure)
     }
 
-    /** Enciende o apaga un puerto del YKUSH3. Tarda hasta un segundo, así que va en otro hilo. */
+    /** Enciende o apaga un puerto del YKUSH3. Tarda hasta cuatro segundos, así que va en otro hilo. */
     private fun switchPort(port: Int, on: Boolean) {
         binding.ykushMessage.text = if (on) "Encendiendo el puerto $port…" else "Apagando el puerto $port…"
         thread(name = "berry-test-ykush") {
@@ -277,6 +284,7 @@ class TestingActivity : AppCompatActivity() {
         binding.teleState.text = status.room.label + if (status.manual) " · prueba manual" else ""
         binding.teleDetail.text = buildString {
             append("Servicio: ${t.serviceTypes} · cámara ${yesNo(t.serviceCamera)} · micrófono ${yesNo(t.serviceMicrophone)}\n")
+            append("${t.callAudio}\n")
             append("Sala: ${status.room.label}")
             status.roomName?.let { append(" · $it") }
             if (status.tokenSeenAtMillis != 0L) {

@@ -251,6 +251,24 @@
                 android:id="@+id/ykushPort3"
                 layout="@layout/item_ykush_port" />
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/ykushSaveBootButton"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/testing_ykush_save_boot"
+                android:textColor="@color/vital_on"
+                app:strokeColor="@color/vital_dim" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/testing_ykush_save_boot_help"
+                android:textColor="@color/vital_dim"
+                android:textSize="13sp" />
+
             <TextView
                 android:id="@+id/ykushMessage"
                 android:layout_width="match_parent"

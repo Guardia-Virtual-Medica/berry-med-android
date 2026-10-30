@@ -2,11 +2,22 @@
 package com.guardiavirtual.berrymed.config
 
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class BerryConfigTest {
     private val ready = BerryConfig(pusherKey = "clave", publicChannel = "totem.01")
+
+    @Test
+    fun theCallSoundsThroughTheHeadsetUnlessTheSpeakerWasChosen() {
+        assertEquals(CALL_AUDIO_HEADSET, BerryConfig().callAudioOutput)
+        assertEquals(CALL_AUDIO_SPEAKER, callAudioOutputOrDefault(CALL_AUDIO_SPEAKER))
+        assertEquals(CALL_AUDIO_HEADSET, callAudioOutputOrDefault(CALL_AUDIO_HEADSET))
+        assertEquals(CALL_AUDIO_HEADSET, callAudioOutputOrDefault("bluetooth"))
+        assertEquals(CALL_AUDIO_HEADSET, callAudioOutputOrDefault(""))
+        assertEquals(CALL_AUDIO_HEADSET, callAudioOutputOrDefault(null))
+    }
 
     @Test
     fun aPublicChannelIsReady() {
