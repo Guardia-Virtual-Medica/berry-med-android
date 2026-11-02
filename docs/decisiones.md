@@ -110,10 +110,22 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - Reintento automático: si falla el documento principal (error de conexión o HTTP 5xx; los recursos secundarios no cuentan), Berry Med tapa el `WebView` con su propia pantalla y un botón **Reintentar**. Reintenta solo apenas Android avisa que hay red, cada 10 s y al volver al kiosco. Reintentar es `reload()`: vuelve a pedir la dirección que falló, no la del inicio.
 - Recarga a pedido: el diálogo de los cinco toques suma **Recargar**, que también pide el PIN (un paciente no tiene que poder reiniciar el kiosco en plena consulta) y carga la URL configurada desde cero. Permiso nuevo `ACCESS_NETWORK_STATE`, normal y sin diálogo.
 
+### El estetoscopio y la videollamada por el jack de la tablet (plan 10)
+
+- Pedido: que el sonido salga por defecto por el jack analógico de la tablet, no por el H390. Plan en `docs/planes/plan-10-estetoscopio-jack-tablet.md`.
+- Regla automática, sin opción nueva: si hay algo en el jack de la tablet, el estetoscopio suena por ahí; si no, por el H390. Nunca por el parlante (se acopla) ni por el adaptador. `AudioPick.stethoOutput`.
+- La salida del estetoscopio se elige al tocar Escuchar o al reproducir una grabación: enchufar o desenchufar en plena escucha no la cambia. Se dice en el KDoc, no en pantalla.
+- El micrófono del auricular del jack nunca hace de estetoscopio: el estetoscopio sólo se toma de entradas USB, con test.
+- Los puertos del YKUSH3 no cambian: Escuchar sigue encendiendo el del adaptador y el del H390. Con el jack puesto la salida ya está y la espera de hasta 5 s es sólo por el adaptador.
+- La videollamada también: con **Auriculares** sale por el jack, si no por el H390 y, si tampoco, por el parlante. **Parlante de la tablet** sigue mandando sólo la llamada al parlante. El valor guardado `auricular` no cambia y pasa a querer decir "auriculares, jack primero", así la configuración existente sigue valiendo. `HubRestState` no cambia: con Auriculares el H390 queda encendido en reposo como respaldo.
+- Chromium en modo comunicación ya prefiere el auricular con cable antes que lo USB: `CallAudioRouter` lo confirma y lo reafirma, y lo nombra "el jack de la tablet" porque esos dispositivos suelen venir sin nombre.
+- Con un adaptador USB-C a jack no hace falta nada nuevo: Android lo lista como auricular USB y se configura su nombre en **Nombre del auricular**.
+
 ## Pendiente
 
 - Prueba con el hardware real en la tablet (ver "Probar el Panel Local en el tótem" en el `README.md` y los riesgos de `docs/hardware.md`).
 - Los hallazgos 8 a 26 de `docs/revisiones/revision-codigo-opus.md`.
 - Plan 6 en la tablet real: Zoom dentro del `WebView`, el camino UVC sin vista, el adaptador con `UNPROCESSED` y el kiosco como app de inicio (ver "Qué probar en la tablet" en el PR #19).
 - Plan 7 en la tablet real: modo y uso de audio de Zoom en el `WebView`, y el protocolo del hub contra el YKUSH3 (ver riesgos en `docs/hardware.md`).
+- Plan 10 en la tablet real: el estetoscopio y la videollamada por el jack (ver riesgos en `docs/hardware.md`).
 - v2 con guardado y PDF local.
