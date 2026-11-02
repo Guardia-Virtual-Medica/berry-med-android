@@ -110,16 +110,14 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - Reintento automático: si falla el documento principal (error de conexión o HTTP 5xx; los recursos secundarios no cuentan), Berry Med tapa el `WebView` con su propia pantalla y un botón **Reintentar**. Reintenta solo apenas Android avisa que hay red, cada 10 s y al volver al kiosco. Reintentar es `reload()`: vuelve a pedir la dirección que falló, no la del inicio.
 - Recarga a pedido: el diálogo de los cinco toques suma **Recargar**, que también pide el PIN (un paciente no tiene que poder reiniciar el kiosco en plena consulta) y carga la URL configurada desde cero. Permiso nuevo `ACCESS_NETWORK_STATE`, normal y sin diálogo.
 
-### El estetoscopio y la videollamada por el jack de la tablet (plan 10)
+### El otoscopio a 30 cuadros (plan 9)
 
-- Pedido: que el sonido salga por defecto por el jack analógico de la tablet, no por el H390. Plan en `docs/planes/plan-10-estetoscopio-jack-tablet.md`.
-- Regla automática, sin opción nueva: si hay algo en el jack de la tablet, el estetoscopio suena por ahí; si no, por el H390. Nunca por el parlante (se acopla) ni por el adaptador. `AudioPick.stethoOutput`.
-- La salida del estetoscopio se elige al tocar Escuchar o al reproducir una grabación: enchufar o desenchufar en plena escucha no la cambia. Se dice en el KDoc, no en pantalla.
-- El micrófono del auricular del jack nunca hace de estetoscopio: el estetoscopio sólo se toma de entradas USB, con test.
-- Los puertos del YKUSH3 no cambian: Escuchar sigue encendiendo el del adaptador y el del H390. Con el jack puesto la salida ya está y la espera de hasta 5 s es sólo por el adaptador.
-- La videollamada también: con **Auriculares** sale por el jack, si no por el H390 y, si tampoco, por el parlante. **Parlante de la tablet** sigue mandando sólo la llamada al parlante. El valor guardado `auricular` no cambia y pasa a querer decir "auriculares, jack primero", así la configuración existente sigue valiendo. `HubRestState` no cambia: con Auriculares el H390 queda encendido en reposo como respaldo.
-- Chromium en modo comunicación ya prefiere el auricular con cable antes que lo USB: `CallAudioRouter` lo confirma y lo reafirma, y lo nombra "el jack de la tablet" porque esos dispositivos suelen venir sin nombre.
-- Con un adaptador USB-C a jack no hace falta nada nuevo: Android lo lista como auricular USB y se configura su nombre en **Nombre del auricular**.
+- Reporte de campo con la 1.3.2: en el Panel Local la imagen del otoscopio sale bastante trabada. Plan en `docs/planes/plan-9-otoscopio-30-cuadros.md`.
+- Causa más probable: el otoscopio ofrece cada tamaño a 30 o a 5 cuadros y la app le pedía a libuvc un rango de 1 a 30. libuvc se queda con el primer intervalo del descriptor que cae en el rango, así que si la cámara declara primero el de 5, abre a 5.
+- Por UVC se piden entre 29 y 30 cuadros (no 30 exactos: libuvc calcula la cadencia con división entera y un intervalo declarado como 333334 da 29; el de 5 sigue afuera); sólo si la cámara no los ofrece para ese tamaño se pide el rango de 1 a 30 y, si tampoco, sin rango, como antes. El log dice la cadencia pedida (`a 800×800 MJPEG, 30 cuadros/s` o `cadencia a elección de la cámara`).
+- Por Camera2 (el camino que la tablet real no usa) se pide `CONTROL_AE_TARGET_FPS_RANGE` en 30 fijo si la cámara lo ofrece; si no, el rango que llegue a 30 con el mínimo más alto; si ninguno llega, no se pide nada.
+- La tarjeta muestra los cuadros por segundo que llegan de verdad ("En vivo · UVC · 29 cuadros/s"), para que el próximo reporte traiga el número: si dice 30 y se ve trabada, el problema está en otro lado. Por UVC se cuentan los cuadros que dibuja la vista; por Camera2, las capturas que completa la cámara (`PreviewView` no avisa cuándo dibuja). Al log va una línea sólo si la cadencia queda por debajo de 20 más de 5 s seguidos.
+- No se cambia la resolución (800×800) ni el ancho de banda de libuvc. Testing → Teleconsulta sigue mostrando la cadencia de la publicación como antes.
 
 ## Pendiente
 
@@ -127,5 +125,5 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - Los hallazgos 8 a 26 de `docs/revisiones/revision-codigo-opus.md`.
 - Plan 6 en la tablet real: Zoom dentro del `WebView`, el camino UVC sin vista, el adaptador con `UNPROCESSED` y el kiosco como app de inicio (ver "Qué probar en la tablet" en el PR #19).
 - Plan 7 en la tablet real: modo y uso de audio de Zoom en el `WebView`, y el protocolo del hub contra el YKUSH3 (ver riesgos en `docs/hardware.md`).
-- Plan 10 en la tablet real: el estetoscopio y la videollamada por el jack (ver riesgos en `docs/hardware.md`).
+- Plan 9 en la tablet real: los cuadros por segundo del otoscopio por UVC, solo y con el estetoscopio escuchando.
 - v2 con guardado y PDF local.

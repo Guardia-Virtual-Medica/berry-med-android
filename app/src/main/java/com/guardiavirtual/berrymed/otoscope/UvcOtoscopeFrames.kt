@@ -79,7 +79,7 @@ class UvcOtoscopeFrames(
             UVCCamera.PIXEL_FORMAT_NV21,
         )
         opened.camera.startPreview()
-        log("[TELE] Otoscopio por UVC a ${width}×$height MJPEG, sin vista")
+        log("[TELE] Otoscopio por UVC a ${opened.describe()}, sin vista")
         return null
     }
 

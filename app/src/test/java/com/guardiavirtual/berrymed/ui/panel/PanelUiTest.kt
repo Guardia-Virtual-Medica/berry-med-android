@@ -216,6 +216,12 @@ class PanelUiTest {
         )
         assertEquals(Status("En vivo", Tone.OK), on.otoscopeTile.status)
         assertEquals(Status("En vivo · UVC", Tone.OK), on.otoscopeStatus)
+        val measured = build(
+            snapshot(otoscopeAvailable = true, otoscopeState = OtoscopePower.State.ON),
+            screen = ScreenState(otoscopeLabel = "por UVC", otoscopeFps = 29),
+        )
+        assertEquals(Status("En vivo · UVC · 29 cuadros/s", Tone.OK), measured.otoscopeStatus)
+        assertEquals(Status("En vivo", Tone.OK), measured.otoscopeTile.status)
         assertEquals(Status("Escuchando", Tone.OK), on.stethoscopeTile.status)
         assertEquals(Status("En pausa", Tone.WARN), on.cameraTile.status)
         val waiting = build(snapshot(otoscopeAvailable = true, otoscopeState = OtoscopePower.State.WAITING_CAMERA))
