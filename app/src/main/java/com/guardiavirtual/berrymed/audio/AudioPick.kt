@@ -8,6 +8,11 @@ import com.guardiavirtual.berrymed.config.CALL_AUDIO_SPEAKER
  * tiene Android adentro: recibe una descripción de cada dispositivo, así la
  * regla se prueba sola.
  *
+ * Suena por lo que esté enchufado en el jack de la tablet y, si no hay nada,
+ * por el auricular USB H390 (ver [stethoOutput]). La videollamada con
+ * Auriculares sigue el mismo orden y, como último respaldo, el parlante
+ * ([callOutput]).
+ *
  * Nunca se usa el micrófono ni el parlante por defecto: con el micrófono del
  * otoscopio y el del H390 enchufados, el "por defecto" puede ser cualquiera, y
  * el parlante de la tablet se acopla con el estetoscopio.
@@ -28,6 +33,15 @@ object AudioPick {
 
     /** `AudioDeviceInfo.TYPE_BUILTIN_SPEAKER`, acá para no traer Android. */
     const val TYPE_BUILTIN_SPEAKER = 2
+
+    /** `AudioDeviceInfo.TYPE_WIRED_HEADSET`: auricular con micrófono en el jack de la tablet. */
+    const val TYPE_WIRED_HEADSET = 3
+
+    /** `AudioDeviceInfo.TYPE_WIRED_HEADPHONES`: auriculares sin micrófono en el jack de la tablet. */
+    const val TYPE_WIRED_HEADPHONES = 4
+
+    /** Si el tipo es algo enchufado en el jack de la tablet. */
+    fun isJack(type: Int): Boolean = type == TYPE_WIRED_HEADSET || type == TYPE_WIRED_HEADPHONES
 
     /**
      * La entrada del estetoscopio: una entrada USB cuyo nombre contiene
@@ -54,16 +68,30 @@ object AudioPick {
     }
 
     /**
+     * Por dónde suena el estetoscopio: primero lo que esté enchufado en el
+     * jack de la tablet (Android lo lista sólo mientras está enchufado, en el
+     * orden en que lo devuelve) y, si no hay nada, el auricular USB de
+     * [headsetOutput]. El jack no necesita nombre: es de la tablet, no se
+     * confunde con el adaptador. Nunca el parlante de la tablet, que se
+     * acopla, ni el adaptador del estetoscopio: si no hay ninguno, es null.
+     */
+    fun stethoOutput(devices: List<Device>, headsetName: String): Device? =
+        devices.firstOrNull { it.isSink && isJack(it.type) } ?: headsetOutput(devices, headsetName)
+
+    /**
      * Por dónde sale la videollamada, entre los dispositivos de comunicación
-     * de Android. Con [choice] auricular es el H390 (la regla de [headsetOutput])
-     * y, si no está, el parlante: nunca se pierde el audio. Nunca el adaptador
-     * del estetoscopio, aunque sea el único USB: Chromium agrupa todo lo USB y,
-     * librado a sí mismo, puede sacar la llamada por ese jack.
+     * de Android (que incluyen los auriculares del jack mientras están
+     * enchufados). Con [choice] auriculares es la misma regla que el
+     * estetoscopio, [stethoOutput]: el jack de la tablet, si no el H390 y, si
+     * tampoco, el parlante: nunca se pierde el audio. Con parlante, el parlante
+     * aunque haya algo en el jack. Nunca el adaptador del estetoscopio, aunque
+     * sea el único USB: Chromium agrupa todo lo USB y, librado a sí mismo,
+     * puede sacar la llamada por ese jack.
      */
     fun callOutput(devices: List<Device>, choice: String, headsetName: String): Device? {
         val speaker = devices.firstOrNull { it.type == TYPE_BUILTIN_SPEAKER }
         if (choice == CALL_AUDIO_SPEAKER) return speaker
-        return headsetOutput(devices, headsetName) ?: speaker
+        return stethoOutput(devices, headsetName) ?: speaker
     }
 
     private fun isHeadset(device: Device, headsetName: String): Boolean {

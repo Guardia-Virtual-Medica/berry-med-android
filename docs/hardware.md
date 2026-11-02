@@ -105,8 +105,15 @@ HID `04D8:F11B` (Microchip es también fabricante de chips serie; por eso el fil
 - USB Audio Class, VID `046D` (PID probable `0A8F`, sin confirmar).
 - Tiene micrófono propio, que nunca se usa como estetoscopio aunque su nombre coincida.
 - La app lo elige por nombre: "H390" y, si no lo encuentra, "Logitech" (configurable).
-- La salida del estetoscopio va sólo al auricular: por el parlante de la tablet se acopla con el estetoscopio.
-- Es la salida por defecto de la videollamada; en Configuración → Kiosco se cambia por el parlante.
+- Es el respaldo del jack de la tablet: el estetoscopio y la videollamada (con Auriculares) salen por el H390 cuando no hay nada enchufado en el jack. Nunca por el parlante de la tablet, que se acopla con el estetoscopio; la videollamada sí puede ir al parlante si se lo elige en Configuración → Kiosco.
+
+### Auriculares por el jack de la tablet
+
+- Auriculares con cable en la ficha de 3,5 mm de la tablet. Android los lista como `TYPE_WIRED_HEADSET` (con micrófono) o `TYPE_WIRED_HEADPHONES` (sin micrófono), y **sólo mientras están enchufados**. Testing → Dispositivos que ve Android los muestra como "auricular(es) con cable (jack)".
+- No llevan nombre en la configuración: el tipo alcanza, y son de la tablet, así que no se confunden con el adaptador ni con el H390.
+- Tienen prioridad sobre el H390 para el estetoscopio (la escucha y las grabaciones) y para la videollamada con Auriculares. La salida del estetoscopio se elige al tocar Escuchar: enchufarlos o desenchufarlos en plena escucha no la cambia.
+- Su micrófono nunca hace de estetoscopio: el estetoscopio sólo se toma de una entrada USB.
+- Sin ficha de 3,5 mm, un adaptador USB-C a jack aparece como auricular USB con su propio nombre: ese nombre va en **Nombre del auricular** y se usa como el H390.
 
 ## Permisos USB
 
@@ -129,6 +136,7 @@ Lo que sigue es lo esperado por razonamiento: no se probó en la tablet ni en el
 |---|---|---|---|
 | Parlante | 1, 2 y 3 apagados | Ninguna | Los medios van al parlante. |
 | Auricular | 1 y 2 apagados, 3 encendido | Sólo el H390 | Los medios van al H390. El otoscopio, si se enciende, sólo suma un micrófono. |
+| Auricular, con auriculares en el jack de la tablet | Igual: 3 encendido como respaldo | El H390 | Los medios van al jack: Android los prefiere antes que lo USB. En modo comunicación, Chromium también los prefiere y `CallAudioRouter` los fija. Es lo buscado. |
 
 - Por eso, en `MODE_NORMAL` el selector debería seguir andando **hasta que se encienda el puerto del estetoscopio**: el adaptador sí tiene salida y puede llevarse los medios de la llamada. Ése es el riesgo principal.
 - `setCommunicationDevice` sólo agrega la distinción entre el H390 y el adaptador, y sólo con modo comunicación. Con reproducción de medios no mueve el audio.
@@ -152,6 +160,8 @@ El emulador no los muestra. Se revisan con Testing → "Dispositivos que ve Andr
 | **Riesgo principal.** Que el puerto del estetoscopio, al encenderse en plena llamada en `MODE_NORMAL`, se lleve la salida de medios del `WebView`. El selector ahí depende de los puertos (ver [Cómo se elige la salida de la llamada](#cómo-se-elige-la-salida-de-la-llamada)) y el adaptador sí tiene salida | Publicar el estetoscopio durante la llamada, con Parlante y con Auricular: que se siga oyendo al médico por la misma salida y no por el jack del adaptador. |
 | Que el `WebView` entre en modo comunicación con Zoom. En el emulador (WebView 124, Android 15) una llamada WebRTC de prueba quedó en `MODE_NORMAL`, captura `CAMCORDER` y reproducción `USAGE_MEDIA`, y `CallAudioRouter` no actuó: el dispositivo lo fijó Chromium | Testing → Teleconsulta: "modo comunicación" y una línea `[LLAMADA]` durante la llamada. Con `adb shell dumpsys audio`, `Actual mode` y el `usage` del reproductor del `WebView`. |
 | Que en `MODE_NORMAL` el audio de medios siga la salida USB como se espera | Con Parlante elegido y los puertos en reposo, ¿por dónde se oye al médico? Con Auricular, que salga por el H390. Qué micrófono toma la llamada en cada caso. |
+| Que `setCommunicationDevice` acepte los auriculares del jack de la tablet y que el micrófono acompañe | Con auriculares en el jack y Auriculares elegido, Testing → Teleconsulta tiene que decir "el jack de la tablet" durante una llamada, sin una línea "Android no aceptó". Que el médico oiga al paciente por el micrófono del auricular con cable si tiene, si no por el de la tablet. Al desenchufarlos, el H390. |
+| Que el estetoscopio suene por el jack de la tablet | Con auriculares en el jack, Escuchar: la línea `[ESTETO] Escuchando por …` dice "(jack de la tablet)". Reproducir una grabación también. Al desenchufarlos y volver a Escuchar, "(auricular USB)". |
 | Que el micrófono del otoscopio no coincida con el nombre del estetoscopio | En Testing, los dispositivos de audio: el nombre configurado (`USB Audio`) tiene que identificar sólo al adaptador. |
 | Que el hub acepte y guarde `0x41` | Testing → **Guardar este arranque en el hub**: tiene que decir que guardó. Después cortar la alimentación del hub y ver con qué puertos arranca. |
 | Que Zoom Video SDK ande en el `WebView` (cookies, `SharedArrayBuffer`, navegador) | Que la videollamada se vea y se escuche en el kiosco de Berry Med; líneas `[KIOSCO]`. |

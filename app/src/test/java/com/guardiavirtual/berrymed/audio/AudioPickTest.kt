@@ -95,4 +95,70 @@ class AudioPickTest {
         assertNull(AudioPick.headsetOutput(devices.take(2), "H390"))
         assertNull(AudioPick.headsetOutput(listOf(input(9, "Logitech USB Headset")), "H390"))
     }
+
+    // Lo que Android lista mientras hay algo enchufado en el jack de la tablet.
+    private val headphones = AudioPick.Device(
+        id = 10, type = AudioPick.TYPE_WIRED_HEADPHONES, name = "Tablet", isSource = false, isSink = true, usb = false,
+    )
+    private val wiredHeadset = AudioPick.Device(
+        id = 11, type = AudioPick.TYPE_WIRED_HEADSET, name = "Tablet", isSource = false, isSink = true, usb = false,
+    )
+    private val wiredHeadsetMic = AudioPick.Device(
+        id = 12, type = AudioPick.TYPE_WIRED_HEADSET, name = "Tablet", isSource = true, isSink = false, usb = false,
+    )
+
+    @Test
+    fun theStethoscopeSoundsThroughTheTabletJackBeforeTheH390() {
+        val devices = listOf(speaker, h390, adapter, headphones)
+        assertEquals(10, AudioPick.stethoOutput(devices, "H390")?.id)
+    }
+
+    @Test
+    fun aWiredHeadsetWithMicInTheJackAlsoWins() {
+        val devices = listOf(h390, wiredHeadsetMic, wiredHeadset, speaker)
+        assertEquals(11, AudioPick.stethoOutput(devices, "H390")?.id)
+    }
+
+    @Test
+    fun withoutTheJackTheStethoscopeSoundsThroughTheH390() {
+        val devices = listOf(speaker, adapter, h390)
+        assertEquals(2, AudioPick.stethoOutput(devices, "H390")?.id)
+    }
+
+    @Test
+    fun withoutHeadphonesTheStethoscopeNeverUsesTheSpeakerNorTheAdapter() {
+        assertNull(AudioPick.stethoOutput(listOf(speaker, adapter), "H390"))
+        assertNull(AudioPick.stethoOutput(listOf(speaker), "H390"))
+        assertNull(AudioPick.stethoOutput(listOf(adapter), "H390"))
+        // El micrófono del jack es una entrada: no es por dónde suena.
+        assertNull(AudioPick.stethoOutput(listOf(wiredHeadsetMic, speaker), "H390"))
+    }
+
+    @Test
+    fun theJackMicIsNeverTheStethoscope() {
+        assertNull(AudioPick.stethoInput(listOf(wiredHeadsetMic), "Tablet", "H390"))
+        assertNull(AudioPick.stethoInput(listOf(wiredHeadsetMic, h390), "USB Audio", "H390"))
+    }
+
+    @Test
+    fun withHeadphonesChosenTheCallGoesToTheJackBeforeTheH390() {
+        val devices = listOf(speaker, h390, adapter, headphones)
+        assertEquals(10, AudioPick.callOutput(devices, CALL_AUDIO_HEADSET, "H390")?.id)
+        assertEquals(11, AudioPick.callOutput(listOf(h390, wiredHeadset, speaker), CALL_AUDIO_HEADSET, "H390")?.id)
+    }
+
+    @Test
+    fun theSpeakerWinsWhenChosenEvenWithTheJackPlugged() {
+        val devices = listOf(headphones, h390, speaker)
+        assertEquals(1, AudioPick.callOutput(devices, CALL_AUDIO_SPEAKER, "H390")?.id)
+    }
+
+    @Test
+    fun withoutTheJackTheCallGoesToTheH390AndThenTheSpeaker() {
+        assertEquals(2, AudioPick.callOutput(listOf(speaker, adapter, h390), CALL_AUDIO_HEADSET, "H390")?.id)
+        assertEquals(1, AudioPick.callOutput(listOf(adapter, speaker), CALL_AUDIO_HEADSET, "H390")?.id)
+        // El micrófono del jack solo no es una salida: la llamada va al parlante.
+        assertEquals(1, AudioPick.callOutput(listOf(wiredHeadsetMic, speaker), CALL_AUDIO_HEADSET, "H390")?.id)
+        assertNull(AudioPick.callOutput(listOf(adapter), CALL_AUDIO_HEADSET, "H390"))
+    }
 }
