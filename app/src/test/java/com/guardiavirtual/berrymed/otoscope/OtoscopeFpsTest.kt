@@ -9,8 +9,23 @@ import kotlin.test.assertTrue
 
 class OtoscopeFpsTest {
     @Test
-    fun uvcAsksForExactlyThirtyFirstAndThenTheRange() {
-        assertEquals(listOf(30..30, 1..30), OtoscopeFps.uvcAttempts())
+    fun uvcAsksForTwentyNineToThirtyFirstAndThenTheWideRange() {
+        assertEquals(listOf(29..30, 1..30), OtoscopeFps.uvcAttempts())
+    }
+
+    @Test
+    fun theFirstUvcAttemptIsReportedAsThirtyAndTheWideRangeAsNothing() {
+        assertEquals(30, OtoscopeFps.reported(29..30))
+        assertNull(OtoscopeFps.reported(1..30))
+    }
+
+    @Test
+    fun theFirstUvcAttemptTakesBothWaysOfDeclaringThirtyButNotFive() {
+        // libuvc: 10000000 / intervalo, con división entera.
+        val first = OtoscopeFps.uvcAttempts().first()
+        assertTrue(10_000_000 / 333_333 in first)
+        assertTrue(10_000_000 / 333_334 in first)
+        assertFalse(10_000_000 / 2_000_000 in first)
     }
 
     @Test

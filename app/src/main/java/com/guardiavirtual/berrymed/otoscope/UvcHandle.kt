@@ -88,8 +88,8 @@ internal class UvcHandle private constructor(
          * Pide el tamaño con cada rango de [OtoscopeFps.uvcAttempts] en orden:
          * libuvc tira `IllegalArgumentException` si la cámara no declara ningún
          * intervalo dentro del rango. Si ninguno entra, se pide sin rango, como
-         * antes (por dentro, de 1 a 31). Devuelve los cuadros pedidos si fue un
-         * rango exacto, o null si la cadencia quedó a elección de la cámara;
+         * antes (por dentro, de 1 a 31). Devuelve la cadencia para el log según
+         * [OtoscopeFps.reported] (null si quedó a elección de la cámara);
          * libuvc no dice cuál negoció.
          */
         private fun setPreviewSize(camera: UVCCamera, size: OtoscopeResolution.Size): Int? {
@@ -103,7 +103,7 @@ internal class UvcHandle private constructor(
                         UVCCamera.FRAME_FORMAT_MJPEG,
                         UVCCamera.DEFAULT_BANDWIDTH,
                     )
-                    return range.first.takeIf { it == range.last }
+                    return OtoscopeFps.reported(range)
                 } catch (_: IllegalArgumentException) {
                 }
             }

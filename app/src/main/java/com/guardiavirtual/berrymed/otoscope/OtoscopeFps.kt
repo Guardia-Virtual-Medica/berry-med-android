@@ -9,8 +9,8 @@ package com.guardiavirtual.berrymed.otoscope
  * rápido: recorre los intervalos en el orden en que los declara la cámara y
  * se queda con el primero que cae dentro del rango pedido. Con un rango de 1
  * a 30 entran los dos, y si la cámara declara primero el de 5 la imagen sale
- * a saltos. Por eso se piden 30 exactos y el rango sólo si la cámara no los
- * tiene.
+ * a saltos. Por eso se piden entre 29 y 30 y el rango ancho sólo si la
+ * cámara no los tiene.
  */
 object OtoscopeFps {
     const val TARGET = 30
@@ -22,11 +22,25 @@ object OtoscopeFps {
     const val LOW_FOR_NANOS = 5_000_000_000L
 
     /**
-     * Los rangos que se le piden a libuvc, en orden: primero 30 exactos y, si
+     * Los rangos que se le piden a libuvc, en orden: primero de 29 a 30 y, si
      * la cámara no los ofrece para ese tamaño, de 1 a 30 (la cadencia la elige
      * ella). Si tampoco, se le pide el tamaño sin rango.
+     *
+     * Por qué 29: libuvc calcula la cadencia de cada intervalo como
+     * 10000000 / intervalo con división entera. Los 30 cuadros suelen venir
+     * declarados como 333333 (da 30), pero una cámara que declare 333334 da
+     * 29, y pedir 30 exactos la dejaría afuera sin necesidad. El otoscopio
+     * sólo ofrece 30 y 5 por tamaño, así que de 29 a 30 sigue dejando afuera
+     * el de 5.
      */
-    fun uvcAttempts(): List<IntRange> = listOf(TARGET..TARGET, 1..TARGET)
+    fun uvcAttempts(): List<IntRange> = listOf(TARGET - 1..TARGET, 1..TARGET)
+
+    /**
+     * Qué cadencia se dice en el log cuando libuvc aceptó [range]: [TARGET]
+     * para el primer intento (29 o 30, que se ven igual), o null para el
+     * rango ancho, donde la cadencia la eligió la cámara.
+     */
+    fun reported(range: IntRange): Int? = TARGET.takeIf { range == uvcAttempts().first() }
 
     /**
      * El rango de Camera2 para `CONTROL_AE_TARGET_FPS_RANGE`, de los que
