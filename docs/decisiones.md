@@ -110,7 +110,7 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - Reintento automático: si falla el documento principal (error de conexión o HTTP 5xx; los recursos secundarios no cuentan), Berry Med tapa el `WebView` con su propia pantalla y un botón **Reintentar**. Reintenta solo apenas Android avisa que hay red, cada 10 s y al volver al kiosco. Reintentar es `reload()`: vuelve a pedir la dirección que falló, no la del inicio.
 - Recarga a pedido: el diálogo de los cinco toques suma **Recargar**, que también pide el PIN (un paciente no tiene que poder reiniciar el kiosco en plena consulta) y carga la URL configurada desde cero. Permiso nuevo `ACCESS_NETWORK_STATE`, normal y sin diálogo.
 
-### El otoscopio a 30 cuadros (plan 9)
+### El otoscopio a 30 cuadros (plan 9, 1.3.3)
 
 - Reporte de campo con la 1.3.2: en el Panel Local la imagen del otoscopio sale bastante trabada. Plan en `docs/planes/plan-9-otoscopio-30-cuadros.md`.
 - Causa más probable: el otoscopio ofrece cada tamaño a 30 o a 5 cuadros y la app le pedía a libuvc un rango de 1 a 30. libuvc se queda con el primer intervalo del descriptor que cae en el rango, así que si la cámara declara primero el de 5, abre a 5.
@@ -119,7 +119,7 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - La tarjeta muestra los cuadros por segundo que llegan de verdad ("En vivo · UVC · 29 cuadros/s"), para que el próximo reporte traiga el número: si dice 30 y se ve trabada, el problema está en otro lado. Por UVC se cuentan los cuadros que dibuja la vista; por Camera2, las capturas que completa la cámara (`PreviewView` no avisa cuándo dibuja). Al log va una línea sólo si la cadencia queda por debajo de 20 más de 5 s seguidos.
 - No se cambia la resolución (800×800) ni el ancho de banda de libuvc. Testing → Teleconsulta sigue mostrando la cadencia de la publicación como antes.
 
-### El estetoscopio y la videollamada por el jack de la tablet (plan 10)
+### El estetoscopio y la videollamada por el jack de la tablet (plan 10, 1.3.3)
 
 - Pedido: que el sonido salga por defecto por el jack analógico de la tablet, no por el H390. Plan en `docs/planes/plan-10-estetoscopio-jack-tablet.md`.
 - Regla automática, sin opción nueva: si hay algo en el jack de la tablet, el estetoscopio suena por ahí; si no, por el H390. Nunca por el parlante (se acopla) ni por el adaptador. `AudioPick.stethoOutput`.
