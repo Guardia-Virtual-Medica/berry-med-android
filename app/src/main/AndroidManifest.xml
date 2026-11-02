@@ -4,6 +4,8 @@
     <uses-feature android:name="android.hardware.usb.host" android:required="false" />
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- El kiosco reintenta la carga apenas Android avisa que volvió la red. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Desde Android 14, connectedDevice pide uno de estos permisos; éste se otorga solo. -->
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />

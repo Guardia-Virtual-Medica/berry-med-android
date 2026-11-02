@@ -87,10 +87,13 @@
     <string name="testing_cameras">Cámaras</string>
     <string name="kiosk_missing_url">Falta la URL del kiosco. Cargala en la configuración de Berry Med (paso Kiosco).</string>
     <string name="kiosk_open_settings">Abrir la configuración</string>
-    <string name="kiosk_exit_title">PIN para salir del kiosco</string>
+    <string name="kiosk_pin_title">PIN del Panel Local</string>
     <string name="kiosk_pin_hint">PIN</string>
     <string name="kiosk_cancel">Cancelar</string>
     <string name="kiosk_enter">Entrar</string>
+    <string name="kiosk_reload">Recargar</string>
+    <string name="kiosk_offline">No se pudo abrir el kiosco. Sin conexión con el servidor. Se vuelve a intentar solo cuando haya red.</string>
+    <string name="kiosk_retry">Reintentar</string>
     <string name="hint_kiosk_url">URL del kiosco</string>
     <string name="help_kiosk_url">La misma dirección que hoy abre Chrome en esta tablet, con el nombre de la organización al final.</string>
 

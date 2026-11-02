@@ -7,6 +7,9 @@ import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -22,7 +25,9 @@ import android.webkit.CookieManager
 import android.webkit.PermissionRequest
 import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Button
@@ -60,15 +65,36 @@ import kotlin.concurrent.thread
  * Atrás no sale: el paciente no tiene que poder irse. Se sale a la
  * configuración con cinco toques en la esquina de arriba a la izquierda y el
  * PIN del Panel Local.
+ *
+ * Si la página no carga (la tablet todavía sin wifi, el servidor sin
+ * contestar), Berry Med lo dice en su propia pantalla y reintenta solo: al
+ * volver la red, cada 10 s y al volver al kiosco. Con el PIN también se puede
+ * recargar la URL del kiosco desde cero.
  */
 class KioskActivity : AppCompatActivity() {
     private val handler = Handler(Looper.getMainLooper())
     private var webView: WebView? = null
     private lateinit var root: FrameLayout
     private lateinit var empty: LinearLayout
+    private lateinit var offline: LinearLayout
     private var loadedUrl: String? = null
     private var cornerTaps = 0
     private var firstTapAt = 0L
+
+    /** La página principal no cargó: la pantalla de sin conexión queda puesta hasta que cargue. */
+    private var failed = false
+    private val retryLater = Runnable { retry() }
+
+    /** Android avisa en otro hilo; el reintento va al principal. */
+    private val networkCallback = object : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: Network) {
+            handler.post { retry() }
+        }
+
+        override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
+            if (capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)) handler.post { retry() }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -78,6 +104,9 @@ class KioskActivity : AppCompatActivity() {
         setContentView(root)
         empty = buildEmptyView()
         root.addView(empty)
+        offline = buildOfflineView()
+        // Arriba del WebView y debajo de la esquina: los cinco toques siguen andando con ella puesta.
+        root.addView(offline)
         root.addView(buildCorner())
         onBackPressedDispatcher.addCallback(
             this,
@@ -87,6 +116,22 @@ class KioskActivity : AppCompatActivity() {
             },
         )
         askPermissions()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        getSystemService(ConnectivityManager::class.java).registerDefaultNetworkCallback(networkCallback)
+    }
+
+    override fun onStop() {
+        // Con otra pantalla adelante no se reintenta: al volver, show() lo retoma.
+        handler.removeCallbacks(retryLater)
+        try {
+            getSystemService(ConnectivityManager::class.java).unregisterNetworkCallback(networkCallback)
+        } catch (_: IllegalArgumentException) {
+            // No estaba registrado: nada que sacar.
+        }
+        super.onStop()
     }
 
     override fun onResume() {
@@ -131,6 +176,7 @@ class KioskActivity : AppCompatActivity() {
         if (url.isEmpty() || KioskUrls.origin(url) == null) {
             empty.visibility = View.VISIBLE
             webView?.visibility = View.GONE
+            hideOffline()
             return
         }
         empty.visibility = View.GONE
@@ -140,7 +186,30 @@ class KioskActivity : AppCompatActivity() {
             loadedUrl = url
             runtime().log("[KIOSCO] Se abre ${KioskUrls.origin(url)}")
             view.loadUrl(url)
+        } else if (failed) {
+            retry()
         }
+    }
+
+    /** Vuelve a pedir la dirección que falló, no la del inicio: si falló en medio del flujo, sigue ahí. */
+    private fun retry() {
+        val view = webView ?: return
+        if (!failed) return
+        runtime().log("[KIOSCO] Se reintenta")
+        view.reload()
+    }
+
+    /** Recargar del diálogo del PIN: vuelve a empezar desde la URL guardada, como cambiarla y guardarla. */
+    private fun reloadConfigured() {
+        runtime().log("[KIOSCO] Se recarga a pedido")
+        loadedUrl = null
+        loadConfiguredUrl()
+    }
+
+    private fun hideOffline() {
+        failed = false
+        handler.removeCallbacks(retryLater)
+        offline.visibility = View.GONE
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -182,6 +251,32 @@ class KioskActivity : AppCompatActivity() {
 
         override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
             runtime().onKioskUrl(url)
+            // La pantalla de sin conexión sigue puesta hasta saber cómo termina esta carga.
+            failed = false
+            handler.removeCallbacks(retryLater)
+        }
+
+        override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
+            if (!KioskLoadFailure.matters(request.isForMainFrame)) return
+            failed = true
+            runtime().log("[KIOSCO] No se pudo abrir ${KioskUrls.origin(request.url.toString())} (${error.description}): se reintenta solo")
+        }
+
+        override fun onReceivedHttpError(view: WebView, request: WebResourceRequest, response: WebResourceResponse) {
+            if (!KioskLoadFailure.matters(request.isForMainFrame, response.statusCode)) return
+            failed = true
+            runtime().log("[KIOSCO] No se pudo abrir ${KioskUrls.origin(request.url.toString())} (HTTP ${response.statusCode}): se reintenta solo")
+        }
+
+        /** Llega después de los errores, también para la página de error de Android, que queda tapada. */
+        override fun onPageFinished(view: WebView, url: String) {
+            if (failed) {
+                offline.visibility = View.VISIBLE
+                handler.removeCallbacks(retryLater)
+                handler.postDelayed(retryLater, KioskLoadFailure.RETRY_MS)
+            } else {
+                hideOffline()
+            }
         }
 
         override fun doUpdateVisitedHistory(view: WebView, url: String, isReload: Boolean) {
@@ -195,6 +290,7 @@ class KioskActivity : AppCompatActivity() {
             view.destroy()
             webView = null
             loadedUrl = null
+            hideOffline()
             loadConfiguredUrl()
             return true
         }
@@ -280,6 +376,29 @@ class KioskActivity : AppCompatActivity() {
         )
     }
 
+    /** La página no cargó: lo dice Berry Med, no Android, y deja reintentar a mano. Tapa el WebView entero. */
+    private fun buildOfflineView(): LinearLayout = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        gravity = Gravity.CENTER
+        visibility = View.GONE
+        setBackgroundColor(getColor(R.color.bg))
+        layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+        addView(
+            TextView(context).apply {
+                setText(R.string.kiosk_offline)
+                setTextColor(getColor(R.color.vital_on))
+                textSize = 20f
+                gravity = Gravity.CENTER
+            },
+        )
+        addView(
+            Button(context).apply {
+                setText(R.string.kiosk_retry)
+                setOnClickListener { retry() }
+            },
+        )
+    }
+
     /** La esquina de arriba a la izquierda: cinco toques en 3 s piden el PIN para ir a la configuración. */
     private fun buildCorner(): View = View(this).apply {
         val size = (CORNER_DP * resources.displayMetrics.density).toInt()
@@ -304,9 +423,13 @@ class KioskActivity : AppCompatActivity() {
             setHint(R.string.kiosk_pin_hint)
         }
         AlertDialog.Builder(this)
-            .setTitle(R.string.kiosk_exit_title)
+            .setTitle(R.string.kiosk_pin_title)
             .setView(input)
             .setNegativeButton(R.string.kiosk_cancel, null)
+            // Recargar también pide el PIN: un paciente no tiene que poder reiniciar el kiosco en plena consulta.
+            .setNeutralButton(R.string.kiosk_reload) { _, _ ->
+                if (pinAccepted(input.text?.toString(), runtime().config.localPanelPin)) reloadConfigured()
+            }
             .setPositiveButton(R.string.kiosk_enter) { _, _ ->
                 if (pinAccepted(input.text?.toString(), runtime().config.localPanelPin)) {
                     startActivity(Intent(this, MainActivity::class.java))
