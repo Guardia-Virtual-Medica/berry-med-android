@@ -96,6 +96,14 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - Puertos en reposo: otoscopio y estetoscopio apagados, auricular según la salida. Cambia la regla "el servicio no toca los puertos solo". Si alguien usa un equipo se espera a que se libere y se aplica entonces; un hub que no contesta no se reintenta hasta que vuelva a conectarse o cambie la salida.
 - Protocolo según la hoja de datos: sin `0x2A`, con el comando repetido en el segundo byte. `0x41` es persistente y no se puede leer: sólo con el botón de Testing.
 
+### Video del médico en negro dentro del `WebView` (1.3.1)
+
+- En la tablet, con la 1.3.0, la videollamada mandaba el video del paciente pero no mostraba el del médico; en Chrome andaba.
+- Causa: Berry Med sacaba el "; wv" del user agent pero dejaba "Version/4.0". Con eso Zoom Video SDK (2.3.15) toma al `WebView` por el navegador viejo de Android, avisa "please use Chrome" y no usa WebRTC para el video (`evaluateWebRTCStrategy`): decodifica en WebAssembly y dibuja el video remoto con WebGL, el camino que en la tablet queda en negro.
+- Arreglo: `KioskUserAgent` saca también el "Version/x.x". Zoom lo toma por Chrome y usa WebRTC para el video, como en Chrome: el del médico se muestra con un elemento `<video>`.
+- Verificado en el emulador con una sesión de Zoom de prueba (médico en Chrome con cámara falsa, paciente en Berry Med): antes, aviso y WebAssembly; después, sin aviso, WebRTC y el video del médico en un `<video>`.
+- Riesgo: si el envío por WebRTC falla, Zoom reconecta ("failover"), vuelve a WebAssembly y lo anota en el `sessionStorage` (`VIDEO_SDK_WEB_RTC_VIDEO_FALLBACK_WASM`) hasta que se cierra el `WebView`. En el emulador pasa a los ~20 s, probablemente porque el emulador no tiene codificador de video por hardware; la tablet sí, y Chrome en la tablet usa WebRTC sin problemas. Si en la tablet el video del médico vuelve a quedar negro después de unos segundos o de varias llamadas, es esto.
+
 ## Pendiente
 
 - Prueba con el hardware real en la tablet (ver "Probar el Panel Local en el tótem" en el `README.md` y los riesgos de `docs/hardware.md`).
