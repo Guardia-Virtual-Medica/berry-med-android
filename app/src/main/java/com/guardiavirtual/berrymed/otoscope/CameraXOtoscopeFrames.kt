@@ -19,7 +19,7 @@ import java.util.concurrent.Executors
 /**
  * Camino Camera2 para la teleconsulta: el otoscopio como cámara externa con
  * CameraX, sin vista. Un `ImageAnalysis` en YUV_420_888 entrega cada cuadro y
- * se copia a I420 para WebRTC. Como no hay pantalla, el ciclo de vida es
+ * se copia a I420 para WebRTC. Pide 30 cuadros si la cámara los ofrece ([ExternalCamera.aimFps]). Como no hay pantalla, el ciclo de vida es
  * propio ([Owner]): se prende al abrir y se destruye al cerrar.
  */
 class CameraXOtoscopeFrames(
@@ -50,11 +50,12 @@ class CameraXOtoscopeFrames(
             analyzer = thread
             ExternalCamera(appContext).bind(
                 owner = lifecycle,
-                useCase = {
+                useCase = { info ->
                     ImageAnalysis.Builder()
                         .setResolutionSelector(ExternalCamera.RESOLUTION)
                         .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
                         .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                        .also { ExternalCamera.aimFps(it, info) }
                         .build()
                         .also { analysis ->
                             var logged = false

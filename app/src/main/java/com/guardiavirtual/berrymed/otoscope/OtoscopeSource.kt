@@ -13,8 +13,13 @@ interface OtoscopeSource {
     /** Lo que dice la tarjeta: "por Camera2" o "por UVC". */
     val label: String
 
-    /** Abre la imagen en la tarjeta. [done] llega en el hilo de la pantalla: null si abrió, o el motivo. */
-    fun open(done: (String?) -> Unit)
+    /**
+     * Abre la imagen en la tarjeta. [done] llega en el hilo de la pantalla:
+     * null si abrió, o el motivo. [onRate] llega también en el hilo de la
+     * pantalla, una vez por segundo mientras hay imagen, con los cuadros por
+     * segundo que llegan de verdad (ver [OtoscopeFps.Meter]).
+     */
+    fun open(done: (String?) -> Unit, onRate: (Double) -> Unit = {})
 
     /** Suelta la cámara. [done] llega, en cualquier hilo, cuando ya está suelta: recién ahí se apaga el puerto. */
     fun close(done: () -> Unit = {})

@@ -78,6 +78,7 @@ HID `04D8:F11B` (Microchip es también fabricante de chips serie; por eso el fil
 
 - Encender su puerto en el YKUSH3 lo enchufa para Android y prende su luz.
 - La app pide 800×800 (o la más cercana): a 1440² se come el ancho de banda del USB 2.0 que comparte con la plaqueta.
+- Cadencia por UVC: libuvc recorre los intervalos que declara la cámara para ese tamaño en el orden del descriptor y se queda con el primero cuya cadencia cae dentro del rango pedido (ambos extremos incluidos); si ninguno cae, no abre. Con un rango de 1 a 30 entran los 30 y los 5 cuadros, y gana el que la cámara declare primero. Por eso la app pide 30 exactos, y el rango de 1 a 30 sólo si la cámara no los ofrece. libuvc no dice qué cadencia negoció: la tarjeta del Panel Local muestra los cuadros por segundo que llegan.
 - Chrome en Android no lo ve como cámara salvo que el fabricante de la tablet exponga las cámaras USB por Camera2. Por eso la app tiene dos caminos y elige solo:
   - **Camera2/CameraX**, si la tablet lo lista como cámara externa (`LENS_FACING_EXTERNAL`).
   - **UVC**, directo por USB con su permiso, con el módulo libuvc de AndroidUSBCamera (AUSBC) 3.2.7.
@@ -143,6 +144,7 @@ El emulador no los muestra. Se revisan con Testing → "Dispositivos que ve Andr
 | Si el otoscopio aparece como cámara externa (Camera2) o sólo como USB (UVC) | En Testing, Cámaras: "externa (USB)". En el panel, el encabezado del otoscopio dice el camino. |
 | Si las dos placas de audio USB conviven y con qué nombres aparecen | En Testing, los dispositivos de audio: tienen que estar el adaptador y el auricular. Anotar los nombres para la configuración. |
 | Ancho de banda isócrono con otoscopio y audio a la vez en el mismo hub | Encender el otoscopio y escuchar el estetoscopio al mismo tiempo: que no se corte la imagen, el sonido ni la plaqueta. |
+| La cadencia del otoscopio, sola y con el estetoscopio escuchando (plan 9) | El encabezado del otoscopio en el panel ("En vivo · UVC · 30 cuadros/s") y la línea `[OTOSCOPIO] Imagen por UVC a 800×800 MJPEG, 30 cuadros/s`. Después, escuchar el estetoscopio al mismo tiempo y ver si baja. |
 | Que `setPreferredDevice` realmente enrute al adaptador y al auricular | Que el sonido salga por el H390 y no por el parlante, y que la onda sea la del estetoscopio y no la del micrófono del auricular. |
 | Permiso USB del otoscopio negado sin diálogo (Android 10 o más) si la app todavía no tiene el permiso de cámara | Aceptar el permiso de cámara en el Panel Local antes del permiso USB del otoscopio. |
 | El otoscopio por UVC sin vista para la teleconsulta (libuvc entrega cuadros sin superficie donde dibujar) | Testing → Teleconsulta: "otoscopio por UVC" con cuadros por segundo mayores a 0, y el médico ve la imagen. |

@@ -123,6 +123,8 @@ data class RecordingRow(val number: Int, val filter: StethoFilter, val at: Strin
 data class ScreenState(
     /** La imagen del otoscopio abierta, con su camino ("por UVC"), o null si no hay. */
     val otoscopeLabel: String? = null,
+    /** Los cuadros por segundo del otoscopio en el último segundo, redondeados; null mientras no se midieron. */
+    val otoscopeFps: Int? = null,
     val camera: CameraState = CameraState.STARTING,
     val cameraFront: Boolean = false,
     val openDevice: PanelDevice? = null,
@@ -169,7 +171,7 @@ class PanelUi {
         zone: ZoneId = ZoneId.systemDefault(),
     ): PanelState {
         val (saturation, pulse) = PanelFormat.pair(s.vitals.spo2Pulse)
-        val otoscopeStatus = otoscopeStatus(s, screen.otoscopeLabel)
+        val otoscopeStatus = otoscopeStatus(s, screen.otoscopeLabel, screen.otoscopeFps)
         val stethoscopeStatus = stethoscopeStatus(s)
         return PanelState(
             chips = chips(s),
@@ -358,12 +360,18 @@ class PanelUi {
             return TempCard.Reading(value, at)
         }
 
-        /** En el encabezado del panel: "En vivo · UVC" con la imagen abierta. */
-        fun otoscopeStatus(s: LocalSnapshot, label: String?): Status = when (s.otoscopeState) {
+        /**
+         * En el encabezado del panel: "En vivo · UVC" con la imagen abierta, y
+         * "En vivo · UVC · 29 cuadros/s" desde que se midió el primer segundo.
+         */
+        fun otoscopeStatus(s: LocalSnapshot, label: String?, fps: Int? = null): Status = when (s.otoscopeState) {
             OtoscopePower.State.POWERING_PORT, OtoscopePower.State.WAITING_CAMERA -> CONNECTING
             OtoscopePower.State.POWERING_OFF -> Status("Apagando…", Tone.MUTED)
-            OtoscopePower.State.ON ->
-                if (label == null) CONNECTING else Status("En vivo · ${label.removePrefix("por ")}", Tone.OK)
+            OtoscopePower.State.ON -> when {
+                label == null -> CONNECTING
+                fps == null -> Status("En vivo · ${label.removePrefix("por ")}", Tone.OK)
+                else -> Status("En vivo · ${label.removePrefix("por ")} · $fps cuadros/s", Tone.OK)
+            }
             OtoscopePower.State.OFF -> if (s.otoscopeAvailable) Status("Apagado", Tone.MUTED) else DISCONNECTED
         }
 
