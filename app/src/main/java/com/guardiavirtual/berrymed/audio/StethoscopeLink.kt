@@ -18,10 +18,17 @@ import com.guardiavirtual.berrymed.usb.DeviceInventory
 
 /**
  * El estetoscopio del Panel Local: captura del adaptador USB, uno de los
- * filtros de [StethoFilter], el volumen, y lo reproduce por el auricular
- * H390. La onda va a un canal del [LiveFeed] para que la pantalla la dibuje
- * como las de la plaqueta. Graba hasta 15 s de lo que suena y reproduce esas
- * grabaciones por el auricular, todo en memoria: no guarda nada en disco.
+ * filtros de [StethoFilter], el volumen, y lo reproduce por los auriculares
+ * del jack de la tablet o, si no hay nada enchufado ahí, por el auricular USB
+ * H390 (la regla es [AudioPick.stethoOutput]). La onda va a un canal del
+ * [LiveFeed] para que la pantalla la dibuje como las de la plaqueta. Graba
+ * hasta 15 s de lo que suena y reproduce esas grabaciones por el mismo lado,
+ * todo en memoria: no guarda nada en disco.
+ *
+ * La salida se elige al empezar a escuchar o a reproducir: enchufar o
+ * desenchufar el jack en plena escucha no la cambia, hay que Parar y Escuchar
+ * de nuevo. Así el `AudioTrack` queda fijo en un dispositivo y no se lo
+ * cambia en medio de una auscultación.
  *
  * Todo el audio de la escucha pasa por un hilo propio (`berry-stetho`), que
  * es el único que toca el `AudioRecord` y su `AudioTrack`: los abre, los usa
@@ -55,7 +62,7 @@ class StethoscopeLink(
     @Volatile var running: Boolean = false
         private set
 
-    /** Si además suena por el auricular. Sin auricular sólo se ve la onda. */
+    /** Si además suena por los auriculares. Sin auriculares sólo se ve la onda. */
     @Volatile var playing: Boolean = false
         private set
 
@@ -98,9 +105,14 @@ class StethoscopeLink(
     @Volatile var replaying: Int? = null
         private set
 
-    data class Devices(val input: AudioDeviceInfo?, val output: AudioDeviceInfo?)
+    /** [viaJack] dice si [output] es el jack de la tablet y no el auricular USB. */
+    data class Devices(val input: AudioDeviceInfo?, val output: AudioDeviceInfo?, val viaJack: Boolean = false)
 
-    /** El adaptador y el auricular según los nombres de la configuración, o null si no están. */
+    /**
+     * El adaptador según el nombre de la configuración y la salida según
+     * [AudioPick.stethoOutput] (el jack de la tablet o el auricular USB), o
+     * null si no están.
+     */
     fun devices(config: BerryConfig): Devices {
         val all = try {
             audio.getDevices(AudioManager.GET_DEVICES_INPUTS or AudioManager.GET_DEVICES_OUTPUTS).toList()
@@ -118,18 +130,20 @@ class StethoscopeLink(
             )
         }
         val input = AudioPick.stethoInput(described, config.stethoInputName, config.headsetName)
-        val output = AudioPick.headsetOutput(described, config.headsetName)
+        val output = AudioPick.stethoOutput(described, config.headsetName)
         return Devices(
             input = input?.let { pick -> all.firstOrNull { it.id == pick.id && it.isSource } },
             output = output?.let { pick -> all.firstOrNull { it.id == pick.id && it.isSink } },
+            viaJack = output != null && AudioPick.isJack(output.type),
         )
     }
 
     /**
      * Empieza a escuchar. Devuelve el motivo si no puede: sin permiso de
-     * micrófono o sin el adaptador. Sin auricular captura igual y muestra la
-     * onda, pero no reproduce: por el parlante de la tablet se acoplaría con
-     * el estetoscopio. Eso se ve en [playing].
+     * micrófono o sin el adaptador. Sin auriculares (nada en el jack de la
+     * tablet ni el auricular USB) captura igual y muestra la onda, pero no
+     * reproduce: por el parlante de la tablet se acoplaría con el
+     * estetoscopio. Eso se ve en [playing].
      */
     fun start(config: BerryConfig): String? {
         // Una grabación sonando usa el auricular: se corta antes de abrir la escucha.
@@ -143,7 +157,7 @@ class StethoscopeLink(
         val granted = ContextCompat.checkSelfPermission(appContext, Manifest.permission.RECORD_AUDIO) ==
             PackageManager.PERMISSION_GRANTED
         if (!granted) return "Sin permiso para el micrófono."
-        val (input, output) = devices(config)
+        val (input, output, viaJack) = devices(config)
         if (input == null) return "No aparece el adaptador del estetoscopio (\"${config.stethoInputName}\")."
         val record = openRecord(input) ?: return "No se pudo abrir el adaptador del estetoscopio."
         val track = output?.let(::openTrack)
@@ -157,7 +171,7 @@ class StethoscopeLink(
             isDaemon = true
             start()
         }
-        log("[ESTETO] Escuchando por ${input.productName}${if (track != null) ", suena por ${output.productName}" else ", sin auricular"}")
+        log("[ESTETO] Escuchando por ${input.productName}${if (track != null) ", suena por ${output.productName} (${where(viaJack)})" else ", sin auriculares"}")
         return null
     }
 
@@ -324,18 +338,19 @@ class StethoscopeLink(
     }
 
     /**
-     * Reproduce una grabación por el auricular, con un `AudioTrack` propio.
-     * Devuelve el motivo si no puede. La escucha tiene que estar parada (la
-     * para el runtime antes): si no, las dos irían al mismo auricular. Sin
-     * auricular no suena: por el parlante de la tablet se acopla con el
-     * estetoscopio.
+     * Reproduce una grabación por el jack de la tablet o, si no hay nada
+     * enchufado, por el auricular USB, con un `AudioTrack` propio. Devuelve el
+     * motivo si no puede. La escucha tiene que estar parada (la para el
+     * runtime antes): si no, las dos irían al mismo auricular. Sin auriculares
+     * no suena: por el parlante de la tablet se acopla con el estetoscopio.
      */
     fun play(number: Int, config: BerryConfig): String? {
         stopPlayback()
         if (running) return "Primero hay que parar la escucha."
         val recording = synchronized(recordLock) { recordings.find(number) } ?: return "Esa grabación ya no está."
-        val output = devices(config).output
-            ?: return "Sin auricular: las grabaciones no se reproducen por el parlante de la tablet."
+        val found = devices(config)
+        val output = found.output
+            ?: return "Sin auriculares: las grabaciones no salen por el parlante de la tablet."
         val track = openTrack(output) ?: return "No se pudo abrir el auricular."
         val current = Player()
         synchronized(playLock) {
@@ -346,7 +361,7 @@ class StethoscopeLink(
             isDaemon = true
             start()
         }
-        log("[ESTETO] Reproduciendo la grabación $number por ${output.productName}")
+        log("[ESTETO] Reproduciendo la grabación $number por ${output.productName} (${where(found.viaJack)})")
         return null
     }
 
@@ -476,6 +491,9 @@ class StethoscopeLink(
             track.release()
         }
     }
+
+    /** Para el log: por qué lado sale. */
+    private fun where(viaJack: Boolean): String = if (viaJack) "jack de la tablet" else "auricular USB"
 
     companion object {
         const val SAMPLE_RATE = BandPass.SAMPLE_RATE
