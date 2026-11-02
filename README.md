@@ -270,6 +270,7 @@ Para probar el audio y los instrumentos, seguí la sección [Probar el Panel Loc
 | La pantalla dice "Falta aceptar el permiso USB". | Un equipo no tiene permiso. | Tocá **Pedir permiso USB**. |
 | El médico no ve el otoscopio. | El otoscopio no está habilitado para el tótem. | Hacé la tarea 9, paso 5. |
 | El médico no ve el otoscopio. | El otoscopio no tiene permiso USB. | Hacé la tarea 7. |
+| El kiosco dice que no se pudo abrir y no hay conexión. | La tablet no está conectada al wifi. | Conectá el wifi. El kiosco se recarga solo. Si no, cinco toques, PIN y **Recargar**. |
 | No se escucha la videollamada. | El auricular no está conectado. | Conectá el auricular al puerto 3 del hub. |
 | Un puerto no cambia. | El hub no contesta. | Mirá las líneas `[YKUSH]` con `adb logcat -s BerryMed`. |
 
@@ -372,6 +373,7 @@ El kiosco de OnDoctor corre dentro de Berry Med, como lo hacía la app del prove
 
 - **Es la app de inicio** de la tablet: Android la abre al encender y el botón de inicio vuelve a ella. Sin URL configurada, lo dice y ofrece abrir la configuración.
 - **Atrás no sale.** Para ir a la configuración de Berry Med: **cinco toques en la esquina de arriba a la izquierda** en menos de 3 s y el **PIN del Panel Local** (`1515` por defecto). Al volver, el kiosco sigue donde estaba.
+- **Si la página no carga** (la tablet todavía no se conectó al wifi, el servidor no contesta), el kiosco lo dice en su propia pantalla y vuelve a intentar solo: apenas hay red, cada 10 s y al volver al kiosco. La pantalla tiene un botón **Reintentar**. En el diálogo del PIN está además **Recargar**, que vuelve a abrir la URL del kiosco desde cero (también pide el PIN).
 - La página tiene JavaScript, almacenamiento, cookies (también de terceros) y reproducción sin toque. El navegador se presenta como Chrome para Android (sin la marca `wv` de WebView). Cámara y micrófono se le dan sólo al origen de la URL del kiosco y a los de Zoom (`zoom.us`, `zoom.com`, `zoomgov.com`), y sólo si Android ya se los dio a Berry Med.
 - En `adb logcat -s BerryMed`, las líneas `[KIOSCO]`: qué origen se abrió, permisos negados y los errores de la consola de la página (sin tokens). Con el APK de prueba (debug), la página se inspecciona desde el Chrome de la computadora en `chrome://inspect`.
 
