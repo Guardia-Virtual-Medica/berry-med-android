@@ -119,6 +119,17 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - La tarjeta muestra los cuadros por segundo que llegan de verdad ("En vivo · UVC · 29 cuadros/s"), para que el próximo reporte traiga el número: si dice 30 y se ve trabada, el problema está en otro lado. Por UVC se cuentan los cuadros que dibuja la vista; por Camera2, las capturas que completa la cámara (`PreviewView` no avisa cuándo dibuja). Al log va una línea sólo si la cadencia queda por debajo de 20 más de 5 s seguidos.
 - No se cambia la resolución (800×800) ni el ancho de banda de libuvc. Testing → Teleconsulta sigue mostrando la cadencia de la publicación como antes.
 
+### El estetoscopio y la videollamada por el jack de la tablet (plan 10)
+
+- Pedido: que el sonido salga por defecto por el jack analógico de la tablet, no por el H390. Plan en `docs/planes/plan-10-estetoscopio-jack-tablet.md`.
+- Regla automática, sin opción nueva: si hay algo en el jack de la tablet, el estetoscopio suena por ahí; si no, por el H390. Nunca por el parlante (se acopla) ni por el adaptador. `AudioPick.stethoOutput`.
+- La salida del estetoscopio se elige al tocar Escuchar o al reproducir una grabación: enchufar o desenchufar en plena escucha no la cambia. Se dice en el KDoc, no en pantalla.
+- El micrófono del auricular del jack nunca hace de estetoscopio: el estetoscopio sólo se toma de entradas USB, con test.
+- Los puertos del YKUSH3 no cambian: Escuchar sigue encendiendo el del adaptador y el del H390. Con el jack puesto la salida ya está y la espera de hasta 5 s es sólo por el adaptador.
+- La videollamada también: con **Auriculares** sale por el jack, si no por el H390 y, si tampoco, por el parlante. **Parlante de la tablet** sigue mandando sólo la llamada al parlante. El valor guardado `auricular` no cambia y pasa a querer decir "auriculares, jack primero", así la configuración existente sigue valiendo. `HubRestState` no cambia: con Auriculares el H390 queda encendido en reposo como respaldo.
+- Chromium en modo comunicación ya prefiere el auricular con cable antes que lo USB: `CallAudioRouter` lo confirma y lo reafirma, y lo nombra "el jack de la tablet" porque esos dispositivos suelen venir sin nombre.
+- Con un adaptador USB-C a jack no hace falta nada nuevo: Android lo lista como auricular USB y se configura su nombre en **Nombre del auricular**.
+
 ## Pendiente
 
 - Prueba con el hardware real en la tablet (ver "Probar el Panel Local en el tótem" en el `README.md` y los riesgos de `docs/hardware.md`).
@@ -126,4 +137,5 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - Plan 6 en la tablet real: Zoom dentro del `WebView`, el camino UVC sin vista, el adaptador con `UNPROCESSED` y el kiosco como app de inicio (ver "Qué probar en la tablet" en el PR #19).
 - Plan 7 en la tablet real: modo y uso de audio de Zoom en el `WebView`, y el protocolo del hub contra el YKUSH3 (ver riesgos en `docs/hardware.md`).
 - Plan 9 en la tablet real: los cuadros por segundo del otoscopio por UVC, solo y con el estetoscopio escuchando.
+- Plan 10 en la tablet real: el estetoscopio y la videollamada por el jack (ver riesgos en `docs/hardware.md`).
 - v2 con guardado y PDF local.
