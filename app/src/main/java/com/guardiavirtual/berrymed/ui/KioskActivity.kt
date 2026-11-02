@@ -152,8 +152,8 @@ class KioskActivity : AppCompatActivity() {
             javaScriptEnabled = true
             domStorageEnabled = true
             mediaPlaybackRequiresUserGesture = false
-            // Zoom mira el navegador: sin el "; wv" de WebView se presenta como Chrome para Android.
-            userAgentString = userAgentString.replace("; wv", "")
+            // Zoom mira el navegador: se presenta como Chrome para Android (ver KioskUserAgent).
+            userAgentString = KioskUserAgent.asChrome(userAgentString)
         }
         CookieManager.getInstance().apply {
             setAcceptCookie(true)
