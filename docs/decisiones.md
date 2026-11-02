@@ -103,7 +103,7 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - Arreglo: `KioskUserAgent` saca también el "Version/x.x". Zoom lo toma por Chrome y muestra el video del médico con un elemento `<video>`, el mismo camino que usa en Chrome.
 - Verificado en el emulador con una sesión de Zoom de prueba (médico en Chrome con cámara falsa, paciente en Berry Med): antes, aviso y camino de respaldo; después, sin aviso y el mismo camino que Chrome, con video en las dos direcciones. En el emulador el respaldo igual se veía: que en la tablet quede resuelto se confirma allá.
 
-### El kiosco se recarga solo (plan 8, 1.3.1)
+### El kiosco se recarga solo (plan 8, 1.3.2)
 
 - Reporte de campo: la maleta prendió, Berry Med abrió el kiosco antes de que la tablet se conectara al wifi y el `WebView` quedó en "Webpage not available" (`net::ERR_INTERNET_DISCONNECTED`). Para destrabarlo hubo que entrar a la configuración, cambiar la URL, guardar y volver a ponerla.
 - Causa: `KioskActivity.show()` cargaba sólo cuando la URL era distinta de la cargada, así que nada volvía a intentar.
