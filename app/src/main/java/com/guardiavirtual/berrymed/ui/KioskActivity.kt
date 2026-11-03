@@ -126,6 +126,8 @@ class KioskActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
+        // Con el kiosco adelante el otoscopio y el estetoscopio quedan encendidos: sólo energía, no transmiten.
+        runtime().setKioskVisible(true)
         getSystemService(ConnectivityManager::class.java).registerDefaultNetworkCallback(networkCallback)
     }
 
@@ -137,6 +139,7 @@ class KioskActivity : AppCompatActivity() {
         } catch (_: IllegalArgumentException) {
             // No estaba registrado: nada que sacar.
         }
+        runtime().setKioskVisible(false)
         super.onStop()
     }
 

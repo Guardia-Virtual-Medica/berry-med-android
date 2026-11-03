@@ -5,6 +5,7 @@ import android.content.Context
 import android.media.AudioDeviceCallback
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
+import android.media.MediaRecorder
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -40,6 +41,13 @@ import com.guardiavirtual.berrymed.usb.DeviceInventory
  * (`HubRestState`) dejan como salida USB sólo el H390, o ninguna con el parlante.
  * Por razonamiento, sin probar en la tablet, eso alcanza hasta que se enciende el
  * puerto del estetoscopio. Ver los riesgos de `docs/hardware.md`.
+ *
+ * Con el kiosco adelante el otoscopio y el estetoscopio quedan encendidos, así
+ * que durante toda la llamada hay dos placas de audio USB más: el adaptador del
+ * estetoscopio y el micrófono del otoscopio. La entrada no se puede excluir desde
+ * acá: Android mueve el micrófono con el dispositivo de comunicación y, en modo
+ * normal, Chromium graba de la entrada que le da el sistema. Por eso [describe]
+ * dice qué entradas están grabando, para verlo en Testing → Teleconsulta.
  *
  * Todo pasa en el hilo principal: los avisos de Android y las reafirmaciones
  * diferidas. `setCommunicationDevice` existe desde Android 12; en menos sólo
@@ -92,7 +100,38 @@ class CallAudioRouter(
             if (cfg.callAudioOutput != CALL_AUDIO_SPEAKER && wanted?.type == AudioPick.TYPE_BUILTIN_SPEAKER) {
                 append("\n$FALLBACK_LINE")
             }
+            append("\n${describeRecordings()}")
         }
+    }
+
+    /**
+     * Qué graba este proceso y desde qué entrada: la llamada del `WebView` y,
+     * si está publicando, el estetoscopio de LiveKit. Android sólo informa las
+     * grabaciones propias, y las dos son de Berry Med.
+     */
+    private fun describeRecordings(): String {
+        val recordings = try {
+            audio.activeRecordingConfigurations
+        } catch (_: Exception) {
+            return "Entradas grabando: no se pudo leer"
+        }
+        if (recordings.isEmpty()) return "Entradas grabando: ninguna"
+        return recordings.joinToString(prefix = "Entradas grabando: ", separator = "; ") { recording ->
+            val device = recording.audioDevice?.let { info ->
+                if (AudioPick.isJack(info.type)) "el jack de la tablet"
+                else info.productName?.toString().orEmpty().ifBlank { "tipo ${info.type}" }
+            } ?: "entrada desconocida"
+            "${sourceName(recording.clientAudioSource)} por $device"
+        }
+    }
+
+    private fun sourceName(source: Int): String = when (source) {
+        MediaRecorder.AudioSource.MIC -> "MIC"
+        MediaRecorder.AudioSource.CAMCORDER -> "CAMCORDER"
+        MediaRecorder.AudioSource.VOICE_RECOGNITION -> "VOICE_RECOGNITION"
+        MediaRecorder.AudioSource.VOICE_COMMUNICATION -> "VOICE_COMMUNICATION (la llamada)"
+        MediaRecorder.AudioSource.UNPROCESSED -> "UNPROCESSED"
+        else -> "fuente $source"
     }
 
     @RequiresApi(31)

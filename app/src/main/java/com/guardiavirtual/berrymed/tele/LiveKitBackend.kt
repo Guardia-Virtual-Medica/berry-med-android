@@ -172,6 +172,8 @@ class LiveKitBackend(
         // Si quedó algo publicado (un error a mitad de camino), se suelta igual.
         if (videoTrack != null || frames != null) releaseOtoscope()
         if (audioTrack != null) releaseStethoscope()
+        // Un otoscopio que quedó esperando el permiso USB tiene el puerto encendido sin publicar.
+        powerOff(otoscopePorts, "otoscopio")
         closing = true
         val old = room
         room = null
@@ -221,8 +223,18 @@ class LiveKitBackend(
     private fun publishOtoscope(): String? {
         val lk = room ?: return "No hay sala"
         val cfg = config()
+        // Con el kiosco adelante el puerto ya está encendido y powerOn no lo toca.
         powerOn(cfg.ykushOtoscopePort, otoscopePorts, "otoscopio")
         val path = waitForOtoscope() ?: run {
+            val next = OtoscopePower.afterTimeout(portOff = true, usbPresent = probe.usbPresent(), usbReady = probe.usbReady())
+            if (next == OtoscopePower.Timeout.ASK_PERMISSION) {
+                // Como el Panel Local: apagar el puerto desenchufa el otoscopio y el permiso
+                // ya no serviría. Queda encendido y se pide de nuevo; el próximo start_oth usa
+                // el mismo dispositivo. Si lo encendió la teleconsulta, se apaga al cortar.
+                log("[TELE] El otoscopio está enchufado pero sin permiso USB: se vuelve a pedir")
+                probe.askPermissionAgain()
+                return "Falta aceptar el permiso USB del otoscopio en la tablet"
+            }
             powerOff(otoscopePorts, "otoscopio")
             return "El otoscopio no aparece ni como cámara ni por USB con permiso"
         }

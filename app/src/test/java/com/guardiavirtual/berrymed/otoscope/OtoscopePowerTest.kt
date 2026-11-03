@@ -5,6 +5,7 @@ import com.guardiavirtual.berrymed.otoscope.OtoscopePower.Action
 import com.guardiavirtual.berrymed.otoscope.OtoscopePower.Path
 import com.guardiavirtual.berrymed.otoscope.OtoscopePower.Poll
 import com.guardiavirtual.berrymed.otoscope.OtoscopePower.State
+import com.guardiavirtual.berrymed.otoscope.OtoscopePower.Timeout
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -123,5 +124,17 @@ class OtoscopePowerTest {
         val power = power()
         power.switchOn(hubPresent = true, now = 0)
         assertNull(power.switchOn(hubPresent = true, now = 0))
+    }
+
+    @Test
+    fun pluggedInWithoutPermissionKeepsThePortOnAndAsksAgain() {
+        assertEquals(Timeout.ASK_PERMISSION, OtoscopePower.afterTimeout(portOff = true, usbPresent = true, usbReady = false))
+        assertEquals(Timeout.ASK_PERMISSION, OtoscopePower.afterTimeout(portOff = false, usbPresent = true, usbReady = false))
+    }
+
+    @Test
+    fun notPluggedInTurnsThePortOffAsBefore() {
+        assertEquals(Timeout.PORT_OFF, OtoscopePower.afterTimeout(portOff = true, usbPresent = false, usbReady = false))
+        assertEquals(Timeout.NOTHING, OtoscopePower.afterTimeout(portOff = false, usbPresent = false, usbReady = false))
     }
 }

@@ -48,4 +48,14 @@ class PanelPortsTest {
         assertTrue(ports.claim(2, states[1]))
         assertEquals(listOf(2), ports.takeToTurnOff())
     }
+
+    @Test
+    fun aPortTheKioskLeftOnIsUsedAndNotTurnedOffAtTheEnd() {
+        // Con el kiosco adelante otoscopio y estetoscopio ya están encendidos: la teleconsulta los usa como están.
+        val ports = PanelPorts()
+        val states = listOf(true, true, true)
+        assertEquals(emptyList(), ports.toTurnOn(listOf(1), states))
+        assertFalse(ports.claim(1, states[0]))
+        assertEquals(emptyList(), ports.takeToTurnOff())
+    }
 }

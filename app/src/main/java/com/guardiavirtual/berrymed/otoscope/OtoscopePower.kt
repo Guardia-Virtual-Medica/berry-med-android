@@ -27,6 +27,18 @@ class OtoscopePower(
 
     enum class Action { PORT_ON, CLOSE_CAMERA, PORT_OFF }
 
+    /** Qué hacer cuando pasó el plazo sin otoscopio. Ver [afterTimeout]. */
+    enum class Timeout {
+        /** Enchufado pero sin permiso USB: el puerto queda encendido y se vuelve a pedir el permiso. */
+        ASK_PERMISSION,
+
+        /** No está: se apaga el puerto (si lo había encendido quien esperaba). */
+        PORT_OFF,
+
+        /** No está y no hay puerto que apagar. */
+        NOTHING,
+    }
+
     sealed interface Poll {
         /** Todavía no apareció nada: volver a mirar. */
         data object Waiting : Poll
@@ -130,5 +142,22 @@ class OtoscopePower(
     @Synchronized
     fun poweredOff() {
         if (state == State.POWERING_OFF) state = State.OFF
+    }
+
+    companion object {
+        /**
+         * La regla del Panel Local y de la teleconsulta al pasar el plazo. Si
+         * el otoscopio está enchufado ([usbPresent]) pero sin permiso
+         * ([usbReady] en false), el pedido sale una vez por dispositivo y nadie
+         * lo aceptó: apagar el puerto lo desenchufaría y el permiso, que vale
+         * para ese `deviceId`, ya no serviría. Entonces el puerto queda
+         * encendido y se pide de nuevo. Si no está, se apaga como siempre
+         * cuando [portOff].
+         */
+        fun afterTimeout(portOff: Boolean, usbPresent: Boolean, usbReady: Boolean): Timeout = when {
+            usbPresent && !usbReady -> Timeout.ASK_PERMISSION
+            portOff -> Timeout.PORT_OFF
+            else -> Timeout.NOTHING
+        }
     }
 }

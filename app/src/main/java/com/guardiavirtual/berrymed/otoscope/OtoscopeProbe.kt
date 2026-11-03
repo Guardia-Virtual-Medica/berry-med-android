@@ -31,4 +31,7 @@ class OtoscopeProbe(context: Context, private val hub: UsbHub) {
 
     /** Enchufado y con permiso USB: lo que necesita el camino UVC. */
     fun usbReady(): Boolean = usbDevice()?.let(hub.manager::hasPermission) == true
+
+    /** Vuelve a pedir el permiso USB a lo que no lo tiene, el otoscopio incluido. */
+    fun askPermissionAgain() = hub.forgetAsked()
 }

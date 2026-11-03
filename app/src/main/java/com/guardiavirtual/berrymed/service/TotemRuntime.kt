@@ -118,8 +118,14 @@ class TotemRuntime(context: Context) {
     }
     private val stethoPorts = PanelPorts()
 
-    /** Cuándo toca llevar el hub al estado de reposo; lo hace [watchLoop]. */
+    /** Cuándo toca llevar el hub al estado de reposo o al del kiosco; lo hace [watchLoop]. */
     private val hubRest = HubRestState.Pending()
+
+    /**
+     * Si el kiosco está visible (entre su `onStart` y su `onStop`): con él
+     * adelante el otoscopio y el estetoscopio quedan encendidos. Ver [HubRestState].
+     */
+    @Volatile private var kioskVisible = false
 
     /** Hasta leer lo guardado, [config] es la de fábrica: con ésa no se apaga ningún puerto. */
     @Volatile private var configLoaded = false
@@ -279,6 +285,22 @@ class TotemRuntime(context: Context) {
         thread(name = "berry-watch", isDaemon = true) { watchLoop() }
     }
 
+    /**
+     * Lo llama el kiosco al quedar visible y al dejar de estarlo. El hub cambia
+     * en la vuelta siguiente de [watchLoop], salvo que alguien esté usando un
+     * equipo: entonces se espera. El diálogo del PIN no saca al kiosco de
+     * adelante, así que no apaga nada.
+     */
+    fun setKioskVisible(visible: Boolean) {
+        if (kioskVisible == visible) return
+        kioskVisible = visible
+        log(
+            if (visible) "[YKUSH] El kiosco quedó adelante: se buscan los puertos con el kiosco"
+            else "[YKUSH] El kiosco dejó de estar adelante: se buscan los puertos en reposo",
+        )
+        hubRest.again()
+    }
+
     fun requestUsbPermissionAgain() {
         hub.forgetAsked()
     }
@@ -308,8 +330,9 @@ class TotemRuntime(context: Context) {
     }
 
     /**
-     * Lleva los puertos al estado de reposo una vez por hub, o de nuevo si
-     * cambió la salida de audio. Si alguien está usando un equipo se espera,
+     * Lleva los puertos al estado de reposo, o al del kiosco si está adelante,
+     * una vez por hub, o de nuevo si cambió la salida de audio o se abrió o se
+     * dejó el kiosco. Si alguien está usando un equipo se espera,
      * sin marcarlo hecho: se aplica apenas se libere. Un hub que no contesta
      * no se reintenta, para no trabar este hilo cada segundo.
      */
@@ -318,21 +341,24 @@ class TotemRuntime(context: Context) {
         val deviceId = ykush.usableDeviceId()
         if (!hubRest.due(deviceId)) return
         hubRest.done(deviceId)
+        val kiosk = kioskVisible
+        val wanted = HubRestState.wanted(config, kiosk)
         val states = ykush.readAll()
         if (states.all { it == null }) {
             log("[YKUSH] El hub no contesta: los puertos quedan como están")
             return
         }
-        for ((port, on) in HubRestState.changes(HubRestState.wanted(config), states)) {
+        for ((port, on) in HubRestState.changes(wanted, states)) {
             // La lectura y cada orden tardan: entre tanto pudo abrirse el panel o una consulta.
             if (hubRestBlocked()) {
-                log("[YKUSH] Se usó un equipo mientras se llevaba el hub al reposo: se sigue después")
+                log("[YKUSH] Se usó un equipo mientras se cambiaban los puertos: se sigue después")
                 hubRest.again()
                 return
             }
             ykush.setPort(port, on)
         }
-        log("[YKUSH] Puertos en reposo: ${HubRestState.describe(HubRestState.wanted(config))}")
+        val label = if (kiosk) "Puertos con el kiosco" else "Puertos en reposo"
+        log("[YKUSH] $label: ${HubRestState.describe(wanted)}")
     }
 
     /** No se le apaga un equipo a nadie. */
@@ -866,7 +892,12 @@ class TotemRuntime(context: Context) {
                     return
                 }
                 is OtoscopePower.Poll.TimedOut -> {
-                    if (otoscopeProbe.usbPresent() && !otoscopeProbe.usbReady()) {
+                    val next = OtoscopePower.afterTimeout(
+                        portOff = OtoscopePower.Action.PORT_OFF in poll.actions,
+                        usbPresent = otoscopeProbe.usbPresent(),
+                        usbReady = otoscopeProbe.usbReady(),
+                    )
+                    if (next == OtoscopePower.Timeout.ASK_PERMISSION) {
                         // Enchufado pero sin permiso: el pedido sale una vez por dispositivo y
                         // alguien lo cerró. Se pide de nuevo y el puerto queda encendido, porque
                         // apagarlo desenchufa el otoscopio y el pedido no serviría. Si lo
@@ -880,7 +911,7 @@ class TotemRuntime(context: Context) {
                         )
                         return
                     }
-                    if (OtoscopePower.Action.PORT_OFF in poll.actions) turnOffOtoscopePort()
+                    if (next == OtoscopePower.Timeout.PORT_OFF) turnOffOtoscopePort()
                     log("[OTOSCOPIO] No apareció en ${OTOSCOPE_WAIT_NANOS / 1_000_000_000L} s")
                     done(null, "El otoscopio no aparece como cámara.")
                     return
@@ -1026,19 +1057,20 @@ class TotemRuntime(context: Context) {
     }
 
     /**
-     * Guarda el estado de reposo como arranque del hub, para los segundos entre
-     * que recibe energía y arranca el servicio. Un puerto libre no se manda. Es
-     * persistente en el hub: sale sólo con este botón. Fuera del hilo de la pantalla.
+     * Guarda el estado del kiosco como arranque del hub, para los segundos entre
+     * que recibe energía y arranca el servicio: la tablet arranca en el kiosco.
+     * Un puerto libre no se manda. Es persistente en el hub: sale sólo con este
+     * botón. Fuera del hilo de la pantalla.
      */
     fun testYkushSaveBoot(): String {
         if (!ykush.plugged()) return "No hay hub YKUSH3 conectado."
-        val wanted = HubRestState.wanted(config)
+        val wanted = HubRestState.wanted(config, kiosk = true)
         val rejected = wanted.mapIndexedNotNull { index, on ->
             val port = index + 1
             port.takeIf { on != null && !ykush.setDefaultState(port, on) }
         }
         return if (rejected.isEmpty()) {
-            "El hub guardó el arranque: ${HubRestState.describe(wanted)}"
+            "El hub guardó el arranque, el estado del kiosco: ${HubRestState.describe(wanted)}"
         } else {
             "El hub no aceptó el puerto ${rejected.joinToString(", ")}. Mirá la consola."
         }
