@@ -155,7 +155,7 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - Sólo estilo: tema Panel, cabecera con ← cuadrado, tarjetas `Panel.Card` con el título en el color de cada vital, la forma única de botón (Iniciar prueba y Publicar en azul) y los campos de LiveKit oscuros. El texto crudo sigue en monoespaciada, en `muted`.
 - Se borran `card`, `monitor`, `vital_on`, `vital_dim`, `status_live` y `status_dot`; `Theme.BerryMed` pasa a los tokens del panel. `signal` queda: es el fondo del ícono de Berry Med.
 
-### Con el kiosco adelante, otoscopio y estetoscopio encendidos (plan 12)
+### Con el kiosco adelante, otoscopio y estetoscopio encendidos (plan 12, 1.3.5)
 
 - Reporte de campo con la 1.3.4: en la videollamada el otoscopio no transmitía y aparecía un pedido de permiso. La teleconsulta encendía el puerto, esperaba 8 s y, sin permiso, lo apagaba: el permiso, que vale para ese `deviceId`, se perdía, y la vez siguiente era otro dispositivo. El Panel Local dejaba el puerto encendido y por eso ahí se veía.
 - Decisión del usuario: mientras `KioskActivity` está visible (entre `onStart` y `onStop`), los puertos del otoscopio y del estetoscopio quedan encendidos. Fuera del kiosco vale el reposo de antes. Reemplaza, para el kiosco, la regla del plan 7 que los dejaba apagados en reposo. Sin cambios en la API ni en el kiosco web. Plan en `docs/planes/plan-12-puertos-encendidos-en-kiosco.md`.
