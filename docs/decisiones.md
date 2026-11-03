@@ -168,7 +168,7 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 
 ## 3 de noviembre de 2026
 
-### El termómetro en el puerto 3 del YKUSH3, siempre encendido (plan 13)
+### El termómetro en el puerto 3 del YKUSH3, siempre encendido (plan 13, 1.3.6)
 
 - Armado nuevo del maletín, validado por el usuario con Mauricio el 3 de noviembre de 2026: tablet → dock USB-C; del dock, la plaqueta y el hub YKUSH3 con su fuente; en el hub, 1 otoscopio, 2 adaptador de audio con el estetoscopio, **3 termómetro IR**. El H390 ya no se usa: los auriculares van al jack de la tablet (plan 10). Sin cambios en la API ni en el kiosco web. Plan en `docs/planes/plan-13-termometro-en-puerto-3.md`.
 - Sale `ykushHeadsetPort` y entra `ykushThermometerPort` (de fábrica 3, clave `ykush_thermometer_port`). Una configuración guardada sin la clave nueva carga el termómetro en el 3; la clave vieja `ykush_headset_port` se ignora al leer y se borra al guardar. El paso Plaqueta dice "Puerto del termómetro".
