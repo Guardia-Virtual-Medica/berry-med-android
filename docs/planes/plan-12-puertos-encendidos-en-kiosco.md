@@ -48,3 +48,16 @@ El emulador `berry_tablet` (`emulator-5554`) no tiene hub: ahí sólo se ve en e
 ## Entrega
 
 Rama `feat/puertos-kiosco` desde `chore/release-1.3.4` (los PR 30, 31 y 32 todavía no están en `main`). PR contra `chore/release-1.3.4`, para que el diff muestre sólo esto; cuando el 32 se mergee, se cambia la base a `main`. Commits en español en el estilo del repo, con `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. No cambiar la versión. No tocar `local.properties`, `docs/capturas/` ni `docs/apk/`.
+
+## Parte 2: un solo pedido de permiso para el otoscopio, el que tiene la casilla (pedido del usuario, 3 nov 2026)
+
+Al revisar la parte 1 se vio que salen **dos pedidos de permiso del otoscopio casi juntos**. Uno es el de Android por el intent `USB_DEVICE_ATTACHED` (filtro `usb_device_filter.xml`), que trae **«Usar de forma predeterminada»**. El otro es el de `UsbHub.requestMissingPermissions`, que llama a `requestPermission` unos 3 s después y **no trae la casilla**. Si se acepta el segundo, el permiso vale sólo hasta que se apaga el puerto. El usuario decidió sacarlo: **para el otoscopio, Berry Med no pide el permiso solo**; queda el pedido de Android con la casilla. Misma rama `feat/puertos-kiosco`, commit aparte, mismo PR (#33).
+
+- **Pedido automático**: `UsbHub.requestMissingPermissions()` deja afuera al otoscopio (`KnownDevices.isOtoscope`). La plaqueta, el termómetro y el YKUSH3 siguen igual. `permissionMissing()` sí lo sigue contando, para que la pantalla diga que falta.
+- **Volver a pedirlo a propósito** (el botón **Pedir permiso USB** de la ruedita, `probe.askPermissionAgain()` de la teleconsulta y el Panel Local): para el otoscopio sin permiso, si hay YKUSH3 y se sabe su puerto, **se apaga y se vuelve a encender el puerto del otoscopio** (unos 2 s apagado). Android lo ve como recién conectado y vuelve a mostrar el pedido **con la casilla**. Sólo si no hay hub, o el hub no contesta, se cae al `requestPermission` de hoy, sin casilla, y se dice en el log.
+  - Nunca con el otoscopio publicando o abierto en el Panel Local: ahí ya tiene permiso, así que no aplica. Pero que la regla lo verifique (`hasPermission` del dispositivo justo antes de apagar).
+  - Ese ciclo de apagar y encender no debe pelearse con el estado del kiosco ni con `PanelPorts`: el puerto vuelve a quedar como estaba (encendido), y no se anota como de nadie.
+  - Una función sin Android que decida qué hacer (ciclo del puerto, `requestPermission` o nada), con test: con hub y puerto conocido → ciclo; sin hub → `requestPermission`; con permiso → nada.
+- **Log**: `[USB] Permiso del otoscopio: se apaga y enciende el puerto N para que Android lo pida con «Usar de forma predeterminada»` y el de respaldo.
+- **Textos**: la ayuda del punto "Permiso USB del otoscopio" del paso Kiosco y el README dicen que el pedido es uno solo y que hay que marcar la casilla; si se cerró sin aceptar, **Pedir permiso USB** lo hace aparecer de nuevo. Sacar de `docs/hardware.md` y `docs/decisiones.md` lo de "dos pedidos a la vez" como pendiente y anotarlo como resuelto.
+- **Verificación**: tests y `assembleDebug` en verde. En el emulador no hay otoscopio ni hub: decirlo. En la tablet, con el puerto del otoscopio encendido y sin permiso, tiene que aparecer **un solo** pedido, con la casilla.

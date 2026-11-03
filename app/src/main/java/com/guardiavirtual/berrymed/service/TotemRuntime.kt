@@ -14,6 +14,7 @@ import com.guardiavirtual.berrymed.audio.StethoscopeLink
 import com.guardiavirtual.berrymed.config.BerryConfig
 import com.guardiavirtual.berrymed.config.ConfigStore
 import com.guardiavirtual.berrymed.net.MetricsPoster
+import com.guardiavirtual.berrymed.otoscope.OtoscopePermission
 import com.guardiavirtual.berrymed.otoscope.OtoscopePower
 import com.guardiavirtual.berrymed.otoscope.OtoscopeProbe
 import com.guardiavirtual.berrymed.net.PostOutcome
@@ -152,7 +153,10 @@ class TotemRuntime(context: Context) {
         Thread(runnable, "berry-panel-oto").apply { isDaemon = true }
     }
     private val otoscope = OtoscopePower(OTOSCOPE_WAIT_NANOS, CAMERA2_GRACE_NANOS)
-    val otoscopeProbe = OtoscopeProbe(appContext, hub)
+    val otoscopeProbe = OtoscopeProbe(appContext, hub) { askOtoscopePermission() }
+
+    /** Un ciclo del puerto para el permiso del otoscopio a la vez: tocar el botón varias veces no los encola. */
+    private val otoscopePermissionCycling = AtomicBoolean(false)
 
     /**
      * El puerto del otoscopio, si lo encendió el panel: sólo ése se apaga. Si
@@ -303,6 +307,66 @@ class TotemRuntime(context: Context) {
 
     fun requestUsbPermissionAgain() {
         hub.forgetAsked()
+        askOtoscopePermission()
+    }
+
+    /**
+     * Vuelve a pedir el permiso del otoscopio con el pedido de Android que trae
+     * «Usar de forma predeterminada»: apaga y enciende su puerto, y Android lo
+     * ve como recién conectado. Va por el hilo del otoscopio, en orden con lo
+     * que haga el Panel Local, y no toca el estado del kiosco ni [PanelPorts]:
+     * el puerto vuelve a quedar encendido, como estaba. Sin hub, el pedido sin
+     * casilla. No bloquea.
+     */
+    fun askOtoscopePermission() {
+        val step = otoscopePermissionStep() ?: return
+        if (step == OtoscopePermission.Step.REQUEST) {
+            val device = otoscopeProbe.usbDevice() ?: return
+            log("[USB] Permiso del otoscopio: sin YKUSH3 se pide sin «Usar de forma predeterminada»")
+            hub.requestPermission(device)
+            return
+        }
+        if (!otoscopePermissionCycling.compareAndSet(false, true)) return
+        otoscopeWorker.execute {
+            try {
+                cycleOtoscopePort()
+            } catch (error: Exception) {
+                log("[USB] Falló el ciclo del puerto del otoscopio: $error")
+            } finally {
+                otoscopePermissionCycling.set(false)
+            }
+        }
+    }
+
+    /** Qué hacer ahora con el permiso del otoscopio, o null si nada. */
+    private fun otoscopePermissionStep(): OtoscopePermission.Step? {
+        val device = otoscopeProbe.usbDevice()
+        val step = OtoscopePermission.next(
+            present = device != null,
+            granted = device?.let(hub.manager::hasPermission) == true,
+            hubUsable = ykush.usableDeviceId() != null,
+            port = config.ykushOtoscopePort,
+        )
+        return step.takeIf { it != OtoscopePermission.Step.NOTHING }
+    }
+
+    private fun cycleOtoscopePort() {
+        // Se mira justo antes de apagar: con permiso puede estar publicando o abierto en el panel.
+        val step = otoscopePermissionStep() ?: return
+        val port = config.ykushOtoscopePort
+        if (step == OtoscopePermission.Step.CYCLE_PORT) {
+            log("[USB] Permiso del otoscopio: se apaga y enciende el puerto $port para que Android lo pida con «Usar de forma predeterminada»")
+            if (ykush.setPort(port, false)) {
+                sleep(OTOSCOPE_CYCLE_OFF_MS)
+                if (!ykush.setPort(port, true)) log("[USB] El YKUSH3 no volvió a encender el puerto $port del otoscopio")
+                return
+            }
+        }
+        // El hub no contestó: el pedido de siempre, sin casilla.
+        val device = otoscopeProbe.usbDevice() ?: return
+        if (hub.manager.hasPermission(device)) return
+        log("[USB] Permiso del otoscopio: el YKUSH3 no contesta, se pide sin «Usar de forma predeterminada»")
+        hub.requestPermission(device)
     }
 
     fun onUsbPermission(device: UsbDevice?, granted: Boolean) {
@@ -898,12 +962,11 @@ class TotemRuntime(context: Context) {
                         usbReady = otoscopeProbe.usbReady(),
                     )
                     if (next == OtoscopePower.Timeout.ASK_PERMISSION) {
-                        // Enchufado pero sin permiso: el pedido sale una vez por dispositivo y
-                        // alguien lo cerró. Se pide de nuevo y el puerto queda encendido, porque
-                        // apagarlo desenchufa el otoscopio y el pedido no serviría. Si lo
-                        // encendió el panel, se apaga al salir.
+                        // Enchufado pero sin permiso: alguien cerró el pedido de Android. Se pide de
+                        // nuevo (apagando y encendiendo el puerto, así vuelve el pedido con la casilla)
+                        // y el puerto queda encendido. Si lo encendió el panel, se apaga al salir.
                         log("[OTOSCOPIO] Está enchufado pero sin permiso USB: se vuelve a pedir")
-                        hub.forgetAsked()
+                        askOtoscopePermission()
                         done(
                             null,
                             "Falta aceptar el permiso USB del otoscopio: aceptá el pedido que aparece " +
@@ -1154,6 +1217,9 @@ class TotemRuntime(context: Context) {
         private const val STETHO_WAIT_NANOS = 5L * 1_000_000_000L
         private const val DEVICE_POLL_MS = 250L
         private const val OTOSCOPE_WAIT_NANOS = 8L * 1_000_000_000L
+
+        /** Lo que queda apagado el puerto del otoscopio para que Android lo vea como recién conectado. */
+        private const val OTOSCOPE_CYCLE_OFF_MS = 2_000L
 
         /** Visto el USB del otoscopio, cuánto se espera a que la tablet lo liste como cámara antes de ir por UVC. */
         private const val CAMERA2_GRACE_NANOS = 2L * 1_000_000_000L

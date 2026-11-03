@@ -228,9 +228,9 @@ class LiveKitBackend(
         val path = waitForOtoscope() ?: run {
             val next = OtoscopePower.afterTimeout(portOff = true, usbPresent = probe.usbPresent(), usbReady = probe.usbReady())
             if (next == OtoscopePower.Timeout.ASK_PERMISSION) {
-                // Como el Panel Local: apagar el puerto desenchufa el otoscopio y el permiso
-                // ya no serviría. Queda encendido y se pide de nuevo; el próximo start_oth usa
-                // el mismo dispositivo. Si lo encendió la teleconsulta, se apaga al cortar.
+                // Como el Panel Local: no se apaga el puerto y se pide de nuevo, con el pedido
+                // de Android que trae la casilla (OtoscopePermission). El próximo start_oth lo
+                // usa. Si el puerto lo encendió la teleconsulta, se apaga al cortar.
                 log("[TELE] El otoscopio está enchufado pero sin permiso USB: se vuelve a pedir")
                 probe.askPermissionAgain()
                 return "Falta aceptar el permiso USB del otoscopio en la tablet"
