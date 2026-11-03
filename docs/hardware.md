@@ -84,6 +84,7 @@ HID `04D8:F11B` (Microchip es también fabricante de chips serie; por eso el fil
 - Chrome en Android no lo ve como cámara salvo que el fabricante de la tablet exponga las cámaras USB por Camera2. Por eso la app tiene dos caminos y elige solo:
   - **Camera2/CameraX**, si la tablet lo lista como cámara externa (`LENS_FACING_EXTERNAL`).
   - **UVC**, directo por USB con su permiso, con el módulo libuvc de AndroidUSBCamera (AUSBC) 3.2.7.
+- libuvc 3.2.7 **exige una superficie** para leer la cámara: `startPreview` crea el hilo de captura sólo si tiene ventana de preview, y sin ella el callback de cuadros nunca corre (0 cuadros). El Panel Local dibuja en un `TextureView`; la teleconsulta, que no muestra nada, le da con `setPreviewDisplay(Surface)` la superficie de un `ImageReader` que nadie ve, en RGBX_8888 (el formato en que libuvc dibuja la ventana) y del tamaño abierto, vaciada apenas llega cada imagen. Los cuadros para LiveKit siguen saliendo del callback NV21.
 
 ### Estetoscopio Dalia StethoAI y adaptador de audio
 
@@ -162,7 +163,7 @@ El emulador no los muestra. Se revisan con Testing → "Dispositivos que ve Andr
 | La cadencia del otoscopio, sola y con el estetoscopio escuchando (plan 9) | El encabezado del otoscopio en el panel ("En vivo · UVC · 30 cuadros/s") y la línea `[OTOSCOPIO] Imagen por UVC a 800×800 MJPEG, 30 cuadros/s`. Después, escuchar el estetoscopio al mismo tiempo y ver si baja. |
 | Que `setPreferredDevice` realmente enrute al adaptador y a los auriculares del jack | Que el sonido salga por el jack y no por el parlante, y que la onda sea la del estetoscopio y no la del micrófono del auricular. |
 | Permiso USB del otoscopio negado sin diálogo (Android 10 o más) si la app todavía no tiene el permiso de cámara | Aceptar el permiso de cámara en el Panel Local antes del permiso USB del otoscopio. |
-| El otoscopio por UVC sin vista para la teleconsulta (libuvc entrega cuadros sin superficie donde dibujar) | Testing → Teleconsulta: "otoscopio por UVC" con cuadros por segundo mayores a 0, y el médico ve la imagen. |
+| El otoscopio por UVC para la teleconsulta con la superficie de un `ImageReader` que nadie ve (plan 14; sin superficie libuvc no lee la cámara) | Testing → Teleconsulta: "otoscopio por UVC" con unos 30 cuadros/s, el médico ve la imagen y no aparece `[TELE] La superficie del otoscopio por UVC no se pudo vaciar`. Si aparece, el `ImageReader` no sirve con la ventana de libuvc y va un `SurfaceTexture`. |
 | Camera2 para la teleconsulta mientras Zoom usa la cámara de la tablet (límite de cámaras abiertas a la vez) | Por eso se prefiere UVC; si la tablet lo lista por Camera2, que el médico vea el otoscopio y el paciente siga viéndose en Zoom. En el emulador, con una sola cámara, abrir el otoscopio le sacó la cámara al `WebView`. |
 | Que el adaptador ofrezca `UNPROCESSED` | La línea `[TELE] Estetoscopio por …` dice la fuente. |
 | Que Android no silencie la captura del estetoscopio con Zoom en la llamada dentro del kiosco | Testing → Teleconsulta: "la captura no está silenciada". |
