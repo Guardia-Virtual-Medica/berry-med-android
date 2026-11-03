@@ -9,6 +9,7 @@ import android.os.Handler
 import android.os.Looper
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.widget.TextViewCompat
 import com.guardiavirtual.berrymed.BerryMedApp
 import com.guardiavirtual.berrymed.R
 import com.guardiavirtual.berrymed.databinding.ActivityTestingBinding
@@ -56,12 +57,12 @@ class TestingActivity : AppCompatActivity() {
         binding = ActivityTestingBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.ecgCard.setup("ECG", "Probar ECG")
-        binding.spo2Card.setup("SpO₂ / pulso", "Probar SpO₂")
-        binding.respCard.setup("Respiración", "Probar respiración")
-        binding.tempCard.setup("Temperatura (plaqueta)", "Probar temperatura")
-        binding.nibpCard.setup("Presión", "Medir", "Parar")
-        binding.thermoCard.setup("Termómetro IR", null)
+        binding.ecgCard.setup("ECG", R.color.ecg, "Probar ECG")
+        binding.spo2Card.setup("SpO₂ / pulso", R.color.spo2, "Probar SpO₂")
+        binding.respCard.setup("Respiración", R.color.resp, "Probar respiración")
+        binding.tempCard.setup("Temperatura (plaqueta)", R.color.temp, "Probar temperatura")
+        binding.nibpCard.setup("Presión", R.color.pa, "Medir", "Parar")
+        binding.thermoCard.setup("Termómetro IR", R.color.temp, null)
 
         // Volver corta la prueba en onStop, igual que el gesto de atrás.
         binding.backButton.setOnClickListener { finish() }
@@ -185,6 +186,16 @@ class TestingActivity : AppCompatActivity() {
             s.sessionActive -> "Hay una consulta enviando"
             else -> "Detenida"
         }
+        // El punto del estado: verde probando, ámbar con una consulta enviando, gris detenida.
+        val statusColor = getColor(
+            when {
+                s.testing -> R.color.ok
+                s.sessionActive -> R.color.warn
+                else -> R.color.muted
+            },
+        )
+        binding.testStatus.setTextColor(statusColor)
+        TextViewCompat.setCompoundDrawableTintList(binding.testStatus, ColorStateList.valueOf(statusColor))
 
         val age = s.lastDataAge
         val berryLive = s.berryUp && age != null && age <= LIVE_SECONDS
@@ -260,7 +271,7 @@ class TestingActivity : AppCompatActivity() {
                 false -> "apagado"
                 null -> "sin leer"
             }
-            row.portState.setTextColor(getColor(if (port.on == true) R.color.status_live else R.color.vital_dim))
+            row.portState.setTextColor(getColor(if (port.on == true) R.color.ok else R.color.muted))
         }
 
         binding.usbList.text = s.inventory.usb.ifEmpty { listOf("Android no ve ningún dispositivo USB") }.joinToString("\n")
@@ -320,8 +331,10 @@ class TestingActivity : AppCompatActivity() {
 
     private fun yesNo(value: Boolean) = if (value) "sí" else "no"
 
-    private fun ItemTestCardBinding.setup(title: String, button: String?, button2: String? = null) {
+    /** El título en el color fijo del parámetro, como en el Panel Local. */
+    private fun ItemTestCardBinding.setup(title: String, color: Int, button: String?, button2: String? = null) {
         cardTitle.text = title
+        cardTitle.setTextColor(getColor(color))
         if (button == null) cardButton.visibility = View.GONE else cardButton.text = button
         if (button2 != null) {
             cardButton2.text = button2
@@ -340,16 +353,16 @@ class TestingActivity : AppCompatActivity() {
         cardResult.setTextColor(
             getColor(
                 when (verdict.ok) {
-                    true -> R.color.status_live
+                    true -> R.color.ok
                     false -> R.color.test_fail
-                    null -> R.color.vital_dim
+                    null -> R.color.muted
                 },
             ),
         )
     }
 
     private fun dot(view: View, live: Boolean) {
-        view.backgroundTintList = ColorStateList.valueOf(getColor(if (live) R.color.status_live else R.color.vital_dim))
+        view.backgroundTintList = ColorStateList.valueOf(getColor(if (live) R.color.ok else R.color.line3))
     }
 
     companion object {

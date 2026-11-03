@@ -123,6 +123,7 @@
         <activity
             android:name=".ui.TestingActivity"
             android:configChanges="orientation|screenSize|screenLayout"
+            android:theme="@style/Theme.BerryMed.Panel"
             android:exported="false" />
 
         <!--

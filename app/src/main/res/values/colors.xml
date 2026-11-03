@@ -1,13 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- La pantalla principal y Testing. -->
-    <color name="monitor">#102033</color>
-    <color name="vital_on">#F4FBF8</color>
-    <color name="vital_dim">#7E97A1</color>
+    <!-- Fondo del ícono de Berry Med. -->
     <color name="signal">#1F6F62</color>
-    <color name="status_live">#3DDC97</color>
-    <!-- Fondo de las tarjetas de Testing; antes se llamaba line, que ahora es un token del Panel Local. -->
-    <color name="card">#244255</color>
     <!-- Los errores sobre fondo oscuro: Testing y la configuración. -->
     <color name="test_fail">#F2A38F</color>
     <!-- Fondo del ícono del Panel Local: distinto del verde de Berry Med para no confundirlos. -->

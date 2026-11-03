@@ -369,7 +369,7 @@ class KioskActivity : AppCompatActivity() {
         addView(
             TextView(context).apply {
                 setText(R.string.kiosk_missing_url)
-                setTextColor(getColor(R.color.vital_on))
+                setTextColor(getColor(R.color.text))
                 textSize = 20f
                 gravity = Gravity.CENTER
             },
@@ -392,7 +392,7 @@ class KioskActivity : AppCompatActivity() {
         addView(
             TextView(context).apply {
                 setText(R.string.kiosk_offline)
-                setTextColor(getColor(R.color.vital_on))
+                setTextColor(getColor(R.color.text))
                 textSize = 20f
                 gravity = Gravity.CENTER
             },

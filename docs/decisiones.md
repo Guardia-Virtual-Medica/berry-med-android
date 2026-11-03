@@ -130,6 +130,11 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - Cuadrado se toca, redondo informa: todos los botones del Panel Local y de la pantalla principal tienen la misma forma (esquinas de 6 dp, Barlow SemiBold 16 sp, borde de 1 dp) y cambian sólo de color y de alto; los chips de estado, los badges y el toast quedan redondos. Los segmentos pasan a 6 dp.
 - **Finalizar** va en rojo (`Panel.Button.Danger`, `alarm`, `alarmPressed` apretado), en la cabecera y en el botón que confirma del diálogo, para que la acción se lea igual en los dos lugares. Se borran `Panel.Button.Light` y los selectores `panel_light_bg` y `panel_outline_bg`.
 
+### Testing con el estilo del Panel Local (plan 11, parte 4)
+
+- Sólo estilo: tema Panel, cabecera con ← cuadrado, tarjetas `Panel.Card` con el título en el color de cada vital, la forma única de botón (Iniciar prueba y Publicar en azul) y los campos de LiveKit oscuros. El texto crudo sigue en monoespaciada, en `muted`.
+- Se borran `card`, `monitor`, `vital_on`, `vital_dim`, `status_live` y `status_dot`; `Theme.BerryMed` pasa a los tokens del panel. `signal` queda: es el fondo del ícono de Berry Med.
+
 ## Pendiente
 
 - Prueba con el hardware real en la tablet (ver "Probar el Panel Local en el tótem" en el `README.md` y los riesgos de `docs/hardware.md`).
