@@ -155,6 +155,17 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - Sólo estilo: tema Panel, cabecera con ← cuadrado, tarjetas `Panel.Card` con el título en el color de cada vital, la forma única de botón (Iniciar prueba y Publicar en azul) y los campos de LiveKit oscuros. El texto crudo sigue en monoespaciada, en `muted`.
 - Se borran `card`, `monitor`, `vital_on`, `vital_dim`, `status_live` y `status_dot`; `Theme.BerryMed` pasa a los tokens del panel. `signal` queda: es el fondo del ícono de Berry Med.
 
+### Con el kiosco adelante, otoscopio y estetoscopio encendidos (plan 12)
+
+- Reporte de campo con la 1.3.4: en la videollamada el otoscopio no transmitía y aparecía un pedido de permiso. La teleconsulta encendía el puerto, esperaba 8 s y, sin permiso, lo apagaba: el permiso, que vale para ese `deviceId`, se perdía, y la vez siguiente era otro dispositivo. El Panel Local dejaba el puerto encendido y por eso ahí se veía.
+- Decisión del usuario: mientras `KioskActivity` está visible (entre `onStart` y `onStop`), los puertos del otoscopio y del estetoscopio quedan encendidos. Fuera del kiosco vale el reposo de antes. Reemplaza, para el kiosco, la regla del plan 7 que los dejaba apagados en reposo. Sin cambios en la API ni en el kiosco web. Plan en `docs/planes/plan-12-puertos-encendidos-en-kiosco.md`.
+- Es sólo alimentación: la transmisión sigue empezando con `start_oth`/`start_steth` y al cortar el puerto queda encendido mientras siga el kiosco.
+- `HubRestState.wanted(config, kiosk)` y `TotemRuntime.setKioskVisible`; el cambio lo aplica `watchLoop` en la vuelta siguiente, con la misma espera de `hubRestBlocked()`: nunca se apaga un equipo en plena llamada. El diálogo del PIN no cambia nada.
+- La teleconsulta, como el Panel Local: con el otoscopio enchufado sin permiso no apaga el puerto, vuelve a pedirlo y dice "Falta aceptar el permiso USB del otoscopio en la tablet". La regla quedó en `OtoscopePower.afterTimeout`, la usan los dos. Si el puerto lo había encendido la teleconsulta, se apaga al salir de la sala. El estetoscopio no tiene esa espera: es audio y no pide permiso USB.
+- **Guardar este arranque en el hub** guarda el estado del kiosco, porque la tablet arranca en el kiosco.
+- El micrófono de la llamada no se puede excluir del adaptador ni del otoscopio desde `CallAudioRouter` (Android mueve la entrada con el dispositivo de comunicación y en modo normal la elige Chromium): Testing → Teleconsulta dice qué entradas están grabando. Riesgo anotado en `docs/hardware.md`.
+- Un solo pedido de permiso para el otoscopio, el de Android con «Usar de forma predeterminada» (parte 2, decisión del usuario). `requestMissingPermissions` pedía además, a los 3 s, uno con `requestPermission` sin casilla: salían los dos casi juntos y, si se aceptaba el segundo, el permiso valía sólo hasta apagar el puerto. Ahora deja afuera al otoscopio; `permissionMissing()` lo sigue contando. Volver a pedirlo a propósito apaga y enciende su puerto, así Android vuelve a mostrar el pedido con la casilla; sin hub, el `requestPermission` de antes. La regla está en `OtoscopePermission`, con test. El ciclo va por el hilo del otoscopio, en orden con el Panel Local, y no toca el estado del kiosco ni `PanelPorts`: el puerto vuelve a quedar encendido.
+
 ## Pendiente
 
 - Prueba con el hardware real en la tablet (ver "Probar el Panel Local en el tótem" en el `README.md` y los riesgos de `docs/hardware.md`).
@@ -163,4 +174,5 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - Plan 7 en la tablet real: modo y uso de audio de Zoom en el `WebView`, y el protocolo del hub contra el YKUSH3 (ver riesgos en `docs/hardware.md`).
 - Plan 9 en la tablet real: los cuadros por segundo del otoscopio por UVC, solo y con el estetoscopio escuchando.
 - Plan 10 en la tablet real: el estetoscopio y la videollamada por el jack (ver riesgos en `docs/hardware.md`).
+- Plan 12 en la tablet real: los tres puertos encendidos con el kiosco, el otoscopio en la llamada sin pedido de permiso y el micrófono de la llamada con el adaptador y el otoscopio encendidos.
 - v2 con guardado y PDF local.

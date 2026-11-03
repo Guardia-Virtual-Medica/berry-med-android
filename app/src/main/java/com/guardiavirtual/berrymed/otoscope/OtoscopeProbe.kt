@@ -9,7 +9,12 @@ import com.guardiavirtual.berrymed.usb.KnownDevices
 import com.guardiavirtual.berrymed.usb.UsbHub
 
 /** Si Android ya ve el otoscopio, como cámara externa o como dispositivo USB. Sólo mira, no abre nada. */
-class OtoscopeProbe(context: Context, private val hub: UsbHub) {
+class OtoscopeProbe(
+    context: Context,
+    private val hub: UsbHub,
+    /** Vuelve a pedir el permiso del otoscopio; lo hace el runtime ([OtoscopePermission]). */
+    private val askAgain: () -> Unit,
+) {
     private val cameras = context.applicationContext.getSystemService(Context.CAMERA_SERVICE) as CameraManager
 
     /** Una cámara externa (USB) en la lista de Camera2. */
@@ -31,4 +36,7 @@ class OtoscopeProbe(context: Context, private val hub: UsbHub) {
 
     /** Enchufado y con permiso USB: lo que necesita el camino UVC. */
     fun usbReady(): Boolean = usbDevice()?.let(hub.manager::hasPermission) == true
+
+    /** Vuelve a pedir el permiso USB del otoscopio, con el pedido de Android que trae la casilla si se puede. */
+    fun askPermissionAgain() = askAgain()
 }
