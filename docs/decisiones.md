@@ -166,6 +166,19 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - El micrófono de la llamada no se puede excluir del adaptador ni del otoscopio desde `CallAudioRouter` (Android mueve la entrada con el dispositivo de comunicación y en modo normal la elige Chromium): Testing → Teleconsulta dice qué entradas están grabando. Riesgo anotado en `docs/hardware.md`.
 - Un solo pedido de permiso para el otoscopio, el de Android con «Usar de forma predeterminada» (parte 2, decisión del usuario). `requestMissingPermissions` pedía además, a los 3 s, uno con `requestPermission` sin casilla: salían los dos casi juntos y, si se aceptaba el segundo, el permiso valía sólo hasta apagar el puerto. Ahora deja afuera al otoscopio; `permissionMissing()` lo sigue contando. Volver a pedirlo a propósito apaga y enciende su puerto, así Android vuelve a mostrar el pedido con la casilla; sin hub, el `requestPermission` de antes. La regla está en `OtoscopePermission`, con test. El ciclo va por el hilo del otoscopio, en orden con el Panel Local, y no toca el estado del kiosco ni `PanelPorts`: el puerto vuelve a quedar encendido.
 
+## 3 de noviembre de 2026
+
+### El termómetro en el puerto 3 del YKUSH3, siempre encendido (plan 13)
+
+- Armado nuevo del maletín, validado por el usuario con Mauricio el 3 de noviembre de 2026: tablet → dock USB-C; del dock, la plaqueta y el hub YKUSH3 con su fuente; en el hub, 1 otoscopio, 2 adaptador de audio con el estetoscopio, **3 termómetro IR**. El H390 ya no se usa: los auriculares van al jack de la tablet (plan 10). Sin cambios en la API ni en el kiosco web. Plan en `docs/planes/plan-13-termometro-en-puerto-3.md`.
+- Sale `ykushHeadsetPort` y entra `ykushThermometerPort` (de fábrica 3, clave `ykush_thermometer_port`). Una configuración guardada sin la clave nueva carga el termómetro en el 3; la clave vieja `ykush_headset_port` se ignora al leer y se borra al guardar. El paso Plaqueta dice "Puerto del termómetro".
+- El puerto del termómetro queda **siempre encendido**, con y sin kiosco y sin depender de la salida de audio: `HubRestState.wanted` lo da `true` en las dos ramas. La salida de audio de la llamada ya no cambia ningún puerto.
+- Encender nunca espera: con `hubRestBlocked()` (consulta, Testing, Panel Local o teleconsulta usando un equipo), `HubRestState.changes(wanted, states, blocked, thermometerPort)` deja sólo el encendido del termómetro, una vez por hub (`Pending.thermometerDue`, también si el hub se reconecta). Las órdenes de apagar siguen esperando.
+- Nadie apaga el termómetro: Escuchar enciende sólo el puerto del estetoscopio y `PanelPorts` del Panel Local y de la teleconsulta nunca reclaman ese puerto. **Apagar** en Testing anda como prueba a mano; la fila dice "termómetro · se vuelve a encender solo" y la vuelta siguiente de `watchLoop` lo enciende.
+- **Guardar este arranque en el hub** guarda el termómetro encendido.
+- Audio con la regla del plan 10: primero el jack de la tablet, después un auricular USB por nombre como respaldo inofensivo (la lógica no se borra, el texto ya no lo nombra como parte del armado) y, para la llamada, el parlante. El valor guardado de `callAudioOutput` no cambia.
+- `ThermometerLink` y el envío no cambian: si el termómetro aparece tarde porque su puerto se encendió después, el link lo toma solo (busca cada 2 s) y `requestMissingPermissions` le pide el permiso USB.
+
 ## Pendiente
 
 - Prueba con el hardware real en la tablet (ver "Probar el Panel Local en el tótem" en el `README.md` y los riesgos de `docs/hardware.md`).
@@ -175,4 +188,5 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - Plan 9 en la tablet real: los cuadros por segundo del otoscopio por UVC, solo y con el estetoscopio escuchando.
 - Plan 10 en la tablet real: el estetoscopio y la videollamada por el jack (ver riesgos en `docs/hardware.md`).
 - Plan 12 en la tablet real: los tres puertos encendidos con el kiosco, el otoscopio en la llamada sin pedido de permiso y el micrófono de la llamada con el adaptador y el otoscopio encendidos.
+- Plan 13 en la tablet real: la luz del puerto 3 siempre encendida y el termómetro midiendo en el Panel Local y en una consulta.
 - v2 con guardado y PDF local.
