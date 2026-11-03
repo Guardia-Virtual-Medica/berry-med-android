@@ -56,6 +56,7 @@ class TestingActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityTestingBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.root.padForSystemBars()
 
         binding.ecgCard.setup("ECG", R.color.ecg, "Probar ECG")
         binding.spo2Card.setup("SpO₂ / pulso", R.color.spo2, "Probar SpO₂")

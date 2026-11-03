@@ -79,6 +79,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.root.padForSystemBars()
         ContextCompat.startForegroundService(this, Intent(this, MonitorService::class.java))
         askPermissions()
         showStep(0)
