@@ -110,7 +110,7 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - Reintento automático: si falla el documento principal (error de conexión o HTTP 5xx; los recursos secundarios no cuentan), Berry Med tapa el `WebView` con su propia pantalla y un botón **Reintentar**. Reintenta solo apenas Android avisa que hay red, cada 10 s y al volver al kiosco. Reintentar es `reload()`: vuelve a pedir la dirección que falló, no la del inicio.
 - Recarga a pedido: el diálogo de los cinco toques suma **Recargar**, que también pide el PIN (un paciente no tiene que poder reiniciar el kiosco en plena consulta) y carga la URL configurada desde cero. Permiso nuevo `ACCESS_NETWORK_STATE`, normal y sin diálogo.
 
-### El otoscopio a 30 cuadros (plan 9)
+### El otoscopio a 30 cuadros (plan 9, 1.3.3)
 
 - Reporte de campo con la 1.3.2: en el Panel Local la imagen del otoscopio sale bastante trabada. Plan en `docs/planes/plan-9-otoscopio-30-cuadros.md`.
 - Causa más probable: el otoscopio ofrece cada tamaño a 30 o a 5 cuadros y la app le pedía a libuvc un rango de 1 a 30. libuvc se queda con el primer intervalo del descriptor que cae en el rango, así que si la cámara declara primero el de 5, abre a 5.
@@ -119,7 +119,18 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - La tarjeta muestra los cuadros por segundo que llegan de verdad ("En vivo · UVC · 29 cuadros/s"), para que el próximo reporte traiga el número: si dice 30 y se ve trabada, el problema está en otro lado. Por UVC se cuentan los cuadros que dibuja la vista; por Camera2, las capturas que completa la cámara (`PreviewView` no avisa cuándo dibuja). Al log va una línea sólo si la cadencia queda por debajo de 20 más de 5 s seguidos.
 - No se cambia la resolución (800×800) ni el ancho de banda de libuvc. Testing → Teleconsulta sigue mostrando la cadencia de la publicación como antes.
 
-### Ícono y botón ONDOCTOR365 (plan 11)
+### El estetoscopio y la videollamada por el jack de la tablet (plan 10, 1.3.3)
+
+- Pedido: que el sonido salga por defecto por el jack analógico de la tablet, no por el H390. Plan en `docs/planes/plan-10-estetoscopio-jack-tablet.md`.
+- Regla automática, sin opción nueva: si hay algo en el jack de la tablet, el estetoscopio suena por ahí; si no, por el H390. Nunca por el parlante (se acopla) ni por el adaptador. `AudioPick.stethoOutput`.
+- La salida del estetoscopio se elige al tocar Escuchar o al reproducir una grabación: enchufar o desenchufar en plena escucha no la cambia. Se dice en el KDoc, no en pantalla.
+- El micrófono del auricular del jack nunca hace de estetoscopio: el estetoscopio sólo se toma de entradas USB, con test.
+- Los puertos del YKUSH3 no cambian: Escuchar sigue encendiendo el del adaptador y el del H390. Con el jack puesto la salida ya está y la espera de hasta 5 s es sólo por el adaptador.
+- La videollamada también: con **Auriculares** sale por el jack, si no por el H390 y, si tampoco, por el parlante. **Parlante de la tablet** sigue mandando sólo la llamada al parlante. El valor guardado `auricular` no cambia y pasa a querer decir "auriculares, jack primero", así la configuración existente sigue valiendo. `HubRestState` no cambia: con Auriculares el H390 queda encendido en reposo como respaldo.
+- Chromium en modo comunicación ya prefiere el auricular con cable antes que lo USB: `CallAudioRouter` lo confirma y lo reafirma, y lo nombra "el jack de la tablet" porque esos dispositivos suelen venir sin nombre.
+- Con un adaptador USB-C a jack no hace falta nada nuevo: Android lo lista como auricular USB y se configura su nombre en **Nombre del auricular**.
+
+### Ícono y botón ONDOCTOR365 (plan 11, 1.3.4)
 
 - El usuario pidió un botón OnDoctor que lleve directo al kiosco. Se hace con el kiosco que ya corre dentro de Berry Med, no con Chrome: Chrome en Android no tiene modo kiosco (muestra la barra de direcciones y el paciente puede irse; bloquearlo exige hacer a Berry Med "device owner", con reset de fábrica), Berry Med dejaría de ver la URL con `serverUrl`/`token` de LiveKit (el médico no recibiría otoscopio ni estetoscopio) y Android volvería a silenciar el estetoscopio con Zoom en el micrófono, porque ya no serían la misma app. Plan en `docs/planes/plan-11-icono-ondoctor.md`.
 - Tercer ícono, **ONDOCTOR365**: un `<activity-alias>` de `KioskActivity` con fondo violeta `#5B3FA8` y el mismo dibujo. Alias y no otra pantalla: el kiosco es uno solo, con su `WebView`, su sala y su recarga. El filtro HOME queda en `KioskActivity`. Sin PIN para entrar (es la pantalla del paciente); el PIN sigue para salir.
@@ -127,19 +138,19 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - Visto al verificar, y ya pasaba antes de este cambio (probado con `main`): si el kiosco se abre primero con el botón y no como app de inicio, el botón de inicio crea un segundo kiosco en la tarea de inicio de Android. En la tablet no pasa porque el kiosco arranca siempre como app de inicio; queda anotado.
 - Pantalla principal: título "Maletín de atención ONDOCTOR365", **Evitar que se duerma** pasa a una ruedita arriba a la derecha y la fila queda con cuatro botones rellenos de 56 dp (USB-config, Testing, Panel Local y ONDOCTOR365 en violeta). En 1280×800 dp los cuatro textos entran enteros.
 
-### La pantalla principal con el estilo del Panel Local (plan 11, parte 2)
+### La pantalla principal con el estilo del Panel Local (plan 11, parte 2, 1.3.4)
 
 - El usuario vio la parte 1 en el emulador y pidió que la configuración no esté siempre a la vista y que la pantalla principal se vea como el Panel Local, "así no parecen dos apps distintas".
 - La configuración pasa a una capa que tapa el contenido de abajo de la cabecera; se abre con **USB-config** (el nombre lo eligió el usuario) y se cierra con ← o atrás, sin guardar. Se abre sola sin identificador del tótem y con `MainActivity.EXTRA_OPEN_CONFIG` desde el kiosco sin URL. El PIN del kiosco lleva a la pantalla principal con la capa cerrada, salvo que falte la URL del kiosco.
 - **Pedir permiso USB** se muda al menú de la ruedita, arriba de **Evitar que se duerma**. La ayuda de «Usar de forma predeterminada» va al paso Plaqueta, junto a los equipos USB.
 - Todo con los tokens del Panel Local (`Theme.BerryMed.Panel`, Barlow, `Panel.Card`, `Panel.Chip`, `Panel.Button.Secondary`); la capa usa `ThemeOverlay.BerryMed.FormDark` y el error en `test_fail`. Los chips de la cabecera usan los mismos colores que los del panel; el del termómetro va ámbar mientras está conectado sin mediciones (`TotemState` suma `thermoConnected` y `thermoMeasured`).
 
-### Un solo estilo de botón (plan 11, parte 3)
+### Un solo estilo de botón (plan 11, parte 3, 1.3.4)
 
 - Cuadrado se toca, redondo informa: todos los botones del Panel Local y de la pantalla principal tienen la misma forma (esquinas de 6 dp, Barlow SemiBold 16 sp, borde de 1 dp) y cambian sólo de color y de alto; los chips de estado, los badges y el toast quedan redondos. Los segmentos pasan a 6 dp.
 - **Finalizar** va en rojo (`Panel.Button.Danger`, `alarm`, `alarmPressed` apretado), en la cabecera y en el botón que confirma del diálogo, para que la acción se lea igual en los dos lugares. Se borran `Panel.Button.Light` y los selectores `panel_light_bg` y `panel_outline_bg`.
 
-### Testing con el estilo del Panel Local (plan 11, parte 4)
+### Testing con el estilo del Panel Local (plan 11, parte 4, 1.3.4)
 
 - Sólo estilo: tema Panel, cabecera con ← cuadrado, tarjetas `Panel.Card` con el título en el color de cada vital, la forma única de botón (Iniciar prueba y Publicar en azul) y los campos de LiveKit oscuros. El texto crudo sigue en monoespaciada, en `muted`.
 - Se borran `card`, `monitor`, `vital_on`, `vital_dim`, `status_live` y `status_dot`; `Theme.BerryMed` pasa a los tokens del panel. `signal` queda: es el fondo del ícono de Berry Med.
@@ -151,4 +162,5 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - Plan 6 en la tablet real: Zoom dentro del `WebView`, el camino UVC sin vista, el adaptador con `UNPROCESSED` y el kiosco como app de inicio (ver "Qué probar en la tablet" en el PR #19).
 - Plan 7 en la tablet real: modo y uso de audio de Zoom en el `WebView`, y el protocolo del hub contra el YKUSH3 (ver riesgos en `docs/hardware.md`).
 - Plan 9 en la tablet real: los cuadros por segundo del otoscopio por UVC, solo y con el estetoscopio escuchando.
+- Plan 10 en la tablet real: el estetoscopio y la videollamada por el jack (ver riesgos en `docs/hardware.md`).
 - v2 con guardado y PDF local.
