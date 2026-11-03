@@ -62,7 +62,8 @@ HID `04D8:F11B` (Microchip es también fabricante de chips serie; por eso el fil
 - `0x2A` (consultar los tres) no está en la hoja y pykush sólo lo usa con firmware 2 o superior: la app consulta de a uno. Un puerto que no contesta queda sin leer y los demás se conservan.
 - Cada comando espera hasta 1 s la respuesta y leer los tres hasta 3 s: la app los manda fuera del hilo de la pantalla.
 - `0x41` queda en la memoria del hub y no se puede leer: nunca se manda solo, sólo con el botón **Guardar este arranque en el hub** de Testing.
-- Estado de reposo: otoscopio y estetoscopio apagados; auricular encendido si la videollamada sale por él, apagado si sale por el parlante. El servicio lo aplica la primera vez que el hub se puede usar y al guardar otra salida de audio, salvo con una consulta enviando, una prueba de Testing, el Panel Local abierto o la teleconsulta publicando: en ese caso espera a que se libere. Después los cambian Testing, el Panel Local y la teleconsulta, que sólo apagan los que encendieron.
+- Estado con el kiosco (plan 12): mientras `KioskActivity` está visible, otoscopio y estetoscopio encendidos. Es sólo energía: la transmisión empieza con `start_oth`/`start_steth`. `0x41` guarda este estado, porque la tablet arranca en el kiosco.
+- Estado de reposo, con cualquier otra pantalla adelante: otoscopio y estetoscopio apagados. En los dos, auricular encendido si la videollamada sale por él, apagado si sale por el parlante. El servicio aplica el que toque la primera vez que el hub se puede usar, al guardar otra salida de audio y al abrir o dejar el kiosco, salvo con una consulta enviando, una prueba de Testing, el Panel Local abierto o la teleconsulta publicando: en ese caso espera a que se libere. Después los cambian Testing, el Panel Local y la teleconsulta, que sólo apagan los que encendieron.
 
 ### Otoscopio
 
@@ -127,7 +128,9 @@ HID `04D8:F11B` (Microchip es también fabricante de chips serie; por eso el fil
 | Adaptador de audio | No | Android lo maneja como audio; pedir permiso sólo pondría un diálogo de más arriba de Chrome. |
 | Auricular H390 | No | Ídem. |
 
-Con "Usar de forma predeterminada" marcado, Android da el permiso solo cada vez que el equipo aparece, también después de un reinicio. El otoscopio descansa apagado: en la instalación hay que encender su puerto una vez desde Testing para que aparezca el pedido (lo recuerda el paso Kiosco).
+Con "Usar de forma predeterminada" marcado, Android da el permiso solo cada vez que el equipo aparece, también después de un reinicio. Sin la casilla, el permiso que da `requestPermission` vale para ese `deviceId` y se pierde al apagar el puerto. Con el kiosco adelante el puerto del otoscopio queda encendido, así que alcanza con aceptarlo una vez marcando la casilla; en la instalación conviene encender su puerto desde Testing para que aparezca el pedido (lo recuerda el paso Kiosco).
+
+Para el otoscopio hay un solo pedido, el de Android por el filtro (`USB_DEVICE_ATTACHED`), con la casilla (plan 12, parte 2). Antes, 3 s después, `UsbHub.requestMissingPermissions` sumaba otro con `requestPermission`, sin casilla, y quedaban los dos a la vez: resuelto, ese pedido automático ya no incluye al otoscopio (sí la plaqueta, el termómetro y el hub). Para volver a pedirlo a propósito (**Pedir permiso USB**, el Panel Local y la teleconsulta), `OtoscopePermission` decide: con YKUSH3 se apaga el puerto del otoscopio 2 s y se vuelve a encender, y Android muestra de nuevo el pedido con la casilla (`[USB] Permiso del otoscopio: se apaga y enciende el puerto N …`); sin hub, o si el hub no contesta, `requestPermission` sin casilla. Con permiso nunca se le apaga el puerto: se mira justo antes de apagar.
 
 ## Cómo se elige la salida de la llamada
 
@@ -141,6 +144,7 @@ Lo que sigue es lo esperado por razonamiento: no se probó en la tablet ni en el
 
 - Por eso, en `MODE_NORMAL` el selector debería seguir andando **hasta que se encienda el puerto del estetoscopio**: el adaptador sí tiene salida y puede llevarse los medios de la llamada. Ése es el riesgo principal.
 - `setCommunicationDevice` sólo agrega la distinción entre el H390 y el adaptador, y sólo con modo comunicación. Con reproducción de medios no mueve el audio.
+- Con el kiosco adelante (plan 12) el adaptador del estetoscopio y el micrófono del otoscopio están encendidos durante toda la llamada: el adaptador está siempre, no sólo al publicar. Ver los riesgos.
 - Vale para el hub en reposo. Antes de aplicarse (de fábrica la placa arranca con los tres encendidos, salvo que se haya guardado otro arranque) o con un puerto que quedó encendido porque no se pudo leer, hay más de una salida USB.
 
 ## Riesgos a confirmar en la tablet real
@@ -165,6 +169,9 @@ El emulador no los muestra. Se revisan con Testing → "Dispositivos que ve Andr
 | Que `setCommunicationDevice` acepte los auriculares del jack de la tablet y que el micrófono acompañe | Con auriculares en el jack y Auriculares elegido, Testing → Teleconsulta tiene que decir "el jack de la tablet" durante una llamada, sin una línea "Android no aceptó". Que el médico oiga al paciente por el micrófono del auricular con cable si tiene, si no por el de la tablet. Al desenchufarlos, el H390. |
 | Que el estetoscopio suene por el jack de la tablet | Con auriculares en el jack, Escuchar: la línea `[ESTETO] Escuchando por …` dice "(jack de la tablet)". Reproducir una grabación también. Al desenchufarlos y volver a Escuchar, "(auricular USB)". |
 | Que el micrófono del otoscopio no coincida con el nombre del estetoscopio | En Testing, los dispositivos de audio: el nombre configurado (`USB Audio`) tiene que identificar sólo al adaptador. |
+| **Plan 12.** Con el kiosco adelante, el adaptador del estetoscopio (entrada mono, salida estéreo) y el micrófono del otoscopio (USB Audio mono 32 kHz) quedan presentes durante toda la videollamada. `CallAudioRouter` fija la salida, y el micrófono acompaña al dispositivo de comunicación sólo en modo comunicación; no puede excluir entradas: en `MODE_NORMAL` Chromium graba de la entrada que le da Android | Testing → Teleconsulta, "Entradas grabando": la llamada (`VOICE_COMMUNICATION` o `CAMCORDER`) tiene que grabar del H390, del jack o del micrófono de la tablet, nunca de `USB Audio` ni del otoscopio. Que el médico oiga al paciente por el micrófono del auricular. |
+| Que con el kiosco adelante los puertos queden 1, 2 y 3 encendidos | La línea `[YKUSH] Puertos con el kiosco: puerto 1 encendido, puerto 2 encendido, puerto 3 encendido` en `adb logcat -s BerryMed` y las luces del hub. Testing → Hub YKUSH3 → Leer estado sólo sirve en el primer segundo: abrir Testing saca al kiosco de adelante y el servicio aplica el reposo. |
+| Consumo: con el kiosco, tres puertos encendidos todo el tiempo (otoscopio con su luz, adaptador y auricular) | El hub va con su fuente de 5 V, así que no carga la tablet; mirar que el otoscopio no caliente con horas encendido. |
 | Que el hub acepte y guarde `0x41` | Testing → **Guardar este arranque en el hub**: tiene que decir que guardó. Después cortar la alimentación del hub y ver con qué puertos arranca. |
 | Que Zoom Video SDK ande en el `WebView` (cookies, `SharedArrayBuffer`, navegador) | Que la videollamada se vea y se escuche en el kiosco de Berry Med; líneas `[KIOSCO]`. |
 

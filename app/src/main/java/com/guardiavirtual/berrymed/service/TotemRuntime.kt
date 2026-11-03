@@ -14,6 +14,7 @@ import com.guardiavirtual.berrymed.audio.StethoscopeLink
 import com.guardiavirtual.berrymed.config.BerryConfig
 import com.guardiavirtual.berrymed.config.ConfigStore
 import com.guardiavirtual.berrymed.net.MetricsPoster
+import com.guardiavirtual.berrymed.otoscope.OtoscopePermission
 import com.guardiavirtual.berrymed.otoscope.OtoscopePower
 import com.guardiavirtual.berrymed.otoscope.OtoscopeProbe
 import com.guardiavirtual.berrymed.net.PostOutcome
@@ -118,8 +119,14 @@ class TotemRuntime(context: Context) {
     }
     private val stethoPorts = PanelPorts()
 
-    /** Cuándo toca llevar el hub al estado de reposo; lo hace [watchLoop]. */
+    /** Cuándo toca llevar el hub al estado de reposo o al del kiosco; lo hace [watchLoop]. */
     private val hubRest = HubRestState.Pending()
+
+    /**
+     * Si el kiosco está visible (entre su `onStart` y su `onStop`): con él
+     * adelante el otoscopio y el estetoscopio quedan encendidos. Ver [HubRestState].
+     */
+    @Volatile private var kioskVisible = false
 
     /** Hasta leer lo guardado, [config] es la de fábrica: con ésa no se apaga ningún puerto. */
     @Volatile private var configLoaded = false
@@ -146,7 +153,10 @@ class TotemRuntime(context: Context) {
         Thread(runnable, "berry-panel-oto").apply { isDaemon = true }
     }
     private val otoscope = OtoscopePower(OTOSCOPE_WAIT_NANOS, CAMERA2_GRACE_NANOS)
-    val otoscopeProbe = OtoscopeProbe(appContext, hub)
+    val otoscopeProbe = OtoscopeProbe(appContext, hub) { askOtoscopePermission() }
+
+    /** Un ciclo del puerto para el permiso del otoscopio a la vez: tocar el botón varias veces no los encola. */
+    private val otoscopePermissionCycling = AtomicBoolean(false)
 
     /**
      * El puerto del otoscopio, si lo encendió el panel: sólo ése se apaga. Si
@@ -279,8 +289,84 @@ class TotemRuntime(context: Context) {
         thread(name = "berry-watch", isDaemon = true) { watchLoop() }
     }
 
+    /**
+     * Lo llama el kiosco al quedar visible y al dejar de estarlo. El hub cambia
+     * en la vuelta siguiente de [watchLoop], salvo que alguien esté usando un
+     * equipo: entonces se espera. El diálogo del PIN no saca al kiosco de
+     * adelante, así que no apaga nada.
+     */
+    fun setKioskVisible(visible: Boolean) {
+        if (kioskVisible == visible) return
+        kioskVisible = visible
+        log(
+            if (visible) "[YKUSH] El kiosco quedó adelante: se buscan los puertos con el kiosco"
+            else "[YKUSH] El kiosco dejó de estar adelante: se buscan los puertos en reposo",
+        )
+        hubRest.again()
+    }
+
     fun requestUsbPermissionAgain() {
         hub.forgetAsked()
+        askOtoscopePermission()
+    }
+
+    /**
+     * Vuelve a pedir el permiso del otoscopio con el pedido de Android que trae
+     * «Usar de forma predeterminada»: apaga y enciende su puerto, y Android lo
+     * ve como recién conectado. Va por el hilo del otoscopio, en orden con lo
+     * que haga el Panel Local, y no toca el estado del kiosco ni [PanelPorts]:
+     * el puerto vuelve a quedar encendido, como estaba. Sin hub, el pedido sin
+     * casilla. No bloquea.
+     */
+    fun askOtoscopePermission() {
+        val step = otoscopePermissionStep() ?: return
+        if (step == OtoscopePermission.Step.REQUEST) {
+            val device = otoscopeProbe.usbDevice() ?: return
+            log("[USB] Permiso del otoscopio: sin YKUSH3 se pide sin «Usar de forma predeterminada»")
+            hub.requestPermission(device)
+            return
+        }
+        if (!otoscopePermissionCycling.compareAndSet(false, true)) return
+        otoscopeWorker.execute {
+            try {
+                cycleOtoscopePort()
+            } catch (error: Exception) {
+                log("[USB] Falló el ciclo del puerto del otoscopio: $error")
+            } finally {
+                otoscopePermissionCycling.set(false)
+            }
+        }
+    }
+
+    /** Qué hacer ahora con el permiso del otoscopio, o null si nada. */
+    private fun otoscopePermissionStep(): OtoscopePermission.Step? {
+        val device = otoscopeProbe.usbDevice()
+        val step = OtoscopePermission.next(
+            present = device != null,
+            granted = device?.let(hub.manager::hasPermission) == true,
+            hubUsable = ykush.usableDeviceId() != null,
+            port = config.ykushOtoscopePort,
+        )
+        return step.takeIf { it != OtoscopePermission.Step.NOTHING }
+    }
+
+    private fun cycleOtoscopePort() {
+        // Se mira justo antes de apagar: con permiso puede estar publicando o abierto en el panel.
+        val step = otoscopePermissionStep() ?: return
+        val port = config.ykushOtoscopePort
+        if (step == OtoscopePermission.Step.CYCLE_PORT) {
+            log("[USB] Permiso del otoscopio: se apaga y enciende el puerto $port para que Android lo pida con «Usar de forma predeterminada»")
+            if (ykush.setPort(port, false)) {
+                sleep(OTOSCOPE_CYCLE_OFF_MS)
+                if (!ykush.setPort(port, true)) log("[USB] El YKUSH3 no volvió a encender el puerto $port del otoscopio")
+                return
+            }
+        }
+        // El hub no contestó: el pedido de siempre, sin casilla.
+        val device = otoscopeProbe.usbDevice() ?: return
+        if (hub.manager.hasPermission(device)) return
+        log("[USB] Permiso del otoscopio: el YKUSH3 no contesta, se pide sin «Usar de forma predeterminada»")
+        hub.requestPermission(device)
     }
 
     fun onUsbPermission(device: UsbDevice?, granted: Boolean) {
@@ -308,8 +394,9 @@ class TotemRuntime(context: Context) {
     }
 
     /**
-     * Lleva los puertos al estado de reposo una vez por hub, o de nuevo si
-     * cambió la salida de audio. Si alguien está usando un equipo se espera,
+     * Lleva los puertos al estado de reposo, o al del kiosco si está adelante,
+     * una vez por hub, o de nuevo si cambió la salida de audio o se abrió o se
+     * dejó el kiosco. Si alguien está usando un equipo se espera,
      * sin marcarlo hecho: se aplica apenas se libere. Un hub que no contesta
      * no se reintenta, para no trabar este hilo cada segundo.
      */
@@ -318,21 +405,24 @@ class TotemRuntime(context: Context) {
         val deviceId = ykush.usableDeviceId()
         if (!hubRest.due(deviceId)) return
         hubRest.done(deviceId)
+        val kiosk = kioskVisible
+        val wanted = HubRestState.wanted(config, kiosk)
         val states = ykush.readAll()
         if (states.all { it == null }) {
             log("[YKUSH] El hub no contesta: los puertos quedan como están")
             return
         }
-        for ((port, on) in HubRestState.changes(HubRestState.wanted(config), states)) {
+        for ((port, on) in HubRestState.changes(wanted, states)) {
             // La lectura y cada orden tardan: entre tanto pudo abrirse el panel o una consulta.
             if (hubRestBlocked()) {
-                log("[YKUSH] Se usó un equipo mientras se llevaba el hub al reposo: se sigue después")
+                log("[YKUSH] Se usó un equipo mientras se cambiaban los puertos: se sigue después")
                 hubRest.again()
                 return
             }
             ykush.setPort(port, on)
         }
-        log("[YKUSH] Puertos en reposo: ${HubRestState.describe(HubRestState.wanted(config))}")
+        val label = if (kiosk) "Puertos con el kiosco" else "Puertos en reposo"
+        log("[YKUSH] $label: ${HubRestState.describe(wanted)}")
     }
 
     /** No se le apaga un equipo a nadie. */
@@ -524,7 +614,7 @@ class TotemRuntime(context: Context) {
             append(if (active) "La sesión está enviando." else "La sesión está detenida.")
             val missing = config.missingFields()
             if (missing.isNotEmpty()) append(" Falta configurar: ${missing.joinToString(", ")}.")
-            if (hub.permissionMissing()) append(" Falta aceptar el permiso USB: tocá «Pedir permiso USB».")
+            if (hub.permissionMissing()) append(" Falta aceptar el permiso USB: tocá la ruedita y «Pedir permiso USB».")
         }
         state.value = TotemState(
             heartRate = display(vitals.heartRate),
@@ -535,6 +625,8 @@ class TotemRuntime(context: Context) {
             berryUp = berryUp,
             lastData = lastData,
             pusherUp = pusherUp,
+            thermoConnected = thermo.connected,
+            thermoMeasured = thermo.measured,
             others = others,
             lastPost = lastPost,
             notification = notification,
@@ -864,13 +956,17 @@ class TotemRuntime(context: Context) {
                     return
                 }
                 is OtoscopePower.Poll.TimedOut -> {
-                    if (otoscopeProbe.usbPresent() && !otoscopeProbe.usbReady()) {
-                        // Enchufado pero sin permiso: el pedido sale una vez por dispositivo y
-                        // alguien lo cerró. Se pide de nuevo y el puerto queda encendido, porque
-                        // apagarlo desenchufa el otoscopio y el pedido no serviría. Si lo
-                        // encendió el panel, se apaga al salir.
+                    val next = OtoscopePower.afterTimeout(
+                        portOff = OtoscopePower.Action.PORT_OFF in poll.actions,
+                        usbPresent = otoscopeProbe.usbPresent(),
+                        usbReady = otoscopeProbe.usbReady(),
+                    )
+                    if (next == OtoscopePower.Timeout.ASK_PERMISSION) {
+                        // Enchufado pero sin permiso: alguien cerró el pedido de Android. Se pide de
+                        // nuevo (apagando y encendiendo el puerto, así vuelve el pedido con la casilla)
+                        // y el puerto queda encendido. Si lo encendió el panel, se apaga al salir.
                         log("[OTOSCOPIO] Está enchufado pero sin permiso USB: se vuelve a pedir")
-                        hub.forgetAsked()
+                        askOtoscopePermission()
                         done(
                             null,
                             "Falta aceptar el permiso USB del otoscopio: aceptá el pedido que aparece " +
@@ -878,7 +974,7 @@ class TotemRuntime(context: Context) {
                         )
                         return
                     }
-                    if (OtoscopePower.Action.PORT_OFF in poll.actions) turnOffOtoscopePort()
+                    if (next == OtoscopePower.Timeout.PORT_OFF) turnOffOtoscopePort()
                     log("[OTOSCOPIO] No apareció en ${OTOSCOPE_WAIT_NANOS / 1_000_000_000L} s")
                     done(null, "El otoscopio no aparece como cámara.")
                     return
@@ -1024,19 +1120,20 @@ class TotemRuntime(context: Context) {
     }
 
     /**
-     * Guarda el estado de reposo como arranque del hub, para los segundos entre
-     * que recibe energía y arranca el servicio. Un puerto libre no se manda. Es
-     * persistente en el hub: sale sólo con este botón. Fuera del hilo de la pantalla.
+     * Guarda el estado del kiosco como arranque del hub, para los segundos entre
+     * que recibe energía y arranca el servicio: la tablet arranca en el kiosco.
+     * Un puerto libre no se manda. Es persistente en el hub: sale sólo con este
+     * botón. Fuera del hilo de la pantalla.
      */
     fun testYkushSaveBoot(): String {
         if (!ykush.plugged()) return "No hay hub YKUSH3 conectado."
-        val wanted = HubRestState.wanted(config)
+        val wanted = HubRestState.wanted(config, kiosk = true)
         val rejected = wanted.mapIndexedNotNull { index, on ->
             val port = index + 1
             port.takeIf { on != null && !ykush.setDefaultState(port, on) }
         }
         return if (rejected.isEmpty()) {
-            "El hub guardó el arranque: ${HubRestState.describe(wanted)}"
+            "El hub guardó el arranque, el estado del kiosco: ${HubRestState.describe(wanted)}"
         } else {
             "El hub no aceptó el puerto ${rejected.joinToString(", ")}. Mirá la consola."
         }
@@ -1120,6 +1217,9 @@ class TotemRuntime(context: Context) {
         private const val STETHO_WAIT_NANOS = 5L * 1_000_000_000L
         private const val DEVICE_POLL_MS = 250L
         private const val OTOSCOPE_WAIT_NANOS = 8L * 1_000_000_000L
+
+        /** Lo que queda apagado el puerto del otoscopio para que Android lo vea como recién conectado. */
+        private const val OTOSCOPE_CYCLE_OFF_MS = 2_000L
 
         /** Visto el USB del otoscopio, cuánto se espera a que la tablet lo liste como cámara antes de ir por UVC. */
         private const val CAMERA2_GRACE_NANOS = 2L * 1_000_000_000L

@@ -9,11 +9,12 @@
     android:orientation="horizontal">
 
     <TextView
+        android:fontFamily="@font/barlow_medium"
         android:id="@+id/portLabel"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:textColor="@color/vital_on"
+        android:textColor="@color/text"
         android:textSize="15sp" />
 
     <TextView
@@ -23,25 +24,21 @@
         android:layout_marginEnd="12dp"
         android:fontFamily="monospace"
         android:text="sin leer"
-        android:textColor="@color/vital_dim"
+        android:textColor="@color/muted"
         android:textSize="13sp" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/portOn"
-        style="@style/Widget.Material3.Button.OutlinedButton"
+        style="@style/Panel.Button.Secondary"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="48dp"
         android:layout_marginEnd="8dp"
-        android:text="@string/testing_on"
-        android:textColor="@color/vital_on"
-        app:strokeColor="@color/vital_dim" />
+        android:text="@string/testing_on" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/portOff"
-        style="@style/Widget.Material3.Button.OutlinedButton"
+        style="@style/Panel.Button.Secondary"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/testing_off"
-        android:textColor="@color/vital_on"
-        app:strokeColor="@color/vital_dim" />
+        android:layout_height="48dp"
+        android:text="@string/testing_off" />
 </LinearLayout>

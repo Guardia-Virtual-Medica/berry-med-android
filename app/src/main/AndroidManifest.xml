@@ -70,6 +70,7 @@
             android:configChanges="orientation|screenSize|screenLayout"
             android:exported="true"
             android:launchMode="singleTask"
+            android:theme="@style/Theme.BerryMed.Panel"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -81,6 +82,9 @@
             El kiosco de OnDoctor dentro de Berry Med, como hacía la app del proveedor:
             un WebView a pantalla completa. Es la app de inicio de la tablet (HOME):
             Android la abre al encender y el botón de inicio vuelve a ella.
+            Tiene su propia tarea, como el Panel Local: así el ícono de Berry Med
+            muestra la configuración y no el kiosco, y abrir la configuración
+            (singleTask) no destruye el kiosco que estaba arriba en la misma tarea.
         -->
         <activity
             android:name=".ui.KioskActivity"
@@ -89,6 +93,7 @@
             android:exported="true"
             android:launchMode="singleTask"
             android:screenOrientation="landscape"
+            android:taskAffinity="com.guardiavirtual.berrymed.kiosk"
             android:theme="@style/Theme.BerryMed.Panel">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -97,9 +102,28 @@
             </intent-filter>
         </activity>
 
+        <!--
+            El ícono ONDOCTOR365 de la tablet: abre el kiosco del paciente. Es un
+            alias y no otra pantalla porque el kiosco es uno solo, con su WebView,
+            su sala de LiveKit y su recarga; tocar el ícono vuelve al mismo.
+        -->
+        <activity-alias
+            android:name=".ui.OnDoctorLauncher"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_ondoctor"
+            android:roundIcon="@mipmap/ic_launcher_ondoctor"
+            android:label="@string/ondoctor"
+            android:targetActivity=".ui.KioskActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
         <activity
             android:name=".ui.TestingActivity"
             android:configChanges="orientation|screenSize|screenLayout"
+            android:theme="@style/Theme.BerryMed.Panel"
             android:exported="false" />
 
         <!--

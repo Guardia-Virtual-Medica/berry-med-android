@@ -1,41 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
     <style name="Theme.BerryMed" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="colorPrimary">@color/signal</item>
-        <item name="colorOnPrimary">@color/vital_on</item>
-        <item name="android:statusBarColor">@color/monitor</item>
-        <item name="android:navigationBarColor">@color/monitor</item>
-        <item name="android:windowBackground">@color/monitor</item>
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorOnPrimary">@color/onPrimary</item>
+        <item name="android:statusBarColor">@color/bg</item>
+        <item name="android:navigationBarColor">@color/bg</item>
+        <item name="android:windowBackground">@color/bg</item>
         <item name="android:fontFamily">sans-serif</item>
         <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
     </style>
 
-    <style name="ThemeOverlay.BerryMed.Form" parent="ThemeOverlay.Material3.Light">
-        <item name="colorPrimary">@color/signal</item>
-        <item name="colorOnSurface">@color/ink</item>
-    </style>
-
-    <style name="VitalLabel">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:textColor">@color/vital_dim</item>
-        <item name="android:textSize">14sp</item>
-    </style>
-
-    <style name="VitalValue">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:textColor">@color/vital_on</item>
-        <item name="android:textSize">40sp</item>
-        <item name="android:fontFamily">sans-serif-light</item>
-        <item name="android:includeFontPadding">false</item>
+<!--
+        La capa de configuración de la pantalla principal, oscura como el
+        Panel Local: campos, chips y desplegables toman estos colores.
+    -->
+    <style name="ThemeOverlay.BerryMed.FormDark" parent="ThemeOverlay.Material3.Dark">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorOnPrimary">@color/onPrimary</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/text</item>
+        <item name="colorOnSurfaceVariant">@color/muted</item>
+        <item name="colorOutline">@color/line3</item>
+        <item name="colorSecondaryContainer">@color/surface2</item>
+        <item name="colorOnSecondaryContainer">@color/text</item>
+        <item name="android:fontFamily">@font/barlow_medium</item>
     </style>
 
     <style name="FormTitle">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginTop">18dp</item>
-        <item name="android:textColor">@color/ink</item>
+        <item name="android:fontFamily">@font/barlow_semibold</item>
+        <item name="android:textColor">@color/text</item>
         <item name="android:textSize">18sp</item>
     </style>
 
@@ -50,7 +46,7 @@
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginTop">4dp</item>
         <item name="android:lineSpacingExtra">3dp</item>
-        <item name="android:textColor">@color/ink_soft</item>
+        <item name="android:textColor">@color/body</item>
         <item name="android:textSize">15sp</item>
     </style>
 
@@ -59,7 +55,8 @@
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginTop">10dp</item>
-        <item name="android:textColor">@color/vital_on</item>
+        <item name="android:fontFamily">@font/barlow_semibold</item>
+        <item name="android:textColor">@color/text2</item>
         <item name="android:textSize">14sp</item>
     </style>
 
@@ -69,10 +66,13 @@
         <item name="android:layout_marginTop">2dp</item>
         <item name="android:fontFamily">monospace</item>
         <item name="android:lineSpacingExtra">2dp</item>
-        <item name="android:textColor">@color/vital_dim</item>
+        <item name="android:textColor">@color/muted</item>
         <item name="android:textIsSelectable">true</item>
-        <item name="android:textSize">12sp</item>
+        <item name="android:textSize">13sp</item>
     </style>
+
+    <!-- El menú de la ruedita, oscuro como la pantalla. -->
+    <style name="ThemeOverlay.BerryMed.Menu" parent="ThemeOverlay.Material3.Dark" />
 
     <style name="StepLabel">
         <item name="android:layout_width">0dp</item>
@@ -234,88 +234,68 @@
     </style>
 
     <!--
-        Los botones: MaterialButton sin los márgenes ni la altura mínima de
-        Material, para que midan lo que dice el diseño.
+        Los botones: una sola forma para todo lo que se toca, rectángulos de
+        esquinas de 6 dp, Barlow SemiBold 16 sp, borde de 1 dp y el mismo
+        ripple. Las variantes cambian sólo el color y, donde hace falta, el
+        alto. Lo que sólo informa (chips de estado, badges, el toast) queda
+        redondo: cuadrado se toca, redondo informa. MaterialButton sin los
+        márgenes ni la altura mínima de Material, para que midan lo que dice
+        el diseño.
     -->
     <style name="Panel.Button" parent="Widget.Material3.Button">
+        <item name="android:layout_height">48dp</item>
         <item name="android:insetTop">0dp</item>
         <item name="android:insetBottom">0dp</item>
         <item name="android:insetLeft">0dp</item>
         <item name="android:insetRight">0dp</item>
         <item name="android:minWidth">0dp</item>
         <item name="android:minHeight">0dp</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="android:fontFamily">@font/barlow_semibold</item>
         <item name="android:letterSpacing">0</item>
         <item name="android:maxLines">1</item>
         <item name="android:textAllCaps">false</item>
-        <item name="iconGravity">textStart</item>
-        <item name="iconPadding">8dp</item>
-        <item name="rippleColor">#1FFFFFFF</item>
-    </style>
-
-    <!-- Con contorno: Finalizar, Congelar el ECG, Cancelar. -->
-    <style name="Panel.Button.Outline">
-        <item name="android:layout_height">44dp</item>
-        <item name="android:fontFamily">@font/barlow_semibold</item>
-        <item name="android:paddingStart">20dp</item>
-        <item name="android:paddingEnd">20dp</item>
-        <item name="android:textColor">@color/panel_button_text</item>
-        <item name="android:textSize">16sp</item>
-        <item name="backgroundTint">@color/panel_outline_bg</item>
-        <item name="cornerRadius">10dp</item>
-        <item name="iconTint">@color/panel_button_text</item>
-        <item name="strokeColor">@color/line3</item>
-        <item name="strokeWidth">1dp</item>
-    </style>
-
-    <!-- La acción principal de cada contexto, una sola por panel. -->
-    <style name="Panel.Button.Primary">
-        <item name="android:layout_height">68dp</item>
-        <item name="android:fontFamily">@font/barlow_bold</item>
-        <item name="android:paddingStart">12dp</item>
-        <item name="android:paddingEnd">12dp</item>
-        <item name="android:textColor">@color/panel_primary_text</item>
-        <item name="android:textSize">18sp</item>
-        <item name="backgroundTint">@color/panel_primary_bg</item>
-        <item name="cornerRadius">12dp</item>
-        <item name="iconSize">24dp</item>
-        <item name="iconTint">@color/panel_primary_text</item>
-    </style>
-
-    <style name="Panel.Button.Secondary">
-        <item name="android:layout_height">52dp</item>
-        <item name="android:fontFamily">@font/barlow_semibold</item>
-        <item name="android:paddingStart">12dp</item>
-        <item name="android:paddingEnd">12dp</item>
         <item name="android:textColor">@color/panel_button_text</item>
         <item name="android:textSize">16sp</item>
         <item name="backgroundTint">@color/panel_secondary_bg</item>
-        <item name="cornerRadius">12dp</item>
+        <item name="cornerRadius">6dp</item>
+        <item name="iconGravity">textStart</item>
+        <item name="iconPadding">8dp</item>
         <item name="iconSize">22dp</item>
         <item name="iconTint">@color/panel_button_text</item>
-        <item name="strokeColor">@color/line2</item>
+        <item name="rippleColor">#1FFFFFFF</item>
+        <item name="strokeColor">@color/line3</item>
         <item name="strokeWidth">1dp</item>
     </style>
 
-    <!-- Medir y Cancelar en la tarjeta de la presión. -->
-    <style name="Panel.Button.Card" parent="Panel.Button.Secondary">
-        <item name="android:layout_height">48dp</item>
-        <item name="android:paddingStart">14dp</item>
-        <item name="android:paddingEnd">14dp</item>
-        <item name="android:textSize">15sp</item>
-        <item name="cornerRadius">10dp</item>
-        <item name="strokeColor">@color/line3</item>
+    <!-- El de casi todos: fondo surface2, borde line3, texto text. -->
+    <style name="Panel.Button.Secondary" />
+
+    <!-- El secundario de las cabeceras (Congelar, volver al ECG, Cancelar): 44 dp para no agrandarlas. -->
+    <style name="Panel.Button.Outline">
+        <item name="android:layout_height">44dp</item>
     </style>
 
-    <!-- El botón claro del diálogo: Finalizar sesión. -->
-    <style name="Panel.Button.Light">
-        <item name="android:layout_height">48dp</item>
-        <item name="android:fontFamily">@font/barlow_bold</item>
-        <item name="android:paddingStart">20dp</item>
-        <item name="android:paddingEnd">20dp</item>
-        <item name="android:textColor">@color/bg</item>
-        <item name="android:textSize">16sp</item>
-        <item name="backgroundTint">@color/panel_light_bg</item>
-        <item name="cornerRadius">10dp</item>
+    <!-- Medir y Cancelar en la tarjeta de la presión. -->
+    <style name="Panel.Button.Card" />
+
+    <!-- La acción principal de cada contexto, una sola por panel: 68 dp, sin borde. -->
+    <style name="Panel.Button.Primary">
+        <item name="android:layout_height">68dp</item>
+        <item name="android:textColor">@color/panel_primary_text</item>
+        <item name="backgroundTint">@color/panel_primary_bg</item>
+        <item name="iconSize">24dp</item>
+        <item name="iconTint">@color/panel_primary_text</item>
+        <item name="strokeWidth">0dp</item>
+    </style>
+
+    <!-- Finalizar: el de la cabecera y el que confirma en el diálogo, para que se lea igual en los dos. -->
+    <style name="Panel.Button.Danger">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="backgroundTint">@color/panel_danger_bg</item>
+        <item name="iconTint">@android:color/white</item>
+        <item name="strokeWidth">0dp</item>
     </style>
 
     <!-- Los tiles del dock. -->
@@ -366,5 +346,36 @@
         <item name="android:textColor">@color/bg</item>
         <item name="android:textSize">15sp</item>
         <item name="android:visibility">gone</item>
+    </style>
+
+    <!--
+        La pantalla principal. Sus botones son los del Panel Local: USB-config,
+        Testing y Panel Local secundarios, ONDOCTOR365 primario en el violeta
+        de su ícono. Todos del mismo alto y la misma forma.
+    -->
+    <style name="MainButton" parent="Panel.Button.Secondary">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_weight">1</item>
+    </style>
+
+    <style name="MainButton.Primary">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="backgroundTint">@color/ondoctor_icon</item>
+        <item name="strokeWidth">0dp</item>
+    </style>
+
+    <!-- Siguiente y Guardar de la configuración: el primario azul, del alto de los secundarios. -->
+    <style name="Panel.Button.Form" parent="Panel.Button.Primary">
+        <item name="android:layout_height">48dp</item>
+    </style>
+
+    <!-- Los textos de la tarjeta Estado. -->
+    <style name="MainStatusText" parent="Panel.Text">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_marginTop">6dp</item>
+        <item name="android:includeFontPadding">true</item>
+        <item name="android:lineSpacingExtra">3dp</item>
+        <item name="android:textColor">@color/body</item>
+        <item name="android:textSize">14sp</item>
     </style>
 </resources>

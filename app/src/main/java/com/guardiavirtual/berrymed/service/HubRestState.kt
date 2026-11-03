@@ -6,17 +6,26 @@ import com.guardiavirtual.berrymed.config.CALL_AUDIO_HEADSET
 import com.guardiavirtual.berrymed.config.YKUSH_PORTS
 
 /**
- * Cómo quedan los puertos del YKUSH3 cuando nadie los usa: otoscopio y
- * estetoscopio apagados, y el auricular encendido sólo si la llamada sale por
- * él. El panel y la teleconsulta los leen apagados, los encienden y los apagan
- * al terminar. Sin Android, para probar la regla sola.
+ * Cómo quedan los puertos del YKUSH3 cuando nadie los usa. Con el kiosco
+ * adelante, otoscopio y estetoscopio encendidos, así Android los ve todo el
+ * tiempo y el otoscopio no pierde su permiso USB: la teleconsulta los usa ya
+ * encendidos. Encenderlos es sólo darles energía, no publica nada: la
+ * transmisión sigue empezando con `start_oth`/`start_steth` y al cortar el
+ * puerto queda encendido. Fuera del kiosco (configuración, Testing, Panel
+ * Local, otra app) es el reposo: otoscopio y estetoscopio apagados, y el panel
+ * los lee apagados, los enciende y los apaga al terminar. En los dos, el
+ * auricular encendido sólo si la llamada sale por él. Sin Android, para probar
+ * la regla sola.
  */
 object HubRestState {
-    /** El estado de cada puerto, desde el 1. Un puerto libre es null: no hay equipo, queda como está. */
-    fun wanted(config: BerryConfig): List<Boolean?> = (1..YKUSH_PORTS).map { port ->
+    /**
+     * El estado de cada puerto, desde el 1, con el kiosco adelante ([kiosk]) o
+     * no. Un puerto libre es null: no hay equipo, queda como está.
+     */
+    fun wanted(config: BerryConfig, kiosk: Boolean): List<Boolean?> = (1..YKUSH_PORTS).map { port ->
         when (port) {
             config.ykushHeadsetPort -> config.callAudioOutput == CALL_AUDIO_HEADSET
-            config.ykushOtoscopePort, config.ykushStethoscopePort -> false
+            config.ykushOtoscopePort, config.ykushStethoscopePort -> kiosk
             else -> null
         }
     }
@@ -38,9 +47,9 @@ object HubRestState {
         }.joinToString(", ")
 
     /**
-     * Si falta aplicar el reposo: una vez por hub, porque cada conexión es un
+     * Si falta aplicar el estado: una vez por hub, porque cada conexión es un
      * `deviceId` nuevo y vuelve a arrancar como lo tenga guardado, y otra vez
-     * si cambió la salida de audio.
+     * si cambió la salida de audio o se abrió o se dejó el kiosco.
      */
     class Pending {
         private var doneFor: Int? = null

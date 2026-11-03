@@ -35,6 +35,11 @@ class UsbHub(context: Context) {
      * Pide permiso a los dispositivos del tótem que no lo tienen. No bloquea:
      * lo que ya tiene permiso se usa igual, y un dispositivo ajeno al tótem
      * (un teclado, un lector) no se pide ni frena a los demás.
+     *
+     * El otoscopio no: su único pedido es el de Android por el filtro, que trae
+     * «Usar de forma predeterminada». Uno con `requestPermission` no la trae,
+     * aparecía a la par y, aceptado, valía sólo hasta apagar el puerto. Para
+     * volver a pedirlo está `OtoscopePermission`.
      */
     fun requestMissingPermissions() {
         val devices = totemDevices()
@@ -42,7 +47,7 @@ class UsbHub(context: Context) {
         requests.observe(devices.map { it.deviceId }.toSet(), now)
         synchronized(notBerry) { notBerry.retainAll(manager.deviceList.values.map { it.deviceId }.toSet()) }
         for (device in devices) {
-            if (manager.hasPermission(device)) continue
+            if (manager.hasPermission(device) || isOtoscope(device)) continue
             if (requests.shouldAsk(device.deviceId, now)) {
                 manager.requestPermission(device, permissionIntent())
             }
@@ -54,6 +59,12 @@ class UsbHub(context: Context) {
         requestMissingPermissions()
     }
 
+    /** El pedido sin casilla, para el otoscopio sólo si no hay hub con el que hacer aparecer el de Android. */
+    fun requestPermission(device: UsbDevice) {
+        manager.requestPermission(device, permissionIntent())
+    }
+
+    /** Cuenta también el otoscopio, aunque no se le pida solo: la pantalla dice que falta. */
     fun permissionMissing(): Boolean = totemDevices().any { !manager.hasPermission(it) }
 
     fun mark(deviceId: Int): Boolean = synchronized(busy) { busy.add(deviceId) }
@@ -162,6 +173,8 @@ class UsbHub(context: Context) {
         private const val PERMISSION_GRACE_NANOS = 3L * 1_000_000_000L
 
         fun isYkush(device: UsbDevice): Boolean = KnownDevices.isYkush3(device.vendorId, device.productId)
+
+        fun isOtoscope(device: UsbDevice): Boolean = KnownDevices.isOtoscope(device.vendorId, device.productId)
 
         /**
          * El termómetro sólo manda una línea cuando alguien mide, así que no se

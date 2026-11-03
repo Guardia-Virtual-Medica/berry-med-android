@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/monitor"
+    android:background="@color/bg"
     android:fillViewport="true">
 
     <LinearLayout
@@ -24,31 +24,35 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/backButton"
-                style="@style/Widget.Material3.Button.OutlinedButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="16dp"
-                android:text="@string/testing_back"
-                android:textColor="@color/vital_on"
-                app:strokeColor="@color/vital_dim" />
+                style="@style/Panel.Button.Secondary"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_marginEnd="14dp"
+                android:contentDescription="@string/testing_back"
+                android:paddingStart="0dp"
+                android:paddingEnd="0dp"
+                app:icon="@drawable/ic_arrow_back"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp"
+                app:iconSize="22dp" />
 
             <TextView
+                style="@style/Panel.Text.Title"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/testing_title"
-                android:textColor="@color/vital_on"
-                android:textSize="32sp" />
+                android:textSize="22sp" />
         </LinearLayout>
 
         <TextView
+            android:fontFamily="@font/barlow_medium"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:lineSpacingExtra="3dp"
             android:paddingStart="6dp"
             android:text="@string/testing_help"
-            android:textColor="@color/vital_dim"
+            android:textColor="@color/body"
             android:textSize="14sp" />
 
         <LinearLayout
@@ -61,41 +65,40 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/startButton"
+                style="@style/Panel.Button.Form"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="48dp"
                 android:layout_marginEnd="8dp"
                 android:text="@string/testing_start" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/stopButton"
-                style="@style/Widget.Material3.Button.OutlinedButton"
+                style="@style/Panel.Button.Secondary"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="48dp"
                 android:layout_marginEnd="8dp"
-                android:text="@string/testing_stop"
-                android:textColor="@color/vital_on"
-                app:strokeColor="@color/vital_dim" />
+                android:text="@string/testing_stop" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/allButton"
-                style="@style/Widget.Material3.Button.OutlinedButton"
+                style="@style/Panel.Button.Secondary"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="48dp"
                 android:layout_marginEnd="12dp"
-                android:text="@string/testing_all"
-                android:textColor="@color/vital_on"
-                app:strokeColor="@color/vital_dim" />
+                android:text="@string/testing_all" />
 
             <TextView
                 android:id="@+id/testStatus"
+                style="@style/Panel.Text.Status"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:textColor="@color/vital_on"
+                android:textColor="@color/muted"
                 android:textSize="15sp" />
         </LinearLayout>
 
         <TextView
+            android:fontFamily="@font/barlow_medium"
             android:id="@+id/testMessage"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -113,16 +116,17 @@
 
             <View
                 android:id="@+id/berryDot"
-                android:layout_width="10dp"
-                android:layout_height="10dp"
+                android:layout_width="8dp"
+                android:layout_height="8dp"
                 android:layout_marginEnd="8dp"
-                android:background="@drawable/status_dot" />
+                android:background="@drawable/panel_dot" />
 
             <TextView
+                android:fontFamily="@font/barlow_medium"
                 android:id="@+id/berryLine"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/vital_on"
+                android:textColor="@color/text"
                 android:textSize="15sp" />
         </LinearLayout>
 
@@ -186,7 +190,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="6dp"
-            android:background="@color/card"
+            android:background="@drawable/panel_card"
             android:orientation="vertical"
             android:padding="14dp">
 
@@ -197,20 +201,18 @@
                 android:orientation="horizontal">
 
                 <TextView
+                    style="@style/Panel.CardLabel"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="@string/testing_ykush"
-                    android:textColor="@color/vital_on"
-                    android:textSize="17sp" />
+                    android:text="@string/testing_ykush" />
 
                 <View
                     android:id="@+id/ykushDot"
-                    android:layout_width="10dp"
-                    android:layout_height="10dp"
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
                     android:layout_marginEnd="8dp"
-                    android:background="@drawable/status_dot"
-                    android:backgroundTint="@color/vital_dim" />
+                    android:background="@drawable/panel_dot" />
 
                 <TextView
                     android:id="@+id/ykushStatus"
@@ -218,25 +220,24 @@
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="12dp"
                     android:fontFamily="monospace"
-                    android:textColor="@color/vital_dim"
+                    android:textColor="@color/muted"
                     android:textSize="13sp" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/ykushReadButton"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/Panel.Button.Secondary"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/testing_ykush_read"
-                    android:textColor="@color/vital_on"
-                    app:strokeColor="@color/vital_dim" />
+                    android:layout_height="48dp"
+                    android:text="@string/testing_ykush_read" />
             </LinearLayout>
 
             <TextView
+                android:fontFamily="@font/barlow_medium"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:text="@string/testing_ykush_help"
-                android:textColor="@color/vital_dim"
+                android:textColor="@color/body"
                 android:textSize="13sp" />
 
             <include
@@ -253,29 +254,29 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/ykushSaveBootButton"
-                style="@style/Widget.Material3.Button.OutlinedButton"
+                style="@style/Panel.Button.Secondary"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="48dp"
                 android:layout_marginTop="8dp"
-                android:text="@string/testing_ykush_save_boot"
-                android:textColor="@color/vital_on"
-                app:strokeColor="@color/vital_dim" />
+                android:text="@string/testing_ykush_save_boot" />
 
             <TextView
+                android:fontFamily="@font/barlow_medium"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:text="@string/testing_ykush_save_boot_help"
-                android:textColor="@color/vital_dim"
+                android:textColor="@color/body"
                 android:textSize="13sp" />
 
             <TextView
+                android:fontFamily="@font/barlow_medium"
                 android:id="@+id/ykushMessage"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:minHeight="20dp"
-                android:textColor="@color/vital_dim"
+                android:textColor="@color/body"
                 android:textSize="14sp" />
         </LinearLayout>
 
@@ -284,23 +285,23 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="6dp"
-            android:background="@color/card"
+            android:background="@drawable/panel_card"
             android:orientation="vertical"
             android:padding="14dp">
 
             <TextView
+                style="@style/Panel.CardLabel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/testing_devices"
-                android:textColor="@color/vital_on"
-                android:textSize="17sp" />
+                android:text="@string/testing_devices" />
 
             <TextView
+                android:fontFamily="@font/barlow_medium"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:text="@string/testing_devices_help"
-                android:textColor="@color/vital_dim"
+                android:textColor="@color/body"
                 android:textSize="13sp" />
 
             <TextView
@@ -333,7 +334,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="6dp"
-            android:background="@color/card"
+            android:background="@drawable/panel_card"
             android:orientation="vertical"
             android:padding="14dp">
 
@@ -344,36 +345,35 @@
                 android:orientation="horizontal">
 
                 <TextView
+                    style="@style/Panel.CardLabel"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="@string/testing_tele"
-                    android:textColor="@color/vital_on"
-                    android:textSize="17sp" />
+                    android:text="@string/testing_tele" />
 
                 <View
                     android:id="@+id/teleDot"
-                    android:layout_width="10dp"
-                    android:layout_height="10dp"
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
                     android:layout_marginEnd="8dp"
-                    android:background="@drawable/status_dot"
-                    android:backgroundTint="@color/vital_dim" />
+                    android:background="@drawable/panel_dot" />
 
                 <TextView
                     android:id="@+id/teleState"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="monospace"
-                    android:textColor="@color/vital_dim"
+                    android:textColor="@color/muted"
                     android:textSize="13sp" />
             </LinearLayout>
 
             <TextView
+                android:fontFamily="@font/barlow_medium"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:text="@string/testing_tele_help"
-                android:textColor="@color/vital_dim"
+                android:textColor="@color/body"
                 android:textSize="13sp" />
 
             <TextView
@@ -384,30 +384,34 @@
                 style="@style/TestingListTitle"
                 android:text="@string/testing_tele_manual" />
 
-            <EditText
-                android:id="@+id/teleServer"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:autofillHints=""
-                android:fontFamily="monospace"
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Field"
                 android:hint="@string/testing_tele_server"
-                android:inputType="textUri"
-                android:textColor="@color/vital_on"
-                android:textColorHint="@color/vital_dim"
-                android:textSize="13sp" />
+                android:theme="@style/ThemeOverlay.BerryMed.FormDark">
 
-            <EditText
-                android:id="@+id/teleToken"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:autofillHints=""
-                android:fontFamily="monospace"
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/teleServer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:inputType="textUri"
+                    android:textSize="13sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Field"
                 android:hint="@string/testing_tele_token"
-                android:inputType="textNoSuggestions"
-                android:maxLines="3"
-                android:textColor="@color/vital_on"
-                android:textColorHint="@color/vital_dim"
-                android:textSize="13sp" />
+                android:theme="@style/ThemeOverlay.BerryMed.FormDark">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/teleToken"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:inputType="textNoSuggestions"
+                    android:maxLines="3"
+                    android:textSize="13sp" />
+            </com.google.android.material.textfield.TextInputLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -417,26 +421,26 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/teleOtoscopeButton"
+                    style="@style/Panel.Button.Form"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="48dp"
                     android:layout_marginEnd="8dp"
                     android:text="@string/testing_tele_otoscope" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/teleStethoButton"
+                    style="@style/Panel.Button.Form"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="48dp"
                     android:layout_marginEnd="8dp"
                     android:text="@string/testing_tele_stetho" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/teleStopButton"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/Panel.Button.Secondary"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/testing_tele_stop"
-                    android:textColor="@color/vital_on"
-                    app:strokeColor="@color/vital_dim" />
+                    android:layout_height="48dp"
+                    android:text="@string/testing_tele_stop" />
             </LinearLayout>
         </LinearLayout>
 
@@ -444,7 +448,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="6dp"
-            android:background="@color/card"
+            android:background="@drawable/panel_card"
             android:orientation="vertical"
             android:padding="14dp">
 
@@ -455,21 +459,18 @@
                 android:orientation="horizontal">
 
                 <TextView
+                    style="@style/Panel.CardLabel"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="@string/testing_preview"
-                    android:textColor="@color/vital_on"
-                    android:textSize="17sp" />
+                    android:text="@string/testing_preview" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/copyButton"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/Panel.Button.Secondary"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/testing_copy"
-                    android:textColor="@color/vital_on"
-                    app:strokeColor="@color/vital_dim" />
+                    android:layout_height="48dp"
+                    android:text="@string/testing_copy" />
             </LinearLayout>
 
             <TextView
@@ -478,7 +479,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:fontFamily="monospace"
-                android:textColor="@color/vital_dim"
+                android:textColor="@color/muted"
                 android:textIsSelectable="true"
                 android:textSize="13sp" />
 
@@ -489,15 +490,15 @@
                 android:layout_marginTop="4dp"
                 android:fontFamily="monospace"
                 android:maxLines="6"
-                android:textColor="@color/vital_dim"
-                android:textSize="12sp" />
+                android:textColor="@color/muted"
+                android:textSize="13sp" />
         </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="6dp"
-            android:background="@color/card"
+            android:background="@drawable/panel_card"
             android:orientation="vertical"
             android:padding="14dp">
 
@@ -508,31 +509,26 @@
                 android:orientation="horizontal">
 
                 <TextView
+                    style="@style/Panel.CardLabel"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="@string/testing_console"
-                    android:textColor="@color/vital_on"
-                    android:textSize="17sp" />
+                    android:text="@string/testing_console" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/pauseButton"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/Panel.Button.Secondary"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="48dp"
                     android:layout_marginEnd="8dp"
-                    android:text="@string/testing_pause"
-                    android:textColor="@color/vital_on"
-                    app:strokeColor="@color/vital_dim" />
+                    android:text="@string/testing_pause" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/clearButton"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/Panel.Button.Secondary"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/testing_clear"
-                    android:textColor="@color/vital_on"
-                    app:strokeColor="@color/vital_dim" />
+                    android:layout_height="48dp"
+                    android:text="@string/testing_clear" />
             </LinearLayout>
 
             <TextView
@@ -543,9 +539,9 @@
                 android:fontFamily="monospace"
                 android:lineSpacingExtra="2dp"
                 android:minHeight="120dp"
-                android:textColor="@color/vital_dim"
+                android:textColor="@color/muted"
                 android:textIsSelectable="true"
-                android:textSize="12sp" />
+                android:textSize="13sp" />
         </LinearLayout>
     </LinearLayout>
 </ScrollView>

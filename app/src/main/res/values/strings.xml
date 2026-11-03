@@ -1,7 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Berry Med</string>
-    <string name="screen_title">Berry Med PM-6750</string>
+    <string name="screen_title">Maletín de atención ONDOCTOR365</string>
+    <string name="settings">Ajustes</string>
+    <string name="usb_request">Pedir permiso USB</string>
+    <string name="config_title">Configuración</string>
+    <string name="config_close">Cerrar la configuración</string>
+    <string name="main_chip_berry">Plaqueta</string>
+    <string name="main_chip_pusher">Pusher</string>
+    <string name="main_chip_thermo">Termómetro</string>
+    <string name="main_status">Estado</string>
+    <string name="ondoctor">ONDOCTOR365</string>
+    <string name="help_ondoctor">USB-config abre la configuración. ONDOCTOR365 abre el kiosco del paciente; para volver acá, cinco toques arriba a la izquierda y el PIN.</string>
     <string name="label_hr">Frecuencia</string>
     <string name="label_spo2">SpO₂ / pulso</string>
     <string name="label_resp">Respiración</string>
@@ -56,11 +66,11 @@
     <string name="load_failed">No se pudo leer la configuración guardada. Revisá los datos antes de guardar.</string>
     <string name="battery">Evitar que se duerma</string>
     <string name="battery_unavailable">Esta tablet no tiene el ajuste de batería. Buscalo a mano en Ajustes, Batería.</string>
-    <string name="usb_permission">Pedir permiso USB</string>
+    <string name="usb_permission">USB-config</string>
     <string name="help_usb_default">Al aceptar el permiso USB, marcá «Usar de forma predeterminada» para la plaqueta, el termómetro y el hub YKUSH3. Si no, Android lo vuelve a pedir arriba de Chrome después de cada reinicio.</string>
     <string name="testing">Testing</string>
     <string name="testing_title">Testing</string>
-    <string name="testing_back">← Volver</string>
+    <string name="testing_back">Volver</string>
     <string name="testing_help">Muestra lo que llega de cada equipo por USB, sin enviar nada a la API. Pusher sigue escuchando: si empieza una consulta, la prueba se corta sola.</string>
     <string name="testing_start">Iniciar prueba</string>
     <string name="testing_stop">Detener</string>
@@ -77,7 +87,7 @@
     <string name="testing_ykush_help">Cada puerto lleva un equipo. Apagar un puerto es desenchufar ese equipo para Android; encenderlo, enchufarlo de nuevo. Con una consulta enviando no se cambia nada.</string>
     <string name="testing_ykush_read">Leer estado</string>
     <string name="testing_ykush_save_boot">Guardar este arranque en el hub</string>
-    <string name="testing_ykush_save_boot_help">Guarda en el hub el estado de reposo, para los segundos entre que se prende y arranca el servicio. Queda en la memoria del hub: usarlo sólo al instalar o al cambiar la salida de audio.</string>
+    <string name="testing_ykush_save_boot_help">Guarda en el hub el estado del kiosco (otoscopio y estetoscopio encendidos), porque la tablet arranca en el kiosco, para los segundos entre que se prende y arranca el servicio. Queda en la memoria del hub: usarlo sólo al instalar o al cambiar la salida de audio.</string>
     <string name="testing_on">Encender</string>
     <string name="testing_off">Apagar</string>
     <string name="testing_devices">Dispositivos que ve Android</string>
@@ -123,7 +133,7 @@
     <string name="check_battery_done">Android no duerme a Berry Med ni le corta el servicio.</string>
     <string name="check_battery_missing">Si Android cierra el servicio, sólo puede volver a levantarlo con la app excluida.</string>
     <string name="check_otoscope">Permiso USB del otoscopio</string>
-    <string name="check_otoscope_detail">En reposo su puerto está apagado. Con el permiso de cámara dado, encendelo una vez en Testing → Hub YKUSH3, aceptá el permiso marcando «Usar de forma predeterminada» y apagalo. Berry Med no puede saber si quedó marcado.</string>
+    <string name="check_otoscope_detail">Con el kiosco adelante su puerto queda encendido, así que alcanza con aceptar el permiso una vez marcando la casilla. El pedido es uno solo, el de Android; si se cerró sin aceptar, «Pedir permiso USB» lo hace aparecer de nuevo. Con el permiso de cámara dado, encendelo en Testing → Hub YKUSH3, aceptá el permiso marcando «Usar de forma predeterminada» y apagalo. Berry Med no puede saber si quedó marcado.</string>
     <string name="check_otoscope_action">Abrir Testing</string>
     <string name="check_totem">Configurar el tótem en el kiosco</string>
     <string name="check_totem_detail">La primera vez el kiosco pide el identificador y la contraseña del tótem: Berry Med no usa la sesión de Chrome.</string>

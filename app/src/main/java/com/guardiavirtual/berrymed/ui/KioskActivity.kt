@@ -58,6 +58,12 @@ import kotlin.concurrent.thread
  * de inicio de la tablet, así Android la abre al encender y con ella adelante
  * el servicio tiene cámara y micrófono para la teleconsulta.
  *
+ * También se entra con el ícono ONDOCTOR365 de la tablet (un alias de esta
+ * pantalla en el manifest) y con el botón ONDOCTOR365 de la pantalla
+ * principal, sin PIN: es la pantalla del paciente. Tiene su propia tarea, así
+ * el ícono de Berry Med muestra la configuración y volver al kiosco no lo
+ * recrea ni recarga la página.
+ *
  * Cada dirección que carga el kiosco pasa por [TotemRuntime.onKioskUrl]: la
  * que trae `serverUrl` y `token` hace entrar a la sala del encuentro, y el
  * inicio o el login la hacen salir. El token no se escribe en ningún lado.
@@ -120,6 +126,8 @@ class KioskActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
+        // Con el kiosco adelante el otoscopio y el estetoscopio quedan encendidos: sólo energía, no transmiten.
+        runtime().setKioskVisible(true)
         getSystemService(ConnectivityManager::class.java).registerDefaultNetworkCallback(networkCallback)
     }
 
@@ -131,6 +139,7 @@ class KioskActivity : AppCompatActivity() {
         } catch (_: IllegalArgumentException) {
             // No estaba registrado: nada que sacar.
         }
+        runtime().setKioskVisible(false)
         super.onStop()
     }
 
@@ -363,7 +372,7 @@ class KioskActivity : AppCompatActivity() {
         addView(
             TextView(context).apply {
                 setText(R.string.kiosk_missing_url)
-                setTextColor(getColor(R.color.vital_on))
+                setTextColor(getColor(R.color.text))
                 textSize = 20f
                 gravity = Gravity.CENTER
             },
@@ -371,7 +380,7 @@ class KioskActivity : AppCompatActivity() {
         addView(
             Button(context).apply {
                 setText(R.string.kiosk_open_settings)
-                setOnClickListener { startActivity(Intent(context, MainActivity::class.java)) }
+                setOnClickListener { startActivity(configIntent()) }
             },
         )
     }
@@ -386,7 +395,7 @@ class KioskActivity : AppCompatActivity() {
         addView(
             TextView(context).apply {
                 setText(R.string.kiosk_offline)
-                setTextColor(getColor(R.color.vital_on))
+                setTextColor(getColor(R.color.text))
                 textSize = 20f
                 gravity = Gravity.CENTER
             },
@@ -432,11 +441,16 @@ class KioskActivity : AppCompatActivity() {
             }
             .setPositiveButton(R.string.kiosk_enter) { _, _ ->
                 if (pinAccepted(input.text?.toString(), runtime().config.localPanelPin)) {
-                    startActivity(Intent(this, MainActivity::class.java))
+                    // La pantalla principal; con la configuración abierta sólo si falta la URL del kiosco.
+                    val missingUrl = runtime().config.kioskUrl.isBlank()
+                    startActivity(if (missingUrl) configIntent() else Intent(this, MainActivity::class.java))
                 }
             }
             .show()
     }
+
+    private fun configIntent() =
+        Intent(this, MainActivity::class.java).putExtra(MainActivity.EXTRA_OPEN_CONFIG, true)
 
     companion object {
         private const val CORNER_DP = 64

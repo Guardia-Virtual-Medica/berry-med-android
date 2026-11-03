@@ -17,8 +17,13 @@ import android.text.TextWatcher
 import android.util.Log
 import android.content.res.ColorStateList
 import android.graphics.Typeface
+import android.view.ContextThemeWrapper
 import android.view.View
+import android.widget.PopupMenu
 import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
+import androidx.core.widget.TextViewCompat
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
@@ -44,6 +49,7 @@ import com.guardiavirtual.berrymed.service.ForegroundAccess
 import com.guardiavirtual.berrymed.service.MonitorService
 import com.guardiavirtual.berrymed.service.TotemRuntime
 import com.guardiavirtual.berrymed.service.TotemState
+import com.guardiavirtual.berrymed.ui.panel.Link
 import kotlinx.coroutines.runBlocking
 import kotlin.concurrent.thread
 
@@ -54,6 +60,10 @@ class MainActivity : AppCompatActivity() {
     /** La URL del kiosco guardada: "Abrir el kiosco" sólo con la del campo ya guardada. */
     private var savedKioskUrl = ""
     private val handler = Handler(Looper.getMainLooper())
+    /** Atrás cierra la capa de configuración; sin la capa, hace lo de siempre. */
+    private val closeConfigOnBack = object : OnBackPressedCallback(false) {
+        override fun handleOnBackPressed() = showConfig(false)
+    }
     private val tick = object : Runnable {
         override fun run() {
             if (::binding.isInitialized) {
@@ -69,9 +79,13 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.root.padForSystemBars()
         ContextCompat.startForegroundService(this, Intent(this, MonitorService::class.java))
         askPermissions()
         showStep(0)
+        onBackPressedDispatcher.addCallback(this, closeConfigOnBack)
+        binding.configClose.setOnClickListener { showConfig(false) }
+        if (intent.getBooleanExtra(EXTRA_OPEN_CONFIG, false)) showConfig(true)
         val watcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = preview()
@@ -101,13 +115,14 @@ class MainActivity : AppCompatActivity() {
             }
         }
         binding.saveButton.setOnClickListener { save() }
-        binding.batteryButton.setOnClickListener { askBatteryExemption() }
-        binding.usbButton.setOnClickListener { runtime().requestUsbPermissionAgain() }
+        binding.settingsButton.setOnClickListener { showSettingsMenu(it) }
+        binding.usbButton.setOnClickListener { showConfig(true) }
         binding.testingButton.setOnClickListener { startActivity(Intent(this, TestingActivity::class.java)) }
         binding.localPanelButton.setOnClickListener { startActivity(Intent(this, LocalPanelActivity::class.java)) }
+        binding.ondoctorButton.setOnClickListener { startActivity(Intent(this, KioskActivity::class.java)) }
         binding.checkPermissions.action.setOnClickListener { askMediaPermissions() }
         binding.checkHome.action.setOnClickListener { openHomeSettings() }
-        // El mismo pedido que el botón "Evitar que se duerma" de arriba.
+        // El mismo pedido que "Evitar que se duerma" del menú de la ruedita.
         binding.checkBattery.action.setOnClickListener { askBatteryExemption() }
         // El puerto se enciende en Testing, como cualquier otro: no hay otro camino para eso.
         binding.checkOtoscope.action.setOnClickListener { startActivity(Intent(this, TestingActivity::class.java)) }
@@ -123,11 +138,29 @@ class MainActivity : AppCompatActivity() {
                 savedKioskUrl = saved?.kioskUrl?.trim().orEmpty()
                 fill(saved ?: BerryConfig())
                 if (saved == null) {
-                    binding.formMessage.setTextColor(getColor(R.color.form_error))
+                    binding.formMessage.setTextColor(getColor(R.color.test_fail))
                     binding.formMessage.setText(R.string.load_failed)
                 }
+                // Primera instalación: sin el identificador del tótem no hay nada que mostrar todavía.
+                if (saved == null || saved.totemId.isBlank()) showConfig(true)
             }
         }
+    }
+
+    /** Otra pantalla manda a la configuración (el kiosco sin URL, por ejemplo): MainActivity es singleTask. */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (intent.getBooleanExtra(EXTRA_OPEN_CONFIG, false)) showConfig(true)
+    }
+
+    /** La capa de configuración tapa el contenido de abajo de la cabecera. Cerrarla no guarda. */
+    private fun showConfig(open: Boolean) {
+        binding.configLayer.visibility = if (open) View.VISIBLE else View.GONE
+        binding.mainContent.visibility = if (open) View.GONE else View.VISIBLE
+        closeConfigOnBack.isEnabled = open
+        if (!open) currentFocus?.clearFocus()
+        if (open && step == STEP_KIOSK) renderChecklist()
     }
 
     override fun onStart() {
@@ -269,7 +302,7 @@ class MainActivity : AppCompatActivity() {
         val color = when (item.done) {
             true -> R.color.ok
             false -> R.color.warn
-            null -> R.color.ink_soft
+            null -> R.color.line3
         }
         row.dot.backgroundTintList = ColorStateList.valueOf(getColor(color))
         row.title.setText(title)
@@ -343,7 +376,7 @@ class MainActivity : AppCompatActivity() {
         val missing = missingField(step)
         if (missing != null) {
             binding.formMessage.setText(missing)
-            binding.formMessage.setTextColor(getColor(R.color.form_error))
+            binding.formMessage.setTextColor(getColor(R.color.test_fail))
             return
         }
         clearMessage()
@@ -366,7 +399,7 @@ class MainActivity : AppCompatActivity() {
         if (step == STEP_KIOSK) renderChecklist()
         stepLabels().forEachIndexed { i, label ->
             val current = i == step
-            label.setTextColor(getColor(if (current) R.color.signal else R.color.ink_soft))
+            label.setTextColor(getColor(if (current) R.color.primary else R.color.muted))
             label.setTypeface(null, if (current) Typeface.BOLD else Typeface.NORMAL)
         }
     }
@@ -399,11 +432,11 @@ class MainActivity : AppCompatActivity() {
         if (blocked != null) {
             showStep(blocked.first)
             binding.formMessage.setText(blocked.second)
-            binding.formMessage.setTextColor(getColor(R.color.form_error))
+            binding.formMessage.setTextColor(getColor(R.color.test_fail))
             return
         }
         val config = readForm()
-        binding.formMessage.setTextColor(getColor(R.color.ink))
+        binding.formMessage.setTextColor(getColor(R.color.text))
         binding.formMessage.setText(R.string.saving)
         thread(name = "berry-config-save") {
             val saved = try {
@@ -418,7 +451,7 @@ class MainActivity : AppCompatActivity() {
                     savedKioskUrl = config.kioskUrl
                     renderChecklist()
                 }
-                binding.formMessage.setTextColor(getColor(if (saved) R.color.signal else R.color.form_error))
+                binding.formMessage.setTextColor(getColor(if (saved) R.color.ok else R.color.test_fail))
                 binding.formMessage.setText(if (saved) R.string.saved else R.string.save_failed)
             }
         }
@@ -463,14 +496,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun render(state: TotemState) {
-        paint(binding.heartRate, state.heartRate)
-        paint(binding.spo2Pulse, state.spo2Pulse)
-        paint(binding.respRate, state.respRate)
-        paint(binding.temperature, state.temperature)
-        paint(binding.nibp, state.nibp)
+        paint(binding.heartRate, state.heartRate, R.color.ecg)
+        paint(binding.spo2Pulse, state.spo2Pulse, R.color.spo2)
+        paint(binding.respRate, state.respRate, R.color.resp)
+        paint(binding.temperature, state.temperature, R.color.temp)
+        paint(binding.nibp, state.nibp, R.color.pa)
         binding.berryStatus.text = if (state.berryUp) "Plaqueta funcional" else "Plaqueta sin conectar"
         binding.berryDot.backgroundTintList = ColorStateList.valueOf(
-            getColor(if (state.berryUp) R.color.status_live else R.color.vital_dim),
+            getColor(if (state.berryUp) R.color.ok else R.color.line3),
         )
         binding.lastData.text = state.lastData
         binding.pusherStatus.text = if (state.pusherUp) {
@@ -480,12 +513,49 @@ class MainActivity : AppCompatActivity() {
         }
         binding.otherStatus.text = state.others
         binding.lastPost.text = state.lastPost
+        chip(binding.chipBerry, if (state.berryUp) Link.CONNECTED else Link.DISCONNECTED)
+        chip(binding.chipPusher, if (state.pusherUp) Link.CONNECTED else Link.DISCONNECTED)
+        chip(
+            binding.chipThermo,
+            when {
+                !state.thermoConnected -> Link.DISCONNECTED
+                state.thermoMeasured -> Link.CONNECTED
+                else -> Link.CONNECTING
+            },
+        )
     }
 
-    private fun paint(view: TextView, value: String) {
-        view.text = value
+    /** Cada vital en su color fijo, como en el Panel Local; sin dato, "—" apagado. */
+    private fun paint(view: TextView, value: String, color: Int) {
         val empty = value == "—" || value == "-" || value == "- -" || value == "- - /- -"
-        view.setTextColor(getColor(if (empty) R.color.vital_dim else R.color.vital_on))
+        view.text = if (empty) "—" else value
+        view.setTextColor(getColor(if (empty) R.color.faint else color))
+    }
+
+    /** Los chips de la cabecera, con los colores de los del Panel Local. */
+    private fun chip(view: TextView, link: Link) {
+        val dot = when (link) {
+            Link.CONNECTED -> R.color.ok
+            Link.CONNECTING -> R.color.warn
+            Link.DISCONNECTED -> R.color.line3
+        }
+        view.setBackgroundResource(if (link == Link.DISCONNECTED) R.drawable.panel_chip_off else R.drawable.panel_chip_on)
+        view.setTextColor(getColor(if (link == Link.DISCONNECTED) R.color.faint else R.color.text2))
+        TextViewCompat.setCompoundDrawableTintList(view, ColorStateList.valueOf(getColor(dot)))
+    }
+
+    /** La ruedita de arriba a la derecha: Pedir permiso USB y Evitar que se duerma. */
+    private fun showSettingsMenu(anchor: View) {
+        val menu = PopupMenu(ContextThemeWrapper(this, R.style.ThemeOverlay_BerryMed_Menu), anchor)
+        menu.menu.add(R.string.usb_request).setOnMenuItemClickListener {
+            runtime().requestUsbPermissionAgain()
+            true
+        }
+        menu.menu.add(R.string.battery).setOnMenuItemClickListener {
+            askBatteryExemption()
+            true
+        }
+        menu.show()
     }
 
     /** Algunas tablets no tienen el diálogo directo: se va a la lista general, y si tampoco está, se avisa. */
@@ -502,8 +572,12 @@ class MainActivity : AppCompatActivity() {
             } catch (_: ActivityNotFoundException) {
             }
         }
-        binding.formMessage.setTextColor(getColor(R.color.form_error))
+        binding.formMessage.setTextColor(getColor(R.color.test_fail))
         binding.formMessage.setText(R.string.battery_unavailable)
+        // Desde la ruedita la capa está cerrada y el mensaje no se vería.
+        if (binding.configLayer.visibility != View.VISIBLE) {
+            Toast.makeText(this, R.string.battery_unavailable, Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun select(group: ChipGroup, values: Array<String>, selected: String) {
@@ -518,6 +592,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
+        /** Abre la pantalla con la capa de configuración a la vista. */
+        const val EXTRA_OPEN_CONFIG = "com.guardiavirtual.berrymed.OPEN_CONFIG"
+
         /** El paso Kiosco, el cuarto hijo de `steps`. */
         private const val STEP_KIOSK = 3
         private const val REQUEST_STARTUP = 1

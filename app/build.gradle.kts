@@ -11,8 +11,8 @@ android {
         applicationId = "com.guardiavirtual.berrymed"
         minSdk = 26
         targetSdk = 35
-        versionCode = 11
-        versionName = "1.3.2"
+        versionCode = 13
+        versionName = "1.3.4"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Sólo ARM: la tablet es ARM, el emulador berry_tablet también (Mac con Apple Silicon),
         // y libuvc (el otoscopio por UVC) no trae x86. WebRTC de LiveKit trae las cuatro
