@@ -255,6 +255,8 @@ class MainActivity : AppCompatActivity() {
             serviceMicrophone = ForegroundAccess.hasMicrophone(types),
             ignoringBatteryOptimizations = ignoringBatteryOptimizations(),
             kioskUrlSaved = typed.isNotEmpty() && kioskUrlAccepted(typed) && typed == savedKioskUrl,
+            otoscopePlugged = runtime().otoscopeProbe.usbDevice() != null,
+            otoscopePermission = runtime().otoscopeProbe.usbReady(),
         )
         for (item in KioskChecklist.items(input)) {
             val done = item.done == true
@@ -281,7 +283,13 @@ class MainActivity : AppCompatActivity() {
                 )
                 KioskCheck.OTOSCOPE_USB -> paintCheck(
                     binding.checkOtoscope, item, R.string.check_otoscope,
-                    getString(R.string.check_otoscope_detail),
+                    getString(
+                        when (item.done) {
+                            true -> R.string.check_otoscope_granted
+                            false -> R.string.check_otoscope_missing
+                            null -> R.string.check_otoscope_absent
+                        },
+                    ) + "\n" + getString(R.string.check_otoscope_detail),
                     R.string.check_otoscope_action,
                 )
                 KioskCheck.TOTEM -> paintCheck(

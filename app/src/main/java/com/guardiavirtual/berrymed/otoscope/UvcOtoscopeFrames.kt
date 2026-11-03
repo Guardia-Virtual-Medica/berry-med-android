@@ -2,6 +2,10 @@
 package com.guardiavirtual.berrymed.otoscope
 
 import android.content.Context
+import android.graphics.PixelFormat
+import android.media.ImageReader
+import android.os.Handler
+import android.os.HandlerThread
 import com.serenegiant.usb.IFrameCallback
 import com.serenegiant.usb.UVCCamera
 import livekit.org.webrtc.NV21Buffer
@@ -18,8 +22,14 @@ import java.util.concurrent.Executor
  * directo por USB y no pasa por el servicio de cámaras, así que no compite
  * con la cámara de la tablet que usa Zoom.
  *
- * Sin vista, libuvc no dibuja en ningún lado: sólo convierte y llama al
- * callback. Abrir y cerrar van en [worker], como en el Panel Local.
+ * libuvc 3.2.7 necesita una superficie para leer la cámara: `startPreview`
+ * sólo arranca su hilo de captura si tiene ventana de preview (sin ella
+ * registra «UVCCamera::window does not exist…», no lee nada y el callback no
+ * corre nunca: 0 cuadros). Por eso se le da la de un [ImageReader] que nadie
+ * ve, en RGBX_8888 (el formato en el que libuvc dibuja su ventana) y del
+ * tamaño abierto, y se vacía en su propio hilo para que libuvc nunca se trabe
+ * esperando un buffer. Los cuadros para LiveKit siguen saliendo del callback
+ * NV21. Abrir y cerrar van en [worker], como en el Panel Local.
  */
 class UvcOtoscopeFrames(
     context: Context,
@@ -32,6 +42,8 @@ class UvcOtoscopeFrames(
 
     // Sólo los toca [worker].
     private var handle: UvcHandle? = null
+    private var reader: ImageReader? = null
+    private var readerThread: HandlerThread? = null
 
     @Volatile private var closed = false
 
@@ -78,9 +90,36 @@ class UvcOtoscopeFrames(
             },
             UVCCamera.PIXEL_FORMAT_NV21,
         )
+        opened.camera.setPreviewDisplay(drain(width, height).surface)
         opened.camera.startPreview()
-        log("[TELE] Otoscopio por UVC a ${opened.describe()}, sin vista")
+        log("[TELE] Otoscopio por UVC a ${opened.describe()}, con una superficie que nadie ve")
         return null
+    }
+
+    /**
+     * La superficie que libuvc exige, consumida apenas llega cada imagen. Si
+     * el formato no le cuadra, el error queda en el log una sola vez.
+     */
+    private fun drain(width: Int, height: Int): ImageReader {
+        val thread = HandlerThread("berry-uvc-drain").also { it.start() }
+        readerThread = thread
+        val drain = ImageReader.newInstance(width, height, PixelFormat.RGBX_8888, DRAIN_IMAGES)
+        reader = drain
+        var warned = false
+        drain.setOnImageAvailableListener(
+            { source ->
+                try {
+                    source.acquireLatestImage()?.close()
+                } catch (error: Throwable) {
+                    if (!warned) {
+                        warned = true
+                        log("[TELE] La superficie del otoscopio por UVC no se pudo vaciar: $error")
+                    }
+                }
+            },
+            Handler(thread.looper),
+        )
+        return drain
     }
 
     override fun stop(done: () -> Unit) {
@@ -91,6 +130,7 @@ class UvcOtoscopeFrames(
         }
     }
 
+    /** En orden: sin callback, la cámara parada y suelta, y recién ahí la superficie y su hilo. No tira nunca. */
     private fun release() {
         try {
             handle?.camera?.setFrameCallback(null, 0)
@@ -98,9 +138,22 @@ class UvcOtoscopeFrames(
         }
         handle?.release()
         handle = null
+        try {
+            reader?.close()
+        } catch (_: Throwable) {
+        }
+        reader = null
+        try {
+            readerThread?.quitSafely()
+        } catch (_: Throwable) {
+        }
+        readerThread = null
     }
 
     companion object {
         private const val SPARE_FRAMES = 3
+
+        /** Las imágenes de la superficie que nadie ve: dos alcanzan, se sueltan apenas llegan. */
+        private const val DRAIN_IMAGES = 2
     }
 }
