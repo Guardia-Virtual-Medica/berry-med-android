@@ -113,9 +113,9 @@
     <string name="help_kiosk">El kiosco de OnDoctor corre dentro de Berry Med, como app de inicio de la tablet. Acá queda su dirección y lo que falta para dejarlo andando.</string>
     <string name="missing_kiosk_url">La URL del kiosco tiene que empezar con https:// (o http://) y tener un dominio. Si no hay kiosco, dejala vacía.</string>
     <string name="label_call_audio">Audio de la videollamada</string>
-    <string name="call_audio_headset">Auricular</string>
+    <string name="call_audio_headset">Auriculares (jack de la tablet o USB)</string>
     <string name="call_audio_speaker">Parlante de la tablet</string>
-    <string name="help_call_audio">El estetoscopio del Panel Local sale siempre por el auricular.</string>
+    <string name="help_call_audio">Con Auriculares, la llamada y el estetoscopio salen por el jack de la tablet y, si no hay nada enchufado ahí, por el auricular USB. Con Parlante sólo la llamada va al parlante: el estetoscopio sigue por los auriculares.</string>
     <string name="section_kiosk_checklist">Puesta en marcha</string>
     <string name="help_kiosk_checklist">Verde, hecho; ámbar, falta. Se actualiza al volver a esta pantalla.</string>
     <string name="check_permissions">Cámara y micrófono</string>
@@ -161,7 +161,7 @@
     <string name="help_local">El PIN que pide el Panel Local al abrirse y cada vez que vuelve a la pantalla. Si lo dejás vacío vuelve a 1515.</string>
     <string name="hint_local_pin">PIN del Panel Local</string>
     <string name="section_stetho">Estetoscopio</string>
-    <string name="help_stetho">Cómo se llaman para Android el adaptador del estetoscopio y el auricular. Se leen en Testing → Dispositivos que ve Android. El Panel Local los busca por estos nombres y nunca usa el micrófono ni el parlante de la tablet.</string>
+    <string name="help_stetho">Cómo se llaman para Android el adaptador del estetoscopio y el auricular. Se leen en Testing → Dispositivos que ve Android. El Panel Local los busca por estos nombres y nunca usa el micrófono ni el parlante de la tablet. Si hay auriculares enchufados en el jack de la tablet, el estetoscopio suena por ahí antes que por el auricular USB, sin poner ningún nombre.</string>
     <string name="hint_stetho_input">Nombre del adaptador del estetoscopio</string>
     <string name="hint_headset_name">Nombre del auricular</string>
 

@@ -7,8 +7,8 @@ import com.serenegiant.usb.USBMonitor
 import com.serenegiant.usb.UVCCamera
 
 /**
- * El otoscopio abierto por libuvc, en MJPEG al tamaño más cercano a 800×800,
- * todavía sin destino para la imagen. Lo comparten la tarjeta del Panel Local
+ * El otoscopio abierto por libuvc, en MJPEG al tamaño más cercano a 800×800
+ * y a 30 cuadros si los ofrece ([OtoscopeFps]), todavía sin destino para la imagen. Lo comparten la tarjeta del Panel Local
  * ([UvcOtoscope], que dibuja en una vista) y la teleconsulta
  * ([UvcOtoscopeFrames], que recibe cuadros). Abrir y soltar bloquean
  * (transferencias de control USB): van en el hilo del otoscopio.
@@ -17,7 +17,15 @@ internal class UvcHandle private constructor(
     private val monitor: USBMonitor,
     val camera: UVCCamera,
     val size: OtoscopeResolution.Size,
+    /** Los cuadros por segundo pedidos, o null si la cadencia la eligió la cámara. */
+    val fps: Int?,
 ) {
+    /** Cómo se abrió, para el log: "800×800 MJPEG, 30 cuadros/s". */
+    fun describe(): String {
+        val rate = if (fps != null) "$fps cuadros/s" else "cadencia a elección de la cámara"
+        return "${size.width}×${size.height} MJPEG, $rate"
+    }
+
     /** Para la imagen y suelta la cámara y el USB. No tira nunca. */
     fun release() {
         try {
@@ -61,13 +69,8 @@ internal class UvcHandle private constructor(
                     .map { OtoscopeResolution.Size(it.width, it.height) }
                 val size = OtoscopeResolution.best(offered)
                     ?: OtoscopeResolution.Size(OtoscopeResolution.TARGET, OtoscopeResolution.TARGET)
-                try {
-                    camera.setPreviewSize(size.width, size.height, MIN_FPS, MAX_FPS, UVCCamera.FRAME_FORMAT_MJPEG, UVCCamera.DEFAULT_BANDWIDTH)
-                } catch (_: IllegalArgumentException) {
-                    // Algunas cámaras no aceptan el rango de cuadros: se deja que elija ella.
-                    camera.setPreviewSize(size.width, size.height, UVCCamera.FRAME_FORMAT_MJPEG)
-                }
-                return Opened.Ok(UvcHandle(usb, camera, size))
+                val fps = setPreviewSize(camera, size)
+                return Opened.Ok(UvcHandle(usb, camera, size, fps))
             } catch (error: Throwable) {
                 try {
                     uvc?.destroy()
@@ -81,8 +84,32 @@ internal class UvcHandle private constructor(
             }
         }
 
-        private const val MIN_FPS = 1
-        private const val MAX_FPS = 30
+        /**
+         * Pide el tamaño con cada rango de [OtoscopeFps.uvcAttempts] en orden:
+         * libuvc tira `IllegalArgumentException` si la cámara no declara ningún
+         * intervalo dentro del rango. Si ninguno entra, se pide sin rango, como
+         * antes (por dentro, de 1 a 31). Devuelve la cadencia para el log según
+         * [OtoscopeFps.reported] (null si quedó a elección de la cámara);
+         * libuvc no dice cuál negoció.
+         */
+        private fun setPreviewSize(camera: UVCCamera, size: OtoscopeResolution.Size): Int? {
+            for (range in OtoscopeFps.uvcAttempts()) {
+                try {
+                    camera.setPreviewSize(
+                        size.width,
+                        size.height,
+                        range.first,
+                        range.last,
+                        UVCCamera.FRAME_FORMAT_MJPEG,
+                        UVCCamera.DEFAULT_BANDWIDTH,
+                    )
+                    return OtoscopeFps.reported(range)
+                } catch (_: IllegalArgumentException) {
+                }
+            }
+            camera.setPreviewSize(size.width, size.height, UVCCamera.FRAME_FORMAT_MJPEG)
+            return null
+        }
 
         /** El registro de la librería no se usa (ver [UvcOtoscope]): sus avisos no llegan nunca. */
         private val IGNORE_EVENTS = object : USBMonitor.OnDeviceConnectListener {

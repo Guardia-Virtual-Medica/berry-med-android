@@ -38,6 +38,7 @@ import com.guardiavirtual.berrymed.audio.StethoFilter
 import com.guardiavirtual.berrymed.databinding.ActivityLocalPanelBinding
 import com.guardiavirtual.berrymed.databinding.PanelRecordingRowBinding
 import com.guardiavirtual.berrymed.otoscope.CameraXOtoscope
+import com.guardiavirtual.berrymed.otoscope.OtoscopeFps
 import com.guardiavirtual.berrymed.otoscope.OtoscopePower
 import com.guardiavirtual.berrymed.otoscope.OtoscopeSource
 import com.guardiavirtual.berrymed.otoscope.UvcOtoscope
@@ -61,6 +62,7 @@ import com.guardiavirtual.berrymed.ui.panel.TempCard
 import com.guardiavirtual.berrymed.ui.panel.Tile
 import com.guardiavirtual.berrymed.ui.panel.Tone
 import kotlin.concurrent.thread
+import kotlin.math.roundToInt
 
 /**
  * Panel Local: atención presencial, con quien atiende al lado del paciente.
@@ -94,6 +96,9 @@ class LocalPanelActivity : AppCompatActivity() {
 
     /** La imagen ya abrió: recién ahí el estado dice "En vivo". */
     private var otoscopeOpened = false
+
+    /** Los cuadros por segundo que llegaron en el último segundo, para el encabezado; null mientras no se midieron. */
+    private var otoscopeFps: Int? = null
 
     /** Lo último que dijo el otoscopio al encender, apagar o fallar; se ve en el visor mientras no hay imagen. */
     private var otoscopeText: CharSequence = ""
@@ -691,18 +696,29 @@ class LocalPanelActivity : AppCompatActivity() {
                 UvcOtoscope(this, binding.otoscopeTexture, runtime.otoscopeProbe, runtime.otoscopeExecutor, runtime::log)
         }
         otoscope = source
-        source.open { reason ->
-            if (otoscope !== source || !unlocked) return@open
-            if (reason == null) {
-                otoscopeOpened = true
-                setOtoscopeMessage(getString(R.string.local_otoscope_ready, source.label))
-            } else {
-                runtime.log("[OTOSCOPIO] No abrió ${source.label}: $reason")
-                otoscopeOff(null)
-                setOtoscopeMessage(reason)
-            }
-            render(runtime.localSnapshot())
-        }
+        val low = OtoscopeFps.LowWatch()
+        source.open(
+            done = { reason ->
+                if (otoscope !== source || !unlocked) return@open
+                if (reason == null) {
+                    otoscopeOpened = true
+                    setOtoscopeMessage(getString(R.string.local_otoscope_ready, source.label))
+                } else {
+                    runtime.log("[OTOSCOPIO] No abrió ${source.label}: $reason")
+                    otoscopeOff(null)
+                    setOtoscopeMessage(reason)
+                }
+                render(runtime.localSnapshot())
+            },
+            // Lo muestra el encabezado en el próximo refresco; al log va sólo si queda bajo un rato.
+            onRate = { rate ->
+                if (otoscope !== source) return@open
+                otoscopeFps = rate.roundToInt()
+                if (low.rate(rate, System.nanoTime())) {
+                    runtime.log("[OTOSCOPIO] La imagen ${source.label} viene a ${rate.roundToInt()} cuadros/s")
+                }
+            },
+        )
     }
 
     /** Apagar: primero se suelta la cámara y recién después el servicio apaga el puerto. */
@@ -717,6 +733,7 @@ class LocalPanelActivity : AppCompatActivity() {
         val source = otoscope
         otoscope = null
         otoscopeOpened = false
+        otoscopeFps = null
         val runtime = runtime()
         if (source == null) {
             runtime.localOtoscopeOff()
@@ -749,6 +766,7 @@ class LocalPanelActivity : AppCompatActivity() {
 
     private fun screenState() = ScreenState(
         otoscopeLabel = otoscope?.label?.takeIf { otoscopeOpened },
+        otoscopeFps = otoscopeFps.takeIf { otoscopeOpened },
         camera = cameraState,
         cameraFront = lensFacing == CameraSelector.LENS_FACING_FRONT,
         openDevice = openDevice,

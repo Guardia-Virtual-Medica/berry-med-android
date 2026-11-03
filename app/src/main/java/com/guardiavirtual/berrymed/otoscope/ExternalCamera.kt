@@ -3,10 +3,18 @@ package com.guardiavirtual.berrymed.otoscope
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CaptureRequest
+import android.util.Range
 import android.util.Size
 import androidx.annotation.OptIn
+import androidx.camera.camera2.interop.Camera2CameraInfo
+import androidx.camera.camera2.interop.Camera2Interop
+import androidx.camera.camera2.interop.ExperimentalCamera2Interop
+import androidx.camera.core.CameraInfo
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalLensFacing
+import androidx.camera.core.ExtendableBuilder
 import androidx.camera.core.UseCase
 import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.core.resolutionselector.ResolutionStrategy
@@ -20,18 +28,19 @@ import androidx.lifecycle.LifecycleOwner
  * teleconsulta ([CameraXOtoscopeFrames], con un análisis de cuadros). Todo en
  * el hilo de la pantalla, como pide CameraX.
  */
-@OptIn(ExperimentalLensFacing::class)
+@OptIn(ExperimentalLensFacing::class, ExperimentalCamera2Interop::class)
 internal class ExternalCamera(private val context: Context) {
     val selector: CameraSelector = CameraSelector.Builder().requireLensFacing(CameraSelector.LENS_FACING_EXTERNAL).build()
 
     /**
      * Une el caso de uso que arma [useCase] a [owner] con la cámara externa.
-     * [done] llega en el hilo de la pantalla con el proveedor si abrió, o null
+     * [useCase] recibe la información de esa cámara (o null si no se pudo
+     * leer), para pedirle la cadencia con [aimFps]. [done] llega en el hilo de la pantalla con el proveedor si abrió, o null
      * y el motivo. Si [closed] pasa a true mientras tanto, no llega nada.
      */
     fun bind(
         owner: LifecycleOwner,
-        useCase: () -> UseCase,
+        useCase: (CameraInfo?) -> UseCase,
         closed: () -> Boolean,
         done: (ProcessCameraProvider?, String?) -> Unit,
     ) {
@@ -65,7 +74,7 @@ internal class ExternalCamera(private val context: Context) {
     private fun bind(
         provider: ProcessCameraProvider,
         owner: LifecycleOwner,
-        useCase: () -> UseCase,
+        useCase: (CameraInfo?) -> UseCase,
         retried: Boolean,
         closed: () -> Boolean,
         done: (ProcessCameraProvider?, String?) -> Unit,
@@ -79,7 +88,7 @@ internal class ExternalCamera(private val context: Context) {
             return
         }
         try {
-            val case = useCase()
+            val case = useCase(externalInfo(provider))
             provider.unbindAll()
             provider.bindToLifecycle(owner, selector, case)
             done(provider, null)
@@ -97,7 +106,7 @@ internal class ExternalCamera(private val context: Context) {
     private fun restart(
         provider: ProcessCameraProvider,
         owner: LifecycleOwner,
-        useCase: () -> UseCase,
+        useCase: (CameraInfo?) -> UseCase,
         closed: () -> Boolean,
         done: (ProcessCameraProvider?, String?) -> Unit,
     ) {
@@ -113,7 +122,33 @@ internal class ExternalCamera(private val context: Context) {
         false
     }
 
+    private fun externalInfo(provider: ProcessCameraProvider): CameraInfo? = try {
+        selector.filter(provider.availableCameraInfos).firstOrNull()
+    } catch (_: Exception) {
+        null
+    }
+
     companion object {
+        /**
+         * Le pide a la cámara 30 cuadros por segundo si los ofrece, con el
+         * rango que elige [OtoscopeFps.camera2Range] entre los que declara
+         * [info]. Sin rango que llegue a 30, o sin [info], no se toca nada y
+         * la cadencia la elige el HAL, como antes. Devuelve el `Extender` para
+         * sumarle otras opciones de Camera2.
+         */
+        fun <T> aimFps(builder: ExtendableBuilder<T>, info: CameraInfo?): Camera2Interop.Extender<T> {
+            val extender = Camera2Interop.Extender(builder)
+            val available = try {
+                info?.let { Camera2CameraInfo.from(it).getCameraCharacteristic(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES) }
+            } catch (_: Exception) {
+                null
+            }.orEmpty().map { it.lower to it.upper }
+            OtoscopeFps.camera2Range(available)?.let { (low, high) ->
+                extender.setCaptureRequestOption(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, Range(low, high))
+            }
+            return extender
+        }
+
         /** 800×800 o la más cercana que ofrezca la cámara: ver [OtoscopeResolution]. */
         val RESOLUTION: ResolutionSelector = ResolutionSelector.Builder()
             .setResolutionStrategy(

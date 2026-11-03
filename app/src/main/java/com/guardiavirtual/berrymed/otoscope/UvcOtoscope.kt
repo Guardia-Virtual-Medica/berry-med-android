@@ -14,7 +14,9 @@ import java.util.concurrent.Executor
 /**
  * Camino UVC: la tablet no lista el otoscopio como cámara, así que se le
  * habla directo por USB con libuvc (módulo de AndroidUSBCamera). Pide MJPEG
- * 800×800 a 30 cuadros y lo dibuja en un `TextureView` de la tarjeta. El
+ * 800×800 a 30 cuadros y lo dibuja en un `TextureView` de la tarjeta. Cada
+ * cuadro dibujado avisa a la vista (`onSurfaceTextureUpdated`): ahí se cuentan
+ * los cuadros por segundo que se ven. El
  * micrófono y el almacenamiento del otoscopio no se tocan: libuvc sólo
  * reclama las interfaces de video.
  *
@@ -52,9 +54,13 @@ class UvcOtoscope(
     /** El `SurfaceTexture` en el que dibuja libuvc. Sólo lo toca el hilo de la pantalla. */
     private var kept: SurfaceTexture? = null
 
-    override fun open(done: (String?) -> Unit) {
+    /** Cuenta los cuadros dibujados. Sólo lo toca el hilo de la pantalla. */
+    private var meter = OtoscopeFps.Meter()
+
+    override fun open(done: (String?) -> Unit, onRate: (Double) -> Unit) {
         closed = false
         kept = null
+        meter = OtoscopeFps.Meter()
         textureView.visibility = View.VISIBLE
         // Queda puesto hasta close(): atiende la primera superficie y también las que vengan al mudar la vista.
         textureView.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
@@ -72,7 +78,10 @@ class UvcOtoscope(
             // El guardado no lo libera la vista: lo sigue usando libuvc, y lo suelta close().
             override fun onSurfaceTextureDestroyed(texture: SurfaceTexture): Boolean = texture !== kept
 
-            override fun onSurfaceTextureUpdated(texture: SurfaceTexture) = Unit
+            override fun onSurfaceTextureUpdated(texture: SurfaceTexture) {
+                if (closed) return
+                meter.frame(System.nanoTime())?.let(onRate)
+            }
         }
         val texture = textureView.surfaceTexture
         // Si no, la superficie existe recién cuando la vista se dibuja por primera vez y llega por el listener.
@@ -113,7 +122,7 @@ class UvcOtoscope(
         surface = target
         opened.camera.setPreviewDisplay(target)
         opened.camera.startPreview()
-        log("[OTOSCOPIO] Imagen por UVC a ${size.width}×${size.height} MJPEG")
+        log("[OTOSCOPIO] Imagen por UVC a ${opened.describe()}")
         return null
     }
 

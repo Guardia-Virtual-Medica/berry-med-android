@@ -20,11 +20,17 @@ import com.guardiavirtual.berrymed.usb.DeviceInventory
  * `MODE_IN_COMMUNICATION` y elige solo el dispositivo: agrupa todo lo USB y
  * toma el primero, sin distinguir el H390 del adaptador del estetoscopio, y
  * puede volver a elegir cuando cambian los dispositivos. Por eso se fija y se
- * reafirma. El micrófono acompaña: Android los mueve juntos.
+ * reafirma. El micrófono acompaña: Android los mueve juntos (con auriculares
+ * sin micrófono en el jack, la llamada usa el micrófono de la tablet).
+ *
+ * Con Auriculares, lo que esté enchufado en el jack de la tablet va primero,
+ * después el H390 y después el parlante ([AudioPick.callOutput]). Con algo en
+ * el jack, Chromium en modo comunicación ya lo prefiere por sí mismo antes que
+ * lo USB: Berry Med sólo lo confirma y lo reafirma.
  *
  * Fuera de la llamada sólo suelta, una vez, lo que haya fijado: no toca el modo
- * ni el foco. El estetoscopio del Panel Local no pasa por acá; sale siempre por
- * el auricular.
+ * ni el foco. El estetoscopio del Panel Local no pasa por acá; sale por el jack
+ * de la tablet o por el H390 ([AudioPick.stethoOutput]).
  *
  * Este router sólo actúa en modo comunicación, y ahí agrega la distinción entre
  * el H390 y el adaptador. En el emulador (WebView 124, Android 15) una llamada
@@ -74,7 +80,7 @@ class CallAudioRouter(
     /** La salida elegida y el dispositivo actual, para Testing. */
     fun describe(): String {
         val cfg = config()
-        val chosen = if (cfg.callAudioOutput == CALL_AUDIO_SPEAKER) "parlante de la tablet" else "auricular"
+        val chosen = if (cfg.callAudioOutput == CALL_AUDIO_SPEAKER) "parlante de la tablet" else "auriculares"
         if (Build.VERSION.SDK_INT < 31) return "Llamada: sale por $chosen · Android no deja fijarla"
         val inCall = audio.mode == AudioManager.MODE_IN_COMMUNICATION
         val current = audio.communicationDevice
@@ -84,7 +90,7 @@ class CallAudioRouter(
             append(current?.let(::label) ?: "ninguno")
             append(if (inCall) " · modo comunicación" else " · modo normal (Android no ve una llamada)")
             if (cfg.callAudioOutput != CALL_AUDIO_SPEAKER && wanted?.type == AudioPick.TYPE_BUILTIN_SPEAKER) {
-                append("\nEl auricular no está: la llamada sale por el parlante")
+                append("\n$FALLBACK_LINE")
             }
         }
     }
@@ -157,7 +163,7 @@ class CallAudioRouter(
     private fun announce(cfg: BerryConfig, device: AudioDeviceInfo) {
         val fallback = cfg.callAudioOutput != CALL_AUDIO_SPEAKER && device.type == AudioPick.TYPE_BUILTIN_SPEAKER
         val line = if (fallback) {
-            "[LLAMADA] El auricular no está: la llamada sale por el parlante"
+            "[LLAMADA] $FALLBACK_LINE"
         } else {
             "[LLAMADA] La llamada sale por ${label(device)}"
         }
@@ -166,10 +172,15 @@ class CallAudioRouter(
         log(line)
     }
 
-    private fun label(device: AudioDeviceInfo): String =
-        if (device.type == AudioPick.TYPE_BUILTIN_SPEAKER) "el parlante" else device.productName?.toString().orEmpty().ifBlank { "tipo ${device.type}" }
+    // Los auriculares del jack suelen venir sin nombre de producto: se dicen por el tipo.
+    private fun label(device: AudioDeviceInfo): String = when {
+        device.type == AudioPick.TYPE_BUILTIN_SPEAKER -> "el parlante"
+        AudioPick.isJack(device.type) -> "el jack de la tablet"
+        else -> device.productName?.toString().orEmpty().ifBlank { "tipo ${device.type}" }
+    }
 
     private companion object {
         const val NANOS_PER_MS = 1_000_000L
+        const val FALLBACK_LINE = "Nada en el jack ni el auricular USB: la llamada sale por el parlante"
     }
 }

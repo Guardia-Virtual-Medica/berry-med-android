@@ -715,6 +715,7 @@ class TotemRuntime(context: Context) {
         // Encender un puerto es enchufar el equipo: Android tarda un momento en ver
         // la placa de audio. Si no se encendió nada, lo que no está no va a aparecer
         // solo; sin YKUSH3 sí se le da tiempo al adaptador, que pudo recién enchufarse.
+        // Con auriculares en el jack de la tablet la salida ya está: se espera sólo al adaptador.
         val wait = poweredSome || (!hubPresent && found.input == null)
         val deadline = System.nanoTime() + if (wait) STETHO_WAIT_NANOS else 0L
         while ((found.input == null || found.output == null) && System.nanoTime() < deadline) {
@@ -726,7 +727,7 @@ class TotemRuntime(context: Context) {
         if (stethoEpoch != epoch || !localMode) return ""
         val reason = stetho.start(cfg)
         if (reason != null) return (notes + reason).joinToString(" ")
-        if (!stetho.playing) notes += "Sin auricular: sólo se ve la onda."
+        if (!stetho.playing) notes += "Sin auriculares: nada en el jack de la tablet ni el auricular USB. Sólo se ve la onda."
         return (listOf("Escuchando.") + notes).joinToString(" ")
     }
 

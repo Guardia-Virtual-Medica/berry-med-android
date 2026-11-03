@@ -618,7 +618,7 @@
                                         android:layout_marginEnd="14dp"
                                         android:layout_marginBottom="12dp"
                                         android:lineSpacingMultiplier="1.2"
-                                        tools:text="Escuchando. Sin auricular: sólo se ve la onda." />
+                                        tools:text="Escuchando. Sin auriculares: nada en el jack de la tablet ni el auricular USB. Sólo se ve la onda." />
                                 </FrameLayout>
 
                                 <!-- Las últimas tres grabaciones, la más nueva a la izquierda. -->
