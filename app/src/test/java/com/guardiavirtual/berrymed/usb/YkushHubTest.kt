@@ -66,9 +66,9 @@ class YkushHubTest {
 
     @Test
     fun eachPortNamesItsDeviceAndASharedPortNamesBoth() {
-        assertEquals(listOf("otoscopio", "estetoscopio", "auricular"), BerryConfig().ykushPortRoles())
-        val shared = BerryConfig(ykushOtoscopePort = 1, ykushStethoscopePort = 1, ykushHeadsetPort = 3)
-        assertEquals(listOf("otoscopio y estetoscopio", "libre", "auricular"), shared.ykushPortRoles())
+        assertEquals(listOf("otoscopio", "estetoscopio", "termómetro"), BerryConfig().ykushPortRoles())
+        val shared = BerryConfig(ykushOtoscopePort = 1, ykushStethoscopePort = 1, ykushThermometerPort = 3)
+        assertEquals(listOf("otoscopio y estetoscopio", "libre", "termómetro"), shared.ykushPortRoles())
     }
 
     @Test

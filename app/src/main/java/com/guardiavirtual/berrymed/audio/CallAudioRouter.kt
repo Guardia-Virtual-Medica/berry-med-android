@@ -37,10 +37,9 @@ import com.guardiavirtual.berrymed.usb.DeviceInventory
  * el H390 y el adaptador. En el emulador (WebView 124, Android 15) una llamada
  * WebRTC queda en `MODE_NORMAL`, captura como `CAMCORDER` y reproduce como
  * `USAGE_MEDIA`: ahí no actúa, y `setCommunicationDevice` no movería esa
- * reproducción. La elección igual llega por otro lado: los puertos en reposo
- * (`HubRestState`) dejan como salida USB sólo el H390, o ninguna con el parlante.
- * Por razonamiento, sin probar en la tablet, eso alcanza hasta que se enciende el
- * puerto del estetoscopio. Ver los riesgos de `docs/hardware.md`.
+ * reproducción. Desde el plan 13 el armado no lleva H390: los auriculares van al
+ * jack de la tablet, que Android elige antes que el USB, y el hub no tiene puerto
+ * para un auricular. Ver los riesgos de `docs/hardware.md`.
  *
  * Con el kiosco adelante el otoscopio y el estetoscopio quedan encendidos, así
  * que durante toda la llamada hay dos placas de audio USB más: el adaptador del

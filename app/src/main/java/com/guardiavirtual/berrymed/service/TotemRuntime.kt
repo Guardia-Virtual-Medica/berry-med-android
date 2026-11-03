@@ -276,10 +276,7 @@ class TotemRuntime(context: Context) {
                 config = saved
                 configLoaded = true
                 pusher.apply(saved)
-                if (outputChanged) {
-                    hubRest.again()
-                    callAudio.refresh()
-                }
+                if (outputChanged) callAudio.refresh()
             }
         }
         callAudio.start()
@@ -395,31 +392,51 @@ class TotemRuntime(context: Context) {
 
     /**
      * Lleva los puertos al estado de reposo, o al del kiosco si está adelante,
-     * una vez por hub, o de nuevo si cambió la salida de audio o se abrió o se
-     * dejó el kiosco. Si alguien está usando un equipo se espera,
-     * sin marcarlo hecho: se aplica apenas se libere. Un hub que no contesta
-     * no se reintenta, para no trabar este hilo cada segundo.
+     * una vez por hub, o de nuevo si se abrió o se dejó el kiosco o se apagó
+     * el termómetro desde Testing. Si alguien está usando un equipo, igual
+     * enciende el termómetro (encender no le saca nada a nadie) y lo demás
+     * espera, sin marcarlo hecho: se aplica apenas se libere. Un hub que no
+     * contesta no se reintenta, para no trabar este hilo cada segundo.
      */
     private fun applyHubRest() {
-        if (!configLoaded || hubRestBlocked()) return
+        if (!configLoaded) return
         val deviceId = ykush.usableDeviceId()
-        if (!hubRest.due(deviceId)) return
-        hubRest.done(deviceId)
+        val blocked = hubRestBlocked()
+        if (blocked) {
+            if (!hubRest.thermometerDue(deviceId)) return
+            hubRest.thermometerDone(deviceId)
+        } else {
+            if (!hubRest.due(deviceId)) return
+            hubRest.done(deviceId)
+        }
+        val cfg = config
         val kiosk = kioskVisible
-        val wanted = HubRestState.wanted(config, kiosk)
+        val wanted = HubRestState.wanted(cfg, kiosk)
         val states = ykush.readAll()
         if (states.all { it == null }) {
             log("[YKUSH] El hub no contesta: los puertos quedan como están")
             return
         }
+        if (blocked) {
+            for ((port, on) in HubRestState.changes(wanted, states, blocked = true, cfg.ykushThermometerPort)) {
+                if (ykush.setPort(port, on)) log("[YKUSH] Puerto $port del termómetro encendido")
+            }
+            return
+        }
+        var interrupted = false
         for ((port, on) in HubRestState.changes(wanted, states)) {
             // La lectura y cada orden tardan: entre tanto pudo abrirse el panel o una consulta.
-            if (hubRestBlocked()) {
-                log("[YKUSH] Se usó un equipo mientras se cambiaban los puertos: se sigue después")
-                hubRest.again()
-                return
+            // El termómetro se enciende igual; lo demás se sigue después.
+            if (hubRestBlocked() && !(on && port == cfg.ykushThermometerPort)) {
+                interrupted = true
+                continue
             }
             ykush.setPort(port, on)
+        }
+        if (interrupted) {
+            log("[YKUSH] Se usó un equipo mientras se cambiaban los puertos: se sigue después")
+            hubRest.again()
+            return
         }
         val label = if (kiosk) "Puertos con el kiosco" else "Puertos en reposo"
         log("[YKUSH] $label: ${HubRestState.describe(wanted)}")
@@ -748,9 +765,9 @@ class TotemRuntime(context: Context) {
     }
 
     /**
-     * Escuchar: enciende en el YKUSH3 los puertos del adaptador y del
-     * auricular que estén apagados y, si encendió alguno, espera hasta 5 s a
-     * que Android vea las dos placas de audio antes de abrir el audio. Si no
+     * Escuchar: enciende en el YKUSH3 el puerto del adaptador si está apagado
+     * y, si lo encendió, espera hasta 5 s a que Android vea la placa de audio
+     * (y la salida, el jack de la tablet o un auricular USB) antes de abrir el audio. Si no
      * encendió nada, abre con lo que hay. Sin YKUSH3 se intenta directo.
      * Todo en otro hilo; [done] se llama desde ese hilo con el mensaje para la
      * tarjeta.
@@ -784,7 +801,8 @@ class TotemRuntime(context: Context) {
         val hubPresent = ykush.plugged()
         var poweredSome = false
         if (hubPresent) {
-            val ports = listOf(cfg.ykushStethoscopePort, cfg.ykushHeadsetPort)
+            // Sólo el adaptador: el termómetro queda siempre encendido y los auriculares van al jack.
+            val ports = listOf(cfg.ykushStethoscopePort)
             val states = ykush.readAll()
             for (port in stethoPorts.toTurnOn(ports, states)) {
                 if (stethoEpoch != epoch) return ""
@@ -1116,13 +1134,18 @@ class TotemRuntime(context: Context) {
         sessionActive -> "Hay una consulta enviando: no se cambia ningún puerto."
         !ykush.plugged() -> "No hay hub YKUSH3 conectado."
         !ykush.setPort(port, on) -> "El hub no aceptó la orden. Mirá la consola."
+        !on && port == config.ykushThermometerPort -> {
+            // Es una prueba a mano: el termómetro vuelve a encenderse en la vuelta siguiente de watchLoop.
+            hubRest.again()
+            "Puerto $port apagado: el termómetro se vuelve a encender solo"
+        }
         else -> "Puerto $port ${if (on) "encendido" else "apagado"}"
     }
 
     /**
      * Guarda el estado del kiosco como arranque del hub, para los segundos entre
      * que recibe energía y arranca el servicio: la tablet arranca en el kiosco.
-     * Un puerto libre no se manda. Es persistente en el hub: sale sólo con este
+     * Con el termómetro encendido, como siempre. Un puerto libre no se manda. Es persistente en el hub: sale sólo con este
      * botón. Fuera del hilo de la pantalla.
      */
     fun testYkushSaveBoot(): String {
@@ -1177,7 +1200,9 @@ class TotemRuntime(context: Context) {
             thermoLine = thermo.lastLine,
             ykushPlugged = ykush.plugged(),
             ykushPorts = cfg.ykushPortRoles().mapIndexed { index, role ->
-                YkushPortView(port = index + 1, role = role, on = ykush.lastStates.getOrNull(index))
+                val port = index + 1
+                val label = if (port == cfg.ykushThermometerPort) "$role · se vuelve a encender solo" else role
+                YkushPortView(port = port, role = label, on = ykush.lastStates.getOrNull(index))
             },
             inventory = inventorySnapshot(),
             url = cfg.metricsUrl(),

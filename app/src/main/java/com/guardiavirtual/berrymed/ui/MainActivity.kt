@@ -332,7 +332,7 @@ class MainActivity : AppCompatActivity() {
         binding.nibpTarget.setText(config.nibpTargetPressureMmhg)
         binding.ykushOtoscope.setText(config.ykushOtoscopePort.toString())
         binding.ykushStethoscope.setText(config.ykushStethoscopePort.toString())
-        binding.ykushHeadset.setText(config.ykushHeadsetPort.toString())
+        binding.ykushThermometer.setText(config.ykushThermometerPort.toString())
         binding.localPin.setText(config.localPanelPin)
         binding.stethoInputName.setText(config.stethoInputName)
         binding.headsetName.setText(config.headsetName)
@@ -476,7 +476,7 @@ class MainActivity : AppCompatActivity() {
             nibpTargetPressureMmhg = binding.nibpTarget.text?.toString()?.trim().orEmpty(),
             ykushOtoscopePort = ykushPortOrDefault(binding.ykushOtoscope.text?.toString(), 1),
             ykushStethoscopePort = ykushPortOrDefault(binding.ykushStethoscope.text?.toString(), 2),
-            ykushHeadsetPort = ykushPortOrDefault(binding.ykushHeadset.text?.toString(), 3),
+            ykushThermometerPort = ykushPortOrDefault(binding.ykushThermometer.text?.toString(), 3),
             localPanelPin = binding.localPin.text?.toString()?.trim().orEmpty().ifBlank { DEFAULT_LOCAL_PIN },
             stethoInputName = binding.stethoInputName.text?.toString()?.trim().orEmpty().ifBlank { DEFAULT_STETHO_INPUT },
             headsetName = binding.headsetName.text?.toString()?.trim().orEmpty().ifBlank { DEFAULT_HEADSET },

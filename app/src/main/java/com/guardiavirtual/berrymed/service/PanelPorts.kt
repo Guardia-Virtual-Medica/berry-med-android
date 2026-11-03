@@ -3,8 +3,9 @@ package com.guardiavirtual.berrymed.service
 
 /**
  * Qué puertos del YKUSH3 prendió el Panel Local, uno para el estetoscopio y
- * otro para el otoscopio. Al apagar se apagan sólo ésos: si un puerto ya estaba
- * encendido (el auricular en reposo, o un hub que todavía no se llevó al estado
+ * otro para el otoscopio; nunca el del termómetro, que queda siempre encendido.
+ * Al apagar se apagan sólo ésos: si un puerto ya estaba
+ * encendido (con el kiosco adelante, o un hub que todavía no se llevó al estado
  * de reposo), queda como estaba. Sin Android, para probar la secuencia sola.
  */
 class PanelPorts {

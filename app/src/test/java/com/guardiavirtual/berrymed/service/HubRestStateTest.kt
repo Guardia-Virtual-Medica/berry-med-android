@@ -2,6 +2,7 @@
 package com.guardiavirtual.berrymed.service
 
 import com.guardiavirtual.berrymed.config.BerryConfig
+import com.guardiavirtual.berrymed.config.CALL_AUDIO_HEADSET
 import com.guardiavirtual.berrymed.config.CALL_AUDIO_SPEAKER
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -10,58 +11,48 @@ import kotlin.test.assertTrue
 
 class HubRestStateTest {
     @Test
-    fun withTheHeadsetOnlyTheHeadsetPortStaysOn() {
-        assertEquals(listOf(false, false, true), HubRestState.wanted(BerryConfig(), kiosk = false))
-    }
-
-    @Test
-    fun withTheSpeakerEveryPortRestsOff() {
-        assertEquals(
-            listOf(false, false, false),
-            HubRestState.wanted(BerryConfig(callAudioOutput = CALL_AUDIO_SPEAKER), kiosk = false),
-        )
+    fun theThermometerStaysOnWithAndWithoutTheKioskWhateverTheCallAudio() {
+        for (output in listOf(CALL_AUDIO_HEADSET, CALL_AUDIO_SPEAKER)) {
+            val config = BerryConfig(callAudioOutput = output)
+            assertEquals(listOf(false, false, true), HubRestState.wanted(config, kiosk = false))
+            assertEquals(listOf(true, true, true), HubRestState.wanted(config, kiosk = true))
+        }
     }
 
     @Test
     fun aFreePortStaysAsItIs() {
-        val config = BerryConfig(ykushOtoscopePort = 1, ykushStethoscopePort = 1, ykushHeadsetPort = 3)
+        val config = BerryConfig(ykushOtoscopePort = 1, ykushStethoscopePort = 1, ykushThermometerPort = 3)
         assertEquals(listOf(false, null, true), HubRestState.wanted(config, kiosk = false))
-    }
-
-    @Test
-    fun theHeadsetFollowsItsConfiguredPort() {
-        val config = BerryConfig(ykushOtoscopePort = 2, ykushStethoscopePort = 3, ykushHeadsetPort = 1)
-        assertEquals(listOf(true, false, false), HubRestState.wanted(config, kiosk = false))
-    }
-
-    @Test
-    fun withTheKioskTheOtoscopeAndTheStethoscopeStayOnWithTheHeadset() {
-        assertEquals(listOf(true, true, true), HubRestState.wanted(BerryConfig(), kiosk = true))
-    }
-
-    @Test
-    fun withTheKioskAndTheSpeakerOnlyTheHeadsetIsOff() {
-        assertEquals(
-            listOf(true, true, false),
-            HubRestState.wanted(BerryConfig(callAudioOutput = CALL_AUDIO_SPEAKER), kiosk = true),
-        )
-    }
-
-    @Test
-    fun withTheKioskAFreePortStaysAsItIs() {
-        val config = BerryConfig(ykushOtoscopePort = 1, ykushStethoscopePort = 1, ykushHeadsetPort = 3)
         assertEquals(listOf(true, null, true), HubRestState.wanted(config, kiosk = true))
-        val speaker = config.copy(callAudioOutput = CALL_AUDIO_SPEAKER)
-        assertEquals(listOf(true, null, false), HubRestState.wanted(speaker, kiosk = true))
     }
 
     @Test
-    fun withTheKioskTheHeadsetFollowsItsConfiguredPort() {
-        val config = BerryConfig(ykushOtoscopePort = 2, ykushStethoscopePort = 3, ykushHeadsetPort = 1)
+    fun theThermometerFollowsItsConfiguredPort() {
+        val config = BerryConfig(ykushOtoscopePort = 2, ykushStethoscopePort = 3, ykushThermometerPort = 1)
+        assertEquals(listOf(true, false, false), HubRestState.wanted(config, kiosk = false))
         assertEquals(listOf(true, true, true), HubRestState.wanted(config, kiosk = true))
+    }
+
+    @Test
+    fun withSomeoneUsingADeviceOnlyTheThermometerIsTurnedOn() {
+        val rest = HubRestState.wanted(BerryConfig(), kiosk = false)
         assertEquals(
-            listOf(false, true, true),
-            HubRestState.wanted(config.copy(callAudioOutput = CALL_AUDIO_SPEAKER), kiosk = true),
+            listOf(3 to true),
+            HubRestState.changes(rest, listOf(true, true, false), blocked = true, thermometerPort = 3),
+        )
+        val kiosk = HubRestState.wanted(BerryConfig(), kiosk = true)
+        assertEquals(
+            listOf(3 to true),
+            HubRestState.changes(kiosk, listOf(false, false, null), blocked = true, thermometerPort = 3),
+        )
+        assertEquals(
+            emptyList(),
+            HubRestState.changes(kiosk, listOf(false, false, true), blocked = true, thermometerPort = 3),
+        )
+        // Sin bloqueo sale todo lo que difiere.
+        assertEquals(
+            listOf(1 to true, 2 to true, 3 to true),
+            HubRestState.changes(kiosk, listOf(false, false, false), blocked = false, thermometerPort = 3),
         )
     }
 
@@ -105,10 +96,25 @@ class HubRestStateTest {
     }
 
     @Test
-    fun aNewAudioOutputMakesItDueAgain() {
+    fun againMakesItDueAgain() {
         val pending = HubRestState.Pending()
         pending.done(7)
+        assertFalse(pending.thermometerDue(7))
         pending.again()
         assertTrue(pending.due(7))
+        assertTrue(pending.thermometerDue(7))
+    }
+
+    @Test
+    fun theThermometerIsTurnedOnOncePerHubWhileTheRestWaits() {
+        val pending = HubRestState.Pending()
+        assertFalse(pending.thermometerDue(null))
+        assertTrue(pending.thermometerDue(7))
+        pending.thermometerDone(7)
+        assertFalse(pending.thermometerDue(7))
+        // El resto sigue pendiente para cuando se libere.
+        assertTrue(pending.due(7))
+        // Un hub reconectado es otro deviceId: se vuelve a encender.
+        assertTrue(pending.thermometerDue(8))
     }
 }

@@ -50,7 +50,9 @@ class BerryConfigTest {
         val shared = ready.copy(ykushOtoscopePort = 2, ykushStethoscopePort = 2)
         assertTrue(shared.ykushPortsShared())
         assertTrue(shared.missingFields().any { "YKUSH3" in it })
-        assertTrue(ready.copy(ykushHeadsetPort = 1).ykushPortsShared())
+        assertTrue(ready.copy(ykushThermometerPort = 1).ykushPortsShared())
+        assertTrue(ready.copy(ykushThermometerPort = 2).ykushPortsShared())
+        assertEquals(3, BerryConfig().ykushThermometerPort)
     }
 
     @Test

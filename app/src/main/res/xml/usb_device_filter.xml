@@ -7,7 +7,7 @@
 
     El otoscopio sí va: si la tablet no lo lista como cámara, el Panel Local lo
     abre por USB (UVC) y necesita el permiso. El adaptador del estetoscopio y
-    el auricular no van a propósito: Android los maneja como audio, y pedirles
+    un auricular USB no van a propósito: Android los maneja como audio, y pedirles
     permiso sólo pondría un diálogo de más arriba de Chrome.
 -->
 <resources>
