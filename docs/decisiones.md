@@ -125,6 +125,11 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - **Pedir permiso USB** se muda al menú de la ruedita, arriba de **Evitar que se duerma**. La ayuda de «Usar de forma predeterminada» va al paso Plaqueta, junto a los equipos USB.
 - Todo con los tokens del Panel Local (`Theme.BerryMed.Panel`, Barlow, `Panel.Card`, `Panel.Chip`, `Panel.Button.Secondary`); la capa usa `ThemeOverlay.BerryMed.FormDark` y el error en `test_fail`. Los chips de la cabecera usan los mismos colores que los del panel; el del termómetro va ámbar mientras está conectado sin mediciones (`TotemState` suma `thermoConnected` y `thermoMeasured`).
 
+### Un solo estilo de botón (plan 11, parte 3)
+
+- Cuadrado se toca, redondo informa: todos los botones del Panel Local y de la pantalla principal tienen la misma forma (esquinas de 6 dp, Barlow SemiBold 16 sp, borde de 1 dp) y cambian sólo de color y de alto; los chips de estado, los badges y el toast quedan redondos. Los segmentos pasan a 6 dp.
+- **Finalizar** va en rojo (`Panel.Button.Danger`, `alarm`, `alarmPressed` apretado), en la cabecera y en el botón que confirma del diálogo, para que la acción se lea igual en los dos lugares. Se borran `Panel.Button.Light` y los selectores `panel_light_bg` y `panel_outline_bg`.
+
 ## Pendiente
 
 - Prueba con el hardware real en la tablet (ver "Probar el Panel Local en el tótem" en el `README.md` y los riesgos de `docs/hardware.md`).

@@ -363,7 +363,7 @@ class LocalPanelActivity : AppCompatActivity() {
             button.setIconResource(R.drawable.ic_play_arrow)
         } else {
             binding.ecgFrozenBadge.visibility = View.GONE
-            button.backgroundTintList = ContextCompat.getColorStateList(this, R.color.panel_outline_bg)
+            button.backgroundTintList = ContextCompat.getColorStateList(this, R.color.panel_secondary_bg)
             button.strokeColor = ColorStateList.valueOf(getColor(R.color.line3))
             val text = ContextCompat.getColorStateList(this, R.color.panel_button_text)
             button.setTextColor(text)

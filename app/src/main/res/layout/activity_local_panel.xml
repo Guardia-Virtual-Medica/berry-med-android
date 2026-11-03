@@ -97,7 +97,8 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/finishButton"
-                style="@style/Panel.Button.Outline"
+                style="@style/Panel.Button.Danger"
+                android:layout_height="44dp"
                 android:layout_width="wrap_content"
                 android:layout_marginStart="16dp"
                 android:text="@string/local_finish" />
@@ -246,7 +247,7 @@
                                 android:id="@+id/ecgFreezeButton"
                                 style="@style/Panel.Button.Outline"
                                 android:layout_width="wrap_content"
-                                android:layout_height="46dp"
+                                android:layout_height="44dp"
                                 android:layout_marginStart="16dp"
                                 android:paddingStart="12dp"
                                 android:paddingEnd="16dp"
@@ -1532,7 +1533,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/finishConfirm"
-                    style="@style/Panel.Button.Light"
+                    style="@style/Panel.Button.Danger"
                     android:layout_width="wrap_content"
                     android:layout_marginStart="10dp"
                     android:text="@string/local_finish_confirm" />
