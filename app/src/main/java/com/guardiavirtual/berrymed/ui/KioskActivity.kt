@@ -377,7 +377,7 @@ class KioskActivity : AppCompatActivity() {
         addView(
             Button(context).apply {
                 setText(R.string.kiosk_open_settings)
-                setOnClickListener { startActivity(Intent(context, MainActivity::class.java)) }
+                setOnClickListener { startActivity(configIntent()) }
             },
         )
     }
@@ -438,11 +438,16 @@ class KioskActivity : AppCompatActivity() {
             }
             .setPositiveButton(R.string.kiosk_enter) { _, _ ->
                 if (pinAccepted(input.text?.toString(), runtime().config.localPanelPin)) {
-                    startActivity(Intent(this, MainActivity::class.java))
+                    // La pantalla principal; con la configuración abierta sólo si falta la URL del kiosco.
+                    val missingUrl = runtime().config.kioskUrl.isBlank()
+                    startActivity(if (missingUrl) configIntent() else Intent(this, MainActivity::class.java))
                 }
             }
             .show()
     }
+
+    private fun configIntent() =
+        Intent(this, MainActivity::class.java).putExtra(MainActivity.EXTRA_OPEN_CONFIG, true)
 
     companion object {
         private const val CORNER_DP = 64

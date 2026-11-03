@@ -524,7 +524,7 @@ class TotemRuntime(context: Context) {
             append(if (active) "La sesión está enviando." else "La sesión está detenida.")
             val missing = config.missingFields()
             if (missing.isNotEmpty()) append(" Falta configurar: ${missing.joinToString(", ")}.")
-            if (hub.permissionMissing()) append(" Falta aceptar el permiso USB: tocá «Pedir permiso USB».")
+            if (hub.permissionMissing()) append(" Falta aceptar el permiso USB: tocá la ruedita y «Pedir permiso USB».")
         }
         state.value = TotemState(
             heartRate = display(vitals.heartRate),
@@ -535,6 +535,8 @@ class TotemRuntime(context: Context) {
             berryUp = berryUp,
             lastData = lastData,
             pusherUp = pusherUp,
+            thermoConnected = thermo.connected,
+            thermoMeasured = thermo.measured,
             others = others,
             lastPost = lastPost,
             notification = notification,

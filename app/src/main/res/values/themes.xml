@@ -10,32 +10,28 @@
         <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
     </style>
 
-    <style name="ThemeOverlay.BerryMed.Form" parent="ThemeOverlay.Material3.Light">
-        <item name="colorPrimary">@color/signal</item>
-        <item name="colorOnSurface">@color/ink</item>
-    </style>
-
-    <style name="VitalLabel">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:textColor">@color/vital_dim</item>
-        <item name="android:textSize">14sp</item>
-    </style>
-
-    <style name="VitalValue">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:textColor">@color/vital_on</item>
-        <item name="android:textSize">40sp</item>
-        <item name="android:fontFamily">sans-serif-light</item>
-        <item name="android:includeFontPadding">false</item>
+<!--
+        La capa de configuración de la pantalla principal, oscura como el
+        Panel Local: campos, chips y desplegables toman estos colores.
+    -->
+    <style name="ThemeOverlay.BerryMed.FormDark" parent="ThemeOverlay.Material3.Dark">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorOnPrimary">@color/onPrimary</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/text</item>
+        <item name="colorOnSurfaceVariant">@color/muted</item>
+        <item name="colorOutline">@color/line3</item>
+        <item name="colorSecondaryContainer">@color/surface2</item>
+        <item name="colorOnSecondaryContainer">@color/text</item>
+        <item name="android:fontFamily">@font/barlow_medium</item>
     </style>
 
     <style name="FormTitle">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginTop">18dp</item>
-        <item name="android:textColor">@color/ink</item>
+        <item name="android:fontFamily">@font/barlow_semibold</item>
+        <item name="android:textColor">@color/text</item>
         <item name="android:textSize">18sp</item>
     </style>
 
@@ -50,7 +46,7 @@
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginTop">4dp</item>
         <item name="android:lineSpacingExtra">3dp</item>
-        <item name="android:textColor">@color/ink_soft</item>
+        <item name="android:textColor">@color/body</item>
         <item name="android:textSize">15sp</item>
     </style>
 
@@ -72,37 +68,6 @@
         <item name="android:textColor">@color/vital_dim</item>
         <item name="android:textIsSelectable">true</item>
         <item name="android:textSize">12sp</item>
-    </style>
-
-    <!--
-        La fila de botones de la pantalla principal: rellenos, con esquinas de
-        10 dp y el ripple de Material, para que se lean como botones y no como
-        etiquetas.
-    -->
-    <style name="MainButton" parent="Widget.Material3.Button">
-        <item name="android:layout_width">0dp</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_weight">1</item>
-        <item name="android:insetTop">0dp</item>
-        <item name="android:insetBottom">0dp</item>
-        <item name="android:minHeight">56dp</item>
-        <item name="android:minWidth">0dp</item>
-        <item name="android:paddingStart">12dp</item>
-        <item name="android:paddingEnd">12dp</item>
-        <item name="android:fontFamily">sans-serif-medium</item>
-        <item name="android:letterSpacing">0</item>
-        <item name="android:textAllCaps">false</item>
-        <item name="android:textColor">@color/vital_on</item>
-        <item name="android:textSize">16sp</item>
-        <item name="backgroundTint">@color/card</item>
-        <item name="cornerRadius">10dp</item>
-        <item name="rippleColor">#33FFFFFF</item>
-        <item name="strokeWidth">0dp</item>
-    </style>
-
-    <!-- La acción principal: ONDOCTOR365, con el violeta de su ícono. -->
-    <style name="MainButton.Primary">
-        <item name="backgroundTint">@color/ondoctor_icon</item>
     </style>
 
     <!-- El menú de la ruedita, oscuro como la pantalla. -->
@@ -400,5 +365,39 @@
         <item name="android:textColor">@color/bg</item>
         <item name="android:textSize">15sp</item>
         <item name="android:visibility">gone</item>
+    </style>
+
+    <!--
+        La pantalla principal. Sus botones son los del Panel Local: USB-config,
+        Testing y Panel Local secundarios, ONDOCTOR365 primario en el violeta
+        de su ícono. Todos del mismo alto.
+    -->
+    <style name="MainButton" parent="Panel.Button.Secondary">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_weight">1</item>
+    </style>
+
+    <style name="MainButton.Primary">
+        <item name="android:fontFamily">@font/barlow_bold</item>
+        <item name="android:textColor">@android:color/white</item>
+        <item name="backgroundTint">@color/ondoctor_icon</item>
+        <item name="strokeWidth">0dp</item>
+    </style>
+
+    <!-- Siguiente y Guardar de la configuración: el primario azul, del alto de los secundarios. -->
+    <style name="Panel.Button.Form" parent="Panel.Button.Primary">
+        <item name="android:layout_height">52dp</item>
+        <item name="android:fontFamily">@font/barlow_semibold</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <!-- Los textos de la tarjeta Estado. -->
+    <style name="MainStatusText" parent="Panel.Text">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_marginTop">6dp</item>
+        <item name="android:includeFontPadding">true</item>
+        <item name="android:lineSpacingExtra">3dp</item>
+        <item name="android:textColor">@color/body</item>
+        <item name="android:textSize">14sp</item>
     </style>
 </resources>

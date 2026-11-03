@@ -131,9 +131,11 @@ Pedí estos datos:
 3. Aceptá el pedido.
 4. Hacé los pasos 2 y 3 en cada pedido que aparezca.
 
-**NOTA**: Si la pantalla dice "Falta aceptar el permiso USB", tocá **USB-config**.
+**NOTA**: Si la pantalla dice "Falta aceptar el permiso USB", tocá la ruedita de arriba a la derecha y **Pedir permiso USB**.
 
 ### Tarea 4: completar el configurador
+
+**NOTA**: La primera vez, la configuración se abre sola. Después se abre con **USB-config** en la pantalla principal; **←** o atrás la cierran sin guardar.
 
 Paso Destino:
 
@@ -267,16 +269,25 @@ Para probar el audio y los instrumentos, seguí la sección [Probar el Panel Loc
 | Problema | Causa posible | Acción |
 |---|---|---|
 | El kiosco dice "Falta la URL del kiosco". | La URL no está guardada. | Hacé la tarea 4, pasos 11 a 14. |
-| La pantalla dice "Falta aceptar el permiso USB". | Un equipo no tiene permiso. | Tocá **USB-config**. |
+| La pantalla dice "Falta aceptar el permiso USB". | Un equipo no tiene permiso. | Tocá la ruedita de arriba a la derecha y **Pedir permiso USB**. |
 | El médico no ve el otoscopio. | El otoscopio no está habilitado para el tótem. | Hacé la tarea 9, paso 5. |
 | El médico no ve el otoscopio. | El otoscopio no tiene permiso USB. | Hacé la tarea 7. |
 | El kiosco dice que no se pudo abrir y no hay conexión. | La tablet no está conectada al wifi. | Conectá el wifi. El kiosco se recarga solo. Si no, cinco toques, PIN y **Recargar**. |
 | No se escucha la videollamada. | El auricular no está conectado. | Conectá el auricular al puerto 3 del hub. |
 | Un puerto no cambia. | El hub no contesta. | Mirá las líneas `[YKUSH]` con `adb logcat -s BerryMed`. |
 
+## Pantalla principal
+
+Con los colores, las letras y los botones del [Panel Local](#panel-local), para que se lean como una sola app:
+
+- **Cabecera**: el título "Maletín de atención ONDOCTOR365", los chips **Plaqueta**, **Pusher** y **Termómetro** (punto verde conectado, ámbar conectado sin mediciones todavía, gris sin conectar) y la **ruedita**, con **Pedir permiso USB** y **Evitar que se duerma**.
+- **Vitales**: FC, SpO₂, Resp, Temp y PA en tarjetas, cada una en su color fijo, como en el panel.
+- **Estado**: lo que hace la plaqueta, el último dato, Pusher, el termómetro, el hub, la sesión y el último envío.
+- **Botones**: **USB-config** (abre la configuración), **Testing**, **Panel Local** y **ONDOCTOR365** (el kiosco del paciente).
+
 ## Configuración
 
-En la pantalla de Berry Med, en cuatro pasos:
+Se abre con **USB-config**, como una capa sobre la pantalla principal; **←** o atrás la cierran sin guardar. Se abre sola la primera vez (sin el identificador del tótem), desde el kiosco sin URL (**Abrir la configuración**) y con el PIN del kiosco si falta la URL; con la URL guardada, el PIN lleva a la pantalla principal. En cuatro pasos:
 
 - **Destino**: el entorno de OnDoctor, el identificador del tótem (su `external_id`) y la URL base de la API. Elegir el entorno completa la URL base, la clave y el cluster de Pusher; se pueden cambiar a mano antes de guardar:
 
@@ -309,7 +320,7 @@ Para preparar una tablet nueva, seguí [Configuración paso a paso](#configuraci
 
    Conviene abrir el Panel Local una vez y aceptar el permiso de la cámara **antes** de aceptar el permiso USB del otoscopio: en Android 10 o más, Android puede negar sin diálogo el permiso USB de un dispositivo de video si la app todavía no tiene el de cámara.
 
-   Cada equipo se pide una sola vez, para no tapar el kiosco una y otra vez. Si alguien rechaza o cierra el pedido, la pantalla de Berry Med dice "Falta aceptar el permiso USB" y se resuelve con **USB-config** en la pantalla principal. Un equipo sin permiso no frena a los demás.
+   Cada equipo se pide una sola vez, para no tapar el kiosco una y otra vez. Si alguien rechaza o cierra el pedido, la pantalla de Berry Med dice "Falta aceptar el permiso USB" y se resuelve con **Pedir permiso USB**, en el menú de la ruedita de arriba a la derecha de la pantalla principal. Un equipo sin permiso no frena a los demás.
 3. **Completar el paso Kiosco de la configuración** (ver [Configuración](#configuración)): cargar la URL del kiosco, guardar y dejar en verde la lista de puesta en marcha (permisos de cámara y micrófono, Berry Med como app de inicio, el servicio con cámara y micrófono y sin optimización de batería), abrir el kiosco para configurar el tótem y resolver lo que va fuera de la tablet. La optimización de batería es imprescindible: si Android cierra el servicio, sólo puede volver a levantarlo si la app está excluida.
 4. **Sacar a Berry Med de las listas propias de la marca.** Algunas marcas tienen, además de la optimización de batería de Android, su propia lista de apps que se duermen.
 5. **Sin bloqueo con PIN, patrón ni contraseña.** Con bloqueo seguro Android no avisa el encendido hasta que alguien desbloquea, y la app no arranca.

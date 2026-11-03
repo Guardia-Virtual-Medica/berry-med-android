@@ -3,8 +3,15 @@
     <string name="app_name">Berry Med</string>
     <string name="screen_title">Maletín de atención ONDOCTOR365</string>
     <string name="settings">Ajustes</string>
+    <string name="usb_request">Pedir permiso USB</string>
+    <string name="config_title">Configuración</string>
+    <string name="config_close">Cerrar la configuración</string>
+    <string name="main_chip_berry">Plaqueta</string>
+    <string name="main_chip_pusher">Pusher</string>
+    <string name="main_chip_thermo">Termómetro</string>
+    <string name="main_status">Estado</string>
     <string name="ondoctor">ONDOCTOR365</string>
-    <string name="help_ondoctor">ONDOCTOR365 abre el kiosco del paciente; para volver acá, cinco toques arriba a la izquierda y el PIN.</string>
+    <string name="help_ondoctor">USB-config abre la configuración. ONDOCTOR365 abre el kiosco del paciente; para volver acá, cinco toques arriba a la izquierda y el PIN.</string>
     <string name="label_hr">Frecuencia</string>
     <string name="label_spo2">SpO₂ / pulso</string>
     <string name="label_resp">Respiración</string>

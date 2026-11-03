@@ -118,6 +118,13 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - Visto al verificar, y ya pasaba antes de este cambio (probado con `main`): si el kiosco se abre primero con el botón y no como app de inicio, el botón de inicio crea un segundo kiosco en la tarea de inicio de Android. En la tablet no pasa porque el kiosco arranca siempre como app de inicio; queda anotado.
 - Pantalla principal: título "Maletín de atención ONDOCTOR365", **Evitar que se duerma** pasa a una ruedita arriba a la derecha y la fila queda con cuatro botones rellenos de 56 dp (USB-config, Testing, Panel Local y ONDOCTOR365 en violeta). En 1280×800 dp los cuatro textos entran enteros.
 
+### La pantalla principal con el estilo del Panel Local (plan 11, parte 2)
+
+- El usuario vio la parte 1 en el emulador y pidió que la configuración no esté siempre a la vista y que la pantalla principal se vea como el Panel Local, "así no parecen dos apps distintas".
+- La configuración pasa a una capa que tapa el contenido de abajo de la cabecera; se abre con **USB-config** (el nombre lo eligió el usuario) y se cierra con ← o atrás, sin guardar. Se abre sola sin identificador del tótem y con `MainActivity.EXTRA_OPEN_CONFIG` desde el kiosco sin URL. El PIN del kiosco lleva a la pantalla principal con la capa cerrada, salvo que falte la URL del kiosco.
+- **Pedir permiso USB** se muda al menú de la ruedita, arriba de **Evitar que se duerma**. La ayuda de «Usar de forma predeterminada» va al paso Plaqueta, junto a los equipos USB.
+- Todo con los tokens del Panel Local (`Theme.BerryMed.Panel`, Barlow, `Panel.Card`, `Panel.Chip`, `Panel.Button.Secondary`); la capa usa `ThemeOverlay.BerryMed.FormDark` y el error en `test_fail`. Los chips de la cabecera usan los mismos colores que los del panel; el del termómetro va ámbar mientras está conectado sin mediciones (`TotemState` suma `thermoConnected` y `thermoMeasured`).
+
 ## Pendiente
 
 - Prueba con el hardware real en la tablet (ver "Probar el Panel Local en el tótem" en el `README.md` y los riesgos de `docs/hardware.md`).
