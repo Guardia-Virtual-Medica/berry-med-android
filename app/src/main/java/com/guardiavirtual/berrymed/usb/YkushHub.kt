@@ -11,7 +11,7 @@ import java.io.Closeable
 /**
  * Hub YKUSH3 de Yepkit: tres puertos USB que se encienden y apagan por HID.
  * En el tótem cada puerto lleva un equipo (otoscopio, adaptador del
- * estetoscopio, auricular), así que apagar un puerto es desenchufar ese equipo
+ * estetoscopio, termómetro), así que apagar un puerto es desenchufar ese equipo
  * para Android, y encenderlo es enchufarlo de nuevo.
  *
  * El protocolo es el de la hoja de datos (v1.2.1): paquetes de 64 bytes por la

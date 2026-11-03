@@ -21,16 +21,20 @@ data class BerryConfig(
     val respGain: String = "x1",
     val nibpMode: String = "adulto",
     val nibpTargetPressureMmhg: String = "",
-    /** En qué puerto del hub YKUSH3 va cada equipo (1 a 3). */
+    /**
+     * En qué puerto del hub YKUSH3 va cada equipo (1 a 3). El del termómetro
+     * queda siempre encendido (ver HubRestState).
+     */
     val ykushOtoscopePort: Int = 1,
     val ykushStethoscopePort: Int = 2,
-    val ykushHeadsetPort: Int = 3,
+    val ykushThermometerPort: Int = 3,
     /** El PIN que pide el Panel Local al abrirse. */
     val localPanelPin: String = DEFAULT_LOCAL_PIN,
     /**
-     * Cómo se llaman, para Android, el adaptador del estetoscopio y el
-     * auricular (Testing → Dispositivos). El Panel Local los elige por nombre
-     * y nunca usa el micrófono ni el parlante por defecto.
+     * Cómo se llaman, para Android, el adaptador del estetoscopio y un
+     * auricular USB de respaldo (Testing → Dispositivos). El Panel Local los
+     * elige por nombre y nunca usa el micrófono ni el parlante por defecto.
+     * Con auriculares en el jack de la tablet no hace falta ningún nombre.
      */
     val stethoInputName: String = DEFAULT_STETHO_INPUT,
     val headsetName: String = DEFAULT_HEADSET,
@@ -50,17 +54,18 @@ data class BerryConfig(
         listOfNotNull(
             "otoscopio".takeIf { ykushOtoscopePort == port },
             "estetoscopio".takeIf { ykushStethoscopePort == port },
-            "auricular".takeIf { ykushHeadsetPort == port },
+            "termómetro".takeIf { ykushThermometerPort == port },
         ).joinToString(" y ").ifBlank { "libre" }
     }
 
     /**
      * Cada equipo va en su propio puerto del YKUSH3. Si dos comparten, el
      * Panel Local los mezcla: apagar el otoscopio al salir cortaría el
-     * estetoscopio, y al revés.
+     * estetoscopio, y al revés, y el termómetro, que queda siempre encendido,
+     * no dejaría apagar al que comparte su puerto.
      */
     fun ykushPortsShared(): Boolean =
-        anyPortRepeated(ykushOtoscopePort, ykushStethoscopePort, ykushHeadsetPort)
+        anyPortRepeated(ykushOtoscopePort, ykushStethoscopePort, ykushThermometerPort)
 
     fun tuning(): DeviceTuning = DeviceTuning(
         ecgGain = ecgGain,
@@ -123,7 +128,7 @@ fun ykushPortOrDefault(text: String?, default: Int): Int {
     return if (port in 1..YKUSH_PORTS) port else default
 }
 
-/** Si alguno de los puertos del YKUSH3 se repite entre el otoscopio, el estetoscopio y el auricular. */
+/** Si alguno de los puertos del YKUSH3 se repite entre el otoscopio, el estetoscopio y el termómetro. */
 fun anyPortRepeated(vararg ports: Int): Boolean = ports.distinct().size != ports.size
 
 /** Sin http:// o https:// el POST no puede armar la dirección y no sale nunca. */

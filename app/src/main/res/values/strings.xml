@@ -58,7 +58,7 @@
     <string name="missing_totem">Falta el identificador del tótem.</string>
     <string name="missing_pusher">Falta la clave de Pusher.</string>
     <string name="missing_channel">Falta el nombre del canal.</string>
-    <string name="ykush_shared">Cada equipo va en un puerto distinto del YKUSH3: el otoscopio, el estetoscopio y el auricular no pueden compartir puerto.</string>
+    <string name="ykush_shared">Cada equipo va en un puerto distinto del YKUSH3: el otoscopio, el estetoscopio y el termómetro no pueden compartir puerto.</string>
     <string name="save">Guardar y aplicar</string>
     <string name="saving">Guardando…</string>
     <string name="saved">Configuración guardada. El tótem la usa desde ahora.</string>
@@ -84,10 +84,10 @@
     <string name="testing_clear">Limpiar</string>
     <string name="testing_first">Iniciá la prueba primero.</string>
     <string name="testing_ykush">Hub YKUSH3</string>
-    <string name="testing_ykush_help">Cada puerto lleva un equipo. Apagar un puerto es desenchufar ese equipo para Android; encenderlo, enchufarlo de nuevo. Con una consulta enviando no se cambia nada.</string>
+    <string name="testing_ykush_help">Cada puerto lleva un equipo. Apagar un puerto es desenchufar ese equipo para Android; encenderlo, enchufarlo de nuevo. Con una consulta enviando no se cambia nada. El termómetro queda siempre encendido: si lo apagás, se vuelve a encender solo enseguida.</string>
     <string name="testing_ykush_read">Leer estado</string>
     <string name="testing_ykush_save_boot">Guardar este arranque en el hub</string>
-    <string name="testing_ykush_save_boot_help">Guarda en el hub el estado del kiosco (otoscopio y estetoscopio encendidos), porque la tablet arranca en el kiosco, para los segundos entre que se prende y arranca el servicio. Queda en la memoria del hub: usarlo sólo al instalar o al cambiar la salida de audio.</string>
+    <string name="testing_ykush_save_boot_help">Guarda en el hub el estado del kiosco (otoscopio, estetoscopio y termómetro encendidos), porque la tablet arranca en el kiosco, para los segundos entre que se prende y arranca el servicio. Queda en la memoria del hub: usarlo sólo al instalar o al cambiar de puerto un equipo.</string>
     <string name="testing_on">Encender</string>
     <string name="testing_off">Apagar</string>
     <string name="testing_devices">Dispositivos que ve Android</string>
@@ -113,9 +113,9 @@
     <string name="help_kiosk">El kiosco de OnDoctor corre dentro de Berry Med, como app de inicio de la tablet. Acá queda su dirección y lo que falta para dejarlo andando.</string>
     <string name="missing_kiosk_url">La URL del kiosco tiene que empezar con https:// (o http://) y tener un dominio. Si no hay kiosco, dejala vacía.</string>
     <string name="label_call_audio">Audio de la videollamada</string>
-    <string name="call_audio_headset">Auriculares (jack de la tablet o USB)</string>
+    <string name="call_audio_headset">Auriculares (jack de la tablet)</string>
     <string name="call_audio_speaker">Parlante de la tablet</string>
-    <string name="help_call_audio">Con Auriculares, la llamada y el estetoscopio salen por el jack de la tablet y, si no hay nada enchufado ahí, por el auricular USB. Con Parlante sólo la llamada va al parlante: el estetoscopio sigue por los auriculares.</string>
+    <string name="help_call_audio">Con Auriculares, la llamada y el estetoscopio salen por los auriculares enchufados en el jack de la tablet; un auricular USB, si hubiera uno, queda de respaldo. Con Parlante sólo la llamada va al parlante: el estetoscopio sigue por los auriculares.</string>
     <string name="section_kiosk_checklist">Puesta en marcha</string>
     <string name="help_kiosk_checklist">Verde, hecho; ámbar, falta. Se actualiza al volver a esta pantalla.</string>
     <string name="check_permissions">Cámara y micrófono</string>
@@ -152,18 +152,18 @@
     <string name="testing_tele_stetho">Publicar estetoscopio</string>
     <string name="testing_tele_stop">Cortar</string>
     <string name="section_ykush">Hub YKUSH3</string>
-    <string name="help_ykush">En qué puerto del hub (1 a 3) va cada equipo. Si no sabés, dejá los valores que vienen.</string>
+    <string name="help_ykush">En qué puerto del hub (1 a 3) va cada equipo. Si no sabés, dejá los valores que vienen. El termómetro queda siempre encendido; los auriculares van al jack de la tablet y no usan el hub.</string>
     <string name="hint_ykush_otoscope">Puerto del otoscopio</string>
     <string name="hint_ykush_stethoscope">Puerto del estetoscopio</string>
-    <string name="hint_ykush_headset">Puerto del auricular</string>
+    <string name="hint_ykush_thermometer">Puerto del termómetro</string>
     <string name="local_panel">Panel Local</string>
     <string name="section_local">Panel Local</string>
     <string name="help_local">El PIN que pide el Panel Local al abrirse y cada vez que vuelve a la pantalla. Si lo dejás vacío vuelve a 1515.</string>
     <string name="hint_local_pin">PIN del Panel Local</string>
     <string name="section_stetho">Estetoscopio</string>
-    <string name="help_stetho">Cómo se llaman para Android el adaptador del estetoscopio y el auricular. Se leen en Testing → Dispositivos que ve Android. El Panel Local los busca por estos nombres y nunca usa el micrófono ni el parlante de la tablet. Si hay auriculares enchufados en el jack de la tablet, el estetoscopio suena por ahí antes que por el auricular USB, sin poner ningún nombre.</string>
+    <string name="help_stetho">Cómo se llaman para Android el adaptador del estetoscopio y, de respaldo, un auricular USB. Se leen en Testing → Dispositivos que ve Android. El Panel Local los busca por estos nombres y nunca usa el micrófono ni el parlante de la tablet. Si hay auriculares enchufados en el jack de la tablet, el estetoscopio suena por ahí antes que por el auricular USB, sin poner ningún nombre.</string>
     <string name="hint_stetho_input">Nombre del adaptador del estetoscopio</string>
-    <string name="hint_headset_name">Nombre del auricular</string>
+    <string name="hint_headset_name">Nombre del auricular USB (respaldo)</string>
 
     <!-- Panel Local: el candado. -->
     <string name="local_title">Panel Local</string>
