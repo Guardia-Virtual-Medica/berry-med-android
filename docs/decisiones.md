@@ -179,7 +179,7 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - Audio con la regla del plan 10: primero el jack de la tablet, después un auricular USB por nombre como respaldo inofensivo (la lógica no se borra, el texto ya no lo nombra como parte del armado) y, para la llamada, el parlante. El valor guardado de `callAudioOutput` no cambia.
 - `ThermometerLink` y el envío no cambian: si el termómetro aparece tarde porque su puerto se encendió después, el link lo toma solo (busca cada 2 s) y `requestMissingPermissions` le pide el permiso USB.
 
-### El otoscopio manda imagen en la videollamada (plan 14)
+### El otoscopio manda imagen en la videollamada (plan 14, 1.3.7)
 
 - Reporte de campo con la 1.3.6: Testing → Teleconsulta decía "Sala conectada", "Publica: otoscopio por UVC" y **0.0 cuadros**; el médico recibía la pista sin imagen. En el Panel Local el otoscopio sí se veía. Plan en `docs/planes/plan-14-otoscopio-con-imagen-en-videollamada.md`.
 - Causa: `UvcOtoscopeFrames` abría el otoscopio por libuvc sin superficie, con sólo el callback NV21. En libuvc 3.2.7 (`com.github.jiangdongguo.AndroidUSBCamera:libuvc`), `UVCPreview::startPreview` crea el hilo de captura sólo si hay ventana de preview (`UVCCamera::window does not exist/already running/could not create thread etc.` en `libUVCCamera.so`): sin superficie no se lee la cámara y el callback nunca corre. El Panel Local anda porque dibuja en un `TextureView`.
