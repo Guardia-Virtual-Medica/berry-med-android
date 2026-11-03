@@ -94,13 +94,28 @@ class KioskChecklistTest {
     }
 
     @Test
-    fun theOtoscopePermissionCannotBeDetectedAndTheButtonIsAlwaysThere() {
-        for (input in listOf(ready, ready.copy(kioskUrlSaved = false, cameraGranted = false))) {
+    fun anUnpluggedOtoscopeIsGreyAndTheButtonIsAlwaysThere() {
+        for (input in listOf(ready, ready.copy(kioskUrlSaved = false, cameraGranted = false), ready.copy(otoscopePermission = true))) {
             val otoscope = item(input, KioskCheck.OTOSCOPE_USB)
             assertNull(otoscope.done)
             assertTrue(otoscope.action)
             assertTrue(otoscope.actionEnabled)
         }
+    }
+
+    @Test
+    fun aPluggedOtoscopeWithItsPermissionIsGreen() {
+        val otoscope = item(ready.copy(otoscopePlugged = true, otoscopePermission = true), KioskCheck.OTOSCOPE_USB)
+        assertEquals(true, otoscope.done)
+        assertTrue(otoscope.action)
+    }
+
+    @Test
+    fun aPluggedOtoscopeWithoutItsPermissionIsAmber() {
+        val otoscope = item(ready.copy(otoscopePlugged = true, otoscopePermission = false), KioskCheck.OTOSCOPE_USB)
+        assertEquals(false, otoscope.done)
+        assertTrue(otoscope.action)
+        assertTrue(otoscope.actionEnabled)
     }
 
     @Test

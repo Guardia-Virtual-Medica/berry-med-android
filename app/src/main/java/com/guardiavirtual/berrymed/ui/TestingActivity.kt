@@ -132,8 +132,10 @@ class TestingActivity : AppCompatActivity() {
         )
     }
 
+    /** Mientras se ve Testing, el reposo del hub no apaga ni enciende puertos (salvo el termómetro). */
     override fun onStart() {
         super.onStart()
+        runtime().setTestingScreenOpen(true)
         handler.post(tick)
     }
 
@@ -156,6 +158,7 @@ class TestingActivity : AppCompatActivity() {
     override fun onStop() {
         handler.removeCallbacks(tick)
         runtime().stopTesting()
+        runtime().setTestingScreenOpen(false)
         // La prueba manual de la teleconsulta sigue: sirve justamente para probar con Chrome adelante.
         super.onStop()
     }

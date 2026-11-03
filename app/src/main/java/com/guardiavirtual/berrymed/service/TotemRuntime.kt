@@ -187,6 +187,13 @@ class TotemRuntime(context: Context) {
     /** Con el panel Testing abierto no sale ningún POST de prueba: sólo se mira. */
     @Volatile var testing: Boolean = false
         private set
+
+    /**
+     * Con la pantalla Testing abierta, aunque la prueba no haya empezado, el
+     * reposo no toca el hub (salvo encender el termómetro): un puerto
+     * encendido a mano queda encendido mientras se está ahí.
+     */
+    @Volatile private var testingScreenOpen = false
     /**
      * Con el Panel Local abierto no sale ningún POST ni se atiende ninguna
      * orden de Pusher: la tablet está atendiendo a alguien de forma presencial.
@@ -442,8 +449,9 @@ class TotemRuntime(context: Context) {
         log("[YKUSH] $label: ${HubRestState.describe(wanted)}")
     }
 
-    /** No se le apaga un equipo a nadie. */
-    private fun hubRestBlocked(): Boolean = sessionActive || testing || localMode || tele.usingInstrument
+    /** No se le apaga un equipo a nadie, ni a Testing el que encendió a mano. */
+    private fun hubRestBlocked(): Boolean =
+        sessionActive || testing || testingScreenOpen || localMode || tele.usingInstrument
 
     /** Una tarea que falla no frena a las otras del mismo hilo. */
     private fun guarded(task: String, block: () -> Unit) {
@@ -661,6 +669,19 @@ class TotemRuntime(context: Context) {
         testing = true
         log("[TEST] Prueba iniciada: no se envía nada a la API")
         return null
+    }
+
+    /**
+     * Lo llama Testing en onStart y onStop. Al cerrarse se buscan de nuevo los
+     * puertos que correspondan, en la vuelta siguiente de [watchLoop].
+     */
+    fun setTestingScreenOpen(open: Boolean) {
+        if (testingScreenOpen == open) return
+        testingScreenOpen = open
+        if (!open) {
+            log("[YKUSH] Se cerró Testing: se buscan los puertos que correspondan")
+            hubRest.again()
+        }
     }
 
     fun stopTesting() {

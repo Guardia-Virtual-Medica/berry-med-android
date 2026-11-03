@@ -264,11 +264,13 @@ class LiveKitBackend(
         framesSent.set(0)
         fpsMark = Pair(0L, System.nanoTime())
         val opened = CountDownLatch(1)
+        val firstFrame = FirstFrame()
         var reason: String? = "El otoscopio no abrió en ${OPEN_TIMEOUT_MS / 1000} s"
         source.start(
             sink = { frame ->
                 if (framesSent.getAndIncrement() == 0L) videoSize = "${frame.rotatedWidth}×${frame.rotatedHeight}"
                 frameCapturer.pushVideoFrame(frame)
+                firstFrame.arrived()
             },
             done = { result ->
                 reason = result
@@ -279,6 +281,12 @@ class LiveKitBackend(
         reason?.let {
             releaseOtoscope()
             return it
+        }
+        // Una pista sin cuadros le llega al médico como video negro: se publica recién con imagen.
+        if (!firstFrame.await(FIRST_FRAME_TIMEOUT_MS)) {
+            log("[TELE] El otoscopio ${source.label} abrió pero no mandó ningún cuadro en ${FIRST_FRAME_TIMEOUT_MS / 1000} s: no se publica")
+            releaseOtoscope()
+            return FirstFrame.NO_IMAGE
         }
         val published = try {
             runBlocking {
@@ -490,6 +498,7 @@ class LiveKitBackend(
         private const val CONNECT_TIMEOUT_MS = 20_000L
         private const val OPEN_TIMEOUT_MS = 15_000L
         private const val CLOSE_TIMEOUT_MS = 5_000L
+        private const val FIRST_FRAME_TIMEOUT_MS = 5_000L
         private const val POLL_MS = 250L
         private const val OTOSCOPE_WAIT_NANOS = 8L * 1_000_000_000L
         private const val CAMERA2_GRACE_NANOS = 2L * 1_000_000_000L

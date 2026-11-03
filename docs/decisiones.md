@@ -179,6 +179,15 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - Audio con la regla del plan 10: primero el jack de la tablet, después un auricular USB por nombre como respaldo inofensivo (la lógica no se borra, el texto ya no lo nombra como parte del armado) y, para la llamada, el parlante. El valor guardado de `callAudioOutput` no cambia.
 - `ThermometerLink` y el envío no cambian: si el termómetro aparece tarde porque su puerto se encendió después, el link lo toma solo (busca cada 2 s) y `requestMissingPermissions` le pide el permiso USB.
 
+### El otoscopio manda imagen en la videollamada (plan 14)
+
+- Reporte de campo con la 1.3.6: Testing → Teleconsulta decía "Sala conectada", "Publica: otoscopio por UVC" y **0.0 cuadros**; el médico recibía la pista sin imagen. En el Panel Local el otoscopio sí se veía. Plan en `docs/planes/plan-14-otoscopio-con-imagen-en-videollamada.md`.
+- Causa: `UvcOtoscopeFrames` abría el otoscopio por libuvc sin superficie, con sólo el callback NV21. En libuvc 3.2.7 (`com.github.jiangdongguo.AndroidUSBCamera:libuvc`), `UVCPreview::startPreview` crea el hilo de captura sólo si hay ventana de preview (`UVCCamera::window does not exist/already running/could not create thread etc.` en `libUVCCamera.so`): sin superficie no se lee la cámara y el callback nunca corre. El Panel Local anda porque dibuja en un `TextureView`.
+- Arreglo: antes de `startPreview`, `setPreviewDisplay(Surface)` (firma verificada con `javap` sobre el `.aar`) con la superficie de un `ImageReader` del tamaño abierto, en `PixelFormat.RGBX_8888` (libuvc dibuja la ventana con `uvc_any2rgbx`), `maxImages` 2, vaciado con `acquireLatestImage()?.close()` en un `HandlerThread` propio para que libuvc nunca se trabe esperando un buffer. Se eligió `ImageReader` y no un `SurfaceTexture` porque se consume sin contexto GL y el formato queda explícito; si el formato no le cuadrara, el primer error del vaciado queda en el log `[TELE]` y la alternativa es un `SurfaceTexture` desacoplado. Al soltar: sin callback, `stopPreview` y la cámara cerrada, y recién ahí el `ImageReader` y su hilo, sin excepciones que escapen.
+- No se publica una pista vacía: `LiveKitBackend.publishOtoscope` espera el primer cuadro hasta 5 s (`FirstFrame`, con test) antes de `publishVideoTrack`, por los dos caminos. Si no llega, suelta todo y dice "El otoscopio abrió pero no manda imagen".
+- Testing no se pelea con el reposo: con la pantalla Testing abierta (`onStart`…`onStop`), `hubRestBlocked()` es verdadero aunque la prueba no haya empezado; sólo se enciende el termómetro. Antes, un **Encender** a mano lo apagaba el reposo y el pedido de permiso del otoscopio aparecía y se iba. Al cerrar Testing, `hubRest.again()`.
+- El paso Kiosco muestra el permiso USB del otoscopio: verde enchufado con permiso, ámbar enchufado sin permiso, gris desenchufado (con test en `KioskChecklistTest`).
+
 ## Pendiente
 
 - Prueba con el hardware real en la tablet (ver "Probar el Panel Local en el tótem" en el `README.md` y los riesgos de `docs/hardware.md`).
@@ -187,6 +196,7 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - Plan 7 en la tablet real: modo y uso de audio de Zoom en el `WebView`, y el protocolo del hub contra el YKUSH3 (ver riesgos en `docs/hardware.md`).
 - Plan 9 en la tablet real: los cuadros por segundo del otoscopio por UVC, solo y con el estetoscopio escuchando.
 - Plan 10 en la tablet real: el estetoscopio y la videollamada por el jack (ver riesgos en `docs/hardware.md`).
+- Plan 14 en la tablet real: unos 30 cuadros/s en Testing → Teleconsulta con el otoscopio por UVC, que el médico vea la imagen y que no haya una línea `[TELE] La superficie del otoscopio por UVC no se pudo vaciar`.
 - Plan 12 en la tablet real: los tres puertos encendidos con el kiosco, el otoscopio en la llamada sin pedido de permiso y el micrófono de la llamada con el adaptador y el otoscopio encendidos.
 - Plan 13 en la tablet real: la luz del puerto 3 siempre encendida y el termómetro midiendo en el Panel Local y en una consulta.
 - v2 con guardado y PDF local.

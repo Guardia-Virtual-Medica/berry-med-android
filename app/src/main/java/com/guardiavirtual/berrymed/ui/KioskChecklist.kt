@@ -17,15 +17,19 @@ data class KioskChecklistInput(
     val ignoringBatteryOptimizations: Boolean,
     /** La URL del kiosco escrita es válida, no está vacía y es la guardada. */
     val kioskUrlSaved: Boolean,
+    /** Si Android ve el otoscopio por USB (su puerto encendido). */
+    val otoscopePlugged: Boolean = false,
+    /** Si Berry Med tiene el permiso USB del otoscopio; sólo vale con el otoscopio enchufado. */
+    val otoscopePermission: Boolean = false,
 )
 
 enum class KioskCheck { PERMISSIONS, HOME, SERVICE, BATTERY, OTOSCOPE_USB, TOTEM }
 
 /**
  * Un ítem de la lista. [done] es null cuando Berry Med no lo puede saber (la
- * sesión del tótem vive en la página del kiosco, y Android no dice si un permiso
- * USB quedó con "Usar de forma predeterminada"). [action] dice si va el botón
- * y [actionEnabled] si se puede tocar.
+ * sesión del tótem vive en la página del kiosco, y el permiso USB del
+ * otoscopio sólo se ve con el otoscopio enchufado). [action] dice si va el
+ * botón y [actionEnabled] si se puede tocar.
  */
 data class KioskCheckItem(
     val check: KioskCheck,
@@ -48,7 +52,12 @@ object KioskChecklist {
             KioskCheckItem(KioskCheck.SERVICE, service, action = false),
             KioskCheckItem(KioskCheck.BATTERY, input.ignoringBatteryOptimizations, action = !input.ignoringBatteryOptimizations),
             // En reposo su puerto está apagado: sin esto, el pedido saltaría arriba del kiosco en la primera consulta.
-            KioskCheckItem(KioskCheck.OTOSCOPE_USB, null, action = true),
+            // Verde con permiso, ámbar sin él; gris desenchufado, que es lo normal en reposo.
+            KioskCheckItem(
+                KioskCheck.OTOSCOPE_USB,
+                if (input.otoscopePlugged) input.otoscopePermission else null,
+                action = true,
+            ),
             // Abrir el kiosco con una URL sin guardar mostraría la vieja (o ninguna).
             KioskCheckItem(KioskCheck.TOTEM, null, action = true, actionEnabled = input.kioskUrlSaved),
         )
