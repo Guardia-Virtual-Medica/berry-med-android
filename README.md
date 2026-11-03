@@ -131,7 +131,7 @@ Pedí estos datos:
 3. Aceptá el pedido.
 4. Hacé los pasos 2 y 3 en cada pedido que aparezca.
 
-**NOTA**: Si la pantalla dice "Falta aceptar el permiso USB", tocá **Pedir permiso USB**.
+**NOTA**: Si la pantalla dice "Falta aceptar el permiso USB", tocá **USB-config**.
 
 ### Tarea 4: completar el configurador
 
@@ -267,7 +267,7 @@ Para probar el audio y los instrumentos, seguí la sección [Probar el Panel Loc
 | Problema | Causa posible | Acción |
 |---|---|---|
 | El kiosco dice "Falta la URL del kiosco". | La URL no está guardada. | Hacé la tarea 4, pasos 11 a 14. |
-| La pantalla dice "Falta aceptar el permiso USB". | Un equipo no tiene permiso. | Tocá **Pedir permiso USB**. |
+| La pantalla dice "Falta aceptar el permiso USB". | Un equipo no tiene permiso. | Tocá **USB-config**. |
 | El médico no ve el otoscopio. | El otoscopio no está habilitado para el tótem. | Hacé la tarea 9, paso 5. |
 | El médico no ve el otoscopio. | El otoscopio no tiene permiso USB. | Hacé la tarea 7. |
 | El kiosco dice que no se pudo abrir y no hay conexión. | La tablet no está conectada al wifi. | Conectá el wifi. El kiosco se recarga solo. Si no, cinco toques, PIN y **Recargar**. |
@@ -292,7 +292,7 @@ En la pantalla de Berry Med, en cuatro pasos:
   - **Cámara y micrófono**: los dos permisos otorgados. **Dar permisos** pide los que faltan; si Android ya no muestra el diálogo, abre los ajustes de la app.
   - **Berry Med como app de inicio**: el botón de inicio abre Berry Med. **Elegir app de inicio** abre la lista de apps de inicio de Android.
   - **Servicio con cámara y micrófono para la teleconsulta**: el servicio ya los sumó (en Android 10 o menos no hace falta). Se resuelve solo con esta pantalla adelante y los permisos dados.
-  - **Sin optimización de batería**: lo mismo que **Evitar que se duerma**.
+  - **Sin optimización de batería**: lo mismo que **Evitar que se duerma**, en el menú de la ruedita de arriba a la derecha de la pantalla principal.
   - **Permiso USB del otoscopio**: Berry Med no lo puede saber. Como su puerto descansa apagado, hay que encenderlo una vez en Testing y aceptar el permiso marcando "Usar de forma predeterminada"; **Abrir Testing** lleva ahí.
   - **Configurar el tótem en el kiosco**: Berry Med no lo puede saber. La primera vez el kiosco pide el identificador y la contraseña del tótem, porque no usa la sesión de Chrome. **Abrir el kiosco** se habilita con la URL guardada.
 
@@ -309,7 +309,7 @@ Para preparar una tablet nueva, seguí [Configuración paso a paso](#configuraci
 
    Conviene abrir el Panel Local una vez y aceptar el permiso de la cámara **antes** de aceptar el permiso USB del otoscopio: en Android 10 o más, Android puede negar sin diálogo el permiso USB de un dispositivo de video si la app todavía no tiene el de cámara.
 
-   Cada equipo se pide una sola vez, para no tapar el kiosco una y otra vez. Si alguien rechaza o cierra el pedido, la pantalla de Berry Med dice "Falta aceptar el permiso USB" y se resuelve con **Pedir permiso USB**. Un equipo sin permiso no frena a los demás.
+   Cada equipo se pide una sola vez, para no tapar el kiosco una y otra vez. Si alguien rechaza o cierra el pedido, la pantalla de Berry Med dice "Falta aceptar el permiso USB" y se resuelve con **USB-config** en la pantalla principal. Un equipo sin permiso no frena a los demás.
 3. **Completar el paso Kiosco de la configuración** (ver [Configuración](#configuración)): cargar la URL del kiosco, guardar y dejar en verde la lista de puesta en marcha (permisos de cámara y micrófono, Berry Med como app de inicio, el servicio con cámara y micrófono y sin optimización de batería), abrir el kiosco para configurar el tótem y resolver lo que va fuera de la tablet. La optimización de batería es imprescindible: si Android cierra el servicio, sólo puede volver a levantarlo si la app está excluida.
 4. **Sacar a Berry Med de las listas propias de la marca.** Algunas marcas tienen, además de la optimización de batería de Android, su propia lista de apps que se duermen.
 5. **Sin bloqueo con PIN, patrón ni contraseña.** Con bloqueo seguro Android no avisa el encendido hasta que alguien desbloquea, y la app no arranca.
@@ -351,7 +351,7 @@ El botón **Testing** de la pantalla principal abre un panel para comprobar, en 
 
 Para atención **presencial, sin teleconsulta**: el médico o el enfermero que está al lado del paciente ve en la tablet todos los instrumentos en vivo, sin el kiosco adelante. Es una cosa o la otra: con el panel abierto la tablet no hace teleconsulta.
 
-- **Cómo se entra.** Con el ícono **Panel Local** de la tablet (un segundo ícono de Berry Med, con el mismo dibujo sobre fondo azul, que abre directo el panel) o con el botón **Panel Local** de la pantalla principal. Si la tablet arrancó sin pasar por Berry Med, el panel levanta el servicio.
+- **Cómo se entra.** Berry Med pone tres íconos en la tablet, con el mismo dibujo sobre fondos distintos: **Berry Med** (verde) abre la configuración, **Panel Local** (azul) abre directo el panel para la atención presencial y **ONDOCTOR365** (violeta) abre el kiosco del paciente. Al panel también se entra con el botón **Panel Local** de la pantalla principal. Si la tablet arrancó sin pasar por Berry Med, el panel levanta el servicio.
 - **PIN.** Lo pide al abrir y cada vez que el panel vuelve al frente. Por defecto `1515`; se cambia en Configuración, paso Plaqueta. Con una consulta enviando no se abre y lo dice.
 - **Qué muestra.** Pantalla apaisada, a pantalla completa, siempre oscura y sin apagarse, pensada para 1280×800 dp (en otras tablets se estira la parte izquierda y los vitales quedan en 312 dp). Nada scrollea. Cada vez que se desbloquea arranca en blanco, sin ondas de antes, y con el ECG a la vista:
   - **Cabecera**: la hora y la fecha, y un chip por equipo (ECG, SpO₂, PA, Temp, Otoscopio, Estetoscopio) con un punto verde si está conectado, ámbar si se está conectando y gris si no está. La plaqueta cuenta como conectada si mandó datos en los últimos 3 s. A la derecha, **Finalizar**.
@@ -372,6 +372,7 @@ Para atención **presencial, sin teleconsulta**: el médico o el enfermero que e
 El kiosco de OnDoctor corre dentro de Berry Med, como lo hacía la app del proveedor, y no en Chrome: la pantalla **Kiosco** es un `WebView` a pantalla completa, horizontal y sin barras, con la **URL del kiosco** de la configuración.
 
 - **Es la app de inicio** de la tablet: Android la abre al encender y el botón de inicio vuelve a ella. Sin URL configurada, lo dice y ofrece abrir la configuración.
+- **También se abre** con el ícono **ONDOCTOR365** de la tablet (violeta) y con el botón **ONDOCTOR365** de la pantalla principal, sin PIN. Los dos vuelven al mismo kiosco, sin recargar la página ni cortar la llamada. El kiosco tiene su propia tarea: el ícono de **Berry Med** muestra siempre la configuración.
 - **Atrás no sale.** Para ir a la configuración de Berry Med: **cinco toques en la esquina de arriba a la izquierda** en menos de 3 s y el **PIN del Panel Local** (`1515` por defecto). Al volver, el kiosco sigue donde estaba.
 - **Si la página no carga** (la tablet todavía no se conectó al wifi, el servidor no contesta), el kiosco lo dice en su propia pantalla y vuelve a intentar solo: apenas hay red, cada 10 s y al volver al kiosco. La pantalla tiene un botón **Reintentar**. En el diálogo del PIN está además **Recargar**, que vuelve a abrir la URL del kiosco desde cero (también pide el PIN).
 - La página tiene JavaScript, almacenamiento, cookies (también de terceros) y reproducción sin toque. El navegador se presenta como Chrome para Android (sin la marca `wv` de WebView). Cámara y micrófono se le dan sólo al origen de la URL del kiosco y a los de Zoom (`zoom.us`, `zoom.com`, `zoomgov.com`), y sólo si Android ya se los dio a Berry Med.

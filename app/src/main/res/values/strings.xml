@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Berry Med</string>
-    <string name="screen_title">Berry Med PM-6750</string>
+    <string name="screen_title">Maletín de atención ONDOCTOR365</string>
+    <string name="settings">Ajustes</string>
+    <string name="ondoctor">ONDOCTOR365</string>
+    <string name="help_ondoctor">ONDOCTOR365 abre el kiosco del paciente; para volver acá, cinco toques arriba a la izquierda y el PIN.</string>
     <string name="label_hr">Frecuencia</string>
     <string name="label_spo2">SpO₂ / pulso</string>
     <string name="label_resp">Respiración</string>
@@ -56,7 +59,7 @@
     <string name="load_failed">No se pudo leer la configuración guardada. Revisá los datos antes de guardar.</string>
     <string name="battery">Evitar que se duerma</string>
     <string name="battery_unavailable">Esta tablet no tiene el ajuste de batería. Buscalo a mano en Ajustes, Batería.</string>
-    <string name="usb_permission">Pedir permiso USB</string>
+    <string name="usb_permission">USB-config</string>
     <string name="help_usb_default">Al aceptar el permiso USB, marcá «Usar de forma predeterminada» para la plaqueta, el termómetro y el hub YKUSH3. Si no, Android lo vuelve a pedir arriba de Chrome después de cada reinicio.</string>
     <string name="testing">Testing</string>
     <string name="testing_title">Testing</string>

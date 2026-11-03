@@ -15,12 +15,31 @@
         android:paddingEnd="24dp"
         android:paddingBottom="32dp">
 
-        <TextView
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/screen_title"
-            android:textColor="@color/vital_on"
-            android:textSize="32sp" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/screen_title"
+                android:textColor="@color/vital_on"
+                android:textSize="32sp" />
+
+            <ImageButton
+                android:id="@+id/settingsButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/settings"
+                android:padding="12dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_settings"
+                app:tint="@color/vital_on" />
+        </LinearLayout>
 
         <GridLayout
             android:layout_width="match_parent"
@@ -157,46 +176,26 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/usbButton"
-                style="@style/Widget.Material3.Button.OutlinedButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                android:layout_weight="1"
-                android:text="@string/usb_permission"
-                android:textColor="@color/vital_on"
-                app:strokeColor="@color/vital_dim" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/batteryButton"
-                style="@style/Widget.Material3.Button.OutlinedButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                android:layout_weight="1"
-                android:text="@string/battery"
-                android:textColor="@color/vital_on"
-                app:strokeColor="@color/vital_dim" />
+                style="@style/MainButton"
+                android:layout_marginEnd="10dp"
+                android:text="@string/usb_permission" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/testingButton"
-                style="@style/Widget.Material3.Button.OutlinedButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                android:layout_weight="1"
-                android:text="@string/testing"
-                android:textColor="@color/vital_on"
-                app:strokeColor="@color/vital_dim" />
+                style="@style/MainButton"
+                android:layout_marginEnd="10dp"
+                android:text="@string/testing" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/localPanelButton"
-                style="@style/Widget.Material3.Button.OutlinedButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/local_panel"
-                android:textColor="@color/vital_on"
-                app:strokeColor="@color/vital_dim" />
+                style="@style/MainButton"
+                android:layout_marginEnd="10dp"
+                android:text="@string/local_panel" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/ondoctorButton"
+                style="@style/MainButton.Primary"
+                android:text="@string/ondoctor" />
         </LinearLayout>
 
         <TextView
@@ -205,6 +204,15 @@
             android:layout_marginTop="6dp"
             android:lineSpacingExtra="3dp"
             android:text="@string/help_usb_default"
+            android:textColor="@color/vital_dim"
+            android:textSize="14sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:lineSpacingExtra="3dp"
+            android:text="@string/help_ondoctor"
             android:textColor="@color/vital_dim"
             android:textSize="14sp" />
 

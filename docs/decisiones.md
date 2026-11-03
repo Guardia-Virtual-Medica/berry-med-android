@@ -110,6 +110,14 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - Reintento automático: si falla el documento principal (error de conexión o HTTP 5xx; los recursos secundarios no cuentan), Berry Med tapa el `WebView` con su propia pantalla y un botón **Reintentar**. Reintenta solo apenas Android avisa que hay red, cada 10 s y al volver al kiosco. Reintentar es `reload()`: vuelve a pedir la dirección que falló, no la del inicio.
 - Recarga a pedido: el diálogo de los cinco toques suma **Recargar**, que también pide el PIN (un paciente no tiene que poder reiniciar el kiosco en plena consulta) y carga la URL configurada desde cero. Permiso nuevo `ACCESS_NETWORK_STATE`, normal y sin diálogo.
 
+### Ícono y botón ONDOCTOR365 (plan 11)
+
+- El usuario pidió un botón OnDoctor que lleve directo al kiosco. Se hace con el kiosco que ya corre dentro de Berry Med, no con Chrome: Chrome en Android no tiene modo kiosco (muestra la barra de direcciones y el paciente puede irse; bloquearlo exige hacer a Berry Med "device owner", con reset de fábrica), Berry Med dejaría de ver la URL con `serverUrl`/`token` de LiveKit (el médico no recibiría otoscopio ni estetoscopio) y Android volvería a silenciar el estetoscopio con Zoom en el micrófono, porque ya no serían la misma app. Plan en `docs/planes/plan-11-icono-ondoctor.md`.
+- Tercer ícono, **ONDOCTOR365**: un `<activity-alias>` de `KioskActivity` con fondo violeta `#5B3FA8` y el mismo dibujo. Alias y no otra pantalla: el kiosco es uno solo, con su `WebView`, su sala y su recarga. El filtro HOME queda en `KioskActivity`. Sin PIN para entrar (es la pantalla del paciente); el PIN sigue para salir.
+- El kiosco tiene su propia tarea (`taskAffinity` `com.guardiavirtual.berrymed.kiosk`), como el Panel Local: así el ícono de Berry Med muestra la configuración y no el kiosco, y abrir la configuración (`singleTask`) no destruye el kiosco que estaba arriba. Verificado en el emulador: el botón de inicio, el ícono ONDOCTOR365 y el botón de la pantalla principal vuelven a la misma instancia, sin recargar.
+- Visto al verificar, y ya pasaba antes de este cambio (probado con `main`): si el kiosco se abre primero con el botón y no como app de inicio, el botón de inicio crea un segundo kiosco en la tarea de inicio de Android. En la tablet no pasa porque el kiosco arranca siempre como app de inicio; queda anotado.
+- Pantalla principal: título "Maletín de atención ONDOCTOR365", **Evitar que se duerma** pasa a una ruedita arriba a la derecha y la fila queda con cuatro botones rellenos de 56 dp (USB-config, Testing, Panel Local y ONDOCTOR365 en violeta). En 1280×800 dp los cuatro textos entran enteros.
+
 ## Pendiente
 
 - Prueba con el hardware real en la tablet (ver "Probar el Panel Local en el tótem" en el `README.md` y los riesgos de `docs/hardware.md`).

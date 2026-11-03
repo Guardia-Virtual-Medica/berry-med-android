@@ -58,6 +58,12 @@ import kotlin.concurrent.thread
  * de inicio de la tablet, así Android la abre al encender y con ella adelante
  * el servicio tiene cámara y micrófono para la teleconsulta.
  *
+ * También se entra con el ícono ONDOCTOR365 de la tablet (un alias de esta
+ * pantalla en el manifest) y con el botón ONDOCTOR365 de la pantalla
+ * principal, sin PIN: es la pantalla del paciente. Tiene su propia tarea, así
+ * el ícono de Berry Med muestra la configuración y volver al kiosco no lo
+ * recrea ni recarga la página.
+ *
  * Cada dirección que carga el kiosco pasa por [TotemRuntime.onKioskUrl]: la
  * que trae `serverUrl` y `token` hace entrar a la sala del encuentro, y el
  * inicio o el login la hacen salir. El token no se escribe en ningún lado.

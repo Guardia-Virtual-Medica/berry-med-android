@@ -17,7 +17,9 @@ import android.text.TextWatcher
 import android.util.Log
 import android.content.res.ColorStateList
 import android.graphics.Typeface
+import android.view.ContextThemeWrapper
 import android.view.View
+import android.widget.PopupMenu
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.chip.Chip
@@ -101,10 +103,11 @@ class MainActivity : AppCompatActivity() {
             }
         }
         binding.saveButton.setOnClickListener { save() }
-        binding.batteryButton.setOnClickListener { askBatteryExemption() }
+        binding.settingsButton.setOnClickListener { showSettingsMenu(it) }
         binding.usbButton.setOnClickListener { runtime().requestUsbPermissionAgain() }
         binding.testingButton.setOnClickListener { startActivity(Intent(this, TestingActivity::class.java)) }
         binding.localPanelButton.setOnClickListener { startActivity(Intent(this, LocalPanelActivity::class.java)) }
+        binding.ondoctorButton.setOnClickListener { startActivity(Intent(this, KioskActivity::class.java)) }
         binding.checkPermissions.action.setOnClickListener { askMediaPermissions() }
         binding.checkHome.action.setOnClickListener { openHomeSettings() }
         // El mismo pedido que el botón "Evitar que se duerma" de arriba.
@@ -486,6 +489,16 @@ class MainActivity : AppCompatActivity() {
         view.text = value
         val empty = value == "—" || value == "-" || value == "- -" || value == "- - /- -"
         view.setTextColor(getColor(if (empty) R.color.vital_dim else R.color.vital_on))
+    }
+
+    /** La ruedita de arriba a la derecha: por ahora sólo Evitar que se duerma. */
+    private fun showSettingsMenu(anchor: View) {
+        val menu = PopupMenu(ContextThemeWrapper(this, R.style.ThemeOverlay_BerryMed_Menu), anchor)
+        menu.menu.add(R.string.battery).setOnMenuItemClickListener {
+            askBatteryExemption()
+            true
+        }
+        menu.show()
     }
 
     /** Algunas tablets no tienen el diálogo directo: se va a la lista general, y si tampoco está, se avisa. */

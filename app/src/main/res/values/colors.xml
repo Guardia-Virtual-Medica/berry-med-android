@@ -17,6 +17,8 @@
     <color name="test_fail">#F2A38F</color>
     <!-- Fondo del ícono del Panel Local: distinto del verde de Berry Med para no confundirlos. -->
     <color name="local_icon">#1E4E8C</color>
+    <!-- Fondo del ícono ONDOCTOR365 y de su botón en la pantalla principal: violeta, distinto de los otros dos. -->
+    <color name="ondoctor_icon">#5B3FA8</color>
 
     <!--
         Los tokens del Panel Local, con los nombres del handoff de diseño.
