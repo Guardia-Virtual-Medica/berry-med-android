@@ -12,7 +12,6 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.retryWhen
@@ -26,7 +25,10 @@ private val Context.store by preferencesDataStore(
 
 class ConfigStore(private val context: Context) {
     // Un error de lectura se reintenta: si el flujo terminara, el tótem no
-    // vería ningún guardado posterior hasta reiniciar.
+    // vería ningún guardado posterior hasta reiniciar. Cualquier otro error
+    // sale del flujo sin emitir la configuración de fábrica: si la emitiera,
+    // pisaría la última buena (y el PIN volvería a ser 1515). Lo atiende
+    // quien junta el flujo, que lo deja en la consola.
     val flow: Flow<BerryConfig> = context.store.data
         .map { read(it) }
         .retryWhen { cause, _ ->
@@ -34,7 +36,6 @@ class ConfigStore(private val context: Context) {
             delay(5_000)
             true
         }
-        .catch { emit(BerryConfig()) }
 
     suspend fun load(): BerryConfig = read(context.store.data.first())
 

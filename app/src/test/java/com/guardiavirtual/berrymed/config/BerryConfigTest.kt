@@ -67,6 +67,19 @@ class BerryConfigTest {
     }
 
     @Test
+    fun thePinIsNeverAcceptedBeforeTheConfigurationIsRead() {
+        // Sin leer lo guardado, ni el PIN bueno ni el 1515 de fábrica: todavía cargando.
+        assertEquals(PinCheck.LOADING, checkPin("2468", "2468", loaded = false))
+        assertEquals(PinCheck.LOADING, checkPin("1515", BerryConfig().localPanelPin, loaded = false))
+        assertEquals(PinCheck.LOADING, checkPin("9999", "2468", loaded = false))
+        assertEquals(PinCheck.ACCEPTED, checkPin("2468", "2468", loaded = true))
+        assertEquals(PinCheck.WRONG, checkPin("1515", "2468", loaded = true))
+        // Un PIN vacío guardado vale 1515.
+        assertEquals(PinCheck.ACCEPTED, checkPin("1515", "", loaded = true))
+        assertEquals(PinCheck.WRONG, checkPin("", "", loaded = true))
+    }
+
+    @Test
     fun theKioskUrlIsEmptyOrHttpWithAHost() {
         assertTrue(kioskUrlAccepted(""))
         assertTrue(kioskUrlAccepted("   "))

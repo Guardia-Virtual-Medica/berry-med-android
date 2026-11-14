@@ -221,6 +221,8 @@ class PanelUi {
     private fun pressure(s: LocalSnapshot, nowMillis: Long, zone: ZoneId): PressureCard {
         val cuff = s.nibp.cuffMmhg
         val phase = phase(s.nibpRunning, cuff)
+        // Sin Medir desde que se abrió el panel, lo que haya es de la persona anterior: nada.
+        if (!s.nibpAsked) return PressureCard.Empty
         if (s.nibpRunning) {
             return PressureCard.Measuring(
                 cuff = if (cuff > 0) cuff.toString() else PanelFormat.NONE,
@@ -250,6 +252,24 @@ class PanelUi {
         val GAINS = floatArrayOf(5f, 10f, 20f)
         const val DEFAULT_SPEED = 25f
         const val DEFAULT_GAIN = 10f
+
+        /**
+         * Los segmentos con que arranca el ECG en cada desbloqueo: 25 mm/s,
+         * 10 mm/mV y las 7 derivaciones, los mismos de la pantalla recién creada.
+         * Un índice en [SPEEDS], [GAINS] y [EcgLeads.entries].
+         */
+        const val START_SPEED = 1
+        const val START_GAIN = 1
+        val START_LEADS = EcgLeads.SEVEN.ordinal
+
+        /**
+         * El aviso de la pantalla del PIN. Con una consulta enviando se ve el de
+         * la consulta desde que aparece la pantalla, sin escribir nada: el
+         * panel no va a abrir hasta que termine. Sin consulta, lo último que
+         * dijo el PIN ("PIN incorrecto", "Cargando la configuración…") o nada.
+         */
+        fun lockMessage(sessionActive: Boolean, pinNotice: String, sessionNotice: String): String =
+            if (sessionActive) sessionNotice else pinNotice
 
         private val LIVE = Status("En vivo", Tone.OK)
         private val CONNECTING = Status("Conectando", Tone.WARN)

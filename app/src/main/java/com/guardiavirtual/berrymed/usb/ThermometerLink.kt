@@ -2,9 +2,11 @@
 package com.guardiavirtual.berrymed.usb
 
 import com.guardiavirtual.berrymed.protocol.ThermoReading
+import com.guardiavirtual.berrymed.protocol.ThermoSample
 import com.guardiavirtual.berrymed.protocol.VitalSigns
 import com.guardiavirtual.berrymed.protocol.applyThermometer
 import com.guardiavirtual.berrymed.protocol.parseThermometerLine
+import com.guardiavirtual.berrymed.protocol.thermoFresh
 import java.io.IOException
 
 /**
@@ -21,17 +23,32 @@ class ThermometerLink(
     @Volatile var connected: Boolean = false
     @Volatile var measured: Boolean = false
 
-    /** Para la pantalla de Testing: el puerto, la última línea cruda y cuándo llegó la última lectura. */
+    /** Para la pantalla de Testing: el puerto y la última línea cruda. */
     @Volatile var portName: String? = null
     @Volatile var lastLine: String = ""
-    @Volatile var lastReadingAtNano: Long = 0L
-    private var latest: ThermoReading? = null
+
+    /** La última lectura con su instante: se guardan y se borran juntos, bajo [lock]. */
+    private var latest: ThermoSample? = null
     private val lock = Any()
 
-    fun latest(): ThermoReading? = synchronized(lock) { latest }
+    fun latest(): ThermoReading? = synchronized(lock) { latest?.reading }
+
+    /** La última lectura con el instante en que llegó, o null si no hay. */
+    fun sample(): ThermoSample? = synchronized(lock) { latest }
 
     fun resetLatest() {
         synchronized(lock) { latest = null }
+    }
+
+    /**
+     * Borra la lectura si no es reciente en [nowNano] (ver [thermoFresh]). En
+     * el mismo paso del lock, así una medición que llega justo ahora no se pierde.
+     */
+    fun resetLatestIfStale(nowNano: Long) {
+        synchronized(lock) {
+            val current = latest ?: return
+            if (!thermoFresh(current.atNano, nowNano)) latest = null
+        }
     }
 
     fun postedTemperature(berry: String): String {
@@ -135,8 +152,7 @@ class ThermometerLink(
     private fun store(line: String) {
         if (line.isNotBlank()) lastLine = line.trim()
         val reading = parseThermometerLine(line) ?: return
-        synchronized(lock) { latest = reading }
-        lastReadingAtNano = System.nanoTime()
+        synchronized(lock) { latest = ThermoSample(reading, System.nanoTime()) }
         if (!measured) log("[THERM] Primera medición: ${reading.value} ${reading.unit}")
         measured = true
     }

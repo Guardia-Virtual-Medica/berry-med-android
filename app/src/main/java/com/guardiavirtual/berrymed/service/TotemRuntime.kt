@@ -10,6 +10,7 @@ import android.util.Log
 import androidx.core.content.ContextCompat
 import com.guardiavirtual.berrymed.audio.CallAudioRouter
 import com.guardiavirtual.berrymed.audio.StethoDsp
+import com.guardiavirtual.berrymed.audio.StethoFilter
 import com.guardiavirtual.berrymed.audio.StethoscopeLink
 import com.guardiavirtual.berrymed.config.BerryConfig
 import com.guardiavirtual.berrymed.config.ConfigStore
@@ -27,6 +28,7 @@ import com.guardiavirtual.berrymed.protocol.VitalSigns
 import com.guardiavirtual.berrymed.protocol.applyThermometer
 import com.guardiavirtual.berrymed.protocol.metricsEnvelope
 import com.guardiavirtual.berrymed.protocol.sendableWindow
+import com.guardiavirtual.berrymed.protocol.thermometerForPacket
 import com.guardiavirtual.berrymed.protocol.splitWindow
 import com.guardiavirtual.berrymed.protocol.summarize
 import com.guardiavirtual.berrymed.tele.Instrument
@@ -43,7 +45,9 @@ import com.guardiavirtual.berrymed.usb.YkushHub
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.launch
 import java.util.Locale
 import java.util.concurrent.ArrayBlockingQueue
@@ -128,8 +132,13 @@ class TotemRuntime(context: Context) {
      */
     @Volatile private var kioskVisible = false
 
-    /** Hasta leer lo guardado, [config] es la de fábrica: con ésa no se apaga ningún puerto. */
-    @Volatile private var configLoaded = false
+    /**
+     * Hasta leer lo guardado, [config] es la de fábrica: con ésa no se apaga
+     * ningún puerto ni se acepta el PIN del Panel Local (vale 1515 aunque haya
+     * otro guardado). Las pantallas lo miran con [com.guardiavirtual.berrymed.config.checkPin].
+     */
+    @Volatile var configLoaded = false
+        private set
 
     /**
      * Cuándo llegó la última presión, en hora de la tablet, para que el Panel
@@ -139,6 +148,14 @@ class TotemRuntime(context: Context) {
      */
     @Volatile private var nibpResultAtMillis = 0L
     @Volatile private var nibpResultSeen: Pair<Int, Int>? = null
+
+    /**
+     * Si en esta apertura del Panel Local se pidió una presión con Medir. Hasta
+     * entonces el panel no muestra ninguna: la que tenga el parser es de la
+     * persona anterior (o de una consulta), y la plaqueta la repite en las
+     * tramas de presión, así que borrarla al abrir no alcanza.
+     */
+    @Volatile private var localNibpAsked = false
 
     /** Cambia con cada Parar y cada cierre del panel: una espera de Escuchar que quedó atrás se abandona. */
     @Volatile private var stethoEpoch = 0L
@@ -278,7 +295,13 @@ class TotemRuntime(context: Context) {
         }
         parser.live = live
         scope.launch {
-            store.flow.collect { saved ->
+            // Un error de lectura que no es de E/S no pisa la última configuración buena
+            // (antes volvía la de fábrica, con el PIN 1515): queda en la consola y se reintenta.
+            store.flow.retryWhen { cause, _ ->
+                log("[CONFIG] No se pudo leer la configuración: $cause. Se sigue con la última leída y se reintenta en 5 s")
+                delay(CONFIG_RETRY_MS)
+                true
+            }.collect { saved ->
                 val outputChanged = configLoaded && saved.callAudioOutput != config.callAudioOutput
                 config = saved
                 configLoaded = true
@@ -503,8 +526,8 @@ class TotemRuntime(context: Context) {
         val cfg = config
         val url = cfg.metricsUrl() ?: return
         if (!cfg.postReady()) return
-        // El termómetro va antes de validar: su lectura sola también se manda.
-        val window = sendableWindow(taken, thermo.latest()) ?: return
+        // El termómetro va antes de validar: su lectura sola también se manda. Sin consulta, sólo una reciente.
+        val window = sendableWindow(taken, thermometerForPacket(thermo.sample(), active, now)) ?: return
         if (!active) watch.probed(now)
         // Tramos de a lo sumo un segundo, por el límite de Pusher. La prueba lleva sólo el último.
         val parts = splitWindow(window)
@@ -576,12 +599,17 @@ class TotemRuntime(context: Context) {
 
     /**
      * La plataforma ya tenía la toma abierta y la prueba fue aceptada. No se
-     * limpia nada: lo que se acaba de mandar ya es parte de la toma.
+     * limpia nada de la plaqueta: lo que se acaba de mandar ya es parte de la
+     * toma. Sí la lectura del termómetro si no es reciente: es de otra persona
+     * y, si quedara, saldría en cada paquete como temperatura de este paciente.
+     * Una reciente se conserva: es de quien se midió mientras la tablet se
+     * perdía el inicio.
      */
     private fun resumeSession(epoch: Long) {
         synchronized(sessionLock) {
             // Un POST de prueba que salió justo antes de abrir el Panel Local no arranca la consulta.
             if (!gate.resumeSession(epoch)) return
+            thermo.resetLatestIfStale(System.nanoTime())
             droppedPackets.set(0)
             watch.started(gate.epoch, System.nanoTime())
         }
@@ -719,8 +747,9 @@ class TotemRuntime(context: Context) {
     }
 
     fun testNibpStop(): String {
-        // Una presión pedida por el médico no se para desde Testing.
+        // Una presión pedida por el médico, o por quien atiende en el Panel Local, no se para desde Testing.
         if (sessionActive) return "Hay una consulta enviando."
+        if (localMode) return "El Panel Local está abierto: la presión la maneja el panel."
         berry.stopNibp()
         return "STOP enviado"
     }
@@ -735,6 +764,12 @@ class TotemRuntime(context: Context) {
         tele.unpublishAll("se abrió el Panel Local", includeManual = true)
         // El panel arranca en blanco: ni ondas ni el estado de una presión de antes.
         live.clear()
+        // Ni la temperatura ni la presión de la persona anterior: una presión se ve sólo si se pide acá.
+        thermo.resetLatest()
+        localNibpAsked = false
+        // El estetoscopio, como al instalar: Corazón y el volumen de arranque.
+        stetho.filter = StethoFilter.DEFAULT
+        stetho.volume = StethoDsp.DEFAULT_VOLUME
         if (testing) {
             endTesting()
             log("[TEST] Se abrió el Panel Local: se corta la prueba")
@@ -746,7 +781,12 @@ class TotemRuntime(context: Context) {
 
     /** Corta el modo local en el acto; el STOP de la presión y el YKUSH3 salen en otros hilos. */
     fun stopLocal() {
+        if (!localMode) return
+        // Lo que se midió en el panel muere con el panel: no sale nunca a OnDoctor. Se borra
+        // antes de soltar el modo, así la prueba que sale apenas se cierra ya no la encuentra.
+        thermo.resetLatest()
         if (!gate.closeLocal()) return
+        localNibpAsked = false
         // Una presión pedida desde el panel no queda inflando el manguito.
         stopNibpInBackground()
         stopStethoscope(closing = true)
@@ -760,6 +800,7 @@ class TotemRuntime(context: Context) {
         if (!localMode) return "El panel no está activo."
         if (!berry.startNibp()) return "No se pudo iniciar: plaqueta sin conectar o ya está midiendo."
         resetNibp()
+        localNibpAsked = true
         return "Midiendo…"
     }
 
@@ -1053,8 +1094,7 @@ class TotemRuntime(context: Context) {
 
     fun localSnapshot(): LocalSnapshot {
         val stats = parser.stats()
-        val reading = thermo.latest()
-        val thermoAt = thermo.lastReadingAtNano
+        val sample = thermo.sample()
         val plugged = hub.panelDevices()
         return LocalSnapshot(
             berryUp = berry.connected,
@@ -1062,12 +1102,13 @@ class TotemRuntime(context: Context) {
             vitals = stats.vitals,
             ecgInfo = stats.ecgInfo,
             thermoConnected = thermo.connected,
-            thermoReading = reading?.let { r -> formatThermo(r) },
+            thermoReading = sample?.let { s -> formatThermo(s.reading) },
             // El termómetro guarda el instante en nanoTime; la pantalla quiere la hora del reloj.
-            thermoAtMillis = if (thermoAt == 0L) null else System.currentTimeMillis() - (System.nanoTime() - thermoAt) / 1_000_000L,
+            thermoAtMillis = sample?.let { s -> System.currentTimeMillis() - (System.nanoTime() - s.atNano) / 1_000_000L },
             nibpRunning = berry.nibpRunning,
             nibp = live.nibp,
-            nibpAtMillis = nibpResultAtMillis.takeIf { it != 0L },
+            nibpAsked = localNibpAsked,
+            nibpAtMillis = nibpResultAtMillis.takeIf { it != 0L && localNibpAsked },
             stethoPlugged = plugged.stethoAdapter,
             stethoAvailable = stetho.running || plugged.ykush || plugged.stethoAdapter,
             stethoStarting = stethoStarting,
@@ -1148,11 +1189,14 @@ class TotemRuntime(context: Context) {
 
     /**
      * Enciende o apaga un puerto del YKUSH3 desde Testing. Con una consulta
-     * enviando no se toca nada: podría dejar al médico sin un equipo.
+     * enviando o el Panel Local abierto no se toca nada: podría dejar al
+     * médico, o a quien atiende, sin un equipo.
      * Bloquea hasta cuatro segundos: llamarlo fuera del hilo de la pantalla.
      */
     fun testYkushSet(port: Int, on: Boolean): String = when {
         sessionActive -> "Hay una consulta enviando: no se cambia ningún puerto."
+        // Lo mismo con el panel: podría apagarle el otoscopio o el estetoscopio a quien atiende.
+        localMode -> "El Panel Local está abierto: no se cambia ningún puerto."
         !ykush.plugged() -> "No hay hub YKUSH3 conectado."
         !ykush.setPort(port, on) -> "El hub no aceptó la orden. Mirá la consola."
         !on && port == config.ykushThermometerPort -> {
@@ -1197,16 +1241,17 @@ class TotemRuntime(context: Context) {
         val stats = parser.stats()
         val berryUp = berry.connected
         val verdicts = testingSession.poll(stats, berryUp)
-        val reading = thermo.latest()
-        val thermoAt = thermo.lastReadingAtNano
+        val sample = thermo.sample()
+        val active = sessionActive
         val cfg = config
-        // Lo mismo que saldría: con el termómetro aplicado antes de validar.
-        val preview = lastWindow?.let { window -> sendableWindow(window, reading) }?.let { ready ->
+        // Lo mismo que saldría: con el termómetro aplicado antes de validar, y con la misma regla de sendOnce.
+        val sendable = thermometerForPacket(sample, active, System.nanoTime())
+        val preview = lastWindow?.let { window -> sendableWindow(window, sendable) }?.let { ready ->
             metricsEnvelope(System.currentTimeMillis(), splitWindow(ready).last())
         }
         return TestingSnapshot(
             testing = testing,
-            sessionActive = sessionActive,
+            sessionActive = active,
             berryUp = berryUp,
             berryPort = berry.portName(),
             lastDataAge = berry.lastDataAgeSeconds(),
@@ -1216,8 +1261,8 @@ class TotemRuntime(context: Context) {
             nibpRunning = berry.nibpRunning,
             thermoConnected = thermo.connected,
             thermoPort = thermo.portName,
-            thermoReading = reading?.let { "${it.value} ${it.unit}" },
-            thermoAge = if (thermoAt == 0L) null else (System.nanoTime() - thermoAt) / 1_000_000_000L,
+            thermoReading = sample?.let { "${it.reading.value} ${it.reading.unit}" },
+            thermoAge = sample?.let { (System.nanoTime() - it.atNano) / 1_000_000_000L },
             thermoLine = thermo.lastLine,
             ykushPlugged = ykush.plugged(),
             ykushPorts = cfg.ykushPortRoles().mapIndexed { index, role ->
@@ -1259,6 +1304,7 @@ class TotemRuntime(context: Context) {
     companion object {
         const val TAG = "BerryMed"
         private const val TICK_NANOS = 1_000_000_000L
+        private const val CONFIG_RETRY_MS = 5_000L
         private const val INVENTORY_NANOS = 3L * 1_000_000_000L
         private const val STETHO_WAIT_NANOS = 5L * 1_000_000_000L
         private const val DEVICE_POLL_MS = 250L

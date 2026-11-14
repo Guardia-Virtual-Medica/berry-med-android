@@ -175,6 +175,8 @@
     <string name="local_enter">Entrar</string>
     <string name="local_back">Volver</string>
     <string name="local_pin_wrong">PIN incorrecto</string>
+    <string name="local_pin_loading">Cargando la configuración…</string>
+    <string name="local_session_waiting">Hay una consulta enviando: el Panel Local espera a que termine.</string>
 
     <!-- Panel Local: la cabecera y Finalizar. -->
     <string name="local_finish">Finalizar</string>
