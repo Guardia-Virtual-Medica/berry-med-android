@@ -45,7 +45,8 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.guardiavirtual.berrymed.BerryMedApp
 import com.guardiavirtual.berrymed.R
-import com.guardiavirtual.berrymed.config.pinAccepted
+import com.guardiavirtual.berrymed.config.PinCheck
+import com.guardiavirtual.berrymed.config.checkPin
 import com.guardiavirtual.berrymed.service.MonitorService
 import com.guardiavirtual.berrymed.service.TotemRuntime
 import com.guardiavirtual.berrymed.tele.KioskUrls
@@ -426,27 +427,56 @@ class KioskActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Entrar y Recargar piden el PIN. Sus botones se asignan después de
+     * mostrar el diálogo, sobre los del `AlertDialog`, porque los del builder
+     * lo cierran siempre: con el PIN mal (o la configuración sin cargar) el
+     * diálogo queda abierto, borra el campo y dice por qué. Cancelar y tocar
+     * afuera cierran como siempre.
+     */
     private fun askPin() {
         val input = EditText(this).apply {
             inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD
             setHint(R.string.kiosk_pin_hint)
         }
-        AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(this)
             .setTitle(R.string.kiosk_pin_title)
             .setView(input)
             .setNegativeButton(R.string.kiosk_cancel, null)
             // Recargar también pide el PIN: un paciente no tiene que poder reiniciar el kiosco en plena consulta.
-            .setNeutralButton(R.string.kiosk_reload) { _, _ ->
-                if (pinAccepted(input.text?.toString(), runtime().config.localPanelPin)) reloadConfigured()
+            .setNeutralButton(R.string.kiosk_reload, null)
+            .setPositiveButton(R.string.kiosk_enter, null)
+            .create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
+                if (pinOk(input)) {
+                    dialog.dismiss()
+                    reloadConfigured()
+                }
             }
-            .setPositiveButton(R.string.kiosk_enter) { _, _ ->
-                if (pinAccepted(input.text?.toString(), runtime().config.localPanelPin)) {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                if (pinOk(input)) {
+                    dialog.dismiss()
                     // La pantalla principal; con la configuración abierta sólo si falta la URL del kiosco.
                     val missingUrl = runtime().config.kioskUrl.isBlank()
                     startActivity(if (missingUrl) configIntent() else Intent(this, MainActivity::class.java))
                 }
             }
-            .show()
+        }
+        dialog.show()
+    }
+
+    /** Si el PIN del campo vale. Si no, borra el campo y muestra el motivo en él. */
+    private fun pinOk(input: EditText): Boolean {
+        val runtime = runtime()
+        val reason = when (checkPin(input.text?.toString(), runtime.config.localPanelPin, runtime.configLoaded)) {
+            PinCheck.ACCEPTED -> return true
+            PinCheck.WRONG -> R.string.local_pin_wrong
+            PinCheck.LOADING -> R.string.local_pin_loading
+        }
+        input.setText("")
+        input.error = getString(reason)
+        return false
     }
 
     private fun configIntent() =

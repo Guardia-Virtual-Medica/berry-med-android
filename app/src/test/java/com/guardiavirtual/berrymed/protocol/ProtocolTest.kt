@@ -318,6 +318,40 @@ class ProtocolTest {
         assertTrue(Pm6750Protocol.nibpIsTerminal(0x14)) // demoró, result 0x5
         assertFalse(Pm6750Protocol.nibpIsTerminal(0x04)) // midiendo, result 0x1
     }
+
+    @Test
+    fun aThermometerReadingIsRecentUpToSixtySeconds() {
+        val at = 1_000_000_000_000L
+        assertTrue(thermoFresh(at, at))
+        assertTrue(thermoFresh(at, at + THERMO_FRESH_NANOS))
+        assertFalse(thermoFresh(at, at + THERMO_FRESH_NANOS + 1))
+        // Una lectura "del futuro" no se sabe de cuándo es: no cuenta como reciente.
+        assertFalse(thermoFresh(at, at - 1))
+    }
+
+    @Test
+    fun theProbeOnlyCarriesARecentThermometerReading() {
+        val at = 1_000_000_000_000L
+        val sample = ThermoSample(ThermoReading(36.6, "C"), at)
+        val old = at + THERMO_FRESH_NANOS + 1
+        assertNull(thermometerForPacket(null, active = false, nowNano = at))
+        assertNull(thermometerForPacket(null, active = true, nowNano = at))
+        // Sin consulta: la reciente va, la vieja no.
+        assertEquals(sample.reading, thermometerForPacket(sample, active = false, nowNano = at + 1))
+        assertNull(thermometerForPacket(sample, active = false, nowNano = old))
+        // Con consulta va siempre.
+        assertEquals(sample.reading, thermometerForPacket(sample, active = true, nowNano = old))
+        // Una lectura vieja sola no hace una prueba: no hay nada útil para mandar.
+        val empty = SampleWindow(
+            spo2 = emptyList(),
+            ecg = Pm6750Protocol.LEADS.associateWith { emptyList<Int>() },
+            ecgPeaks = emptyList(),
+            ecgInfo = EcgInfo(),
+            resp = emptyList(),
+            vitalSigns = VitalSigns(),
+        )
+        assertNull(sendableWindow(empty, thermometerForPacket(sample, active = false, nowNano = old)))
+    }
 }
 
 private fun windowOf(ecgSamples: Int, waveSamples: Int, peaks: List<Int> = emptyList(), value: Int = 128): SampleWindow =

@@ -32,7 +32,8 @@ import androidx.core.widget.TextViewCompat
 import com.google.android.material.button.MaterialButton
 import com.guardiavirtual.berrymed.BerryMedApp
 import com.guardiavirtual.berrymed.R
-import com.guardiavirtual.berrymed.config.pinAccepted
+import com.guardiavirtual.berrymed.config.PinCheck
+import com.guardiavirtual.berrymed.config.checkPin
 import com.guardiavirtual.berrymed.audio.StethoDsp
 import com.guardiavirtual.berrymed.audio.StethoFilter
 import com.guardiavirtual.berrymed.databinding.ActivityLocalPanelBinding
@@ -77,6 +78,9 @@ class LocalPanelActivity : AppCompatActivity() {
     private lateinit var binding: ActivityLocalPanelBinding
     private val ui = PanelUi()
     private var unlocked = false
+
+    /** Lo último que dijo el PIN ("PIN incorrecto", "Cargando la configuración…"); vacío al bloquear. */
+    private var pinNotice = ""
     private var lastRenderAt = 0L
     private var cameraProvider: ProcessCameraProvider? = null
     private var lensFacing = CameraSelector.LENS_FACING_BACK
@@ -143,6 +147,8 @@ class LocalPanelActivity : AppCompatActivity() {
             val now = System.currentTimeMillis()
             binding.clock.text = PanelFormat.clock(now)
             binding.date.text = PanelFormat.date(now)
+            // Bloqueado, el aviso de la consulta aparece y se va solo, con el mismo segundo.
+            if (!unlocked) showLockMessage()
             binding.clock.postDelayed(this, CLOCK_MS - now % CLOCK_MS)
         }
     }
@@ -455,7 +461,12 @@ class LocalPanelActivity : AppCompatActivity() {
         freezeEcg(false)
         binding.lock.visibility = View.VISIBLE
         binding.pinInput.setText("")
-        binding.lockMessage.text = ""
+        pinNotice = ""
+        showLockMessage()
+        // El ECG vuelve a sus valores de arranque y el papel se redibuja con ellos.
+        speeds.select(PanelUi.START_SPEED)
+        gains.select(PanelUi.START_GAIN)
+        leadSegments.select(PanelUi.START_LEADS)
         // Las capturas se descartan al bloquearse, y Finalizar pasa por acá (onStop): no se guardan en ningún lado.
         cameraFreeze.clear()
         otoscopeFreeze.clear()
@@ -464,16 +475,33 @@ class LocalPanelActivity : AppCompatActivity() {
         shownRecordings = emptyList()
     }
 
+    /** El aviso bajo el PIN: el de la consulta si hay una enviando; si no, lo último que dijo el PIN. */
+    private fun showLockMessage() {
+        binding.lockMessage.text = PanelUi.lockMessage(
+            sessionActive = runtime().sessionActive,
+            pinNotice = pinNotice,
+            sessionNotice = getString(R.string.local_session_waiting),
+        )
+    }
+
     private fun tryUnlock() {
+        val runtime = runtime()
         val entered = binding.pinInput.text?.toString()
-        if (!pinAccepted(entered, runtime().config.localPanelPin)) {
+        val wrong = when (checkPin(entered, runtime.config.localPanelPin, runtime.configLoaded)) {
+            PinCheck.ACCEPTED -> null
+            PinCheck.WRONG -> R.string.local_pin_wrong
+            PinCheck.LOADING -> R.string.local_pin_loading
+        }
+        if (wrong != null) {
             binding.pinInput.setText("")
-            binding.lockMessage.setText(R.string.local_pin_wrong)
+            pinNotice = getString(wrong)
+            showLockMessage()
             return
         }
-        val blocked = runtime().startLocal()
+        val blocked = runtime.startLocal()
         if (blocked != null) {
             binding.pinInput.setText("")
+            pinNotice = ""
             binding.lockMessage.text = blocked
             return
         }
@@ -487,6 +515,10 @@ class LocalPanelActivity : AppCompatActivity() {
         binding.stripPaper.restart()
         binding.stethoWave.restart()
         binding.stethoMessage.text = ""
+        // startLocal dejó el estetoscopio en Corazón y el volumen de arranque: la pantalla lo muestra.
+        filterSegments.select(runtime.stetho.filter.ordinal)
+        showPhonoLabel(runtime.stetho.filter)
+        showVolume()
         setOtoscopeMessage("")
         unlocked = true
         lastRenderAt = 0L

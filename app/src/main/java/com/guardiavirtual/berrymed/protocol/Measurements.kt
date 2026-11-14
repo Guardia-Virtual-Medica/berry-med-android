@@ -36,6 +36,44 @@ data class SampleWindow(
 data class ThermoReading(val value: Double, val unit: String)
 
 /**
+ * Una lectura del termómetro con el instante en que llegó, en `System.nanoTime`.
+ * Van juntos para que se guarden y se borren en el mismo paso: una lectura
+ * borrada no deja una edad suelta, y una edad nunca es de otra lectura.
+ */
+data class ThermoSample(val reading: ThermoReading, val atNano: Long)
+
+/**
+ * Hasta cuándo una lectura del termómetro es de quien se está midiendo: un
+ * minuto. Sólo cuenta sin consulta abierta (ver [thermometerForPacket]).
+ */
+const val THERMO_FRESH_NANOS = 60L * 1_000_000_000L
+
+/**
+ * Si una lectura tomada en [atNano] es reciente en [nowNano]: a lo sumo
+ * [THERMO_FRESH_NANOS], con el borde incluido. Una lectura "del futuro" no se
+ * sabe de cuándo es y no cuenta como reciente: ante la duda, no se manda.
+ */
+fun thermoFresh(atNano: Long, nowNano: Long): Boolean {
+    val age = nowNano - atNano
+    return age in 0..THERMO_FRESH_NANOS
+}
+
+/**
+ * Qué lectura del termómetro lleva un paquete. Con consulta, la última, sea
+ * de cuando sea: llegó durante la consulta (abrirla y cerrarla la borran).
+ * Sin consulta el paquete es la prueba de cada 10 s, que puede arrancar una
+ * consulta cuyo inicio se perdió: sólo va una lectura reciente, porque una
+ * vieja es de otra persona (o del Panel Local) y llegaría al médico como
+ * temperatura de este paciente.
+ */
+fun thermometerForPacket(sample: ThermoSample?, active: Boolean, nowNano: Long): ThermoReading? = when {
+    sample == null -> null
+    active -> sample.reading
+    thermoFresh(sample.atNano, nowNano) -> sample.reading
+    else -> null
+}
+
+/**
  * Tramas válidas recibidas desde que arrancó la app, por tipo. Nunca se
  * reinician: la pantalla de Testing calcula las tasas con la diferencia.
  */

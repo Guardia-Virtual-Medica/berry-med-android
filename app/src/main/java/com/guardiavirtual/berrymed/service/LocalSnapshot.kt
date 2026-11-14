@@ -21,6 +21,11 @@ data class LocalSnapshot(
     val thermoAtMillis: Long?,
     val nibpRunning: Boolean,
     val nibp: LiveFeed.NibpState,
+    /**
+     * Si se pidió una presión con Medir desde que se abrió el panel. Mientras
+     * no, la tarjeta queda vacía aunque el parser tenga un valor: es de antes.
+     */
+    val nibpAsked: Boolean = true,
     /** Cuándo llegó la última presión, en hora del reloj, o null si no se sabe. */
     val nibpAtMillis: Long?,
     /** El adaptador del estetoscopio está enchufado (sin contar el YKUSH3). */

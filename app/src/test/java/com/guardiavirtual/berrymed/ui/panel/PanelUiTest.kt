@@ -34,6 +34,7 @@ class PanelUiTest {
         thermoAtMillis: Long? = null,
         nibpRunning: Boolean = false,
         nibp: LiveFeed.NibpState = LiveFeed.NibpState(status = -1, cuffMmhg = 0),
+        nibpAsked: Boolean = true,
         nibpAtMillis: Long? = null,
         stethoPlugged: Boolean = false,
         stethoAvailable: Boolean = false,
@@ -56,6 +57,7 @@ class PanelUiTest {
         thermoAtMillis = thermoAtMillis,
         nibpRunning = nibpRunning,
         nibp = nibp,
+        nibpAsked = nibpAsked,
         nibpAtMillis = nibpAtMillis,
         stethoPlugged = stethoPlugged,
         stethoAvailable = stethoAvailable,
@@ -151,6 +153,39 @@ class PanelUiTest {
         // Cancelada mientras inflaba: la plaqueta no llegó a mandar un final.
         val inflating = LiveFeed.NibpState(status = 0x1 shl 2, cuffMmhg = 120)
         assertEquals(PressureCard.NoResult, build(snapshot(nibp = inflating)).pressure)
+    }
+
+    @Test
+    fun pressureStaysEmptyUntilMeasuredInThisOpening() {
+        // El parser trae la presión de la persona anterior, con su final y su hora: no se ve.
+        val before = snapshot(
+            vitals = VitalSigns(nibp = "120/80"),
+            nibp = LiveFeed.NibpState(status = 0, cuffMmhg = 0),
+            nibpAsked = false,
+            nibpAtMillis = at(10, 7),
+        )
+        assertEquals(PressureCard.Empty, build(before).pressure)
+        // Tampoco "sin resultado" por un final viejo.
+        val looseCuff = LiveFeed.NibpState(status = 0x4 shl 2, cuffMmhg = 0)
+        assertEquals(PressureCard.Empty, build(snapshot(nibp = looseCuff, nibpAsked = false)).pressure)
+        // Con Medir, la de ahora se ve como siempre.
+        assertEquals(PressureCard.Result("120/80", "(93)", "10:07 · hace 5 min"), build(before.copy(nibpAsked = true)).pressure)
+    }
+
+    @Test
+    fun theEcgStartsAt25MmPerSecond10MmPerMvAndSevenLeads() {
+        assertEquals(PanelUi.DEFAULT_SPEED, PanelUi.SPEEDS[PanelUi.START_SPEED])
+        assertEquals(PanelUi.DEFAULT_GAIN, PanelUi.GAINS[PanelUi.START_GAIN])
+        assertEquals(EcgLeads.SEVEN, EcgLeads.entries[PanelUi.START_LEADS])
+    }
+
+    @Test
+    fun theLockShowsTheSessionNoticeWithoutTypingAnything() {
+        val session = "Hay una consulta enviando: el Panel Local espera a que termine."
+        assertEquals(session, PanelUi.lockMessage(sessionActive = true, pinNotice = "", sessionNotice = session))
+        assertEquals("", PanelUi.lockMessage(sessionActive = false, pinNotice = "", sessionNotice = session))
+        // Sin consulta, un "PIN incorrecto" recién mostrado queda.
+        assertEquals("PIN incorrecto", PanelUi.lockMessage(sessionActive = false, pinNotice = "PIN incorrecto", sessionNotice = session))
     }
 
     @Test

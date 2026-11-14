@@ -122,6 +122,20 @@ fun pinAccepted(entered: String?, configured: String?): Boolean {
     return entered?.trim() == expected
 }
 
+/** Lo que pasa con un PIN escrito en el Panel Local o en el kiosco. */
+enum class PinCheck { ACCEPTED, WRONG, LOADING }
+
+/**
+ * El PIN contra la configuración, sabiendo si ya se leyó lo guardado. Hasta
+ * leerla, la configuración en memoria es la de fábrica y el PIN valdría 1515
+ * aunque haya otro guardado: nunca se acepta, ni se dice que está mal.
+ */
+fun checkPin(entered: String?, configured: String?, loaded: Boolean): PinCheck = when {
+    !loaded -> PinCheck.LOADING
+    pinAccepted(entered, configured) -> PinCheck.ACCEPTED
+    else -> PinCheck.WRONG
+}
+
 /** Un número de puerto del YKUSH3 escrito a mano: fuera de 1 a 3 vuelve al valor por defecto. */
 fun ykushPortOrDefault(text: String?, default: Int): Int {
     val port = text?.trim()?.toIntOrNull() ?: return default
