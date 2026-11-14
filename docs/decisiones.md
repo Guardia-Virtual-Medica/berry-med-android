@@ -190,7 +190,7 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 
 ## 14 de noviembre de 2026
 
-### Nada de un paciente queda para el siguiente, y el PIN (plan 15)
+### Nada de un paciente queda para el siguiente, y el PIN (plan 15, 1.3.8)
 
 - Sale de la revisión del estado del proyecto sobre la 1.3.7: seis inconsistencias encontradas leyendo el código, ninguna por un reporte de campo. Regla que ordena las dos primeras: **una lectura pertenece a quien se la tomó**. Sin cambios en la API ni en el kiosco web. Plan en `docs/planes/plan-15-datos-entre-pacientes-y-pin.md`.
 - **Termómetro.** La lectura y su instante van juntos (`ThermoSample`, bajo el lock de `ThermometerLink`): se guardan y se borran en el mismo paso, y sin lectura no hay edad. Se borra también al abrir y al cerrar el Panel Local (al cerrar, antes de soltar el modo, así la prueba que sale enseguida ya no la encuentra). Sin consulta, la prueba de cada 10 s lleva la lectura sólo si es reciente (`THERMO_FRESH_NANOS`, 60 s con el borde incluido; una "del futuro" no cuenta como reciente); la decisión está en `thermometerForPacket`, con test, y la usan `sendOnce` y la vista previa de Testing. Si esa prueba arranca la consulta (`resumeSession`), dentro de `sessionLock` se borra la lectura si no es reciente y se conserva si lo es. Con consulta no cambia nada.
