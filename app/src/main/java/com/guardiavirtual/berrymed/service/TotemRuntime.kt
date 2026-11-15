@@ -66,6 +66,12 @@ import kotlin.concurrent.thread
 
 class TotemRuntime(context: Context) {
     private val appContext = context.applicationContext
+
+    /** El log en archivo, `files/logs/berry.log`, sin `[DATA]`. Antes que todo: lo usa [log]. */
+    private val fileLog = FileLog(java.io.File(appContext.filesDir, "logs"))
+
+    /** Cuándo sale la línea `[DATA]` de un paquete de la consulta. */
+    private val dataLog = DataLog()
     val state = MutableStateFlow(TotemState())
     val store = ConfigStore(appContext)
     private val parser = BmDataParser()
@@ -540,7 +546,9 @@ class TotemRuntime(context: Context) {
         val sentAt = System.currentTimeMillis()
         toSend.forEachIndexed { index, part ->
             val body = metricsEnvelope(sentAt - (toSend.size - 1 - index) * 1_000L, part)
-            log("[DATA] ${if (active) "" else "prueba "}${summarize(part)} (${body.length} B)")
+            if (!active || dataLog.due(System.nanoTime(), part.vitalSigns.toString())) {
+                log("[DATA] ${if (active) "" else "prueba "}${summarize(part)} (${body.length} B)")
+            }
             sender.execute { deliver(url, cfg.apiUsername, cfg.apiPassword, body, active, epoch) }
         }
     }
@@ -585,6 +593,7 @@ class TotemRuntime(context: Context) {
             parser.resetData()
             thermo.resetLatest()
             droppedPackets.set(0)
+            dataLog.reset()
             // En el mismo paso que el epoch: los 404 de la consulta anterior ya no cuentan.
             watch.started(gate.epoch, System.nanoTime())
             true
@@ -616,6 +625,7 @@ class TotemRuntime(context: Context) {
             if (!gate.resumeSession(epoch)) return
             thermo.resetLatestIfStale(System.nanoTime())
             droppedPackets.set(0)
+            dataLog.reset()
             watch.started(gate.epoch, System.nanoTime())
         }
         log("[SESIÓN] Envío iniciado: la plataforma tenía la toma abierta")
@@ -1347,12 +1357,14 @@ class TotemRuntime(context: Context) {
     }
 
     /**
-     * Al logcat y a la consola de Testing. Lo usan también las pantallas para
-     * lo que pasa en ellas y conviene ver ahí, como una imagen que no abrió.
+     * Al logcat, a la consola de Testing y, menos `[DATA]`, al archivo
+     * ([FileLog]). Lo usan también las pantallas para lo que pasa en ellas y
+     * conviene ver ahí, como una imagen que no abrió.
      */
     internal fun log(message: String) {
         Log.i(TAG, message)
         console.add(message)
+        fileLog.add(message)
     }
 
     private fun sleep(ms: Long) {
