@@ -8,6 +8,14 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Desde Android 14, connectedDevice pide uno de estos permisos; éste se otorga solo. -->
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    <!--
+        El panel lateral muestra el nombre del Wi-Fi y la señal. Sin la ubicación,
+        Android 10 en adelante esconde el nombre (<unknown ssid>) y el panel dice
+        «Wi-Fi». Desde Android 12 la precisa se pide junto con la aproximada.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />

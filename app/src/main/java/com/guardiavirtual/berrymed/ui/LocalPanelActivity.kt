@@ -10,6 +10,7 @@ import android.graphics.Outline
 import android.os.Bundle
 import android.os.SystemClock
 import android.view.View
+import android.view.ViewGroup
 import android.view.ViewOutlineProvider
 import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
@@ -48,7 +49,6 @@ import com.guardiavirtual.berrymed.service.MonitorService
 import com.guardiavirtual.berrymed.ui.panel.CameraState
 import com.guardiavirtual.berrymed.ui.panel.EcgLeads
 import com.guardiavirtual.berrymed.ui.panel.FreezeFrame
-import com.guardiavirtual.berrymed.ui.panel.Link
 import com.guardiavirtual.berrymed.ui.panel.PanelDevice
 import com.guardiavirtual.berrymed.ui.panel.PanelFormat
 import com.guardiavirtual.berrymed.ui.panel.PanelState
@@ -62,6 +62,9 @@ import com.guardiavirtual.berrymed.ui.panel.Status
 import com.guardiavirtual.berrymed.ui.panel.TempCard
 import com.guardiavirtual.berrymed.ui.panel.Tile
 import com.guardiavirtual.berrymed.ui.panel.Tone
+import com.guardiavirtual.berrymed.ui.status.ModeSwitchDialog
+import com.guardiavirtual.berrymed.ui.status.PanelMode
+import com.guardiavirtual.berrymed.ui.status.StatusPanelUi
 import kotlin.concurrent.thread
 import kotlin.math.roundToInt
 
@@ -73,6 +76,10 @@ import kotlin.math.roundToInt
  *
  * Qué mostrar lo decide [PanelUi], sin Android; acá se aplica a las vistas y
  * se atienden los toques.
+ *
+ * A la derecha va el panel lateral de estado, también con la pantalla del
+ * PIN: muestra los equipos (en lugar de los chips que tenía la cabecera) y
+ * lleva de vuelta al kiosco de ONDOCTOR365.
  */
 class LocalPanelActivity : AppCompatActivity() {
     private lateinit var binding: ActivityLocalPanelBinding
@@ -114,6 +121,18 @@ class LocalPanelActivity : AppCompatActivity() {
     /** El dispositivo abierto en el área principal; null es el ECG. */
     private var openDevice: PanelDevice? = null
     private var finishOpen = false
+    private var modeDialog: ModeSwitchDialog? = null
+
+    /**
+     * El panel lateral se refresca cada medio segundo desde que la pantalla
+     * se ve, también bloqueada: el loop de [frame] corre sólo desbloqueado.
+     */
+    private val statusTick = object : Runnable {
+        override fun run() {
+            renderStatus()
+            binding.statusPanel.postDelayed(this, RENDER_MS)
+        }
+    }
 
     /**
      * Atrás cierra el diálogo de Finalizar si está abierto y, si no, vuelve
@@ -208,6 +227,7 @@ class LocalPanelActivity : AppCompatActivity() {
 
         setUpEcgControls()
         setUpDock()
+        setUpStatusPanel()
 
         binding.paButton.setOnClickListener {
             if (runtime().localSnapshot().nibpRunning) {
@@ -273,6 +293,10 @@ class LocalPanelActivity : AppCompatActivity() {
         lock()
         binding.clock.removeCallbacks(clock)
         clock.run()
+        // Abierto o en el riel, como se dejó en el kiosco.
+        showStatusPanel(runtime().statusPanelOpen)
+        binding.statusPanel.removeCallbacks(statusTick)
+        statusTick.run()
     }
 
     /** Con el panel adelante, el servicio suma cámara y micrófono para la teleconsulta de después. */
@@ -293,6 +317,7 @@ class LocalPanelActivity : AppCompatActivity() {
     override fun onStop() {
         binding.ecgPaper.removeCallbacks(frame)
         binding.clock.removeCallbacks(clock)
+        binding.statusPanel.removeCallbacks(statusTick)
         // Primero la cámara del otoscopio: stopLocal apaga su puerto, y antes tiene que estar suelta.
         releaseOtoscope()
         cameraProvider?.unbindAll()
@@ -308,6 +333,83 @@ class LocalPanelActivity : AppCompatActivity() {
     }
 
     private fun runtime() = (application as BerryMedApp).runtime
+
+    private fun setUpStatusPanel() {
+        val panel = binding.statusPanel
+        panel.onToggle = { open ->
+            runtime().statusPanelOpen = open
+            showStatusPanel(open)
+        }
+        panel.onAudioChoice = { choice -> runtime().setCallAudioOutput(choice) }
+        panel.onOpenWifi = {
+            startActivity(
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    Intent(android.provider.Settings.Panel.ACTION_WIFI)
+                } else {
+                    Intent(android.provider.Settings.ACTION_WIFI_SETTINGS)
+                },
+            )
+        }
+        panel.onSwitchMode = { switchToKiosk() }
+    }
+
+    /** El panel lateral abierto o en el riel, y la toolbar del ECG en dos filas o en una. */
+    private fun showStatusPanel(open: Boolean) {
+        binding.statusPanel.setOpen(open)
+        layoutEcgToolbar(twoRows = open)
+        renderStatus()
+    }
+
+    private fun renderStatus() {
+        val mode = if (unlocked) PanelMode.LOCAL else PanelMode.LOCAL_LOCKED
+        binding.statusPanel.render(StatusPanelUi.build(runtime().statusSnapshot(), mode))
+    }
+
+    /**
+     * Con el panel lateral abierto el ECG mide 636 dp y la toolbar no entra
+     * en una fila: arriba quedan ECG, la señal y Congelar, y abajo los tres
+     * segmentados. Con el riel, una fila como siempre. Se decide por el
+     * panel, no midiendo anchos.
+     */
+    private fun layoutEcgToolbar(twoRows: Boolean) {
+        val segments = binding.ecgSegments
+        val top = binding.ecgToolbarTop
+        val bottom = binding.ecgToolbarBottom
+        val target = if (twoRows) bottom else top
+        if (segments.parent !== target) {
+            (segments.parent as? ViewGroup)?.removeView(segments)
+            if (twoRows) bottom.addView(segments) else top.addView(segments, top.indexOfChild(binding.ecgFreezeButton))
+        }
+        bottom.visibility = if (twoRows) View.VISIBLE else View.GONE
+        top.layoutParams = top.layoutParams.apply { height = dp(if (twoRows) TOOLBAR_ROW_DP else TOOLBAR_SINGLE_DP) }
+        // El dp de borde de la tarjeta ya está: 8 arriba y 10 abajo quedan en 7 y 10.
+        val toolbar = binding.ecgToolbar
+        toolbar.setPadding(toolbar.paddingLeft, dp(if (twoRows) 7 else 0), toolbar.paddingRight, dp(if (twoRows) 10 else 0))
+    }
+
+    /**
+     * Local → Remoto. Desbloqueado se confirma y sale por el mismo camino de
+     * Finalizar (finish, y onPause corta el modo con stopLocal); en la
+     * pantalla del PIN todavía no empezó nada, así que va sin preguntar.
+     */
+    private fun switchToKiosk() {
+        if (!unlocked) {
+            openKioskAndFinish()
+            return
+        }
+        modeDialog?.dismiss()
+        modeDialog = ModeSwitchDialog.show(
+            this,
+            title = R.string.mode_to_remote_title,
+            body = R.string.mode_to_remote_body,
+            action = R.string.mode_to_remote_action,
+        ) { openKioskAndFinish() }
+    }
+
+    private fun openKioskAndFinish() {
+        startActivity(Intent(this, KioskActivity::class.java))
+        finish()
+    }
 
     private fun hideSystemBars() {
         val controller = WindowCompat.getInsetsController(window, window.decorView)
@@ -456,6 +558,8 @@ class LocalPanelActivity : AppCompatActivity() {
     private fun lock() {
         unlocked = false
         showFinish(false)
+        modeDialog?.dismiss()
+        modeDialog = null
         // Al desbloquear vuelve el ECG a la vista; los dispositivos quedan como estén en el runtime.
         showDevice(null)
         freezeEcg(false)
@@ -524,6 +628,8 @@ class LocalPanelActivity : AppCompatActivity() {
         lastRenderAt = 0L
         binding.ecgPaper.postOnAnimation(frame)
         startCamera()
+        // El modo pasa de "esperando el PIN" a "presencial" sin esperar al próximo refresco.
+        renderStatus()
     }
 
     /** Medir y Cancelar escriben en el puerto serie: fuera del hilo de la pantalla. */
@@ -813,25 +919,7 @@ class LocalPanelActivity : AppCompatActivity() {
     }
 
     private fun renderHeader(state: PanelState) {
-        val chips = state.chips
-        chip(binding.chipEcg, chips.ecg)
-        chip(binding.chipSpo2, chips.spo2)
-        chip(binding.chipPa, chips.pressure)
-        chip(binding.chipTemp, chips.temperature)
-        chip(binding.chipOtoscope, chips.otoscope)
-        chip(binding.chipStetho, chips.stethoscope)
         status(binding.ecgSignal, state.signal)
-    }
-
-    private fun chip(view: TextView, link: Link) {
-        val dot = when (link) {
-            Link.CONNECTED -> R.color.ok
-            Link.CONNECTING -> R.color.warn
-            Link.DISCONNECTED -> R.color.line3
-        }
-        view.setBackgroundResource(if (link == Link.DISCONNECTED) R.drawable.panel_chip_off else R.drawable.panel_chip_on)
-        view.setTextColor(getColor(if (link == Link.DISCONNECTED) R.color.faint else R.color.text2))
-        TextViewCompat.setCompoundDrawableTintList(view, ColorStateList.valueOf(getColor(dot)))
     }
 
     /** Un texto de estado con su punto, los dos del color del tono. */
@@ -1003,5 +1091,9 @@ class LocalPanelActivity : AppCompatActivity() {
         private const val PHONO_STROKE_DP = 1.2f
         private const val OTOSCOPE_CIRCLE_DP = 400
         private const val VIEWER_MARGIN_DP = 24
+
+        /** La fila de la toolbar del ECG: 63 dp sola (más el borde de la tarjeta), 46 dp arriba de los segmentados. */
+        private const val TOOLBAR_SINGLE_DP = 63
+        private const val TOOLBAR_ROW_DP = 46
     }
 }

@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    El panel lateral cerrado: un riel de 64 dp. Toda la columna se toca y
+    abre el panel. Arriba el botón, después Wi-Fi, Modo y Dispositivos, y
+    Sonido pegado abajo.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/status_panel_bg"
+    android:clickable="true"
+    android:contentDescription="@string/status_open"
+    android:focusable="true"
+    android:orientation="vertical"
+    android:paddingStart="1dp">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="63dp">
+
+        <ImageButton
+            android:id="@+id/openButton"
+            style="@style/Status.Close"
+            android:layout_gravity="center"
+            android:contentDescription="@string/status_open"
+            android:src="@drawable/ic_chevron_left" />
+    </FrameLayout>
+
+    <View style="@style/Status.Divider" />
+
+    <FrameLayout
+        android:id="@+id/railWifi"
+        style="@style/Status.RailItem">
+
+        <ImageView
+            android:id="@+id/railWifiIcon"
+            style="@style/Status.RailIcon"
+            android:src="@drawable/ic_wifi" />
+
+        <View
+            android:id="@+id/railWifiDot"
+            style="@style/Status.RailDot" />
+    </FrameLayout>
+
+    <FrameLayout style="@style/Status.RailItem">
+
+        <ImageView
+            android:id="@+id/railModeIcon"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_gravity="center"
+            android:background="@drawable/status_mode_box_small"
+            android:backgroundTint="@color/ondoctor_icon"
+            android:importantForAccessibility="no"
+            android:padding="6dp"
+            android:src="@drawable/ic_video_call"
+            app:tint="@color/text" />
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/railDevices"
+        style="@style/Status.RailItem">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center_horizontal"
+            android:orientation="vertical">
+
+            <ImageView
+                android:id="@+id/railDevicesIcon"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_usb"
+                app:tint="@color/text2" />
+
+            <TextView
+                android:id="@+id/railCount"
+                style="@style/Panel.Text"
+                android:layout_marginTop="2dp"
+                android:fontFamily="@font/barlow_semi_condensed_semibold"
+                android:fontFeatureSettings="tnum"
+                android:textColor="@color/text2"
+                android:textSize="13sp"
+                tools:text="6/7" />
+        </LinearLayout>
+
+        <View
+            android:id="@+id/railDevicesDot"
+            style="@style/Status.RailDot" />
+    </FrameLayout>
+
+    <Space
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <View style="@style/Status.Divider" />
+
+    <FrameLayout
+        style="@style/Status.RailItem"
+        android:layout_marginBottom="8dp">
+
+        <ImageView
+            android:id="@+id/railAudioIcon"
+            style="@style/Status.RailIcon"
+            android:src="@drawable/ic_headset_mic" />
+    </FrameLayout>
+</LinearLayout>

@@ -201,6 +201,17 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - **Aviso de la consulta.** Con el panel bloqueado y una consulta enviando, "Hay una consulta enviando: el Panel Local espera a que termine." se ve sin escribir nada y se va solo (lo refresca el reloj de la cabecera). Sin consulta no tapa un "PIN incorrecto". El control de verdad sigue en `startLocal`.
 - **Kiosco.** Entrar y Recargar se asignan en `setOnShowListener` sobre los botones del `AlertDialog`: con el PIN mal o la configuración sin cargar el diálogo queda abierto, borra el campo y muestra el motivo como error del campo (`EditText.error`), sin cambiar el estilo del diálogo. Cancelar y tocar afuera cierran como antes.
 
+### El panel lateral de estado (plan 16)
+
+- Una columna nativa a la derecha, en el kiosco y en el Panel Local, con el Wi-Fi, el modo y el botón para cambiarlo, los dispositivos y el sonido. Regla: **el panel muestra, no decide**; lee el estado que ya calcula la app y usa los caminos que ya existen (el PIN del Panel Local, `startLocal`/`stopLocal`, `callAudioOutput`). Plan en `docs/planes/plan-16-panel-lateral.md` y diseño en `docs/redisenio/design_handoff_panel_lateral/`.
+- **Rojo para desconectado.** Un instrumento desconectado va en rojo (aro hueco y fila marcada) aunque el Panel Local no tenga alarmas: es algo para resolver antes de atender. Es la única excepción.
+- **«Listo» en Local.** En el Panel Local, también en su pantalla de PIN, el otoscopio y el estetoscopio sin enchufar con el YKUSH3 presente dicen «Listo» en verde: sus puertos arrancan apagados y se encienden al abrirlos.
+- **Sonido de toda la app, menos el estetoscopio.** La sección se llama «Sonido» y se ve igual en los dos modos. Sus opciones son «Auricular» y «Altavoz» (más genérico que «Tablet»). Altavoz mueve la videollamada al parlante y al micrófono de la tablet; el estetoscopio sigue sólo en el auricular, porque por el parlante se acopla (decidido con el usuario el 15 de noviembre de 2026).
+- **Altavoz = `"parlante"`.** El segmentado de sonido escribe el mismo `callAudioOutput` de la configuración, sin PIN. Sin jack se ve Altavoz sin reescribir el ajuste. No se puede usar el micrófono de la tablet con el sonido en el auricular: queda para otro plan si hace falta.
+- **No se abre solo** cuando algo pasa a rojo: correría el `WebView` en medio de una llamada. Abierto o cerrado vive en memoria (`TotemRuntime.statusPanelOpen`) y vuelve a abierto al reiniciar el proceso.
+- **La ubicación para el SSID.** Sin el permiso de ubicación Android 10 en adelante esconde el nombre de la red. El kiosco la pide con la cámara y el micrófono (la precisa junto con la aproximada, como exige Android 12); si la niegan, el panel dice «Wi-Fi».
+- Un solo PIN de Remoto a Local: el botón abre el Panel Local, que ya pide el suyo. Local a Remoto pasa por el mismo camino que Finalizar.
+
 ## Pendiente
 
 - Prueba con el hardware real en la tablet (ver "Probar el Panel Local en el tótem" en el `README.md` y los riesgos de `docs/hardware.md`).
@@ -214,4 +225,5 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - Plan 14 en la tablet real: unos 30 cuadros/s en Testing → Teleconsulta con el otoscopio por UVC, que el médico vea la imagen y que no haya una línea `[TELE] La superficie del otoscopio por UVC no se pudo vaciar`.
 - Plan 12 en la tablet real: los tres puertos encendidos con el kiosco, el otoscopio en la llamada sin pedido de permiso y el micrófono de la llamada con el adaptador y el otoscopio encendidos.
 - Plan 13 en la tablet real: la luz del puerto 3 siempre encendida y el termómetro midiendo en el Panel Local y en una consulta.
+- Plan 16 en la tablet real: el kiosco a 984 dp (la videollamada y los botones de la consulta), el ECG de siete derivaciones a 636 dp, los umbrales de dBm de las barras, los estados de cada dispositivo con la plaqueta, el hub, el termómetro y el jack, y el SSID con el permiso de ubicación.
 - v2 con guardado y PDF local.

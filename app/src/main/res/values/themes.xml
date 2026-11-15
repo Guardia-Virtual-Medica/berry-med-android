@@ -378,4 +378,121 @@
         <item name="android:textColor">@color/body</item>
         <item name="android:textSize">14sp</item>
     </style>
+    <!--
+        El panel lateral de estado (296 dp) y su riel (64 dp), con las medidas
+        del handoff. Los mismos tokens y tipografías que el Panel Local.
+    -->
+    <style name="Status" />
+
+    <!-- Una sección: 16 dp alrededor. -->
+    <style name="Status.Section">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:padding">16dp</item>
+    </style>
+
+    <!-- La etiqueta de sección: el mismo estilo que «CAPTURAS · N». -->
+    <style name="Status.Label" parent="Panel.Text.Caps" />
+
+    <style name="Status.Divider">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">1dp</item>
+        <item name="android:background">@color/line</item>
+    </style>
+
+    <!-- Los textos de 13 sp debajo de un nombre: el estado del Wi-Fi y el subtítulo del modo. -->
+    <style name="Status.Sub" parent="Panel.Text">
+        <item name="android:layout_marginTop">3dp</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:textColor">@color/muted</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+    <!-- La caja de 40 dp de un ícono de 22: la del Wi-Fi y la del modo. -->
+    <style name="Status.IconBox">
+        <item name="android:layout_width">40dp</item>
+        <item name="android:layout_height">40dp</item>
+        <item name="android:importantForAccessibility">no</item>
+        <item name="android:padding">9dp</item>
+    </style>
+
+    <!-- El botón de 44 dp que cierra el panel o lo abre desde el riel. -->
+    <style name="Status.Close">
+        <item name="android:layout_width">44dp</item>
+        <item name="android:layout_height">44dp</item>
+        <item name="android:background">@drawable/status_close</item>
+        <item name="android:padding">11dp</item>
+        <item name="tint">@color/text2</item>
+    </style>
+
+    <!-- Una barra de la señal: 4 dp de ancho; el alto lo pone cada una. -->
+    <style name="Status.Bar">
+        <item name="android:layout_width">4dp</item>
+        <item name="android:layout_marginStart">3dp</item>
+        <item name="android:background">@drawable/status_bar</item>
+    </style>
+
+    <!-- Un segmento de sonido: 48 dp, ícono de 20 y Barlow 600 15 sp. -->
+    <style name="Status.Segment">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">48dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:background">@drawable/status_segment</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:gravity">center</item>
+        <item name="android:orientation">horizontal</item>
+    </style>
+
+    <style name="Status.SegmentIcon">
+        <item name="android:layout_width">20dp</item>
+        <item name="android:layout_height">20dp</item>
+        <item name="android:duplicateParentState">true</item>
+        <item name="android:importantForAccessibility">no</item>
+        <item name="tint">@color/panel_segment_text</item>
+    </style>
+
+    <style name="Status.SegmentText" parent="Panel.Text">
+        <item name="android:layout_marginStart">8dp</item>
+        <item name="android:duplicateParentState">true</item>
+        <item name="android:fontFamily">@font/barlow_semibold</item>
+        <item name="android:textColor">@color/panel_segment_text</item>
+        <item name="android:textSize">15sp</item>
+    </style>
+
+    <!-- Un ítem del riel: 48 × 56 dp, radio 11, con el punto arriba a la derecha. -->
+    <style name="Status.RailItem">
+        <item name="android:layout_width">48dp</item>
+        <item name="android:layout_height">56dp</item>
+        <item name="android:layout_gravity">center_horizontal</item>
+        <item name="android:layout_marginTop">8dp</item>
+    </style>
+
+    <style name="Status.RailIcon">
+        <item name="android:layout_width">22dp</item>
+        <item name="android:layout_height">22dp</item>
+        <item name="android:layout_gravity">center</item>
+        <item name="android:importantForAccessibility">no</item>
+        <item name="tint">@color/text2</item>
+    </style>
+
+    <style name="Status.RailDot">
+        <item name="android:layout_width">8dp</item>
+        <item name="android:layout_height">8dp</item>
+        <item name="android:layout_gravity">top|end</item>
+        <item name="android:layout_marginTop">7dp</item>
+        <item name="android:layout_marginEnd">7dp</item>
+        <item name="android:background">@drawable/panel_dot</item>
+    </style>
+
+    <!-- La acción de los diálogos de cambio de modo: fondo text, texto bg, Barlow 700. -->
+    <style name="Status.DialogAction" parent="Panel.Button">
+        <item name="android:fontFamily">@font/barlow_bold</item>
+        <item name="android:textColor">@color/bg</item>
+        <item name="backgroundTint">@color/text</item>
+        <item name="rippleColor">#33000000</item>
+        <item name="strokeWidth">0dp</item>
+    </style>
 </resources>
