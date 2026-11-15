@@ -826,6 +826,8 @@ class LocalPanelActivity : AppCompatActivity() {
 
     /** El YKUSH3 y la espera de las placas de audio van en el hilo del estetoscopio, nunca acá. */
     private fun listen() {
+        // Un solo equipo de audio USB a la vez: el otoscopio se apaga como con Apagar (la cámara y después el puerto).
+        if (otoscope != null || runtime().otoscopeState != OtoscopePower.State.OFF) otoscopeOff(R.string.local_otoscope_done)
         binding.stethoMessage.setText(R.string.local_stetho_starting)
         runtime().localStethoStart { text -> runOnUiThread { if (unlocked) binding.stethoMessage.text = text } }
     }
@@ -892,9 +894,14 @@ class LocalPanelActivity : AppCompatActivity() {
      * que corresponde. Ninguna orden al YKUSH3 sale de este hilo.
      */
     private fun otoscopeOn() {
+        // Un solo equipo de audio USB a la vez: si el estetoscopio escucha, se detiene primero.
+        val runtime = runtime()
+        val snapshot = runtime.localSnapshot()
+        if (snapshot.stethoRunning || snapshot.stethoStarting) {
+            runtime.localStethoStop { text -> runOnUiThread { stethoMessage(text) } }
+        }
         pauseTabletCamera()
         setOtoscopeMessage(getString(R.string.local_otoscope_starting))
-        val runtime = runtime()
         runtime.localOtoscopeOn(
             progress = { text -> runOnUiThread { if (unlocked) setOtoscopeMessage(text) } },
             done = { path, text -> runOnUiThread { onOtoscopeFound(path, text) } },

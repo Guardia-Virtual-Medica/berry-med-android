@@ -15,7 +15,7 @@ import com.guardiavirtual.berrymed.otoscope.OtoscopePower
 import com.guardiavirtual.berrymed.otoscope.OtoscopeProbe
 import com.guardiavirtual.berrymed.otoscope.OtoscopeResolution
 import com.guardiavirtual.berrymed.otoscope.UvcOtoscopeFrames
-import com.guardiavirtual.berrymed.service.PanelPorts
+import com.guardiavirtual.berrymed.service.InstrumentPorts
 import com.guardiavirtual.berrymed.usb.YkushHub
 import io.livekit.android.AudioOptions
 import io.livekit.android.AudioType
@@ -88,9 +88,13 @@ class LiveKitBackend(
         Thread(runnable, "berry-tele-uvc").apply { isDaemon = true }
     }
 
-    /** Lo que encendió la teleconsulta en el YKUSH3: sólo eso se apaga al terminar. */
-    private val otoscopePorts = PanelPorts()
-    private val stethoPorts = PanelPorts()
+    /**
+     * El puerto del YKUSH3 que se encendió para cada instrumento: se apaga al
+     * soltarlo. En reposo están apagados, así que lo que enciende la
+     * teleconsulta es siempre suyo. Sólo desde el hilo del streamer.
+     */
+    private var otoscopePort: Int? = null
+    private var stethoPort: Int? = null
 
     val dsp = StethoStreamDsp()
 
@@ -173,7 +177,7 @@ class LiveKitBackend(
         if (videoTrack != null || frames != null) releaseOtoscope()
         if (audioTrack != null) releaseStethoscope()
         // Un otoscopio que quedó esperando el permiso USB tiene el puerto encendido sin publicar.
-        powerOff(otoscopePorts, "otoscopio")
+        otoscopePort = powerOff(otoscopePort, "otoscopio")
         closing = true
         val old = room
         room = null
@@ -223,19 +227,19 @@ class LiveKitBackend(
     private fun publishOtoscope(): String? {
         val lk = room ?: return "No hay sala"
         val cfg = config()
-        // Con el kiosco adelante el puerto ya está encendido y powerOn no lo toca.
-        powerOn(cfg.ykushOtoscopePort, otoscopePorts, "otoscopio")
+        otoscopePort = cfg.ykushOtoscopePort
+        powerFor(cfg.ykushOtoscopePort, cfg.ykushStethoscopePort, "otoscopio")
         val path = waitForOtoscope() ?: run {
             val next = OtoscopePower.afterTimeout(portOff = true, usbPresent = probe.usbPresent(), usbReady = probe.usbReady())
             if (next == OtoscopePower.Timeout.ASK_PERMISSION) {
                 // Como el Panel Local: no se apaga el puerto y se pide de nuevo, con el pedido
                 // de Android que trae la casilla (OtoscopePermission). El próximo start_oth lo
-                // usa. Si el puerto lo encendió la teleconsulta, se apaga al cortar.
+                // usa. El puerto se apaga al cortar la sala.
                 log("[TELE] El otoscopio está enchufado pero sin permiso USB: se vuelve a pedir")
                 probe.askPermissionAgain()
                 return "Falta aceptar el permiso USB del otoscopio en la tablet"
             }
-            powerOff(otoscopePorts, "otoscopio")
+            otoscopePort = powerOff(otoscopePort, "otoscopio")
             return "El otoscopio no aparece ni como cámara ni por USB con permiso"
         }
         val source = when (path) {
@@ -352,23 +356,25 @@ class LiveKitBackend(
         frames = null
         videoPath = null
         videoSize = null
-        powerOff(otoscopePorts, "otoscopio")
+        otoscopePort = powerOff(otoscopePort, "otoscopio")
     }
 
     private fun publishStethoscope(): String? {
         val lk = room ?: return "No hay sala"
         val adm = module ?: return "No hay módulo de audio"
         val cfg = config()
-        val powered = powerOn(cfg.ykushStethoscopePort, stethoPorts, "estetoscopio")
+        stethoPort = cfg.ykushStethoscopePort
+        powerFor(cfg.ykushStethoscopePort, cfg.ykushOtoscopePort, "estetoscopio")
+        // Encender el puerto es enchufar el adaptador, y apagar el del otoscopio le devuelve
+        // su lugar de placa de audio: Android tarda un momento en verlo.
         var input = stethoInput(cfg)
-        // Encender el puerto es enchufar el adaptador: Android tarda un momento en verlo.
-        val deadline = System.nanoTime() + if (powered || input == null) STETHO_WAIT_NANOS else 0L
+        val deadline = System.nanoTime() + STETHO_WAIT_NANOS
         while (input == null && System.nanoTime() < deadline) {
             Thread.sleep(POLL_MS)
             input = stethoInput(cfg)
         }
         if (input == null) {
-            powerOff(stethoPorts, "estetoscopio")
+            stethoPort = powerOff(stethoPort, "estetoscopio")
             return "No aparece el adaptador del estetoscopio (\"${cfg.stethoInputName}\")"
         }
         adm.setPreferredInputDevice(input)
@@ -426,34 +432,33 @@ class LiveKitBackend(
             }
         }
         dsp.reset()
-        powerOff(stethoPorts, "estetoscopio")
+        stethoPort = powerOff(stethoPort, "estetoscopio")
     }
 
     /**
-     * Enciende [port] en el YKUSH3 si está apagado, con la regla del Panel
-     * Local: sólo se anota para apagar al final si se leyó apagado de verdad.
-     * Devuelve si encendió algo.
+     * Un solo equipo de audio USB a la vez ([InstrumentPorts]): apaga el puerto
+     * del otro instrumento si el hub no lo lee apagado (aunque no lo haya
+     * encendido la teleconsulta) y enciende el de [use].
      */
-    private fun powerOn(port: Int, owned: PanelPorts, what: String): Boolean {
-        if (!ykush.plugged()) return false
-        val states = ykush.readAll()
-        if (owned.toTurnOn(listOf(port), states).isEmpty()) return false
-        if (!ykush.setPort(port, true)) {
+    private fun powerFor(use: Int, other: Int, what: String) {
+        if (!ykush.plugged()) return
+        val steps = InstrumentPorts.forUse(use, other, config().ykushThermometerPort, ykush.readAll())
+        for (port in steps.off) {
+            if (ykush.setPort(port, false)) log("[TELE] Se apagó el puerto $port antes de encender el $what: un solo equipo de audio USB a la vez")
+        }
+        val port = steps.on ?: return
+        if (ykush.setPort(port, true)) {
+            log("[TELE] Puerto $port del $what encendido")
+        } else {
             log("[TELE] El YKUSH3 no encendió el puerto $port del $what: se espera igual")
-            return false
         }
-        if (!owned.claim(port, states.getOrNull(port - 1))) {
-            log("[TELE] No se pudo leer el puerto $port antes de encenderlo: queda encendido al terminar")
-        }
-        log("[TELE] Puerto $port del $what encendido")
-        return true
     }
 
-    private fun powerOff(owned: PanelPorts, what: String) {
-        val ports = owned.takeToTurnOff()
-        if (ports.isEmpty() || !ykush.plugged()) return
-        for (port in ports) ykush.setPort(port, false)
-        log("[TELE] Se apagó el puerto ${ports.joinToString(", ")} del $what, que había encendido la teleconsulta")
+    /** Apaga [port] si hay uno. Devuelve null, para olvidarlo en la misma línea. */
+    private fun powerOff(port: Int?, what: String): Int? {
+        if (port == null || !ykush.plugged()) return null
+        if (ykush.setPort(port, false)) log("[TELE] Se apagó el puerto $port del $what")
+        return null
     }
 
     /** Cuadros por segundo entregados desde la última vez que se preguntó. */
