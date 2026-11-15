@@ -3,6 +3,7 @@ package com.guardiavirtual.berrymed.ui
 
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.content.Context
 import android.content.res.ColorStateList
 import android.os.Bundle
 import android.os.Handler
@@ -50,6 +51,11 @@ class TestingActivity : AppCompatActivity() {
             Measure.Resp to binding.respCard,
             Measure.Temp to binding.tempCard,
         )
+    }
+
+    /** Toda la pantalla a la escala de diseño: ver [UiScale]. */
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(UiScale.scaled(newBase))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

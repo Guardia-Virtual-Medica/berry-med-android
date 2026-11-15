@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    La pantalla principal, con los tokens y estilos del Panel Local: la
-    cabecera fija con los chips de estado y la ruedita; abajo, los vitales, el
-    estado y los botones. La configuración es una capa que tapa ese contenido
-    y se abre con USB-config.
+    Configuración, la tercera card de Inicio, con los tokens y estilos del
+    Panel Local: la cabecera fija con la flecha, el breadcrumb, los chips de
+    estado y la ruedita; abajo, los vitales, el estado y los botones. El
+    formulario es una capa que tapa ese contenido y se abre con USB-config.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -22,14 +22,78 @@
         android:paddingEnd="24dp"
         android:paddingBottom="12dp">
 
-        <TextView
-            style="@style/Panel.Text.Title"
+        <!-- La flecha hace lo mismo que atrás: cierra USB-config o vuelve a Inicio. -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/homeBack"
+            style="@style/Panel.Button.Secondary"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:contentDescription="@string/status_home"
+            android:paddingStart="0dp"
+            android:paddingEnd="0dp"
+            app:icon="@drawable/ic_arrow_back"
+            app:iconGravity="textStart"
+            app:iconPadding="0dp"
+            app:iconSize="22dp" />
+
+        <LinearLayout
             android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
             android:layout_weight="1"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:text="@string/screen_title"
-            android:textSize="22sp" />
+            android:orientation="vertical">
+
+            <!-- El breadcrumb: Inicio › Configuración, y › USB-config con el formulario abierto. -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/crumbHome"
+                    style="@style/Crumb.Link"
+                    android:text="@string/crumb_home" />
+
+                <TextView
+                    style="@style/Crumb.Separator" />
+
+                <TextView
+                    android:id="@+id/crumbConfig"
+                    style="@style/Crumb"
+                    android:text="@string/config_title" />
+
+                <TextView
+                    android:id="@+id/crumbUsbSeparator"
+                    style="@style/Crumb.Separator"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/crumbUsb"
+                    style="@style/Crumb"
+                    android:text="@string/usb_permission"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+            <TextView
+                style="@style/Panel.Text.Title"
+                android:layout_width="match_parent"
+                android:layout_marginTop="2dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="@string/screen_title"
+                android:textSize="22sp" />
+
+            <!-- Cuándo se guardó USB-config por última vez. -->
+            <TextView
+                android:id="@+id/lastUpdate"
+                style="@style/Panel.Text"
+                android:layout_width="match_parent"
+                android:layout_marginTop="2dp"
+                android:maxLines="1"
+                android:textColor="@color/muted"
+                android:textSize="14sp" />
+        </LinearLayout>
 
         <TextView
             android:id="@+id/chipBerry"
@@ -300,19 +364,7 @@
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/testingButton"
                         style="@style/MainButton"
-                        android:layout_marginEnd="10dp"
                         android:text="@string/testing" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/localPanelButton"
-                        style="@style/MainButton"
-                        android:layout_marginEnd="10dp"
-                        android:text="@string/local_panel" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/ondoctorButton"
-                        style="@style/MainButton.Primary"
-                        android:text="@string/ondoctor" />
                 </LinearLayout>
 
                 <TextView
@@ -326,7 +378,7 @@
             </LinearLayout>
         </ScrollView>
 
-        <!-- La configuración: tapa el contenido de abajo de la cabecera. ← y atrás la cierran sin guardar. -->
+        <!-- USB-config: tapa el contenido de abajo de la cabecera. La flecha de arriba y atrás la cierran sin guardar. -->
         <LinearLayout
             android:id="@+id/configLayer"
             android:layout_width="match_parent"
@@ -336,34 +388,6 @@
             android:focusable="true"
             android:orientation="vertical"
             android:visibility="gone">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingStart="24dp"
-                android:paddingEnd="24dp"
-                android:paddingBottom="12dp">
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/configClose"
-                    style="@style/Panel.Button.Secondary"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
-                    android:contentDescription="@string/config_close"
-                    android:paddingStart="0dp"
-                    android:paddingEnd="0dp"
-                    app:icon="@drawable/ic_arrow_back"
-                    app:iconGravity="textStart"
-                    app:iconPadding="0dp"
-                    app:iconSize="22dp" />
-
-                <TextView
-                    style="@style/Panel.Text.Title"
-                    android:layout_marginStart="14dp"
-                    android:text="@string/config_title" />
-            </LinearLayout>
 
             <ScrollView
                 android:id="@+id/configScroll"

@@ -4,7 +4,9 @@ package com.guardiavirtual.berrymed.ui.status
 import com.guardiavirtual.berrymed.config.CALL_AUDIO_SPEAKER
 import com.guardiavirtual.berrymed.net.WifiState
 import com.guardiavirtual.berrymed.otoscope.OtoscopePower
+import com.guardiavirtual.berrymed.service.AppPermission
 import com.guardiavirtual.berrymed.service.StatusSnapshot
+import com.guardiavirtual.berrymed.usb.UsbRole
 import com.guardiavirtual.berrymed.ui.panel.PanelUi
 
 /**
@@ -14,16 +16,37 @@ import com.guardiavirtual.berrymed.ui.panel.PanelUi
  */
 enum class StatusTone { OK, WARN, BAD }
 
-/** Una fila de Dispositivos: "Otoscopio", su tono y "Listo". */
-data class DeviceRow(val name: String, val tone: StatusTone, val text: String)
+/**
+ * Lo que hace tocar una fila del panel lateral. Sólo las filas a las que les
+ * falta un permiso (y la del Wi-Fi, siempre) llevan una.
+ */
+enum class StatusAction {
+    /** El panel de Wi-Fi de Android. */
+    OPEN_WIFI,
+
+    /** Volver a pedir, en fila, los permisos USB de la plaqueta, el hub y el termómetro. */
+    USB_PERMISSION,
+
+    /** El permiso USB del otoscopio, con el pedido de Android que trae «Usar de forma predeterminada». */
+    OTOSCOPE_PERMISSION,
+
+    /** Los permisos de la app: se piden o, si Android ya no deja, se abren los ajustes de la app. */
+    CAMERA,
+    MICROPHONE,
+    LOCATION,
+}
+
+/** Una fila de Dispositivos: "Otoscopio", su tono, "Listo" y qué hace tocarla (null: nada). */
+data class DeviceRow(val name: String, val tone: StatusTone, val text: String, val action: StatusAction? = null)
 
 /** El ícono del Wi-Fi: con señal, con una barra o sin red. */
 enum class WifiIcon { WIFI, WEAK, OFF }
 
 /**
- * La cabecera: [name] es el SSID, «Wi-Fi» sin el permiso de ubicación o
- * «Sin Wi-Fi»; [bars] de 0 a 4; [offline] es sin red, y entonces la cabecera
- * abre el panel de Wi-Fi de Android.
+ * La cabecera: [name] es el SSID, «Wi-Fi conectado» sin el permiso de
+ * ubicación o «Sin Wi-Fi»; [bars] de 0 a 4; [offline] es sin red. Se toca
+ * siempre: [action] abre el panel de Wi-Fi de Android o, conectada sin el
+ * permiso de ubicación, lo pide.
  */
 data class WifiRow(
     val icon: WifiIcon,
@@ -32,13 +55,21 @@ data class WifiRow(
     val tone: StatusTone,
     val bars: Int,
     val offline: Boolean,
+    val action: StatusAction = StatusAction.OPEN_WIFI,
 )
 
 /** Por dónde va la llamada, como se muestra: el auricular del jack o la tablet. */
 enum class CallRoute { HEADSET, SPEAKER }
 
-/** En qué pantalla está el panel: el kiosco, el Panel Local o su pantalla de PIN. */
-enum class PanelMode { REMOTE, LOCAL, LOCAL_LOCKED }
+/** En qué pantalla está el panel: el kiosco, el Panel Local, su pantalla de espera o Inicio. */
+enum class PanelMode {
+    REMOTE,
+    LOCAL,
+    LOCAL_LOCKED,
+
+    /** Inicio: ni remoto ni local todavía. El panel no muestra Modo ni la casita. */
+    HOME,
+}
 
 /** Todo lo que dibuja el panel lateral en un refresco. */
 data class StatusPanelState(
@@ -67,13 +98,16 @@ object StatusPanelUi {
     const val READY = "Listo"
     const val LIVE = "En vivo"
     const val NO_HUB = "Sin hub"
-    const val NO_USB_PERMISSION = "Sin permiso USB"
+    const val NO_PERMISSION = "Falta permiso"
+    const val WIFI_CONNECTED = "Wi-Fi conectado"
 
     fun build(s: StatusSnapshot, mode: PanelMode): StatusPanelState {
+        // En Inicio, como en el Panel Local, el otoscopio y el estetoscopio están apagados en reposo:
+        // «Listo» y no el rojo del kiosco, donde tendrían que estar encendidos.
         val rows = devices(s, localScreen = mode != PanelMode.REMOTE)
         val route = callRoute(s.callAudioChoice, s.jackPresent)
         return StatusPanelState(
-            wifi = wifi(s.wifi),
+            wifi = wifi(s.wifi, locationGranted = AppPermission.LOCATION !in s.appMissing),
             mode = mode,
             // Volver a ONDOCTOR365 desde el Panel Local siempre se puede: el panel no deja empezar una consulta.
             modeBlocked = if (mode == PanelMode.REMOTE) StatusSnapshot.modeSwitchBlock(s.sessionActive, s.teleInRoom) else null,
@@ -86,15 +120,22 @@ object StatusPanelUi {
         )
     }
 
-    /** «Sin Wi-Fi» sin transporte Wi-Fi, «Sin internet» sin validar, «Señal débil» con una barra. */
-    fun wifi(w: WifiState): WifiRow {
+    /**
+     * «Sin Wi-Fi» sin transporte Wi-Fi, «Sin internet» sin validar, «Falta
+     * permiso» conectada sin la ubicación (sin ella Android no da el nombre),
+     * «Señal débil» con una barra. Sin red siempre abre el panel de Wi-Fi.
+     */
+    fun wifi(w: WifiState, locationGranted: Boolean = true): WifiRow {
         if (!w.connected) {
             return WifiRow(WifiIcon.OFF, "Sin Wi-Fi", "Tocá para elegir una red", StatusTone.BAD, bars = 0, offline = true)
         }
-        val name = w.ssid ?: "Wi-Fi"
+        val name = w.ssid ?: WIFI_CONNECTED
         val bars = w.level
+        val icon = if (bars == 1) WifiIcon.WEAK else WifiIcon.WIFI
         return when {
             !w.validated -> WifiRow(WifiIcon.WIFI, name, "Sin internet", StatusTone.WARN, bars, offline = false)
+            !locationGranted ->
+                WifiRow(icon, name, NO_PERMISSION, StatusTone.WARN, bars, offline = false, action = StatusAction.LOCATION)
             bars == 1 -> WifiRow(WifiIcon.WEAK, name, "Señal débil", StatusTone.WARN, bars, offline = false)
             else -> WifiRow(WifiIcon.WIFI, name, "Señal buena", StatusTone.OK, bars, offline = false)
         }
@@ -102,12 +143,14 @@ object StatusPanelUi {
 
     /**
      * Las siete filas: SpO2, ECG, Presión, Temperatura, Otoscopio, Estetoscopio
-     * y Hub USB. [localScreen] es estar en el Panel Local, también en su
-     * pantalla de PIN, donde el modo local todavía no empezó.
+     * y Hub USB. [localScreen] es estar en el Panel Local (también en su
+     * pantalla de espera, donde el modo local todavía no empezó) o en Inicio.
      */
     fun devices(s: StatusSnapshot, localScreen: Boolean = s.localMode): List<DeviceRow> {
         val local = s.local
         val berry = when {
+            // Enchufada sin permiso no se abre: no es lo mismo que desenchufada.
+            UsbRole.BOARD in s.usbMissing -> missing()
             PanelUi.berryLive(local) -> Pair(StatusTone.OK, CONNECTED)
             local.berryUp -> Pair(StatusTone.WARN, CONNECTING)
             else -> Pair(StatusTone.BAD, DISCONNECTED)
@@ -117,41 +160,61 @@ object StatusPanelUi {
         } else {
             berry
         }
+        val thermo = when {
+            local.thermoConnected -> Pair(StatusTone.OK, CONNECTED)
+            UsbRole.THERMOMETER in s.usbMissing -> missing()
+            else -> Pair(StatusTone.BAD, DISCONNECTED)
+        }
         return listOf(
-            DeviceRow("SpO2", berry.first, berry.second),
-            DeviceRow("ECG", ecg.first, ecg.second),
-            DeviceRow("Presión", berry.first, berry.second),
-            if (local.thermoConnected) {
-                DeviceRow("Temperatura", StatusTone.OK, CONNECTED)
-            } else {
-                DeviceRow("Temperatura", StatusTone.BAD, DISCONNECTED)
-            },
+            row("SpO2", berry, StatusAction.USB_PERMISSION),
+            row("ECG", ecg, StatusAction.USB_PERMISSION),
+            row("Presión", berry, StatusAction.USB_PERMISSION),
+            row("Temperatura", thermo, StatusAction.USB_PERMISSION),
             otoscope(s, localScreen),
             stethoscope(s, localScreen),
             hub(s),
         )
     }
 
+    /** Un permiso faltante: ámbar (no el rojo de desconectado) y «Falta permiso». */
+    private fun missing(): Pair<StatusTone, String> = Pair(StatusTone.WARN, NO_PERMISSION)
+
+    /** Arma la fila; si dice «Falta permiso», con la acción que lo pide. */
+    private fun row(name: String, state: Pair<StatusTone, String>, action: StatusAction? = null): DeviceRow =
+        DeviceRow(name, state.first, state.second, action.takeIf { state.second == NO_PERMISSION })
+
+    /**
+     * Sin el permiso USB del otoscopio, o sin el de la cámara de la app, no
+     * hay imagen: «Falta permiso», salvo que ya esté en vivo o encendiéndose.
+     */
     private fun otoscope(s: StatusSnapshot, localScreen: Boolean): DeviceRow {
         val state = s.local.otoscopeState
-        val (tone, text) = when {
+        val needs = when {
+            UsbRole.OTOSCOPE in s.usbMissing -> StatusAction.OTOSCOPE_PERMISSION
+            AppPermission.CAMERA in s.appMissing -> StatusAction.CAMERA
+            else -> null
+        }
+        val pair = when {
             state == OtoscopePower.State.ON -> Pair(StatusTone.OK, LIVE)
             state == OtoscopePower.State.POWERING_PORT || state == OtoscopePower.State.WAITING_CAMERA ->
                 Pair(StatusTone.WARN, CONNECTING)
+            needs != null -> missing()
             s.local.otoscopePlugged -> Pair(StatusTone.OK, CONNECTED)
             else -> unplugged(s, localScreen)
         }
-        return DeviceRow("Otoscopio", tone, text)
+        return row("Otoscopio", pair, needs)
     }
 
+    /** El estetoscopio es audio USB, sin permiso USB: lo que le puede faltar es el micrófono. */
     private fun stethoscope(s: StatusSnapshot, localScreen: Boolean): DeviceRow {
-        val (tone, text) = when {
+        val pair = when {
             s.local.stethoRunning -> Pair(StatusTone.OK, LIVE)
             s.local.stethoStarting -> Pair(StatusTone.WARN, CONNECTING)
+            AppPermission.MICROPHONE in s.appMissing -> missing()
             s.local.stethoPlugged -> Pair(StatusTone.OK, CONNECTED)
             else -> unplugged(s, localScreen)
         }
-        return DeviceRow("Estetoscopio", tone, text)
+        return row("Estetoscopio", pair, StatusAction.MICROPHONE)
     }
 
     /**
@@ -167,7 +230,7 @@ object StatusPanelUi {
 
     private fun hub(s: StatusSnapshot): DeviceRow = when {
         !s.ykushPlugged -> DeviceRow("Hub USB", StatusTone.BAD, DISCONNECTED)
-        s.usbPermissionMissing -> DeviceRow("Hub USB", StatusTone.BAD, NO_USB_PERMISSION)
+        UsbRole.HUB in s.usbMissing -> row("Hub USB", missing(), StatusAction.USB_PERMISSION)
         else -> DeviceRow("Hub USB", StatusTone.OK, CONNECTED)
     }
 

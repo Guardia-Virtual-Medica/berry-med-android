@@ -73,26 +73,45 @@
             android:name="android.window.PROPERTY_CAMERA_COMPAT_ALLOW_REFRESH"
             android:value="false" />
 
+        <!--
+            Inicio: el distribuidor, con ONDOCTOR365, Panel Local y Configuración.
+            Es la app de inicio de la tablet (HOME): Android la abre al encender y
+            el botón de inicio vuelve a ella. También la abre el ícono de Berry Med.
+        -->
         <activity
-            android:name=".ui.MainActivity"
-            android:configChanges="orientation|screenSize|screenLayout"
+            android:name=".ui.HomeActivity"
+            android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden"
             android:exported="true"
             android:launchMode="singleTask"
+            android:screenOrientation="landscape"
             android:theme="@style/Theme.BerryMed.Panel"
-            android:windowSoftInputMode="adjustResize">
+            android:windowSoftInputMode="adjustPan">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
         </activity>
+
+        <!-- La configuración y el estado del tótem: se abre desde Inicio, con el PIN. -->
+        <activity
+            android:name=".ui.MainActivity"
+            android:configChanges="orientation|screenSize|screenLayout"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.BerryMed.Panel"
+            android:windowSoftInputMode="adjustResize" />
 
         <!--
             El kiosco de OnDoctor dentro de Berry Med, como hacía la app del proveedor:
-            un WebView a pantalla completa. Es la app de inicio de la tablet (HOME):
-            Android la abre al encender y el botón de inicio vuelve a ella.
+            un WebView a pantalla completa. Se abre desde Inicio o con su ícono.
             Tiene su propia tarea, como el Panel Local: así el ícono de Berry Med
-            muestra la configuración y no el kiosco, y abrir la configuración
-            (singleTask) no destruye el kiosco que estaba arriba en la misma tarea.
+            muestra Inicio y no el kiosco, y volver a Inicio (singleTask) no
+            destruye el kiosco, que sigue cargado para la próxima vez.
         -->
         <activity
             android:name=".ui.KioskActivity"
@@ -102,13 +121,7 @@
             android:launchMode="singleTask"
             android:screenOrientation="landscape"
             android:taskAffinity="com.guardiavirtual.berrymed.kiosk"
-            android:theme="@style/Theme.BerryMed.Panel">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.HOME" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/Theme.BerryMed.Panel" />
 
         <!--
             El ícono ONDOCTOR365 de la tablet: abre el kiosco del paciente. Es un

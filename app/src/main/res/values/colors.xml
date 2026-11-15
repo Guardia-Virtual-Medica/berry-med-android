@@ -8,6 +8,8 @@
     <color name="local_icon">#1E4E8C</color>
     <!-- Fondo del ícono ONDOCTOR365 y de su botón en la pantalla principal: violeta, distinto de los otros dos. -->
     <color name="ondoctor_icon">#5B3FA8</color>
+    <!-- El turquesa del logo de ONDOCTOR365: el fondo del corazón-estetoscopio en la card de Inicio. -->
+    <color name="ondoctor_brand">#32B9CC</color>
 
     <!--
         Los tokens del Panel Local, con los nombres del handoff de diseño.
@@ -31,6 +33,13 @@
     <color name="gridMajor">#1A242D</color>
     <color name="gridMinor">#121A20</color>
     <color name="videoBg">#05080B</color>
+    <!--
+        El panel lateral y el riel: un azul oscuro con el borde izquierdo
+        celeste, para que se distingan del resto de la interfaz. Oscuro para
+        que los textos claros se sigan leyendo.
+    -->
+    <color name="statusBg">#13263A</color>
+    <color name="statusEdge">#3C78A8</color>
     <!-- El fondo detrás del diálogo de Finalizar: rgba(3, 5, 8, 0.72). -->
     <color name="scrim">#B8030508</color>
 

@@ -201,7 +201,7 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - **Aviso de la consulta.** Con el panel bloqueado y una consulta enviando, "Hay una consulta enviando: el Panel Local espera a que termine." se ve sin escribir nada y se va solo (lo refresca el reloj de la cabecera). Sin consulta no tapa un "PIN incorrecto". El control de verdad sigue en `startLocal`.
 - **Kiosco.** Entrar y Recargar se asignan en `setOnShowListener` sobre los botones del `AlertDialog`: con el PIN mal o la configuración sin cargar el diálogo queda abierto, borra el campo y muestra el motivo como error del campo (`EditText.error`), sin cambiar el estilo del diálogo. Cancelar y tocar afuera cierran como antes.
 
-### El panel lateral de estado (plan 16)
+### El panel lateral de estado (plan 16, 1.4.0)
 
 - Una columna nativa a la derecha, en el kiosco y en el Panel Local, con el Wi-Fi, el modo y el botón para cambiarlo, los dispositivos y el sonido. Regla: **el panel muestra, no decide**; lee el estado que ya calcula la app y usa los caminos que ya existen (el PIN del Panel Local, `startLocal`/`stopLocal`, `callAudioOutput`). Plan en `docs/planes/plan-16-panel-lateral.md` y diseño en `docs/redisenio/design_handoff_panel_lateral/`.
 - **Rojo para desconectado.** Un instrumento desconectado va en rojo (aro hueco y fila marcada) aunque el Panel Local no tenga alarmas: es algo para resolver antes de atender. Es la única excepción.
@@ -211,6 +211,33 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - **No se abre solo** cuando algo pasa a rojo: correría el `WebView` en medio de una llamada. Abierto o cerrado vive en memoria (`TotemRuntime.statusPanelOpen`) y vuelve a abierto al reiniciar el proceso.
 - **La ubicación para el SSID.** Sin el permiso de ubicación Android 10 en adelante esconde el nombre de la red. El kiosco la pide con la cámara y el micrófono (la precisa junto con la aproximada, como exige Android 12); si la niegan, el panel dice «Wi-Fi».
 - Un solo PIN de Remoto a Local: el botón abre el Panel Local, que ya pide el suyo. Local a Remoto pasa por el mismo camino que Finalizar.
+
+## 15 de noviembre de 2026
+
+### Permisos de a uno y el Wi-Fi a mano (plan 17, 1.4.0)
+
+- **Permisos USB de a uno.** En la tablet (rk3576, Android 14) se vio que, con tres pedidos juntos al arrancar, Android abre un solo `UsbPermissionActivity` y los otros dos se pierden sin respuesta. `PermissionRequests` deja un solo pedido en vuelo, en el orden plaqueta, hub YKUSH3 y termómetro (`UsbRole`). El siguiente sale con la respuesta (el broadcast trae `EXTRA_DEVICE`; sin él se libera igual, porque hay uno solo), a los **60 s** sin respuesta, o si el del pedido se desenchufa o ya tiene permiso. Un rechazado o vencido no se vuelve a pedir solo. **Pedir permiso USB** olvida todo y vuelve a pedir en fila, sin repetir el que está en vuelo. El otoscopio sigue fuera del pedido automático.
+- **«Falta permiso» en ámbar.** Un equipo enchufado sin permiso ya no se ve igual que uno desenchufado: la fila dice «Falta permiso» en ámbar y se toca. «Sin permiso USB» del Hub USB (que se encendía por cualquier equipo) pasa a ser sólo del hub.
+- **La fila de la plaqueta, el hub o el termómetro no cicla el otoscopio.** El plan decía usar lo mismo que **Pedir permiso USB**, pero eso también apaga y enciende el puerto del otoscopio si le falta el permiso, y su pedido de Android saldría a la par del de la fila: uno de los dos se perdería, que es justo lo que se arregla. Esas filas llaman a `requestUsbPermissions` (sólo la fila de USB); el otoscopio tiene su propia fila. El botón de la ruedita sigue como estaba.
+- **Cámara en el otoscopio.** El panel no tiene fila para la cámara de la tablet: la falta del permiso de cámara se ve en la del otoscopio (después del permiso USB, que va primero). Micrófono en el estetoscopio, ubicación en el Wi-Fi.
+- **Permisos de la app juntos al abrir** (`AppPermissions`, `AppPermissionAsker`), en la pantalla principal, el kiosco y el Panel Local, que conserva sus pedidos al usar cada cosa. La ubicación va precisa y aproximada juntas. Ir a los ajustes de la app sólo cuando el pedido salió de tocar una fila y Android ya no deja pedirlo; el pedido de al abrir nunca manda a los ajustes. La pantalla principal deja de pedir sus permisos de arranque por su cuenta; «Dar permisos» del paso Kiosco queda igual.
+- **La fila del Wi-Fi sin ubicación pide la ubicación**, no el panel de Wi-Fi: el plan pide las dos cosas para esa fila. Sin red siempre abre el panel de Wi-Fi. Con la ubicación negada para siempre, tocarla abre los ajustes de la app hasta que se dé; el aviso «Sin conexión» y la fila sin red siguen abriendo el Wi-Fi.
+- **En el riel** sólo hay ícono por grupo: el del Wi-Fi hace lo mismo que su fila; el de Dispositivos sigue abriendo el panel, donde se tocan las filas.
+- **Aviso «Sin conexión»** (`NoWifiPrompt`): 5 s seguidos sin Wi-Fi, una vez por apertura de pantalla (`onStart`), se cierra solo al volver la red, no va arriba del PIN del Panel Local, de Finalizar, del PIN del kiosco ni del cambio de modo. Usa el diálogo de cambio de modo con «Ahora no» en lugar de Cancelar. El intent del panel de Wi-Fi está sólo en `WifiPanel`.
+- **Instalación con `adb install -r -g`**: da los permisos de la app de entrada.
+- **Berry Med como pantalla de inicio (punto 5).** El kiosco ya tenía `HOME` y `DEFAULT` en el manifiesto (plan 6): no hizo falta otra actividad. Lo nuevo es la decisión (`HomeTarget`, con test): con la URL del kiosco guardada, el kiosco; sin ella, la configuración (antes quedaba la pantalla «falta la URL» con un botón); sin la configuración leída, espera y reintenta al segundo. Para no quedar encerrado, la ruedita de la pantalla principal suma **Ajustes de Android**. Se elige como inicio una vez por tablet, con **Elegir app de inicio** del paso Kiosco o con `adb shell cmd package set-home-activity com.guardiavirtual.berrymed/.ui.KioskActivity`.
+
+### Inicio, el PIN sólo para Configuración y el ECG en espera (1.4.0)
+
+Pedidos del usuario probando en la tablet (rk3576, 1920×1080 a 160 dpi), sin plan escrito.
+
+- **Escala.** Todo se veía chico: la tablet es 1920×1080 dp. `UiScale` sube la densidad para que el lado corto mida 800 dp (1422×800 dp, como el diseño de 1280×800), en todas las pantallas nativas; en el kiosco sólo el panel lateral y los diálogos (la página no). Los vitales del Panel Local pasan a 400 dp con `values-w1400dp`.
+- **Inicio** (`HomeActivity`) reemplaza al kiosco como pantalla de inicio de Android (`HOME`) y es la del ícono de Berry Med. Tres cards: ONDOCTOR365 (con el corazón-estetoscopio del logo, redibujado en vector desde un PNG de 29 px), Panel Local y Configuración. Todo vuelve ahí: Finalizar, atrás, la casita del panel lateral. Esto reemplaza el punto 5 del plan 17 (el kiosco ya no es `HOME`; el comando es `set-home-activity …/.ui.HomeActivity`). Inicio va a pantalla completa con el panel lateral, sin Modo ni casita, y con «Listo» como en Local, porque en reposo el hub apaga el otoscopio y el estetoscopio.
+- **El PIN sólo para Configuración.** El Panel Local entra sin PIN (sólo espera si hay una consulta enviando) y la casita del kiosco confirma sin PIN. Con una consulta en curso la casita del kiosco no deja salir ni recargar, como el cambio de modo; los cinco toques sí, para el técnico. El campo sigue siendo `localPanelPin`.
+- **Configuración**: flecha (hace lo mismo que atrás), breadcrumb Inicio › Configuración › USB-config, sin los botones del Panel Local y ONDOCTOR365, y la fecha del último Guardar de USB-config (`savedAt`, que el sonido del panel lateral no cambia).
+- **ECG en espera.** Las líneas verdes quietas cansaban la vista: el ECG arranca en espera (grilla apagada, sin ondas), arranca con Iniciar medición o tocándolo, y Detener lo vuelve a la espera. Midiendo sin señal (electrodos sueltos según la plaqueta, o la II con menos de 0,1 mV en 2 s) las ondas van en gris con un aviso. Detener va sobre el papel porque en la toolbar no entra.
+- **Dobles toques.** Medir dos veces cancelaba la presión recién empezada y Detener dos veces volvía a arrancar el ECG: un segundo toque dentro de 0,7 s se ignora.
+- Detalles: panel lateral cerrado al arrancar y con fondo azul para distinguirlo; la tarjeta del PIN más arriba del teclado; «Temperatura» con el valor «36,4 °C» y «Apretá el botón para medir».
 
 ## Pendiente
 
@@ -226,4 +253,7 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - Plan 12 en la tablet real: los tres puertos encendidos con el kiosco, el otoscopio en la llamada sin pedido de permiso y el micrófono de la llamada con el adaptador y el otoscopio encendidos.
 - Plan 13 en la tablet real: la luz del puerto 3 siempre encendida y el termómetro midiendo en el Panel Local y en una consulta.
 - Plan 16 en la tablet real: el kiosco a 984 dp (la videollamada y los botones de la consulta), el ECG de siete derivaciones a 636 dp, los umbrales de dBm de las barras, los estados de cada dispositivo con la plaqueta, el hub, el termómetro y el jack, y el SSID con el permiso de ubicación.
+- **Cero carteles USB después de reiniciar** (plan 17): Android no da una forma a una app común. Hace falta algo a nivel sistema: una ROM con `config_disableUsbPermissionDialogs`, o Berry Med instalada como app privilegiada con `MANAGE_USB`. Se decide aparte.
+- Plan 17 en la tablet real: los pedidos USB de a uno al reiniciar (plaqueta, hub y termómetro, cada uno después de contestar el anterior), las filas con «Falta permiso» y su toque, el permiso del otoscopio desde su fila, y que **Pedir permiso USB** (que también cicla el otoscopio) no deje dos diálogos a la vez.
+- Plan 17 en el emulador: no estaba prendido al implementarlo. Falta ver el aviso «Sin conexión» en modo avión y que se cierra al volver la red, la fila del Wi-Fi con y sin red, los permisos juntos al abrir, una fila con permiso rechazado, y Berry Med como inicio tras `set-home-activity` y un reinicio.
 - v2 con guardado y PDF local.

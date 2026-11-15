@@ -3,6 +3,7 @@ package com.guardiavirtual.berrymed.ui
 
 import android.Manifest
 import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -50,6 +51,8 @@ import com.guardiavirtual.berrymed.service.MonitorService
 import com.guardiavirtual.berrymed.service.TotemRuntime
 import com.guardiavirtual.berrymed.service.TotemState
 import com.guardiavirtual.berrymed.ui.panel.Link
+import com.guardiavirtual.berrymed.ui.panel.PanelFormat
+import com.guardiavirtual.berrymed.ui.status.NoWifiNotice
 import kotlinx.coroutines.runBlocking
 import kotlin.concurrent.thread
 
@@ -60,19 +63,27 @@ class MainActivity : AppCompatActivity() {
     /** La URL del kiosco guardada: "Abrir el kiosco" sólo con la del campo ya guardada. */
     private var savedKioskUrl = ""
     private val handler = Handler(Looper.getMainLooper())
-    /** Atrás cierra la capa de configuración; sin la capa, hace lo de siempre. */
+    /** Atrás cierra la capa de configuración; sin la capa, vuelve a Inicio. */
     private val closeConfigOnBack = object : OnBackPressedCallback(false) {
         override fun handleOnBackPressed() = showConfig(false)
     }
+    private val permissions = AppPermissionAsker(this) { renderChecklist() }
+    private val noWifi = NoWifiNotice(this)
     private val tick = object : Runnable {
         override fun run() {
             if (::binding.isInitialized) {
                 render(runtime().state.value)
+                noWifi.update(connected = runtime().wifiState.connected, blocked = false)
                 // Los tipos del servicio cambian un rato después de promote: el paso los sigue.
                 if (step == STEP_KIOSK) renderChecklist()
             }
             handler.postDelayed(this, 500)
         }
+    }
+
+    /** Toda la pantalla a la escala de diseño: ver [UiScale]. */
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(UiScale.scaled(newBase))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -81,10 +92,20 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         binding.root.padForSystemBars()
         ContextCompat.startForegroundService(this, Intent(this, MonitorService::class.java))
-        askPermissions()
+        permissions.askMissingOnOpen()
         showStep(0)
+        // Va antes que closeConfigOnBack: con el formulario cerrado, atrás vuelve a Inicio.
+        onBackPressedDispatcher.addCallback(
+            this,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() = goHome()
+            },
+        )
         onBackPressedDispatcher.addCallback(this, closeConfigOnBack)
-        binding.configClose.setOnClickListener { showConfig(false) }
+        // La flecha es atrás; en el breadcrumb, Inicio vuelve a Inicio y Configuración cierra USB-config.
+        binding.homeBack.setOnClickListener { onBackPressedDispatcher.onBackPressed() }
+        binding.crumbHome.setOnClickListener { goHome() }
+        binding.crumbConfig.setOnClickListener { showConfig(false) }
         if (intent.getBooleanExtra(EXTRA_OPEN_CONFIG, false)) showConfig(true)
         val watcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
@@ -118,8 +139,6 @@ class MainActivity : AppCompatActivity() {
         binding.settingsButton.setOnClickListener { showSettingsMenu(it) }
         binding.usbButton.setOnClickListener { showConfig(true) }
         binding.testingButton.setOnClickListener { startActivity(Intent(this, TestingActivity::class.java)) }
-        binding.localPanelButton.setOnClickListener { startActivity(Intent(this, LocalPanelActivity::class.java)) }
-        binding.ondoctorButton.setOnClickListener { startActivity(Intent(this, KioskActivity::class.java)) }
         binding.checkPermissions.action.setOnClickListener { askMediaPermissions() }
         binding.checkHome.action.setOnClickListener { openHomeSettings() }
         // El mismo pedido que "Evitar que se duerma" del menú de la ruedita.
@@ -138,6 +157,8 @@ class MainActivity : AppCompatActivity() {
                 savedKioskUrl = saved?.kioskUrl?.trim().orEmpty()
                 fill(saved ?: BerryConfig())
                 if (saved == null) {
+                    // Sin leer lo guardado no se sabe cuándo fue: mejor nada que "nunca".
+                    binding.lastUpdate.text = ""
                     binding.formMessage.setTextColor(getColor(R.color.test_fail))
                     binding.formMessage.setText(R.string.load_failed)
                 }
@@ -155,9 +176,19 @@ class MainActivity : AppCompatActivity() {
     }
 
     /** La capa de configuración tapa el contenido de abajo de la cabecera. Cerrarla no guarda. */
+    private fun goHome() {
+        startActivity(Intent(this, HomeActivity::class.java))
+        finish()
+    }
+
     private fun showConfig(open: Boolean) {
         binding.configLayer.visibility = if (open) View.VISIBLE else View.GONE
         binding.mainContent.visibility = if (open) View.GONE else View.VISIBLE
+        // El breadcrumb suma › USB-config, y Configuración pasa a tocarse para cerrarlo.
+        binding.crumbUsbSeparator.visibility = binding.configLayer.visibility
+        binding.crumbUsb.visibility = binding.configLayer.visibility
+        binding.crumbConfig.isClickable = open
+        binding.crumbConfig.setTextAppearance(if (open) R.style.Crumb_Link else R.style.Crumb)
         closeConfigOnBack.isEnabled = open
         if (!open) currentFocus?.clearFocus()
         if (open && step == STEP_KIOSK) renderChecklist()
@@ -165,6 +196,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
+        noWifi.start()
         handler.post(tick)
     }
 
@@ -174,19 +206,6 @@ class MainActivity : AppCompatActivity() {
         MonitorService.promote(this)
         // Al volver de Ajustes (app de inicio, batería, permisos) la lista muestra lo nuevo.
         renderChecklist()
-    }
-
-    /**
-     * Las notificaciones, y la cámara y el micrófono para el otoscopio y el
-     * estetoscopio de la teleconsulta. Sólo los que faltan.
-     */
-    private fun askPermissions() {
-        val wanted = buildList {
-            if (Build.VERSION.SDK_INT >= 33) add(Manifest.permission.POST_NOTIFICATIONS)
-            add(Manifest.permission.CAMERA)
-            add(Manifest.permission.RECORD_AUDIO)
-        }.filter { ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED }
-        if (wanted.isNotEmpty()) ActivityCompat.requestPermissions(this, wanted.toTypedArray(), REQUEST_STARTUP)
     }
 
     /** "Dar permisos" del paso Kiosco: cámara y micrófono, los que falten. */
@@ -322,12 +341,23 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStop() {
         handler.removeCallbacks(tick)
+        noWifi.stop()
         super.onStop()
     }
 
     private fun runtime() = (application as BerryMedApp).runtime
 
+    /** La línea de la cabecera: cuándo se guardó USB-config, o que nunca. */
+    private fun showLastUpdate(savedAt: Long) {
+        binding.lastUpdate.text = if (savedAt > 0L) {
+            getString(R.string.last_update, PanelFormat.dateTime(savedAt))
+        } else {
+            getString(R.string.last_update_never)
+        }
+    }
+
     private fun fill(config: BerryConfig) {
+        showLastUpdate(config.savedAt)
         filling = true
         select(binding.environment, ENVIRONMENT_VALUES, config.environment)
         binding.apiUrl.setText(config.apiBaseUrl)
@@ -443,7 +473,7 @@ class MainActivity : AppCompatActivity() {
             binding.formMessage.setTextColor(getColor(R.color.test_fail))
             return
         }
-        val config = readForm()
+        val config = readForm().copy(savedAt = System.currentTimeMillis())
         binding.formMessage.setTextColor(getColor(R.color.text))
         binding.formMessage.setText(R.string.saving)
         thread(name = "berry-config-save") {
@@ -457,6 +487,7 @@ class MainActivity : AppCompatActivity() {
             handler.post {
                 if (saved) {
                     savedKioskUrl = config.kioskUrl
+                    showLastUpdate(config.savedAt)
                     renderChecklist()
                 }
                 binding.formMessage.setTextColor(getColor(if (saved) R.color.ok else R.color.test_fail))
@@ -552,7 +583,12 @@ class MainActivity : AppCompatActivity() {
         TextViewCompat.setCompoundDrawableTintList(view, ColorStateList.valueOf(getColor(dot)))
     }
 
-    /** La ruedita de arriba a la derecha: Pedir permiso USB y Evitar que se duerma. */
+    /**
+     * La ruedita de arriba a la derecha: Pedir permiso USB, Evitar que se
+     * duerma y Ajustes de Android. Con Berry Med como pantalla de inicio,
+     * éste es el camino a los ajustes de la tablet (se llega con el PIN desde
+     * el kiosco).
+     */
     private fun showSettingsMenu(anchor: View) {
         val menu = PopupMenu(ContextThemeWrapper(this, R.style.ThemeOverlay_BerryMed_Menu), anchor)
         menu.menu.add(R.string.usb_request).setOnMenuItemClickListener {
@@ -561,6 +597,10 @@ class MainActivity : AppCompatActivity() {
         }
         menu.menu.add(R.string.battery).setOnMenuItemClickListener {
             askBatteryExemption()
+            true
+        }
+        menu.menu.add(R.string.android_settings).setOnMenuItemClickListener {
+            startActivity(Intent(Settings.ACTION_SETTINGS))
             true
         }
         menu.show()
@@ -605,7 +645,6 @@ class MainActivity : AppCompatActivity() {
 
         /** El paso Kiosco, el cuarto hijo de `steps`. */
         private const val STEP_KIOSK = 3
-        private const val REQUEST_STARTUP = 1
         private const val REQUEST_MEDIA = 2
         private val MEDIA_PERMISSIONS = listOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
         /** En el orden de los chips: Producción, Dev. */
