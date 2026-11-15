@@ -98,6 +98,21 @@ Con el punto 1, el puerto del otoscopio se enciende recién con `start_oth`, as�
 - La fila del otoscopio dice «En vivo» apenas abre, aunque no haya imagen (en el Panel Local el encabezado ya dice «Esperando imagen»). Que la fila use el mismo criterio: «Esperando imagen» hasta que haya cuadros, en el Panel Local y en la teleconsulta.
 - Con el punto 1, en el kiosco el otoscopio y el estetoscopio van a estar apagados casi siempre: la fila tiene que decir «Listo» (enchufado no se puede saber con el puerto apagado: es «el hub está y el puerto se puede encender»), no «Desconectado» en rojo. Mirá qué dice hoy `StatusPanelUi` para un puerto apagado en Remoto y dejalo coherente con Local.
 
+## 6. El volumen en el panel lateral
+
+Agregado el 15 de noviembre, pedido por el usuario: poder subir y bajar el volumen de la tablet desde el panel lateral, sin salir de Berry Med. El selector Auricular / Altavoz **queda** (el usuario quiere poder elegir).
+
+**Cambios.**
+
+- En la sección **Sonido** del panel lateral, debajo del selector, una barra de volumen con el estilo del panel: ícono a la izquierda (`volume_up`, `volume_down` o `volume_off` según el nivel), la barra y el porcentaje a la derecha. Ancho completo de la sección; que se pueda arrastrar con el dedo sin esfuerzo (alto táctil de 48 dp).
+- Maneja el volumen de medios de Android (`AudioManager.STREAM_MUSIC`, con `setStreamVolume` sin mostrar la interfaz del sistema): es por donde suenan la videollamada del `WebView` (`USAGE_MEDIA`) y el estetoscopio del Panel Local. Confirmá en el código por qué stream sale el estetoscopio (`StethoscopeLink`); si fuera otro, la barra tiene que mover el que corresponda a lo que está sonando y decilo en el informe. Con el modo comunicación del punto 3 la reproducción sigue siendo `USAGE_MEDIA`: comprobá en el emulador que la barra sigue moviendo ese volumen con el kiosco adelante.
+- Android guarda el volumen por dispositivo de salida (parlante, jack): la barra muestra el del que está sonando ahora y se actualiza cuando cambia el selector, cuando se enchufa o desenchufa algo y cuando alguien usa los botones físicos de la tablet (escuchar `android.media.VOLUME_CHANGED_ACTION` o un `ContentObserver` de los ajustes del sistema; lo que sea más corto).
+- Las pantallas de Berry Med declaran `volumeControlStream = AudioManager.STREAM_MUSIC`, así los botones físicos mueven lo mismo que la barra.
+- En el riel (panel cerrado) ya hay un ícono de sonido: que refleje el nivel (silenciado o no) y siga abriendo el panel.
+- El volumen propio del estetoscopio del Panel Local (el número de 1 a 10) no cambia: es la ganancia de la escucha, otra cosa.
+- La regla pura y con test: del índice de Android (0 a máximo) al porcentaje y al ícono, y del porcentaje arrastrado al índice.
+- `README.md`: la barra en «Panel lateral».
+
 ## Lo que no entra
 
 - Que la tablet vuelva a buscar el YKUSH3 si no apareció al arrancar: es un ajuste de sistema, lo hace la sesión principal.
