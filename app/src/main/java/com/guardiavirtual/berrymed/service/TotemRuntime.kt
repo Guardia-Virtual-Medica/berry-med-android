@@ -321,10 +321,12 @@ class TotemRuntime(context: Context) {
         thread(name = "berry-watch", isDaemon = true) { watchLoop() }
     }
 
-    /** Lo llama el kiosco al quedar visible y al dejar de estarlo. Los puertos del hub no cambian. */
-    fun setKioskVisible(visible: Boolean) {
-        // El sonido de la llamada lo usa (plan 18, punto 3).
-    }
+    /**
+     * Lo llama el kiosco al quedar visible y al dejar de estarlo: con él
+     * adelante la llamada va en modo comunicación ([CallAudioRouter]). Los
+     * puertos del hub no cambian.
+     */
+    fun setKioskVisible(visible: Boolean) = callAudio.setKioskVisible(visible)
 
     fun requestUsbPermissionAgain() {
         hub.forgetAsked()
@@ -765,6 +767,8 @@ class TotemRuntime(context: Context) {
         }
         // El panel usa el otoscopio y el estetoscopio: la teleconsulta (o su prueba) los suelta.
         tele.unpublishAll("se abrió el Panel Local", includeManual = true)
+        // Modo normal antes de que alguien toque Escuchar, sin esperar al onStop del kiosco.
+        callAudio.setKioskVisible(false)
         // El panel arranca en blanco: ni ondas ni el estado de una presión de antes.
         live.clear()
         // Ni la temperatura ni la presión de la persona anterior: una presión se ve sólo si se pide acá.

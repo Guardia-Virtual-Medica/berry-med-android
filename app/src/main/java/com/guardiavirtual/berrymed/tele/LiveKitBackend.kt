@@ -56,16 +56,19 @@ import java.util.concurrent.atomic.AtomicLong
  * La sala de LiveKit de verdad: el SDK, el otoscopio, el adaptador del
  * estetoscopio y el YKUSH3. Todo lo llama [TeleStreamer] desde su hilo.
  *
- * El audio es lo delicado: con Chrome en la llamada de Zoom, Berry Med no
- * puede tocar el `AudioManager` (ni modo, ni foco, ni ruteo) porque le rompe
- * el audio a Zoom. Por eso el manejador de audio del SDK es [NoAudioHandler],
- * el tipo de audio es el de medios (sin `MODE_IN_COMMUNICATION` ni el truco
- * del audio mudo que lo sostiene) y el módulo de audio de WebRTC lo arma acá:
- * fuente `UNPROCESSED` (o `MIC`), sin cancelación de eco ni supresión de
- * ruido por hardware, en mono a 48 kHz, con el adaptador como dispositivo
- * preferido y el filtro Amplio aplicado al buffer de captura antes de
- * codificar ([StethoStreamDsp]). La sala no se suscribe a nada: Berry Med no
- * reproduce nada.
+ * El audio: el modo de comunicación lo maneja [com.guardiavirtual.berrymed.audio.CallAudioRouter]
+ * (lo pone con el kiosco adelante, para la llamada del `WebView`), no
+ * LiveKit. Por eso el manejador de audio del SDK es [NoAudioHandler], el tipo
+ * de audio es el de medios (sin el truco del audio mudo que sostiene el modo)
+ * y el módulo de audio de WebRTC lo arma acá: fuente `UNPROCESSED` (o `MIC`),
+ * sin cancelación de eco ni supresión de ruido por hardware, en mono a 48 kHz,
+ * con el adaptador como dispositivo preferido y el filtro Amplio aplicado al
+ * buffer de captura antes de codificar ([StethoStreamDsp]). La captura de
+ * WebRTC (`WebRtcAudioRecord`) sólo usa `setPreferredDevice` y no escucha los
+ * cambios del dispositivo de comunicación: el modo comunicación no la reabre
+ * ni le cambia la entrada desde el código. Que Android respete el preferido
+ * en ese modo queda por confirmar en la tablet. La sala no se suscribe a
+ * nada: Berry Med no reproduce nada.
  */
 class LiveKitBackend(
     context: Context,

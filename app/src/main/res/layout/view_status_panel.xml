@@ -325,22 +325,8 @@
             android:padding="3dp">
 
             <LinearLayout
-                android:id="@+id/headsetSegment"
-                style="@style/Status.Segment">
-
-                <ImageView
-                    style="@style/Status.SegmentIcon"
-                    android:src="@drawable/ic_headset_mic" />
-
-                <TextView
-                    style="@style/Status.SegmentText"
-                    android:text="@string/status_headset" />
-            </LinearLayout>
-
-            <LinearLayout
                 android:id="@+id/tabletSegment"
-                style="@style/Status.Segment"
-                android:layout_marginStart="2dp">
+                style="@style/Status.Segment">
 
                 <ImageView
                     style="@style/Status.SegmentIcon"
@@ -349,6 +335,20 @@
                 <TextView
                     style="@style/Status.SegmentText"
                     android:text="@string/status_speaker" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/headsetSegment"
+                style="@style/Status.Segment"
+                android:layout_marginStart="2dp">
+
+                <ImageView
+                    style="@style/Status.SegmentIcon"
+                    android:src="@drawable/ic_headset_mic" />
+
+                <TextView
+                    style="@style/Status.SegmentText"
+                    android:text="@string/status_headset" />
             </LinearLayout>
         </LinearLayout>
 

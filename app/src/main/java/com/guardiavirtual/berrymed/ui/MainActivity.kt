@@ -649,8 +649,8 @@ class MainActivity : AppCompatActivity() {
         private val MEDIA_PERMISSIONS = listOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
         /** En el orden de los chips: Producción, Dev. */
         private val ENVIRONMENT_VALUES = arrayOf(Environment.Prod.key, Environment.Dev.key)
-        /** En el orden de los chips: Auricular, Parlante de la tablet. */
-        private val CALL_AUDIO_VALUES = arrayOf(CALL_AUDIO_HEADSET, CALL_AUDIO_SPEAKER)
+        /** En el orden de los chips: Parlante de la tablet (el de fábrica), Auricular. */
+        private val CALL_AUDIO_VALUES = arrayOf(CALL_AUDIO_SPEAKER, CALL_AUDIO_HEADSET)
         private val GAIN_VALUES = arrayOf("x0.25", "x0.5", "x1", "x2")
         private val MODE_VALUES = arrayOf("operacion", "monitor", "diagnostico")
         private val NIBP_VALUES = arrayOf("adulto", "nino", "neonato")

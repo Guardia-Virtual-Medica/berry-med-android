@@ -161,7 +161,7 @@ class KioskActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        // Con el kiosco adelante el otoscopio y el estetoscopio quedan encendidos: sólo energía, no transmiten.
+        // Con el kiosco adelante la llamada va en modo comunicación, por la salida elegida (CallAudioRouter).
         runtime().setKioskVisible(true)
         getSystemService(ConnectivityManager::class.java).registerDefaultNetworkCallback(networkCallback)
         // Abierto o en el riel, como se dejó en el Panel Local.

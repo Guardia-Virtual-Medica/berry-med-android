@@ -16,37 +16,23 @@ import com.guardiavirtual.berrymed.config.CALL_AUDIO_SPEAKER
 import com.guardiavirtual.berrymed.usb.DeviceInventory
 
 /**
- * Fija por dónde sale la videollamada del kiosco. El `WebView` corre en este
- * proceso y, con el micrófono en modo comunicación, Chromium pone
- * `MODE_IN_COMMUNICATION` y elige solo el dispositivo: agrupa todo lo USB y
- * toma el primero, sin distinguir el H390 del adaptador del estetoscopio, y
- * puede volver a elegir cuando cambian los dispositivos. Por eso se fija y se
- * reafirma. El micrófono acompaña: Android los mueve juntos (con auriculares
- * sin micrófono en el jack, la llamada usa el micrófono de la tablet).
+ * Fija por dónde sale la videollamada del kiosco. La llamada del `WebView`
+ * corre en este proceso y se reproduce como `USAGE_MEDIA`, en `MODE_NORMAL`:
+ * ahí manda Android (el último equipo enchufado) y elegir un dispositivo no
+ * cambia nada. Por eso, con el kiosco adelante, Berry Med pone
+ * `MODE_IN_COMMUNICATION` (la reproducción de medios sigue entonces al
+ * dispositivo de comunicación) y fija el elegido ([AudioPick.callOutput]):
+ * con Altavoz, el parlante aunque haya algo en el jack; con Auricular, el jack
+ * y, si no hay nada, el parlante. Al dejar el kiosco suelta el dispositivo y
+ * vuelve a `MODE_NORMAL`: en el Panel Local el estetoscopio elige el jack por
+ * su cuenta, en modo normal.
  *
- * Con Auriculares, lo que esté enchufado en el jack de la tablet va primero,
- * después el H390 y después el parlante ([AudioPick.callOutput]). Con algo en
- * el jack, Chromium en modo comunicación ya lo prefiere por sí mismo antes que
- * lo USB: Berry Med sólo lo confirma y lo reafirma.
+ * Android puede devolver el modo a normal y Chromium fijar otro dispositivo
+ * por su cuenta: los dos se reafirman con el freno de [CallReassert].
  *
- * Fuera de la llamada sólo suelta, una vez, lo que haya fijado: no toca el modo
- * ni el foco. El estetoscopio del Panel Local no pasa por acá; sale por el jack
- * de la tablet o por el H390 ([AudioPick.stethoOutput]).
- *
- * Este router sólo actúa en modo comunicación, y ahí agrega la distinción entre
- * el H390 y el adaptador. En el emulador (WebView 124, Android 15) una llamada
- * WebRTC queda en `MODE_NORMAL`, captura como `CAMCORDER` y reproduce como
- * `USAGE_MEDIA`: ahí no actúa, y `setCommunicationDevice` no movería esa
- * reproducción. Desde el plan 13 el armado no lleva H390: los auriculares van al
- * jack de la tablet, que Android elige antes que el USB, y el hub no tiene puerto
- * para un auricular. Ver los riesgos de `docs/hardware.md`.
- *
- * Con el kiosco adelante el otoscopio y el estetoscopio quedan encendidos, así
- * que durante toda la llamada hay dos placas de audio USB más: el adaptador del
- * estetoscopio y el micrófono del otoscopio. La entrada no se puede excluir desde
- * acá: Android mueve el micrófono con el dispositivo de comunicación y, en modo
- * normal, Chromium graba de la entrada que le da el sistema. Por eso [describe]
- * dice qué entradas están grabando, para verlo en Testing → Teleconsulta.
+ * [TAKE_CALL_MODE] en false vuelve al comportamiento anterior al plan 18:
+ * Berry Med no toca el modo y fija el dispositivo sólo si otro puso el modo
+ * comunicación.
  *
  * Todo pasa en el hilo principal: los avisos de Android y las reafirmaciones
  * diferidas. `setCommunicationDevice` existe desde Android 12; en menos sólo
@@ -61,7 +47,14 @@ class CallAudioRouter(
     private val mainExecutor = ContextCompat.getMainExecutor(context)
     private val handler = Handler(Looper.getMainLooper())
     private val reassert = CallReassert()
+    private val modeReassert = CallReassert()
     private val recheck = Runnable { if (Build.VERSION.SDK_INT >= 31) check() }
+
+    /** Si el kiosco está adelante. Sólo en el hilo principal. */
+    private var kiosk = false
+
+    /** Si el modo comunicación de ahora lo puso Berry Med. Lo lee Testing. */
+    @Volatile private var modeByUs = false
 
     /** Lo último que se avisó en el log, para no repetirlo en cada vuelta. */
     private var announced: String? = null
@@ -75,6 +68,20 @@ class CallAudioRouter(
         refresh()
     }
 
+    /**
+     * El kiosco quedó adelante o dejó de estarlo (también al abrir el Panel
+     * Local, que no espera al `onStop` del kiosco para soltar el modo).
+     */
+    fun setKioskVisible(visible: Boolean) {
+        handler.post {
+            if (kiosk == visible) return@post
+            kiosk = visible
+            reassert.reset()
+            modeReassert.reset()
+            if (Build.VERSION.SDK_INT >= 31) check()
+        }
+    }
+
     /** Cambió la salida elegida: si hay una llamada, se mueve ahora. */
     fun refresh() {
         if (Build.VERSION.SDK_INT < 31) return
@@ -84,18 +91,21 @@ class CallAudioRouter(
         }
     }
 
-    /** La salida elegida y el dispositivo actual, para Testing. */
+    /** El modo, quién lo puso, la salida elegida y el dispositivo actual, para Testing. */
     fun describe(): String {
         val cfg = config()
-        val chosen = if (cfg.callAudioOutput == CALL_AUDIO_SPEAKER) "parlante de la tablet" else "auriculares"
+        val chosen = if (cfg.callAudioOutput == CALL_AUDIO_SPEAKER) "parlante de la tablet" else "auriculares del jack"
         if (Build.VERSION.SDK_INT < 31) return "Llamada: sale por $chosen · Android no deja fijarla"
-        val inCall = audio.mode == AudioManager.MODE_IN_COMMUNICATION
-        val current = audio.communicationDevice
+        val mode = when {
+            audio.mode != AudioManager.MODE_IN_COMMUNICATION -> "modo normal"
+            modeByUs -> "modo comunicación, lo puso Berry Med con el kiosco adelante"
+            else -> "modo comunicación, lo puso otro (Chromium)"
+        }
         val wanted = pick(cfg)
         return buildString {
-            append("Llamada: sale por $chosen · dispositivo de comunicación: ")
-            append(current?.let(::label) ?: "ninguno")
-            append(if (inCall) " · modo comunicación" else " · modo normal (Android no ve una llamada)")
+            append("Llamada: sale por $chosen · $mode · dispositivo de comunicación: ")
+            append(audio.communicationDevice?.let(::label) ?: "ninguno")
+            if (!TAKE_CALL_MODE) append("\nBerry Med no toca el modo (CallAudioRouter.TAKE_CALL_MODE en false)")
             if (cfg.callAudioOutput != CALL_AUDIO_SPEAKER && wanted?.type == AudioPick.TYPE_BUILTIN_SPEAKER) {
                 append("\n$FALLBACK_LINE")
             }
@@ -163,17 +173,54 @@ class CallAudioRouter(
         return devices.firstOrNull { it.id == chosen.id }
     }
 
+    /** Al entrar, primero el modo y después el dispositivo; al salir, al revés. */
     @RequiresApi(31)
     private fun check() {
         handler.removeCallbacks(recheck)
-        val inCall = audio.mode == AudioManager.MODE_IN_COMMUNICATION
+        if (TAKE_CALL_MODE && kiosk) checkMode()
+        checkDevice()
+        if (TAKE_CALL_MODE && !kiosk) checkMode()
+    }
+
+    /** Con el kiosco adelante, `MODE_IN_COMMUNICATION`; si no, `MODE_NORMAL`. */
+    @RequiresApi(31)
+    private fun checkMode() {
+        val current = audio.mode
+        if (!kiosk) {
+            modeReassert.next(System.nanoTime(), inCall = false, wanted = null, current = null)
+            modeByUs = false
+            // Aunque lo haya puesto Chromium: el Panel Local escucha el estetoscopio en modo normal.
+            if (current != AudioManager.MODE_NORMAL) {
+                audio.mode = AudioManager.MODE_NORMAL
+                log("[LLAMADA] El kiosco dejó de estar adelante: modo normal")
+            }
+            return
+        }
+        when (val step = modeReassert.next(System.nanoTime(), true, AudioManager.MODE_IN_COMMUNICATION, current)) {
+            CallReassert.Step.Nothing, CallReassert.Step.Clear -> Unit
+            is CallReassert.Step.Wait -> handler.postDelayed(recheck, step.nanos / NANOS_PER_MS + 1)
+            CallReassert.Step.GiveUp -> log(
+                "[LLAMADA] Android no deja el modo comunicación después de ${CallReassert.MAX_TRIES} intentos: se deja de insistir",
+            )
+            CallReassert.Step.Set -> {
+                audio.mode = AudioManager.MODE_IN_COMMUNICATION
+                modeReassert.applied()
+                modeByUs = true
+                log("[LLAMADA] El kiosco está adelante: Berry Med pone el modo comunicación")
+                handler.postDelayed(recheck, CallReassert.MIN_GAP_NANOS / NANOS_PER_MS + 1)
+            }
+        }
+    }
+
+    @RequiresApi(31)
+    private fun checkDevice() {
+        val inCall = if (TAKE_CALL_MODE) kiosk else audio.mode == AudioManager.MODE_IN_COMMUNICATION
         val cfg = config()
         if (!inCall) announced = null
         // Fuera de la llamada ni se pregunta qué dispositivo hay.
         val wanted = if (inCall) pick(cfg) else null
         val current = if (inCall) audio.communicationDevice else null
-        val step = reassert.next(System.nanoTime(), inCall, wanted?.id, current?.id)
-        when (step) {
+        when (val step = reassert.next(System.nanoTime(), inCall, wanted?.id, current?.id)) {
             CallReassert.Step.Nothing -> Unit
             is CallReassert.Step.Wait -> handler.postDelayed(recheck, step.nanos / NANOS_PER_MS + 1)
             CallReassert.Step.GiveUp -> log(
@@ -217,8 +264,15 @@ class CallAudioRouter(
         else -> device.productName?.toString().orEmpty().ifBlank { "tipo ${device.type}" }
     }
 
-    private companion object {
-        const val NANOS_PER_MS = 1_000_000L
-        const val FALLBACK_LINE = "Nada en el jack ni el auricular USB: la llamada sale por el parlante"
+    companion object {
+        /**
+         * El interruptor del plan 18: true, Berry Med pone el modo
+         * comunicación con el kiosco adelante. false vuelve al de antes (no
+         * toca el modo; en la tablet el selector no hacía nada).
+         */
+        const val TAKE_CALL_MODE = true
+
+        private const val NANOS_PER_MS = 1_000_000L
+        private const val FALLBACK_LINE = "Nada en el jack: la llamada sale por el parlante"
     }
 }

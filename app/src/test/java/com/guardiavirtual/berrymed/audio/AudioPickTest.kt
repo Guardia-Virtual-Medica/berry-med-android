@@ -39,6 +39,17 @@ class AudioPickTest {
     }
 
     @Test
+    fun theSpeakerWinsWhenChosenEvenWithSomethingInTheJack() {
+        val jack = AudioPick.Device(
+            id = 4, type = AudioPick.TYPE_WIRED_HEADPHONES, name = "", isSource = false, isSink = true, usb = false,
+        )
+        val devices = listOf(jack, adapter, speaker)
+        assertEquals(1, AudioPick.callOutput(devices, CALL_AUDIO_SPEAKER, "H390")?.id)
+        // Con Auricular, el jack.
+        assertEquals(4, AudioPick.callOutput(devices, CALL_AUDIO_HEADSET, "H390")?.id)
+    }
+
+    @Test
     fun theAdapterAloneIsNeverTheCallDevice() {
         assertNull(AudioPick.callOutput(listOf(adapter), CALL_AUDIO_HEADSET, "H390"))
         assertNull(AudioPick.callOutput(listOf(adapter), CALL_AUDIO_SPEAKER, "H390"))

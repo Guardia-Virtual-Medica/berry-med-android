@@ -44,10 +44,11 @@ data class BerryConfig(
      */
     val kioskUrl: String = "",
     /**
-     * Por dónde se escucha la videollamada del kiosco. No alcanza al
-     * estetoscopio del Panel Local, que sale sólo por el auricular.
+     * Por dónde se escucha la videollamada del kiosco: de fábrica el parlante
+     * de la tablet, porque los auriculares del jack son para el estetoscopio.
+     * No alcanza al estetoscopio del Panel Local, que sale sólo por el jack.
      */
-    val callAudioOutput: String = CALL_AUDIO_HEADSET,
+    val callAudioOutput: String = CALL_AUDIO_SPEAKER,
     /**
      * Cuándo se guardó por última vez con Guardar de USB-config (milisegundos
      * desde 1970); 0 si nunca. El sonido del panel lateral no lo cambia.
@@ -117,9 +118,9 @@ const val DEFAULT_HEADSET = "H390"
 const val CALL_AUDIO_HEADSET = "auricular"
 const val CALL_AUDIO_SPEAKER = "parlante"
 
-/** La salida guardada: un valor vacío o desconocido se lee como auricular, el de fábrica. */
+/** La salida guardada: un valor vacío o desconocido se lee como parlante, el de fábrica. */
 fun callAudioOutputOrDefault(saved: String?): String =
-    if (saved == CALL_AUDIO_SPEAKER) CALL_AUDIO_SPEAKER else CALL_AUDIO_HEADSET
+    if (saved == CALL_AUDIO_HEADSET) CALL_AUDIO_HEADSET else CALL_AUDIO_SPEAKER
 
 /** Un PIN vacío en la configuración vuelve al de fábrica; los espacios no cuentan. */
 fun pinAccepted(entered: String?, configured: String?): Boolean {
