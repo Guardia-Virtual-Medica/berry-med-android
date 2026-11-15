@@ -25,6 +25,10 @@ data class StatusSnapshot(
     val callAudioChoice: String,
     /** Si hay algo enchufado en el jack de la tablet. */
     val jackPresent: Boolean,
+    /** Si llegan cuadros del otoscopio: en el Panel Local o publicándose en la teleconsulta. */
+    val otoscopeImage: Boolean = false,
+    /** Si la teleconsulta está encendiendo el otoscopio y espera su imagen. */
+    val otoscopeWaitingImage: Boolean = false,
 ) {
     companion object {
         const val MODE_SWITCH_BLOCKED = "Hay una consulta en curso. Terminala para cambiar."

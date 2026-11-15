@@ -941,6 +941,7 @@ class LocalPanelActivity : AppCompatActivity() {
             onRate = { rate ->
                 if (otoscope !== source) return@open
                 otoscopeFps = rate.roundToInt()
+                runtime.localOtoscopeImage = true
                 if (low.rate(rate, System.nanoTime())) {
                     runtime.log("[OTOSCOPIO] La imagen ${source.label} viene a ${rate.roundToInt()} cuadros/s")
                 }
@@ -962,6 +963,7 @@ class LocalPanelActivity : AppCompatActivity() {
         otoscopeOpened = false
         otoscopeFps = null
         val runtime = runtime()
+        runtime.localOtoscopeImage = false
         if (source == null) {
             runtime.localOtoscopeOff()
         } else {

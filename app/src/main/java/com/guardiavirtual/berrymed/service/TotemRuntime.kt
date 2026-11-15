@@ -1134,7 +1134,17 @@ class TotemRuntime(context: Context) {
         teleInRoom = tele.status.room != RoomState.DISCONNECTED,
         callAudioChoice = config.callAudioOutput,
         jackPresent = jackPresent(),
+        otoscopeImage = (otoscope.state == OtoscopePower.State.ON && localOtoscopeImage) ||
+            tele.status.instrument == Instrument.OTOSCOPE,
+        otoscopeWaitingImage = tele.status.waitingImage,
     )
+
+    /**
+     * Si la imagen del otoscopio del Panel Local ya llegó: la pantalla lo
+     * avisa con el primer cuadro y al soltarlo. La fila del panel lateral dice
+     * «En vivo» recién entonces.
+     */
+    @Volatile var localOtoscopeImage = false
 
     /** El texto que bloquea el botón de cambiar de modo, o null si se puede cambiar. */
     fun modeSwitchBlock(): String? =
