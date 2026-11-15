@@ -53,6 +53,21 @@ Se usa el panel de Wi-Fi de Android (`Settings.Panel.ACTION_WIFI`, lo que ya dev
   - dale unos segundos de gracia al arrancar (la red tarda en subir después de prender): proponé 5 s sin red antes de mostrarlo.
 - El intent del panel de Wi-Fi queda en un solo lugar, no copiado en cada pantalla.
 
+## 5. Berry Med se abre sola al prender la tablet
+
+Agregado el 15 de noviembre, pedido por el usuario: al prender la tablet tiene que quedar Berry Med adelante, en el kiosco, sin que nadie toque nada.
+
+**Qué pasa hoy.** `BootReceiver` arranca el servicio, pero no hay pantalla: queda el inicio de Android. Desde Android 10 un receptor no puede abrir una pantalla desde el fondo.
+
+**Cambios.**
+
+- Berry Med se puede elegir como **pantalla de inicio**: una actividad con `<category android:name="android.intent.category.HOME" />` y `DEFAULT` en el `intent-filter` de `MAIN`. Así es Android el que la abre al arrancar y cada vez que se toca Inicio. Mirá si conviene sumarlo a `MainActivity` o a una actividad chica sin interfaz (como `OnDoctorLauncher`) que decida y termine; elegí lo que menos toque.
+- Qué abre: si el kiosco está configurado (la URL del kiosco guardada; mirá cómo decide hoy `OnDoctorLauncher`), abre el kiosco; si no, `MainActivity`. La decisión espera a que la configuración esté leída (`configLoaded`), no usa los valores de fábrica. La regla, pura y con test.
+- El aviso «Sin conexión» del punto 4 vale también acá: al prender sin red aparece arriba del kiosco, con **Elegir red**.
+- **No quedar encerrado.** Siendo la pantalla de inicio, tiene que seguir habiendo una forma de llegar a los ajustes de Android: en la configuración de la app (la que ya está detrás del PIN), un botón **Ajustes de Android** (`Settings.ACTION_SETTINGS`). Si ya existe algo así, usalo.
+- No se elige sola como inicio: eso se hace una vez por tablet con `adb shell cmd package set-home-activity <componente>`. Documentalo en el README, en la instalación, con el comando exacto y cómo volver atrás (elegir de nuevo el inicio de Android en Ajustes → Apps → Apps predeterminadas).
+- En el emulador: verificá que tras `set-home-activity` y un reinicio (`adb -s emulator-5554 reboot`) queda Berry Med adelante, y que Inicio vuelve a la app. Después **dejá el emulador como estaba** (el inicio original).
+
 ## Lo que no entra
 
 - **Cero carteles USB después de reiniciar.** Android no da una forma a una app común. Hace falta algo a nivel sistema (una ROM con `config_disableUsbPermissionDialogs`, o la app instalada como privilegiada con `MANAGE_USB`). Se decide aparte; dejalo anotado en `docs/decisiones.md` como pendiente.
