@@ -42,6 +42,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.Lifecycle
 import com.guardiavirtual.berrymed.BerryMedApp
 import com.guardiavirtual.berrymed.R
 import com.guardiavirtual.berrymed.config.PinCheck
@@ -106,6 +107,7 @@ class KioskActivity : AppCompatActivity() {
     /** La página principal no cargó: la pantalla de sin conexión queda puesta hasta que cargue. */
     private var failed = false
     private val retryLater = Runnable { retry() }
+    private val loadLater = Runnable { loadConfiguredUrl() }
 
     /** El panel lateral se refresca cada medio segundo mientras el kiosco se ve. */
     private val statusTick = object : Runnable {
@@ -172,6 +174,7 @@ class KioskActivity : AppCompatActivity() {
     override fun onStop() {
         // Con otra pantalla adelante no se reintenta: al volver, show() lo retoma.
         handler.removeCallbacks(retryLater)
+        handler.removeCallbacks(loadLater)
         handler.removeCallbacks(statusTick)
         modeDialog?.dismiss()
         noWifi.stop()
@@ -252,22 +255,36 @@ class KioskActivity : AppCompatActivity() {
 
     /** La URL guardada; si cambió en la configuración, se vuelve a cargar. */
     private fun loadConfiguredUrl() {
+        handler.removeCallbacks(loadLater)
         thread(name = "berry-kiosk-config") {
-            val saved = try {
-                runBlocking { runtime().store.load() }.kioskUrl.trim()
+            val (saved, loaded) = try {
+                Pair(runBlocking { runtime().store.load() }.kioskUrl.trim(), true)
             } catch (error: Exception) {
                 Log.e(TotemRuntime.TAG, "[KIOSCO] No se pudo leer la configuración: $error")
-                runtime().config.kioskUrl.trim()
+                // Lo que tiene el runtime vale sólo si ya leyó la configuración: si no, son los valores de fábrica.
+                Pair(runtime().config.kioskUrl.trim(), runtime().configLoaded)
             }
-            handler.post { if (!isDestroyed) show(saved) }
+            handler.post { if (!isDestroyed) show(saved, loaded) }
         }
     }
 
-    private fun show(url: String) {
-        if (url.isEmpty() || KioskUrls.origin(url) == null) {
-            empty.visibility = View.VISIBLE
+    /**
+     * Como pantalla de inicio (al prender la tablet o tocar Inicio) el kiosco
+     * se muestra si está configurado; si no, pasa a la configuración. Sin la
+     * configuración leída, se reintenta en un segundo ([HomeTarget]).
+     */
+    private fun show(url: String, loaded: Boolean) {
+        val target = HomeTarget.of(loaded, url)
+        if (target != HomeTarget.KIOSK) {
+            empty.visibility = if (target == HomeTarget.SETTINGS) View.VISIBLE else View.GONE
             webView?.visibility = View.GONE
             hideOffline()
+            if (target == HomeTarget.WAIT) {
+                handler.postDelayed(loadLater, CONFIG_RETRY_MS)
+            } else if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                runtime().log("[KIOSCO] Sin URL del kiosco: se abre la configuración")
+                startActivity(configIntent())
+            }
             return
         }
         empty.visibility = View.GONE
@@ -558,6 +575,7 @@ class KioskActivity : AppCompatActivity() {
         private const val TAPS_TO_EXIT = 5
         private const val TAPS_WINDOW_MS = 3_000L
         private const val STATUS_MS = 500L
+        private const val CONFIG_RETRY_MS = 1_000L
 
         /** Los orígenes de Zoom Video SDK que pueden pedir cámara y micrófono además del kiosco. */
         private val ZOOM_HOSTS = listOf("zoom.us", "zoom.com", "zoomgov.com")

@@ -545,7 +545,12 @@ class MainActivity : AppCompatActivity() {
         TextViewCompat.setCompoundDrawableTintList(view, ColorStateList.valueOf(getColor(dot)))
     }
 
-    /** La ruedita de arriba a la derecha: Pedir permiso USB y Evitar que se duerma. */
+    /**
+     * La ruedita de arriba a la derecha: Pedir permiso USB, Evitar que se
+     * duerma y Ajustes de Android. Con Berry Med como pantalla de inicio,
+     * éste es el camino a los ajustes de la tablet (se llega con el PIN desde
+     * el kiosco).
+     */
     private fun showSettingsMenu(anchor: View) {
         val menu = PopupMenu(ContextThemeWrapper(this, R.style.ThemeOverlay_BerryMed_Menu), anchor)
         menu.menu.add(R.string.usb_request).setOnMenuItemClickListener {
@@ -554,6 +559,10 @@ class MainActivity : AppCompatActivity() {
         }
         menu.menu.add(R.string.battery).setOnMenuItemClickListener {
             askBatteryExemption()
+            true
+        }
+        menu.menu.add(R.string.android_settings).setOnMenuItemClickListener {
+            startActivity(Intent(Settings.ACTION_SETTINGS))
             true
         }
         menu.show()
