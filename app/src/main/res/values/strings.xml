@@ -225,7 +225,6 @@
     <string name="local_thermo_wait">Apretá el botón para medir</string>
     <string name="local_unit_bpm">lpm</string>
     <string name="local_unit_rpm">rpm</string>
-    <string name="local_unit_percent">%</string>
     <string name="local_unit_mmhg">mmHg</string>
 
     <!-- Panel Local: el dock y los dispositivos. -->

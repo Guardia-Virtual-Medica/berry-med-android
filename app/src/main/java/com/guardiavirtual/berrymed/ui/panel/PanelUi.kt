@@ -167,7 +167,7 @@ class PanelUi {
             signal = signal(s),
             heartRate = PanelFormat.value(s.vitals.heartRate),
             heartNote = heartNote(s),
-            saturation = saturation,
+            saturation = PanelFormat.percent(saturation),
             pulse = pulse,
             respiration = PanelFormat.value(s.vitals.respRate),
             pressure = pressure(s, nowMillis, zone),
