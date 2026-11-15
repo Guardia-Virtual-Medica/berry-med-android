@@ -3,11 +3,13 @@ package com.guardiavirtual.berrymed.ui.status
 
 import android.content.Context
 import android.content.res.ColorStateList
+import android.media.AudioManager
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.ImageView
+import android.widget.SeekBar
 import androidx.core.content.ContextCompat
 import androidx.core.widget.ImageViewCompat
 import com.guardiavirtual.berrymed.R
@@ -32,6 +34,10 @@ class StatusPanelView @JvmOverloads constructor(
         listOf(device0, device1, device2, device3, device4, device5, device6)
     }
     private var state: StatusPanelState? = null
+    private val audio = context.getSystemService(AudioManager::class.java)
+
+    /** Mientras se arrastra, la barra sigue al dedo y no a la lectura de Android. */
+    private var dragging = false
 
     var open: Boolean = true
         private set
@@ -59,6 +65,25 @@ class StatusPanelView @JvmOverloads constructor(
         }
         panel.headsetSegment.setOnClickListener { onAudioChoice(CALL_AUDIO_HEADSET) }
         panel.tabletSegment.setOnClickListener { onAudioChoice(CALL_AUDIO_SPEAKER) }
+        panel.volumeBar.setOnSeekBarChangeListener(
+            object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(bar: SeekBar, progress: Int, fromUser: Boolean) {
+                    if (!fromUser) return
+                    // Sin la interfaz del sistema: la barra ya muestra el nivel.
+                    audio?.setStreamVolume(AudioManager.STREAM_MUSIC, VolumeBar.index(progress, maxVolume()), 0)
+                    renderVolume()
+                }
+
+                override fun onStartTrackingTouch(bar: SeekBar) {
+                    dragging = true
+                }
+
+                override fun onStopTrackingTouch(bar: SeekBar) {
+                    dragging = false
+                    renderVolume()
+                }
+            },
+        )
         setOpen(true)
     }
 
@@ -208,8 +233,41 @@ class StatusPanelView @JvmOverloads constructor(
         panel.headsetSegment.isSelected = headset
         panel.tabletSegment.isSelected = !headset
         panel.callHelp.text = s.callHelp
-        rail.railAudioIcon.setImageResource(if (headset) R.drawable.ic_headset_mic else R.drawable.ic_volume_up)
+        renderVolume()
     }
+
+    /**
+     * El volumen de medios de Android (`STREAM_MUSIC`), por donde suenan la
+     * videollamada del `WebView` y el estetoscopio del Panel Local
+     * (`USAGE_MEDIA` los dos). Android lo guarda por salida (parlante, jack):
+     * se lee el de la que suena ahora en cada refresco de la pantalla (medio
+     * segundo), así sigue al selector, al jack y a los botones físicos.
+     */
+    private fun renderVolume() {
+        val index = audio?.getStreamVolume(AudioManager.STREAM_MUSIC) ?: 0
+        val max = maxVolume()
+        val percent = VolumeBar.percent(index, max)
+        val icon = VolumeBar.icon(index, max)
+        if (!dragging) panel.volumeBar.progress = percent
+        panel.volumeText.text = "$percent %"
+        panel.volumeIcon.setImageResource(
+            when (icon) {
+                VolumeIcon.UP -> R.drawable.ic_volume_up
+                VolumeIcon.DOWN -> R.drawable.ic_volume_down
+                VolumeIcon.OFF -> R.drawable.ic_volume_off
+            },
+        )
+        // El riel: silenciado, o por dónde va la llamada.
+        rail.railAudioIcon.setImageResource(
+            when {
+                icon == VolumeIcon.OFF -> R.drawable.ic_volume_off
+                state?.callRoute == CallRoute.HEADSET -> R.drawable.ic_headset_mic
+                else -> R.drawable.ic_volume_up
+            },
+        )
+    }
+
+    private fun maxVolume(): Int = audio?.getStreamMaxVolume(AudioManager.STREAM_MUSIC) ?: 0
 
     /** Verde y ámbar, punto lleno; rojo, aro hueco. */
     private fun dot(view: View, tone: StatusTone) {

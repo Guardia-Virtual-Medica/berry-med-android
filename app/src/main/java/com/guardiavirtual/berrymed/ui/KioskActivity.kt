@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.media.AudioManager
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
@@ -128,6 +129,8 @@ class KioskActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Los botones físicos mueven el volumen de medios, el mismo de la barra del panel lateral.
+        volumeControlStream = AudioManager.STREAM_MUSIC
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         ContextCompat.startForegroundService(this, Intent(this, MonitorService::class.java))
         root = FrameLayout(this).apply { setBackgroundColor(getColor(R.color.bg)) }

@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Outline
+import android.media.AudioManager
 import android.os.Bundle
 import android.os.SystemClock
 import android.text.SpannableString
@@ -219,6 +220,8 @@ class LocalPanelActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Los botones físicos mueven el volumen de medios, el mismo de la barra del panel lateral.
+        volumeControlStream = AudioManager.STREAM_MUSIC
         binding = ActivityLocalPanelBinding.inflate(layoutInflater)
         setContentView(binding.root)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)

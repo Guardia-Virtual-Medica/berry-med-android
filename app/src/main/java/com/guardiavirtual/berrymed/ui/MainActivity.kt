@@ -6,6 +6,7 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.AudioManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -88,6 +89,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Los botones físicos mueven el volumen de medios, el mismo de la barra del panel lateral.
+        volumeControlStream = AudioManager.STREAM_MUSIC
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         binding.root.padForSystemBars()

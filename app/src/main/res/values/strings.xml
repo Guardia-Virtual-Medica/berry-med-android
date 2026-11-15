@@ -276,6 +276,7 @@
     <string name="local_recording_pause">Parar la grabación %1$d</string>
     <string name="local_capture_back_live">Volver al vivo</string>
     <!-- El panel lateral de estado, en el kiosco y en el Panel Local. -->
+    <string name="status_volume">Volumen</string>
     <string name="status_close">Cerrar el panel de estado</string>
     <string name="status_open">Abrir el panel de estado</string>
     <string name="status_mode">Modo</string>
