@@ -201,7 +201,7 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - **Aviso de la consulta.** Con el panel bloqueado y una consulta enviando, "Hay una consulta enviando: el Panel Local espera a que termine." se ve sin escribir nada y se va solo (lo refresca el reloj de la cabecera). Sin consulta no tapa un "PIN incorrecto". El control de verdad sigue en `startLocal`.
 - **Kiosco.** Entrar y Recargar se asignan en `setOnShowListener` sobre los botones del `AlertDialog`: con el PIN mal o la configuración sin cargar el diálogo queda abierto, borra el campo y muestra el motivo como error del campo (`EditText.error`), sin cambiar el estilo del diálogo. Cancelar y tocar afuera cierran como antes.
 
-### El panel lateral de estado (plan 16)
+### El panel lateral de estado (plan 16, 1.4.0)
 
 - Una columna nativa a la derecha, en el kiosco y en el Panel Local, con el Wi-Fi, el modo y el botón para cambiarlo, los dispositivos y el sonido. Regla: **el panel muestra, no decide**; lee el estado que ya calcula la app y usa los caminos que ya existen (el PIN del Panel Local, `startLocal`/`stopLocal`, `callAudioOutput`). Plan en `docs/planes/plan-16-panel-lateral.md` y diseño en `docs/redisenio/design_handoff_panel_lateral/`.
 - **Rojo para desconectado.** Un instrumento desconectado va en rojo (aro hueco y fila marcada) aunque el Panel Local no tenga alarmas: es algo para resolver antes de atender. Es la única excepción.
@@ -214,7 +214,7 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 
 ## 15 de noviembre de 2026
 
-### Permisos de a uno y el Wi-Fi a mano (plan 17)
+### Permisos de a uno y el Wi-Fi a mano (plan 17, 1.4.0)
 
 - **Permisos USB de a uno.** En la tablet (rk3576, Android 14) se vio que, con tres pedidos juntos al arrancar, Android abre un solo `UsbPermissionActivity` y los otros dos se pierden sin respuesta. `PermissionRequests` deja un solo pedido en vuelo, en el orden plaqueta, hub YKUSH3 y termómetro (`UsbRole`). El siguiente sale con la respuesta (el broadcast trae `EXTRA_DEVICE`; sin él se libera igual, porque hay uno solo), a los **60 s** sin respuesta, o si el del pedido se desenchufa o ya tiene permiso. Un rechazado o vencido no se vuelve a pedir solo. **Pedir permiso USB** olvida todo y vuelve a pedir en fila, sin repetir el que está en vuelo. El otoscopio sigue fuera del pedido automático.
 - **«Falta permiso» en ámbar.** Un equipo enchufado sin permiso ya no se ve igual que uno desenchufado: la fila dice «Falta permiso» en ámbar y se toca. «Sin permiso USB» del Hub USB (que se encendía por cualquier equipo) pasa a ser sólo del hub.
@@ -226,6 +226,18 @@ Decisiones de producto y de alcance de Berry Med, en orden cronológico. El deta
 - **Aviso «Sin conexión»** (`NoWifiPrompt`): 5 s seguidos sin Wi-Fi, una vez por apertura de pantalla (`onStart`), se cierra solo al volver la red, no va arriba del PIN del Panel Local, de Finalizar, del PIN del kiosco ni del cambio de modo. Usa el diálogo de cambio de modo con «Ahora no» en lugar de Cancelar. El intent del panel de Wi-Fi está sólo en `WifiPanel`.
 - **Instalación con `adb install -r -g`**: da los permisos de la app de entrada.
 - **Berry Med como pantalla de inicio (punto 5).** El kiosco ya tenía `HOME` y `DEFAULT` en el manifiesto (plan 6): no hizo falta otra actividad. Lo nuevo es la decisión (`HomeTarget`, con test): con la URL del kiosco guardada, el kiosco; sin ella, la configuración (antes quedaba la pantalla «falta la URL» con un botón); sin la configuración leída, espera y reintenta al segundo. Para no quedar encerrado, la ruedita de la pantalla principal suma **Ajustes de Android**. Se elige como inicio una vez por tablet, con **Elegir app de inicio** del paso Kiosco o con `adb shell cmd package set-home-activity com.guardiavirtual.berrymed/.ui.KioskActivity`.
+
+### Inicio, el PIN sólo para Configuración y el ECG en espera (1.4.0)
+
+Pedidos del usuario probando en la tablet (rk3576, 1920×1080 a 160 dpi), sin plan escrito.
+
+- **Escala.** Todo se veía chico: la tablet es 1920×1080 dp. `UiScale` sube la densidad para que el lado corto mida 800 dp (1422×800 dp, como el diseño de 1280×800), en todas las pantallas nativas; en el kiosco sólo el panel lateral y los diálogos (la página no). Los vitales del Panel Local pasan a 400 dp con `values-w1400dp`.
+- **Inicio** (`HomeActivity`) reemplaza al kiosco como pantalla de inicio de Android (`HOME`) y es la del ícono de Berry Med. Tres cards: ONDOCTOR365 (con el corazón-estetoscopio del logo, redibujado en vector desde un PNG de 29 px), Panel Local y Configuración. Todo vuelve ahí: Finalizar, atrás, la casita del panel lateral. Esto reemplaza el punto 5 del plan 17 (el kiosco ya no es `HOME`; el comando es `set-home-activity …/.ui.HomeActivity`). Inicio va a pantalla completa con el panel lateral, sin Modo ni casita, y con «Listo» como en Local, porque en reposo el hub apaga el otoscopio y el estetoscopio.
+- **El PIN sólo para Configuración.** El Panel Local entra sin PIN (sólo espera si hay una consulta enviando) y la casita del kiosco confirma sin PIN. Con una consulta en curso la casita del kiosco no deja salir ni recargar, como el cambio de modo; los cinco toques sí, para el técnico. El campo sigue siendo `localPanelPin`.
+- **Configuración**: flecha (hace lo mismo que atrás), breadcrumb Inicio › Configuración › USB-config, sin los botones del Panel Local y ONDOCTOR365, y la fecha del último Guardar de USB-config (`savedAt`, que el sonido del panel lateral no cambia).
+- **ECG en espera.** Las líneas verdes quietas cansaban la vista: el ECG arranca en espera (grilla apagada, sin ondas), arranca con Iniciar medición o tocándolo, y Detener lo vuelve a la espera. Midiendo sin señal (electrodos sueltos según la plaqueta, o la II con menos de 0,1 mV en 2 s) las ondas van en gris con un aviso. Detener va sobre el papel porque en la toolbar no entra.
+- **Dobles toques.** Medir dos veces cancelaba la presión recién empezada y Detener dos veces volvía a arrancar el ECG: un segundo toque dentro de 0,7 s se ignora.
+- Detalles: panel lateral cerrado al arrancar y con fondo azul para distinguirlo; la tarjeta del PIN más arriba del teclado; «Temperatura» con el valor «36,4 °C» y «Apretá el botón para medir».
 
 ## Pendiente
 
