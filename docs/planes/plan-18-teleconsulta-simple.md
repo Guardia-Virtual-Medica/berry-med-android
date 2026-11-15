@@ -72,6 +72,15 @@ Con el punto 1, el puerto del otoscopio se enciende recién con `start_oth`, as�
 - `describe()` (Testing → Teleconsulta) tiene que decir la verdad con el modelo nuevo: el modo, quién lo puso y el dispositivo.
 - Simplificá los comentarios largos de `CallAudioRouter` y de `HubRestState` que describen el modelo viejo (H390, «con el kiosco los dos encendidos»).
 
+**La regla de sonido que tiene que quedar** (confirmada con el usuario el 15 de noviembre, después de escribir el plan):
+
+- **La videollamada sale por el parlante de la tablet**, aunque haya auriculares enchufados en el jack. Es lo normal del armado: los auriculares del jack son para el estetoscopio.
+- **El estetoscopio del Panel Local sale por el jack**, como hoy (`AudioPick.stethoOutput`: nunca por el parlante, que se acopla). No cambia.
+- El estetoscopio de la teleconsulta no suena en la tablet: va al médico por LiveKit.
+- Por eso el valor de fábrica de `callAudioOutput` pasa a **Altavoz** (`CALL_AUDIO_SPEAKER`): hoy es Auricular, y con auriculares en el jack la llamada se iría ahí. `callAudioOutputOrDefault` también: sin nada guardado, Altavoz. Una tablet que ya guardó una elección la conserva. El selector del panel lateral queda, con Altavoz primero si el orden es fácil de cambiar.
+- El modo comunicación es sólo con el kiosco adelante. En el Panel Local el modo es normal y el estetoscopio sigue eligiendo el jack con su dispositivo preferido: comprobá que salir del kiosco al Panel Local (el cambio de modo del panel lateral) deja el modo en normal antes de que alguien toque **Escuchar**.
+- Tests: el valor de fábrica y `callAudioOutputOrDefault` (los que hoy esperan Auricular cambian); con Altavoz y algo en el jack, `AudioPick.callOutput` da el parlante (ya debería existir: si no, sumalo).
+
 **Esto hay que confirmarlo en la tablet** (no hay forma de probarlo en el emulador, que no enruta igual). Dejá un interruptor simple en un solo lugar (una constante) para volver al comportamiento de hoy si en la tablet no resulta, y decilo en el informe.
 
 ## 4. Que el log sirva después de una prueba
