@@ -324,18 +324,14 @@ class StatusPanelUiTest {
 
     @Test
     fun callHelp() {
-        assertEquals("Todo suena por el auricular.", StatusPanelUi.callHelp(CallRoute.HEADSET, true))
-        assertEquals(
-            "La llamada va por el altavoz y el micrófono de la tablet. El estetoscopio sigue en el auricular.",
-            StatusPanelUi.callHelp(CallRoute.SPEAKER, true),
-        )
-        val noJack = "Sin auricular en el jack: la llamada va por el altavoz y el estetoscopio no suena."
-        assertEquals(noJack, StatusPanelUi.callHelp(CallRoute.SPEAKER, false))
+        assertEquals("La videollamada suena por los auriculares.", StatusPanelUi.callHelp(CallRoute.HEADSET))
+        val speaker = "La videollamada suena por el parlante de la tablet."
+        assertEquals(speaker, StatusPanelUi.callHelp(CallRoute.SPEAKER))
         // Igual en los dos modos: el sonido es de toda la app, no sólo de la llamada.
         for (mode in listOf(PanelMode.REMOTE, PanelMode.LOCAL, PanelMode.LOCAL_LOCKED)) {
             val built = StatusPanelUi.build(status(jackPresent = false), mode)
             assertEquals(CallRoute.SPEAKER, built.callRoute)
-            assertEquals(noJack, built.callHelp)
+            assertEquals(speaker, built.callHelp)
         }
     }
 

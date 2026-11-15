@@ -22,8 +22,8 @@ import com.guardiavirtual.berrymed.usb.DeviceInventory
  * cambia nada. Por eso, con el kiosco adelante, Berry Med pone
  * `MODE_IN_COMMUNICATION` (la reproducción de medios sigue entonces al
  * dispositivo de comunicación) y fija el elegido ([AudioPick.callOutput]):
- * con Altavoz, el parlante aunque haya algo en el jack; con Auricular, el jack
- * y, si no hay nada, el parlante. Al dejar el kiosco suelta el dispositivo y
+ * con Altavoz, el parlante siempre; con Auricular, el jack y, si no hay
+ * nada, el parlante. Al dejar el kiosco suelta el dispositivo y
  * vuelve a `MODE_NORMAL`: en el Panel Local el estetoscopio elige el jack por
  * su cuenta, en modo normal.
  *
@@ -169,7 +169,7 @@ class CallAudioRouter(
                 usb = DeviceInventory.isUsb(info.type),
             )
         }
-        val chosen = AudioPick.callOutput(described, cfg.callAudioOutput, cfg.headsetName) ?: return null
+        val chosen = AudioPick.callOutput(described, cfg.callAudioOutput) ?: return null
         return devices.firstOrNull { it.id == chosen.id }
     }
 

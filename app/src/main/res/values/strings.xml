@@ -123,7 +123,7 @@
     <string name="label_call_audio">Audio de la videollamada</string>
     <string name="call_audio_headset">Auriculares (jack de la tablet)</string>
     <string name="call_audio_speaker">Parlante de la tablet</string>
-    <string name="help_call_audio">Con Parlante (el de fábrica) la llamada sale por el parlante de la tablet aunque haya algo en el jack, y el estetoscopio por los auriculares del jack. Con Auriculares la llamada sale también por el jack y, si no hay nada enchufado, por el parlante.</string>
+    <string name="help_call_audio">Parlante: la videollamada suena por el parlante de la tablet. Auriculares: suena por los auriculares del jack y, si no hay nada enchufado, por el parlante.</string>
     <string name="section_kiosk_checklist">Puesta en marcha</string>
     <string name="help_kiosk_checklist">Verde, hecho; ámbar, falta; gris, Berry Med no lo puede ver ahora. Se actualiza al volver a esta pantalla.</string>
     <string name="check_permissions">Cámara y micrófono</string>

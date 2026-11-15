@@ -115,7 +115,7 @@ object StatusPanelUi {
             countTone = countTone(rows),
             jackPresent = s.jackPresent,
             callRoute = route,
-            callHelp = callHelp(route, s.jackPresent),
+            callHelp = callHelp(route),
         )
     }
 
@@ -248,15 +248,9 @@ object StatusPanelUi {
     fun callRoute(choice: String, jackPresent: Boolean): CallRoute =
         if (choice == CALL_AUDIO_SPEAKER || !jackPresent) CallRoute.SPEAKER else CallRoute.HEADSET
 
-    /**
-     * La ayuda debajo del segmentado de Sonido, igual en los dos modos.
-     * Altavoz mueve la llamada al parlante y al micrófono de la tablet, pero el
-     * estetoscopio sigue sólo en el auricular: por el parlante se acopla
-     * ([com.guardiavirtual.berrymed.audio.AudioPick.stethoOutput]).
-     */
-    fun callHelp(route: CallRoute, jackPresent: Boolean): String = when {
-        !jackPresent -> "Sin auricular en el jack: la llamada va por el altavoz y el estetoscopio no suena."
-        route == CallRoute.HEADSET -> "Todo suena por el auricular."
-        else -> "La llamada va por el altavoz y el micrófono de la tablet. El estetoscopio sigue en el auricular."
+    /** La ayuda debajo del segmentado de Sonido: una línea por opción, igual en todas las pantallas. */
+    fun callHelp(route: CallRoute): String = when (route) {
+        CallRoute.HEADSET -> "La videollamada suena por los auriculares."
+        CallRoute.SPEAKER -> "La videollamada suena por el parlante de la tablet."
     }
 }
