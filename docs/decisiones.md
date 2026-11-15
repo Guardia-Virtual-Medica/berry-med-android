@@ -258,10 +258,23 @@ Visto en la tablet de pruebas y confirmado con el código del proveedor Koplak, 
 - Enchufar o desenchufar un equipo con todo prendido también lo dejó colgado una vez; ahí hizo falta cortarle la corriente.
 - La app no puede forzar esa búsqueda sin root. Pendiente: un ajuste de sistema en la tablet que la repita si el hub no apareció al arrancar.
 
+### Plan 18: que la teleconsulta funcione, con menos piezas
+
+Sale de una consulta real en la tablet de pruebas (1.4.0): la presión y la temperatura llegaron, pero el otoscopio y el estetoscopio no se publicaron y la llamada no salió por el parlante con «Altavoz» elegido.
+
+- **Un solo equipo de audio USB a la vez.** Android atiende una sola placa de audio USB: el micrófono del otoscopio le sacó el lugar al adaptador del estetoscopio. En reposo los dos puertos quedan apagados, también con el kiosco (el termómetro sigue encendido), y quien usa uno apaga el del otro antes (`InstrumentPorts`, leyendo el hub). `HubRestState.wanted` pierde el parámetro del kiosco, el arranque guardado en el hub es el reposo y sale `PanelPorts`: con el reposo apagado, lo que se enciende es siempre de quien lo encendió y se apaga al soltarlo.
+- **El otoscopio en la teleconsulta.** La superficie de libuvc va en `RGBA_8888` (en RGBX cada imagen tiraba y libuvc se quedaba sin lugar). Una sola espera de 60 s al primer cuadro, con reapertura al reconectarse (la regla sale a `OtoscopeReconnect`, compartida con el Panel Local) y cortable en el acto por un `stop`, otra orden, la vuelta al inicio o el Panel Local, sin hilos nuevos (un contador de cortes que la espera mira). El kiosco muestra «Prendé el otoscopio y elegí «Computer» en su pantalla.» mientras tanto (`TeleStatus.waitingImage`).
+- **El sonido de la llamada.** La llamada del `WebView` es `USAGE_MEDIA` en `MODE_NORMAL`, donde `setCommunicationDevice` no hace nada. Con el kiosco adelante `CallAudioRouter` pone `MODE_IN_COMMUNICATION` y fija la salida; al salir (o al abrir el Panel Local) vuelve a `MODE_NORMAL`. Regla confirmada con el usuario: la llamada por el parlante (Altavoz, ahora el de fábrica, primero en el selector) y el estetoscopio del Panel Local por el jack. Una tablet que ya guardó una elección la conserva. `CallAudioRouter.TAKE_CALL_MODE = false` vuelve a lo de antes.
+- **El log.** `[DATA]` sale la primera vez, cada 10 s y cuando cambian los signos (`DataLog`); todo lo demás va además a `files/logs/berry.log`, con fecha y hora, rotado a 1 MB (`FileLog`).
+- **El panel lateral.** El otoscopio dice «Esperando imagen» hasta que llegan cuadros, en el Panel Local y en la teleconsulta; con el puerto apagado, otoscopio y estetoscopio dicen «Listo» en todas las pantallas (sale `localScreen`).
+
+Queda por confirmar en la tablet: que con el modo comunicación puesto por Berry Med la llamada salga por el parlante con auriculares en el jack; que Android no devuelva el modo a normal; que el estetoscopio de la teleconsulta siga capturando del adaptador en ese modo; que al pasar al Panel Local el modo quede normal y el estetoscopio suene por el jack; que el estetoscopio se publique después de apagar el otoscopio (el adaptador vuelve en menos de 5 s); y que el otoscopio se publique después de elegir «Computer».
+
 ## Pendiente
 
-- El otoscopio en la teleconsulta (`UvcOtoscopeFrames`) no reabre al reconectarse: si el médico lo pide antes de que alguien elija «Computer», falla. El panel lateral dice «En vivo» apenas abre, sin esperar la imagen. La cadencia del otoscopio (5 a 9 cuadros por segundo), a confirmar con buena luz.
-- Que la tablet reintente tomar el YKUSH3 si no apareció al arrancar (ajuste de sistema), y probar los puertos siempre encendidos con el audio de la videollamada.
+- La cadencia del otoscopio (5 a 9 cuadros por segundo), a confirmar con buena luz.
+- Que la tablet reintente tomar el YKUSH3 si no apareció al arrancar (ajuste de sistema).
+- Plan 18 en la tablet real: lo que queda por confirmar en su entrada del 15 de noviembre.
 - Prueba con el hardware real en la tablet (ver "Probar el Panel Local en el tótem" en el `README.md` y los riesgos de `docs/hardware.md`).
 - Los hallazgos 8 a 14, 16, 17 y 19 a 26 de `docs/revisiones/revision-codigo-opus.md` (el 15 y el 18 se resolvieron en el plan 15).
 - Plan 15 en la tablet real: una temperatura tomada en el Panel Local no aparece al cerrarlo ni en la consulta siguiente; con el inicio perdido, una lectura de hace más de 60 s no llega al médico y una reciente sí; el panel abre sin presión hasta Medir.
@@ -271,7 +284,6 @@ Visto en la tablet de pruebas y confirmado con el código del proveedor Koplak, 
 - Plan 9 en la tablet real: los cuadros por segundo del otoscopio por UVC, solo y con el estetoscopio escuchando.
 - Plan 10 en la tablet real: el estetoscopio y la videollamada por el jack (ver riesgos en `docs/hardware.md`).
 - Plan 14 en la tablet real: unos 30 cuadros/s en Testing → Teleconsulta con el otoscopio por UVC, que el médico vea la imagen y que no haya una línea `[TELE] La superficie del otoscopio por UVC no se pudo vaciar`.
-- Plan 12 en la tablet real: los tres puertos encendidos con el kiosco, el otoscopio en la llamada sin pedido de permiso y el micrófono de la llamada con el adaptador y el otoscopio encendidos.
 - Plan 13 en la tablet real: la luz del puerto 3 siempre encendida y el termómetro midiendo en el Panel Local y en una consulta.
 - Plan 16 en la tablet real: el kiosco a 984 dp (la videollamada y los botones de la consulta), el ECG de siete derivaciones a 636 dp, los umbrales de dBm de las barras, los estados de cada dispositivo con la plaqueta, el hub, el termómetro y el jack, y el SSID con el permiso de ubicación.
 - **Cero carteles USB después de reiniciar** (plan 17): Android no da una forma a una app común. Hace falta algo a nivel sistema: una ROM con `config_disableUsbPermissionDialogs`, o Berry Med instalada como app privilegiada con `MANAGE_USB`. Se decide aparte.
