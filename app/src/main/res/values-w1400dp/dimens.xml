@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        La tablet a la escala de diseño mide 1422×800 dp (ver UiScale): los
+        142 dp de más van sobre todo a las tarjetas de vitales, no al ECG.
+    -->
+    <dimen name="panel_vitals_width">400dp</dimen>
+</resources>

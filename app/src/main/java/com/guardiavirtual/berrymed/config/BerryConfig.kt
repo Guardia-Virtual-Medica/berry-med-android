@@ -28,7 +28,7 @@ data class BerryConfig(
     val ykushOtoscopePort: Int = 1,
     val ykushStethoscopePort: Int = 2,
     val ykushThermometerPort: Int = 3,
-    /** El PIN que pide el Panel Local al abrirse. */
+    /** El PIN que pide Inicio para entrar a la configuración (se llama así desde que lo pedía el Panel Local). */
     val localPanelPin: String = DEFAULT_LOCAL_PIN,
     /**
      * Cómo se llaman, para Android, el adaptador del estetoscopio y un
@@ -48,6 +48,11 @@ data class BerryConfig(
      * estetoscopio del Panel Local, que sale sólo por el auricular.
      */
     val callAudioOutput: String = CALL_AUDIO_HEADSET,
+    /**
+     * Cuándo se guardó por última vez con Guardar de USB-config (milisegundos
+     * desde 1970); 0 si nunca. El sonido del panel lateral no lo cambia.
+     */
+    val savedAt: Long = 0L,
 ) {
     /** Qué equipo va en cada puerto del YKUSH3, para la pantalla. Un puerto sin equipo queda "libre". */
     fun ykushPortRoles(): List<String> = (1..YKUSH_PORTS).map { port ->

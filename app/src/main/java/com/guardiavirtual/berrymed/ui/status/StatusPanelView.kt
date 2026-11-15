@@ -41,12 +41,16 @@ class StatusPanelView @JvmOverloads constructor(
     /** Tocar la fila del Wi-Fi (o su ícono en el riel) o una fila que dice «Falta permiso». */
     var onAction: (StatusAction) -> Unit = {}
     var onToggle: (open: Boolean) -> Unit = {}
+    /** La casita, en el panel y en el riel: ir a Inicio. Qué pedir antes lo decide la pantalla. */
+    var onHome: () -> Unit = {}
 
     init {
         panel.closeButton.setOnClickListener { toggle(false) }
         rail.root.setOnClickListener { toggle(true) }
         rail.openButton.setOnClickListener { toggle(true) }
         panel.modeButton.setOnClickListener { onSwitchMode() }
+        panel.homeButton.setOnClickListener { onHome() }
+        rail.railHome.setOnClickListener { onHome() }
         // Con red o sin red: abre el panel de Wi-Fi, o pide la ubicación si es lo que falta.
         panel.wifiArea.setOnClickListener { state?.wifi?.let { onAction(it.action) } }
         rail.railWifi.setOnClickListener { state?.wifi?.let { onAction(it.action) } }
@@ -124,6 +128,15 @@ class StatusPanelView @JvmOverloads constructor(
     }
 
     private fun renderMode(s: StatusPanelState) {
+        // En Inicio no hay modo ni casita: ya se está ahí.
+        val home = s.mode == PanelMode.HOME
+        val shown = if (home) View.GONE else View.VISIBLE
+        panel.modeSection.visibility = shown
+        panel.modeDivider.visibility = shown
+        panel.homeButton.visibility = shown
+        rail.railMode.visibility = shown
+        rail.railHomeBox.visibility = shown
+        if (home) return
         val remote = s.mode == PanelMode.REMOTE
         val boxColor = ColorStateList.valueOf(color(if (remote) R.color.ondoctor_icon else R.color.local_icon))
         val icon = if (remote) R.drawable.ic_video_call else R.drawable.ic_stethoscope
@@ -137,6 +150,7 @@ class StatusPanelView @JvmOverloads constructor(
                 PanelMode.REMOTE -> R.string.status_remote_sub
                 PanelMode.LOCAL -> R.string.status_local_sub
                 PanelMode.LOCAL_LOCKED -> R.string.status_local_locked_sub
+                PanelMode.HOME -> R.string.status_local_sub
             },
         )
         panel.modeButtonText.setText(
@@ -144,6 +158,7 @@ class StatusPanelView @JvmOverloads constructor(
                 PanelMode.REMOTE -> R.string.status_to_local
                 PanelMode.LOCAL -> R.string.status_to_remote
                 PanelMode.LOCAL_LOCKED -> R.string.status_back_to_remote
+                PanelMode.HOME -> R.string.status_to_local
             },
         )
         val blocked = s.modeBlocked

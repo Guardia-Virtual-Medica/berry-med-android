@@ -4,10 +4,9 @@ package com.guardiavirtual.berrymed.ui
 import com.guardiavirtual.berrymed.tele.KioskUrls
 
 /**
- * Qué muestra Berry Med como pantalla de inicio de la tablet (al prenderla y
- * al tocar Inicio), sin Android. La pantalla de inicio es el kiosco
- * ([KioskActivity], con `HOME` en el manifiesto); con el kiosco sin
- * configurar, pasa a la configuración.
+ * Si el kiosco se puede mostrar, sin Android. Con el kiosco sin configurar,
+ * el kiosco pasa a la configuración y la card ONDOCTOR365 de Inicio
+ * ([HomeActivity]) dice que falta la URL.
  */
 enum class HomeTarget {
     /** La URL del kiosco guardada es válida: el kiosco. */

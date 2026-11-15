@@ -6,12 +6,14 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import com.guardiavirtual.berrymed.databinding.DialogModeSwitchBinding
+import com.guardiavirtual.berrymed.ui.UiScale
 
 /**
  * El diálogo de cambio de modo (`dialog_mode_switch.xml`), con el estilo del
  * de Finalizar. Va arriba de toda la pantalla, panel lateral incluido. Lo
  * usa también el aviso «Sin conexión» ([NoWifiNotice]).
- * Cancelar y tocar fuera de la tarjeta lo cierran.
+ * Cancelar y tocar fuera de la tarjeta lo cierran. Se infla a la escala de
+ * diseño ([UiScale]), también encima del kiosco.
  */
 class ModeSwitchDialog private constructor(private val binding: DialogModeSwitchBinding) {
     val showing: Boolean get() = binding.root.parent != null
@@ -31,7 +33,7 @@ class ModeSwitchDialog private constructor(private val binding: DialogModeSwitch
             onConfirm: () -> Unit,
         ): ModeSwitchDialog {
             val content = activity.findViewById<FrameLayout>(android.R.id.content)
-            val binding = DialogModeSwitchBinding.inflate(LayoutInflater.from(activity), content, false)
+            val binding = DialogModeSwitchBinding.inflate(LayoutInflater.from(UiScale.wrap(activity)), content, false)
             val dialog = ModeSwitchDialog(binding)
             binding.modeTitle.setText(title)
             binding.modeBody.setText(body)

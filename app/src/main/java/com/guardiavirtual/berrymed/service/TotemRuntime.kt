@@ -268,10 +268,10 @@ class TotemRuntime(context: Context) {
 
     /**
      * Si el panel lateral está abierto o en el riel. Vive sólo en memoria: se
-     * mantiene entre el kiosco y el Panel Local y vuelve a abierto al
-     * reiniciar el proceso. Se toca desde el hilo principal.
+     * mantiene entre el kiosco y el Panel Local y vuelve al riel (colapsado)
+     * al reiniciar el proceso. Se toca desde el hilo principal.
      */
-    var statusPanelOpen = true
+    var statusPanelOpen = false
 
     private val pusher = SessionPusher(::log, object : SessionPusher.Listener {
         override fun onStart() = startSession()

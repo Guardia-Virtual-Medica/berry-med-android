@@ -14,7 +14,6 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
-import android.text.InputType
 import android.util.Log
 import android.view.Gravity
 import android.view.View
@@ -31,7 +30,6 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Button
-import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -45,8 +43,6 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.Lifecycle
 import com.guardiavirtual.berrymed.BerryMedApp
 import com.guardiavirtual.berrymed.R
-import com.guardiavirtual.berrymed.config.PinCheck
-import com.guardiavirtual.berrymed.config.checkPin
 import com.guardiavirtual.berrymed.service.MonitorService
 import com.guardiavirtual.berrymed.service.TotemRuntime
 import com.guardiavirtual.berrymed.tele.KioskUrls
@@ -75,14 +71,14 @@ import kotlin.concurrent.thread
  * que trae `serverUrl` y `token` hace entrar a la sala del encuentro, y el
  * inicio o el login la hacen salir. El token no se escribe en ningún lado.
  *
- * Atrás no sale: el paciente no tiene que poder irse. Se sale a la
- * configuración con cinco toques en la esquina de arriba a la izquierda y el
- * PIN del Panel Local.
+ * Atrás no sale: el paciente no tiene que poder irse. Se vuelve a Inicio
+ * con la casita del panel lateral o cinco toques en la esquina de arriba a
+ * la izquierda, confirmando (sin PIN: el PIN es sólo para la configuración).
  *
  * Si la página no carga (la tablet todavía sin wifi, el servidor sin
  * contestar), Berry Med lo dice en su propia pantalla y reintenta solo: al
- * volver la red, cada 10 s y al volver al kiosco. Con el PIN también se puede
- * recargar la URL del kiosco desde cero.
+ * volver la red, cada 10 s y al volver al kiosco. Desde la casita también se
+ * puede recargar la URL del kiosco desde cero.
  *
  * A la derecha va el panel lateral de estado ([StatusPanelView]): el WebView
  * se achica a su lado y la página se acomoda sola. Desde ahí se pasa al Panel
@@ -95,7 +91,7 @@ class KioskActivity : AppCompatActivity() {
     private lateinit var root: FrameLayout
     private lateinit var statusPanel: StatusPanelView
     private var modeDialog: ModeSwitchDialog? = null
-    private var pinDialog: AlertDialog? = null
+    private var homeDialog: AlertDialog? = null
     private val permissions = AppPermissionAsker(this)
     private val noWifi = NoWifiNotice(this)
     private lateinit var empty: LinearLayout
@@ -212,7 +208,8 @@ class KioskActivity : AppCompatActivity() {
 
     private fun runtime() = (application as BerryMedApp).runtime
 
-    private fun buildStatusPanel(): StatusPanelView = StatusPanelView(this).apply {
+    // El panel lateral a la escala de diseño; la página web queda como está (ver UiScale).
+    private fun buildStatusPanel(): StatusPanelView = StatusPanelView(UiScale.wrap(this)).apply {
         onToggle = { open ->
             runtime().statusPanelOpen = open
             renderStatus()
@@ -220,6 +217,8 @@ class KioskActivity : AppCompatActivity() {
         onAudioChoice = { choice -> runtime().setCallAudioOutput(choice) }
         onAction = { action -> StatusPanelActions.handle(this@KioskActivity, runtime(), permissions, action) }
         onSwitchMode = { askSwitchToLocal() }
+        // La casita: a Inicio confirmando, como los cinco toques.
+        onHome = { askHome() }
     }
 
     private fun renderStatus() {
@@ -227,7 +226,7 @@ class KioskActivity : AppCompatActivity() {
         statusPanel.render(StatusPanelUi.build(snapshot, PanelMode.REMOTE))
         noWifi.update(
             connected = snapshot.wifi.connected,
-            blocked = modeDialog?.showing == true || pinDialog?.isShowing == true,
+            blocked = modeDialog?.showing == true || homeDialog?.isShowing == true,
         )
     }
 
@@ -269,9 +268,9 @@ class KioskActivity : AppCompatActivity() {
     }
 
     /**
-     * Como pantalla de inicio (al prender la tablet o tocar Inicio) el kiosco
-     * se muestra si está configurado; si no, pasa a la configuración. Sin la
-     * configuración leída, se reintenta en un segundo ([HomeTarget]).
+     * El kiosco se muestra si está configurado; si no, pasa a la
+     * configuración. Sin la configuración leída, se reintenta en un segundo
+     * ([HomeTarget]).
      */
     private fun show(url: String, loaded: Boolean) {
         val target = HomeTarget.of(loaded, url)
@@ -496,7 +495,7 @@ class KioskActivity : AppCompatActivity() {
         )
     }
 
-    /** La esquina de arriba a la izquierda: cinco toques en 3 s piden el PIN para ir a la configuración. */
+    /** La esquina de arriba a la izquierda: cinco toques en 3 s llevan a Inicio. */
     private fun buildCorner(): View = View(this).apply {
         val size = (CORNER_DP * resources.displayMetrics.density).toInt()
         layoutParams = FrameLayout.LayoutParams(size, size, Gravity.TOP or Gravity.START)
@@ -509,62 +508,28 @@ class KioskActivity : AppCompatActivity() {
             cornerTaps++
             if (cornerTaps >= TAPS_TO_EXIT) {
                 cornerTaps = 0
-                askPin()
+                askHome()
             }
         }
     }
 
     /**
-     * Entrar y Recargar piden el PIN. Sus botones se asignan después de
-     * mostrar el diálogo, sobre los del `AlertDialog`, porque los del builder
-     * lo cierran siempre: con el PIN mal (o la configuración sin cargar) el
-     * diálogo queda abierto, borra el campo y dice por qué. Cancelar y tocar
-     * afuera cierran como siempre.
+     * La casita y los cinco toques: a Inicio, sin PIN (el PIN es sólo para
+     * la configuración). Se confirma igual, para que un toque sin querer no
+     * saque al paciente del kiosco, y deja Recargar a mano.
      */
-    private fun askPin() {
-        val input = EditText(this).apply {
-            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD
-            setHint(R.string.kiosk_pin_hint)
-        }
+    private fun askHome() {
         val dialog = AlertDialog.Builder(this)
-            .setTitle(R.string.kiosk_pin_title)
-            .setView(input)
+            .setTitle(R.string.kiosk_home_title)
+            .setMessage(R.string.kiosk_home_body)
             .setNegativeButton(R.string.kiosk_cancel, null)
-            // Recargar también pide el PIN: un paciente no tiene que poder reiniciar el kiosco en plena consulta.
-            .setNeutralButton(R.string.kiosk_reload, null)
-            .setPositiveButton(R.string.kiosk_enter, null)
+            .setNeutralButton(R.string.kiosk_reload) { _, _ -> reloadConfigured() }
+            .setPositiveButton(R.string.home_from_local_action) { _, _ ->
+                startActivity(Intent(this, HomeActivity::class.java))
+            }
             .create()
-        dialog.setOnShowListener {
-            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
-                if (pinOk(input)) {
-                    dialog.dismiss()
-                    reloadConfigured()
-                }
-            }
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                if (pinOk(input)) {
-                    dialog.dismiss()
-                    // La pantalla principal; con la configuración abierta sólo si falta la URL del kiosco.
-                    val missingUrl = runtime().config.kioskUrl.isBlank()
-                    startActivity(if (missingUrl) configIntent() else Intent(this, MainActivity::class.java))
-                }
-            }
-        }
-        pinDialog = dialog
+        homeDialog = dialog
         dialog.show()
-    }
-
-    /** Si el PIN del campo vale. Si no, borra el campo y muestra el motivo en él. */
-    private fun pinOk(input: EditText): Boolean {
-        val runtime = runtime()
-        val reason = when (checkPin(input.text?.toString(), runtime.config.localPanelPin, runtime.configLoaded)) {
-            PinCheck.ACCEPTED -> return true
-            PinCheck.WRONG -> R.string.local_pin_wrong
-            PinCheck.LOADING -> R.string.local_pin_loading
-        }
-        input.setText("")
-        input.error = getString(reason)
-        return false
     }
 
     private fun configIntent() =

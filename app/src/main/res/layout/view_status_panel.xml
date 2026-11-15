@@ -104,10 +104,18 @@
                 app:tint="@color/faint" />
         </LinearLayout>
 
+        <!-- La casita: a Inicio. -->
+        <ImageButton
+            android:id="@+id/homeButton"
+            style="@style/Status.Close"
+            android:layout_marginStart="10dp"
+            android:contentDescription="@string/status_home"
+            android:src="@drawable/ic_home" />
+
         <ImageButton
             android:id="@+id/closeButton"
             style="@style/Status.Close"
-            android:layout_marginStart="12dp"
+            android:layout_marginStart="8dp"
             android:contentDescription="@string/status_close"
             android:src="@drawable/ic_chevron_right" />
     </LinearLayout>
@@ -126,8 +134,10 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Modo. -->
-            <LinearLayout style="@style/Status.Section">
+            <!-- Modo. En Inicio no va: todavía no se eligió. -->
+            <LinearLayout
+                android:id="@+id/modeSection"
+                style="@style/Status.Section">
 
                 <TextView
                     style="@style/Status.Label"
@@ -229,7 +239,9 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <View style="@style/Status.Divider" />
+            <View
+                android:id="@+id/modeDivider"
+                style="@style/Status.Divider" />
 
             <!-- Dispositivos, en el orden fijo. -->
             <LinearLayout

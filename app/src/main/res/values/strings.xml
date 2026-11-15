@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Berry Med</string>
-    <string name="screen_title">Maletín de atención ONDOCTOR365</string>
+    <string name="screen_title">Configuración del Maletín de atención</string>
+    <string name="crumb_home">Inicio</string>
+    <string name="last_update">Última actualización de USB-config: %1$s</string>
+    <string name="last_update_never">Última actualización de USB-config: sin registro todavía</string>
     <string name="settings">Ajustes</string>
     <string name="usb_request">Pedir permiso USB</string>
     <string name="config_title">Configuración</string>
@@ -11,7 +14,7 @@
     <string name="main_chip_thermo">Termómetro</string>
     <string name="main_status">Estado</string>
     <string name="ondoctor">ONDOCTOR365</string>
-    <string name="help_ondoctor">USB-config abre la configuración. ONDOCTOR365 abre el kiosco del paciente; para volver acá, cinco toques arriba a la izquierda y el PIN.</string>
+    <string name="help_ondoctor">USB-config abre la configuración del tótem y Testing prueba los dispositivos. ONDOCTOR365 y el Panel Local se abren desde Inicio: la flecha de arriba vuelve ahí.</string>
     <string name="label_hr">Frecuencia</string>
     <string name="label_spo2">SpO₂ / pulso</string>
     <string name="label_resp">Respiración</string>
@@ -98,8 +101,8 @@
     <string name="testing_cameras">Cámaras</string>
     <string name="kiosk_missing_url">Falta la URL del kiosco. Cargala en la configuración de Berry Med (paso Kiosco).</string>
     <string name="kiosk_open_settings">Abrir la configuración</string>
-    <string name="kiosk_pin_title">PIN del Panel Local</string>
-    <string name="kiosk_pin_hint">PIN</string>
+    <string name="kiosk_home_title">¿Volver al inicio?</string>
+    <string name="kiosk_home_body">Se sale del kiosco de ONDOCTOR365. Recargar lo abre de nuevo desde cero.</string>
     <string name="kiosk_cancel">Cancelar</string>
     <string name="kiosk_enter">Entrar</string>
     <string name="kiosk_reload">Recargar</string>
@@ -146,7 +149,7 @@
     <string name="section_kiosk_outside">Fuera de la tablet</string>
     <string name="kiosk_outside_ondoctor">• En OnDoctor, el tótem tiene que tener habilitados el otoscopio o el estetoscopio; si no, el médico no los ve.</string>
     <string name="kiosk_outside_chrome">• Si algo abre Chrome al prender la tablet (modo kiosco, app de administración), hay que sacarlo: Chrome no se usa más para el kiosco.</string>
-    <string name="kiosk_outside_exit">• Para volver acá desde el kiosco: cinco toques arriba a la izquierda y el PIN del Panel Local.</string>
+    <string name="kiosk_outside_exit">• Para volver al inicio desde el kiosco: la casita del panel lateral (o cinco toques arriba a la izquierda).</string>
     <string name="testing_tele">Teleconsulta (LiveKit)</string>
     <string name="testing_tele_help">Berry Med entra a la sala del encuentro cuando el kiosco muestra el token y publica el otoscopio o el estetoscopio cuando el kiosco los enciende. El token no se muestra: sólo cuándo se vio y cuándo vence para entrar. La prueba manual usa un servidor y un token propios (lk token create); sigue con Testing cerrado hasta Cortar, hasta que se abra el Panel Local o hasta que el kiosco muestre un token.</string>
     <string name="testing_tele_manual">Prueba manual</string>
@@ -162,8 +165,8 @@
     <string name="hint_ykush_thermometer">Puerto del termómetro</string>
     <string name="local_panel">Panel Local</string>
     <string name="section_local">Panel Local</string>
-    <string name="help_local">El PIN que pide el Panel Local al abrirse y cada vez que vuelve a la pantalla. Si lo dejás vacío vuelve a 1515.</string>
-    <string name="hint_local_pin">PIN del Panel Local</string>
+    <string name="help_local">El PIN que pide Inicio para entrar a la configuración. Si lo dejás vacío vuelve a 1515.</string>
+    <string name="hint_local_pin">PIN de la configuración</string>
     <string name="section_stetho">Estetoscopio</string>
     <string name="help_stetho">Cómo se llaman para Android el adaptador del estetoscopio y, de respaldo, un auricular USB. Se leen en Testing → Dispositivos que ve Android. El Panel Local los busca por estos nombres y nunca usa el micrófono ni el parlante de la tablet. Si hay auriculares enchufados en el jack de la tablet, el estetoscopio suena por ahí antes que por el auricular USB, sin poner ningún nombre.</string>
     <string name="hint_stetho_input">Nombre del adaptador del estetoscopio</string>
@@ -192,6 +195,11 @@
     <string name="local_unit_mm_mv">mm/mV</string>
     <string name="local_leads">Derivaciones</string>
     <string name="local_freeze">Congelar</string>
+    <string name="local_ecg_idle_title">ECG en espera</string>
+    <string name="local_ecg_idle_body">Colocá los electrodos y tocá el ECG para empezar.</string>
+    <string name="local_ecg_start">Iniciar medición</string>
+    <string name="local_ecg_stop">Detener</string>
+    <string name="local_ecg_no_signal">Sin señal · revisá los electrodos</string>
     <string name="local_resume">Reanudar</string>
     <string name="local_frozen_at">CONGELADO · %1$s</string>
     <string name="local_strip_label">ECG · II</string>
@@ -209,13 +217,13 @@
     <string name="local_pa_no_result">Última medición sin resultado</string>
     <string name="local_measure">Medir</string>
     <string name="local_cancel">Cancelar</string>
-    <string name="local_temp">Temp</string>
+    <string name="local_temp">Temperatura</string>
+    <string name="local_unit_celsius">°C</string>
     <string name="local_thermo_off">Termómetro IR desconectado</string>
-    <string name="local_thermo_wait">Apretá el gatillo para medir</string>
+    <string name="local_thermo_wait">Apretá el botón para medir</string>
     <string name="local_unit_bpm">lpm</string>
     <string name="local_unit_rpm">rpm</string>
     <string name="local_unit_percent">%</string>
-    <string name="local_unit_celsius">°C</string>
     <string name="local_unit_mmhg">mmHg</string>
 
     <!-- Panel Local: el dock y los dispositivos. -->
@@ -272,7 +280,7 @@
     <string name="status_local">Local</string>
     <string name="status_remote_sub">ONDOCTOR365 · teleconsulta</string>
     <string name="status_local_sub">Panel Local · presencial</string>
-    <string name="status_local_locked_sub">Panel Local · esperando el PIN</string>
+    <string name="status_local_locked_sub">Panel Local · esperando la consulta</string>
     <string name="status_to_local">Cambiar a Panel Local</string>
     <string name="status_to_remote">Cambiar a ONDOCTOR365</string>
     <string name="status_back_to_remote">Volver a ONDOCTOR365</string>
@@ -289,9 +297,25 @@
     <string name="no_wifi_later">Ahora no</string>
     <string name="mode_cancel">Cancelar</string>
     <string name="mode_to_local_title">¿Pasar al Panel Local?</string>
-    <string name="mode_to_local_body">Se cierra el kiosco de ONDOCTOR365. El Panel Local te va a pedir el PIN.</string>
+    <string name="mode_to_local_body">Se cierra el kiosco de ONDOCTOR365 y se abre el Panel Local.</string>
     <string name="mode_to_local_action">Cambiar</string>
     <string name="mode_to_remote_title">¿Volver a ONDOCTOR365?</string>
     <string name="mode_to_remote_body">Se finaliza el Panel Local: se detiene el ECG y se apagan el otoscopio y la cámara. Nada de lo medido sale a ONDOCTOR365.</string>
     <string name="mode_to_remote_action">Volver</string>
+
+    <!-- La pantalla Inicio: el distribuidor, con una card por lugar. -->
+    <string name="home_title">Maletín de atención</string>
+    <string name="home_subtitle">Elegí cómo vas a atender</string>
+    <string name="home_ondoctor_body">El kiosco del paciente: teleconsulta con el médico a distancia.</string>
+    <string name="home_ondoctor_missing">Sin configurar: falta la URL del kiosco.</string>
+    <string name="home_local_body">Atención presencial con todos los instrumentos en pantalla.</string>
+    <string name="home_config">Configuración</string>
+    <string name="home_config_body">Ajustes y parámetros del sistema</string>
+    <string name="home_pin_title">Configuración</string>
+    <string name="home_pin_help">Para el técnico: la configuración del tótem y las pruebas de los dispositivos.</string>
+    <!-- La casita del panel lateral. -->
+    <string name="status_home">Ir al inicio</string>
+    <string name="home_from_local_title">¿Volver al inicio?</string>
+    <string name="home_from_local_body">Se finaliza el Panel Local: se detiene el ECG y se apagan el otoscopio y la cámara. Nada de lo medido sale a ONDOCTOR365.</string>
+    <string name="home_from_local_action">Ir al inicio</string>
 </resources>

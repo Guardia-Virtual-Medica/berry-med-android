@@ -61,8 +61,15 @@ data class WifiRow(
 /** Por dónde va la llamada, como se muestra: el auricular del jack o la tablet. */
 enum class CallRoute { HEADSET, SPEAKER }
 
-/** En qué pantalla está el panel: el kiosco, el Panel Local o su pantalla de PIN. */
-enum class PanelMode { REMOTE, LOCAL, LOCAL_LOCKED }
+/** En qué pantalla está el panel: el kiosco, el Panel Local, su pantalla de espera o Inicio. */
+enum class PanelMode {
+    REMOTE,
+    LOCAL,
+    LOCAL_LOCKED,
+
+    /** Inicio: ni remoto ni local todavía. El panel no muestra Modo ni la casita. */
+    HOME,
+}
 
 /** Todo lo que dibuja el panel lateral en un refresco. */
 data class StatusPanelState(
@@ -95,6 +102,8 @@ object StatusPanelUi {
     const val WIFI_CONNECTED = "Wi-Fi conectado"
 
     fun build(s: StatusSnapshot, mode: PanelMode): StatusPanelState {
+        // En Inicio, como en el Panel Local, el otoscopio y el estetoscopio están apagados en reposo:
+        // «Listo» y no el rojo del kiosco, donde tendrían que estar encendidos.
         val rows = devices(s, localScreen = mode != PanelMode.REMOTE)
         val route = callRoute(s.callAudioChoice, s.jackPresent)
         return StatusPanelState(
@@ -134,8 +143,8 @@ object StatusPanelUi {
 
     /**
      * Las siete filas: SpO2, ECG, Presión, Temperatura, Otoscopio, Estetoscopio
-     * y Hub USB. [localScreen] es estar en el Panel Local, también en su
-     * pantalla de PIN, donde el modo local todavía no empezó.
+     * y Hub USB. [localScreen] es estar en el Panel Local (también en su
+     * pantalla de espera, donde el modo local todavía no empezó) o en Inicio.
      */
     fun devices(s: StatusSnapshot, localScreen: Boolean = s.localMode): List<DeviceRow> {
         val local = s.local

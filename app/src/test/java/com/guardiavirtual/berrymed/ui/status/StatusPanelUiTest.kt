@@ -207,6 +207,16 @@ class StatusPanelUiTest {
     }
 
     @Test
+    fun onHomeTheDevicesReadLikeTheLocalPanelAndNothingBlocksTheMode() {
+        // En Inicio los puertos del otoscopio y del estetoscopio están apagados en reposo, como en el Panel Local.
+        val home = StatusPanelUi.build(status(otoscopePlugged = false), PanelMode.HOME)
+        val local = StatusPanelUi.build(status(otoscopePlugged = false), PanelMode.LOCAL_LOCKED)
+        assertEquals(local.devices, home.devices)
+        assertEquals(PanelMode.HOME, home.mode)
+        assertEquals(null, home.modeBlocked)
+    }
+
+    @Test
     fun countCountsGreens() {
         val all = StatusPanelUi.build(status(), PanelMode.REMOTE)
         assertEquals(7, all.okCount)
