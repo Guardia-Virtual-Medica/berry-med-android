@@ -13,6 +13,7 @@ import com.guardiavirtual.berrymed.otoscope.CameraXOtoscopeFrames
 import com.guardiavirtual.berrymed.otoscope.OtoscopeFrames
 import com.guardiavirtual.berrymed.otoscope.OtoscopePower
 import com.guardiavirtual.berrymed.otoscope.OtoscopeProbe
+import com.guardiavirtual.berrymed.otoscope.OtoscopeReconnect
 import com.guardiavirtual.berrymed.otoscope.OtoscopeResolution
 import com.guardiavirtual.berrymed.otoscope.UvcOtoscopeFrames
 import com.guardiavirtual.berrymed.service.InstrumentPorts
@@ -160,8 +161,8 @@ class LiveKitBackend(
         }
     }
 
-    override fun publish(instrument: Instrument): String? = when (instrument) {
-        Instrument.OTOSCOPE -> publishOtoscope()
+    override fun publish(instrument: Instrument, cancelled: () -> Boolean): String? = when (instrument) {
+        Instrument.OTOSCOPE -> publishOtoscope(cancelled)
         Instrument.STETHOSCOPE -> publishStethoscope()
     }
 
@@ -224,12 +225,16 @@ class LiveKitBackend(
             .createAudioDeviceModule()
     }
 
-    private fun publishOtoscope(): String? {
+    private fun publishOtoscope(cancelled: () -> Boolean): String? {
         val lk = room ?: return "No hay sala"
         val cfg = config()
         otoscopePort = cfg.ykushOtoscopePort
         powerFor(cfg.ykushOtoscopePort, cfg.ykushStethoscopePort, "otoscopio")
-        val path = waitForOtoscope() ?: run {
+        val path = waitForOtoscope(cancelled) ?: run {
+            if (cancelled()) {
+                otoscopePort = powerOff(otoscopePort, "otoscopio")
+                return FirstFrame.CANCELLED
+            }
             val next = OtoscopePower.afterTimeout(portOff = true, usbPresent = probe.usbPresent(), usbReady = probe.usbReady())
             if (next == OtoscopePower.Timeout.ASK_PERMISSION) {
                 // Como el Panel Local: no se apaga el puerto y se pide de nuevo, con el pedido
@@ -281,17 +286,37 @@ class LiveKitBackend(
                 opened.countDown()
             },
         )
-        opened.await(OPEN_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        val openDeadline = System.nanoTime() + OPEN_TIMEOUT_MS * 1_000_000L
+        while (!opened.await(POLL_MS, TimeUnit.MILLISECONDS) && !cancelled() && System.nanoTime() < openDeadline) Unit
+        if (cancelled()) reason = FirstFrame.CANCELLED
         reason?.let {
             releaseOtoscope()
             return it
         }
-        // Una pista sin cuadros le llega al médico como video negro: se publica recién con imagen.
-        if (!firstFrame.await(FIRST_FRAME_TIMEOUT_MS)) {
-            log("[TELE] El otoscopio ${source.label} abrió pero no mandó ningún cuadro en ${FIRST_FRAME_TIMEOUT_MS / 1000} s: no se publica")
-            releaseOtoscope()
-            return FirstFrame.NO_IMAGE
+        // Una pista sin cuadros le llega al médico como video negro: se publica recién con imagen,
+        // que llega cuando alguien elige «Computer» en la pantalla del otoscopio.
+        val deadline = System.nanoTime() + FIRST_FRAME_TIMEOUT_MS * 1_000_000L
+        while (true) {
+            val arrived = firstFrame.await(POLL_MS)
+            val now = probe.usbDevice()?.deviceId
+            val uvc = source as? UvcOtoscopeFrames
+            val reconnected = uvc != null && OtoscopeReconnect.shouldReopen(uvc.openedId, now)
+            when (FirstFrame.next(arrived, cancelled(), System.nanoTime(), deadline, reconnected)) {
+                FirstFrame.Step.PUBLISH -> break
+                FirstFrame.Step.WAIT -> Unit
+                FirstFrame.Step.REOPEN -> if (uvc != null && now != null) uvc.reopen(now)
+                FirstFrame.Step.CANCELLED -> {
+                    releaseOtoscope()
+                    return FirstFrame.CANCELLED
+                }
+                FirstFrame.Step.NO_IMAGE -> {
+                    log("[TELE] El otoscopio ${source.label} abrió pero no mandó ningún cuadro en ${FIRST_FRAME_TIMEOUT_MS / 1000} s: no se publica")
+                    releaseOtoscope()
+                    return FirstFrame.NO_IMAGE
+                }
+            }
         }
+        log("[TELE] Llegó la imagen del otoscopio ${source.label}: se publica")
         val published = try {
             runBlocking {
                 lk.localParticipant.publishVideoTrack(
@@ -317,12 +342,12 @@ class LiveKitBackend(
         return null
     }
 
-    /** Espera el otoscopio con la misma regla que el Panel Local. null si no apareció. */
-    private fun waitForOtoscope(): OtoscopePower.Path? {
+    /** Espera el otoscopio con la misma regla que el Panel Local. null si no apareció o se cortó. */
+    private fun waitForOtoscope(cancelled: () -> Boolean): OtoscopePower.Path? {
         val power = OtoscopePower(OTOSCOPE_WAIT_NANOS, CAMERA2_GRACE_NANOS)
-        // El puerto ya lo manejó powerOn: acá sólo se espera.
+        // El puerto ya lo manejó powerFor: acá sólo se espera.
         power.switchOn(hubPresent = false, now = System.nanoTime())
-        while (true) {
+        while (!cancelled()) {
             when (val poll = power.poll(System.nanoTime(), probe.cameraSeen(), probe.usbReady())) {
                 OtoscopePower.Poll.Waiting -> Thread.sleep(POLL_MS)
                 OtoscopePower.Poll.Cancelled -> return null
@@ -330,6 +355,7 @@ class LiveKitBackend(
                 is OtoscopePower.Poll.TimedOut -> return null
             }
         }
+        return null
     }
 
     private fun releaseOtoscope() {
@@ -503,7 +529,8 @@ class LiveKitBackend(
         private const val CONNECT_TIMEOUT_MS = 20_000L
         private const val OPEN_TIMEOUT_MS = 15_000L
         private const val CLOSE_TIMEOUT_MS = 5_000L
-        private const val FIRST_FRAME_TIMEOUT_MS = 5_000L
+        /** Hay que dar tiempo a mirar el otoscopio, prenderlo y elegir «Computer» en su pantalla. */
+        private const val FIRST_FRAME_TIMEOUT_MS = 60_000L
         private const val POLL_MS = 250L
         private const val OTOSCOPE_WAIT_NANOS = 8L * 1_000_000_000L
         private const val CAMERA2_GRACE_NANOS = 2L * 1_000_000_000L

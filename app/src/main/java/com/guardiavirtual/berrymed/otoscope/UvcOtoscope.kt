@@ -34,11 +34,9 @@ import java.util.concurrent.Executor
  * por eso, mientras está abierto, se guarda el primero, no se deja que la
  * vista lo libere y se le vuelve a poner cuando reaparece. libuvc ni se entera.
  *
- * El otoscopio no manda imagen hasta que alguien elige «Computer» en su
- * propia pantalla, y al elegirlo se desenchufa y se vuelve a enchufar solo
- * (otro `deviceId`). Lo que se había abierto queda apuntando al de antes y no
- * recibe nada: por eso, mientras está abierto, se mira una vez por segundo si
- * el otoscopio cambió y, si cambió, se suelta y se abre de nuevo.
+ * Mientras está abierto se mira una vez por segundo si el otoscopio se
+ * reconectó (pasa al elegir «Computer» en su pantalla, [OtoscopeReconnect])
+ * y, si se reconectó, se suelta y se abre de nuevo.
  */
 class UvcOtoscope(
     context: Context,
@@ -129,7 +127,7 @@ class UvcOtoscope(
     /**
      * Una vez por segundo: si Android ve el otoscopio con otro `deviceId` que
      * el que se abrió (se reconectó, lo que pasa al elegir «Computer»), se
-     * espera [SETTLE_MS] a que termine de presentarse y se abre de nuevo.
+     * espera [OtoscopeReconnect.SETTLE_MS] a que termine de presentarse y se abre de nuevo.
      */
     private fun watchReconnect(texture: SurfaceTexture) {
         watch?.let(main::removeCallbacks)
@@ -137,9 +135,9 @@ class UvcOtoscope(
             override fun run() {
                 if (closed) return
                 val now = probe.usbDevice()?.deviceId
-                if (Reconnect.shouldReopen(opened = openedId, now = now)) {
+                if (OtoscopeReconnect.shouldReopen(opened = openedId, now = now)) {
                     openedId = now
-                    main.postDelayed({ reopen(texture) }, SETTLE_MS)
+                    main.postDelayed({ reopen(texture) }, OtoscopeReconnect.SETTLE_MS)
                 }
                 main.postDelayed(this, WATCH_MS)
             }
@@ -205,21 +203,8 @@ class UvcOtoscope(
 
     override fun snapshot(): Bitmap? = textureView.bitmap
 
-    /** Cuándo hay que abrir de nuevo, sin Android. */
-    object Reconnect {
-        /**
-         * [opened] es el `deviceId` que se abrió y [now] el que Android ve
-         * ahora (null si no ve el otoscopio). Se reabre sólo si está y es
-         * otro: mientras no está (a mitad de la reconexión) se espera.
-         */
-        fun shouldReopen(opened: Int?, now: Int?): Boolean = now != null && opened != null && now != opened
-    }
-
     private companion object {
         /** Cada cuánto se mira si el otoscopio se reconectó. */
         const val WATCH_MS = 1_000L
-
-        /** Lo que se espera después de la reconexión antes de abrir: el video todavía no está listo en el primer instante. */
-        const val SETTLE_MS = 1_200L
     }
 }

@@ -96,6 +96,8 @@ class KioskActivity : AppCompatActivity() {
     private val noWifi = NoWifiNotice(this)
     private lateinit var empty: LinearLayout
     private lateinit var offline: LinearLayout
+    /** El cartel del otoscopio, arriba de la página: la teleconsulta espera su imagen. */
+    private lateinit var otoscopeNotice: TextView
     private var loadedUrl: String? = null
     private var cornerTaps = 0
     private var firstTapAt = 0L
@@ -143,6 +145,8 @@ class KioskActivity : AppCompatActivity() {
         offline = buildOfflineView()
         // Arriba del WebView y debajo de la esquina: los cinco toques siguen andando con ella puesta.
         root.addView(offline)
+        otoscopeNotice = buildOtoscopeNotice()
+        root.addView(otoscopeNotice)
         root.addView(buildCorner())
         onBackPressedDispatcher.addCallback(
             this,
@@ -226,6 +230,7 @@ class KioskActivity : AppCompatActivity() {
     private fun renderStatus() {
         val snapshot = runtime().statusSnapshot()
         statusPanel.render(StatusPanelUi.build(snapshot, PanelMode.REMOTE))
+        otoscopeNotice.visibility = if (runtime().tele.status.waitingImage) View.VISIBLE else View.GONE
         noWifi.update(
             connected = snapshot.wifi.connected,
             blocked = modeDialog?.showing == true || homeDialog?.isShowing == true,
@@ -494,6 +499,33 @@ class KioskActivity : AppCompatActivity() {
                 setOnClickListener { retry() }
             },
         )
+    }
+
+    /**
+     * Mientras la teleconsulta espera la imagen del otoscopio: el otoscopio
+     * arranca en su menú y alguien tiene que elegir «Computer». Con el estilo
+     * de las tarjetas del panel; se va solo cuando llega la imagen o se corta.
+     */
+    private fun buildOtoscopeNotice(): TextView {
+        val scaled = UiScale.wrap(this)
+        val density = scaled.resources.displayMetrics.density
+        return TextView(scaled).apply {
+            setText(R.string.kiosk_otoscope_waiting)
+            setTextColor(getColor(R.color.text))
+            textSize = 18f
+            gravity = Gravity.CENTER
+            setBackgroundResource(R.drawable.panel_card)
+            val padH = (20 * density).toInt()
+            val padV = (14 * density).toInt()
+            setPadding(padH, padV, padH, padV)
+            elevation = 6 * density
+            visibility = View.GONE
+            layoutParams = FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                Gravity.TOP or Gravity.CENTER_HORIZONTAL,
+            ).apply { topMargin = (24 * density).toInt() }
+        }
     }
 
     /** La esquina de arriba a la izquierda: cinco toques en 3 s llevan a Inicio. */

@@ -26,10 +26,15 @@ import java.util.concurrent.Executor
  * sólo arranca su hilo de captura si tiene ventana de preview (sin ella
  * registra «UVCCamera::window does not exist…», no lee nada y el callback no
  * corre nunca: 0 cuadros). Por eso se le da la de un [ImageReader] que nadie
- * ve, en RGBX_8888 (el formato en el que libuvc dibuja su ventana) y del
- * tamaño abierto, y se vacía en su propio hilo para que libuvc nunca se trabe
- * esperando un buffer. Los cuadros para LiveKit siguen saliendo del callback
- * NV21. Abrir y cerrar van en [worker], como en el Panel Local.
+ * ve, en RGBA_8888 (el formato en el que libuvc dibuja su ventana: con
+ * RGBX_8888 cada imagen tiraba «buffer format 0x1 doesn't match… 0x2», no se
+ * consumía y libuvc se quedaba sin lugar) y del tamaño abierto, y se vacía en
+ * su propio hilo para que libuvc nunca se trabe esperando un buffer. Los
+ * cuadros para LiveKit siguen saliendo del callback NV21. Abrir y cerrar van
+ * en [worker], como en el Panel Local.
+ *
+ * Si el otoscopio se reconecta mientras la teleconsulta espera la imagen (al
+ * elegir «Computer», [OtoscopeReconnect]), quien espera llama a [reopen].
  */
 class UvcOtoscopeFrames(
     context: Context,
@@ -46,9 +51,15 @@ class UvcOtoscopeFrames(
     private var readerThread: HandlerThread? = null
 
     @Volatile private var closed = false
+    private var sink: (VideoFrame) -> Unit = {}
+
+    /** El `deviceId` del otoscopio abierto (o el que se está por abrir); null si no abrió. */
+    @Volatile var openedId: Int? = null
+        private set
 
     override fun start(sink: (VideoFrame) -> Unit, done: (String?) -> Unit) {
         closed = false
+        this.sink = sink
         worker.execute {
             val reason = try {
                 open(sink)
@@ -67,6 +78,7 @@ class UvcOtoscopeFrames(
             is UvcHandle.Opened.Ok -> result.handle
         }
         handle = opened
+        openedId = opened.deviceId
         val width = opened.size.width
         val height = opened.size.height
         val bytes = width * height * 3 / 2
@@ -103,7 +115,7 @@ class UvcOtoscopeFrames(
     private fun drain(width: Int, height: Int): ImageReader {
         val thread = HandlerThread("berry-uvc-drain").also { it.start() }
         readerThread = thread
-        val drain = ImageReader.newInstance(width, height, PixelFormat.RGBX_8888, DRAIN_IMAGES)
+        val drain = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, DRAIN_IMAGES)
         reader = drain
         var warned = false
         drain.setOnImageAvailableListener(
@@ -120,6 +132,32 @@ class UvcOtoscopeFrames(
             Handler(thread.looper),
         )
         return drain
+    }
+
+    /**
+     * El otoscopio se reconectó como [deviceId]: después de
+     * [OtoscopeReconnect.SETTLE_MS] se suelta lo abierto y se abre de nuevo,
+     * con el mismo destino de cuadros. Anota el `deviceId` ya, para no
+     * pedirlo dos veces.
+     */
+    fun reopen(deviceId: Int) {
+        openedId = deviceId
+        worker.execute {
+            try {
+                Thread.sleep(OtoscopeReconnect.SETTLE_MS)
+            } catch (_: InterruptedException) {
+                return@execute
+            }
+            if (closed) return@execute
+            log("[TELE] El otoscopio se reconectó (pasa al elegir «Computer» en su pantalla): se abre de nuevo")
+            release()
+            try {
+                open(sink)?.let { log("[TELE] $it") }
+            } catch (error: Throwable) {
+                release()
+                log("[TELE] No se pudo reabrir el otoscopio por UVC: ${error.message ?: error.javaClass.simpleName}")
+            }
+        }
     }
 
     override fun stop(done: () -> Unit) {

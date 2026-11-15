@@ -108,6 +108,8 @@
     <string name="kiosk_cancel">Cancelar</string>
     <string name="kiosk_enter">Entrar</string>
     <string name="kiosk_reload">Recargar</string>
+    <!-- El cartel arriba del kiosco mientras la teleconsulta espera la imagen del otoscopio. -->
+    <string name="kiosk_otoscope_waiting">Prendé el otoscopio y elegí «Computer» en su pantalla.</string>
     <string name="kiosk_offline">No se pudo abrir el kiosco. Sin conexión con el servidor. Se vuelve a intentar solo cuando haya red.</string>
     <string name="kiosk_retry">Reintentar</string>
     <string name="hint_kiosk_url">URL del kiosco</string>
