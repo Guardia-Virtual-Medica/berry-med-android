@@ -212,8 +212,9 @@ class PanelUiTest {
             snapshot(otoscopeAvailable = true, otoscopeState = OtoscopePower.State.ON, stethoAvailable = true, stethoRunning = true),
             screen = ScreenState(otoscopeLabel = "por UVC", camera = CameraState.PAUSED),
         )
-        assertEquals(Status("En vivo", Tone.OK), on.otoscopeTile.status)
-        assertEquals(Status("En vivo · UVC", Tone.OK), on.otoscopeStatus)
+        // Abierto y sin cuadros todavía (falta elegir «Computer» en el otoscopio): no dice "En vivo".
+        assertEquals(Status("Esperando imagen", Tone.WARN), on.otoscopeTile.status)
+        assertEquals(Status("Esperando imagen", Tone.WARN), on.otoscopeStatus)
         val measured = build(
             snapshot(otoscopeAvailable = true, otoscopeState = OtoscopePower.State.ON),
             screen = ScreenState(otoscopeLabel = "por UVC", otoscopeFps = 29),

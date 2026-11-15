@@ -346,19 +346,24 @@ class PanelUi {
         }
 
         /**
-         * En el encabezado del panel: "En vivo · UVC" con la imagen abierta, y
-         * "En vivo · UVC · 29 cuadros/s" desde que se midió el primer segundo.
+         * En el encabezado del panel: "Esperando imagen" con el otoscopio
+         * abierto y sin cuadros todavía (falta elegir «Computer» en su
+         * pantalla), y "En vivo · UVC · 29 cuadros/s" desde que se midió el
+         * primer segundo de imagen.
          */
         fun otoscopeStatus(s: LocalSnapshot, label: String?, fps: Int? = null): Status = when (s.otoscopeState) {
             OtoscopePower.State.POWERING_PORT, OtoscopePower.State.WAITING_CAMERA -> CONNECTING
             OtoscopePower.State.POWERING_OFF -> Status("Apagando…", Tone.MUTED)
             OtoscopePower.State.ON -> when {
                 label == null -> CONNECTING
-                fps == null -> Status("En vivo · ${label.removePrefix("por ")}", Tone.OK)
+                fps == null -> WAITING_IMAGE
                 else -> Status("En vivo · ${label.removePrefix("por ")} · $fps cuadros/s", Tone.OK)
             }
             OtoscopePower.State.OFF -> if (s.otoscopeAvailable) Status("Apagado", Tone.MUTED) else DISCONNECTED
         }
+
+        /** El otoscopio abrió pero todavía no llegó ningún cuadro. */
+        val WAITING_IMAGE = Status("Esperando imagen", Tone.WARN)
 
         fun stethoscopeStatus(s: LocalSnapshot): Status = when {
             s.stethoRecordingSeconds != null -> Status("Grabando", Tone.RECORDING)

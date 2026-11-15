@@ -252,7 +252,7 @@
     <string name="local_otoscope_idle">Otoscopio apagado. Tocá Encender.</string>
     <string name="local_otoscope_missing">Otoscopio desconectado.</string>
     <string name="local_otoscope_starting">Encendiendo…</string>
-    <string name="local_otoscope_ready">Otoscopio encendido · %1$s</string>
+    <string name="local_otoscope_pick_computer">Prendé el otoscopio y elegí «Computer» en su pantalla.</string>
     <string name="local_otoscope_done">Otoscopio apagado</string>
     <string name="local_otoscope_denied">El otoscopio necesita el permiso de la cámara. Se da en Ajustes, Apps, Berry Med.</string>
     <string name="local_stetho_listen">Escuchar</string>
