@@ -2,9 +2,12 @@
 package com.guardiavirtual.berrymed.audio
 
 import android.content.Context
+import android.media.AudioAttributes
 import android.media.AudioDeviceCallback
 import android.media.AudioDeviceInfo
+import android.media.AudioFormat
 import android.media.AudioManager
+import android.media.AudioTrack
 import android.media.MediaRecorder
 import android.os.Build
 import android.os.Handler
@@ -56,6 +59,9 @@ class CallAudioRouter(
     /** Si el modo comunicación de ahora lo puso Berry Med. Lo lee Testing. */
     @Volatile private var modeByUs = false
 
+    /** La pista de silencio que sostiene el modo comunicación. Sólo la toca el hilo principal. */
+    private var silence: AudioTrack? = null
+
     /** Lo último que se avisó en el log, para no repetirlo en cada vuelta. */
     private var announced: String? = null
 
@@ -76,6 +82,9 @@ class CallAudioRouter(
         handler.post {
             if (kiosk == visible) return@post
             kiosk = visible
+            if (TAKE_CALL_MODE) {
+                if (visible) startSilence() else stopSilence()
+            }
             reassert.reset()
             modeReassert.reset()
             if (Build.VERSION.SDK_INT >= 31) check()
@@ -212,6 +221,57 @@ class CallAudioRouter(
         }
     }
 
+    /**
+     * Android le saca el modo comunicación, a los 6 s, a una app que no está
+     * reproduciendo ni grabando como llamada (se vio en la tablet: lo sacaba
+     * una y otra vez con el kiosco en el login). La llamada del `WebView`
+     * suena como medios y no cuenta. Por eso, mientras el kiosco está
+     * adelante, suena una pista de silencio con uso de llamada: un segundo de
+     * ceros en bucle, sin hilo propio. Es lo mismo que hace el SDK de LiveKit.
+     */
+    private fun startSilence() {
+        if (silence != null) return
+        try {
+            val track = AudioTrack.Builder()
+                .setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                        .build(),
+                )
+                .setAudioFormat(
+                    AudioFormat.Builder()
+                        .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                        .setSampleRate(SILENCE_RATE)
+                        .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                        .build(),
+                )
+                .setTransferMode(AudioTrack.MODE_STATIC)
+                .setBufferSizeInBytes(SILENCE_RATE * 2)
+                .build()
+            track.write(ShortArray(SILENCE_RATE), 0, SILENCE_RATE)
+            track.setLoopPoints(0, SILENCE_RATE, -1)
+            track.play()
+            silence = track
+        } catch (error: Throwable) {
+            log("[LLAMADA] No se pudo sostener el modo comunicación con la pista de silencio: ${error.javaClass.simpleName}")
+        }
+    }
+
+    private fun stopSilence() {
+        val track = silence ?: return
+        silence = null
+        try {
+            track.pause()
+            track.flush()
+        } catch (_: Throwable) {
+        }
+        try {
+            track.release()
+        } catch (_: Throwable) {
+        }
+    }
+
     @RequiresApi(31)
     private fun checkDevice() {
         val inCall = if (TAKE_CALL_MODE) kiosk else audio.mode == AudioManager.MODE_IN_COMMUNICATION
@@ -273,6 +333,9 @@ class CallAudioRouter(
         const val TAKE_CALL_MODE = true
 
         private const val NANOS_PER_MS = 1_000_000L
+
+        /** Un segundo de silencio a 8 kHz, en bucle. */
+        private const val SILENCE_RATE = 8_000
         private const val FALLBACK_LINE = "Nada en el jack: la llamada sale por el parlante"
     }
 }
