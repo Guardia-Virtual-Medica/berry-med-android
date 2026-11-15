@@ -98,8 +98,10 @@ Pedí estos datos:
 3. Ejecutá este comando en la computadora:
 
    ```bash
-   adb install -r <ruta-del-apk>
+   adb install -r -g berry-med-<versión>.apk
    ```
+
+   `-g` da de entrada todos los permisos de la app (cámara, micrófono, ubicación y notificaciones), así no aparece ningún cartel al abrirla. Los permisos USB no: ésos se aceptan en la tarea 3.
 
 4. Controlá que el comando muestre `Success`.
 5. Desconectá la tablet de la computadora.
@@ -124,14 +126,14 @@ Pedí estos datos:
 
 **PRECAUCIÓN**: Marcá siempre "Usar de forma predeterminada". Sin esa casilla, Android muestra el pedido arriba del kiosco en cada reinicio.
 
-**NOTA**: Android muestra un pedido por equipo: plaqueta, termómetro y hub YKUSH3. El orden puede cambiar.
+**NOTA**: Android muestra un pedido por equipo, de a uno: plaqueta, hub YKUSH3 y termómetro. El siguiente aparece cuando contestás el anterior.
 
 1. Tocá el ícono de Berry Med.
 2. Marcá "Usar de forma predeterminada" en el pedido.
 3. Aceptá el pedido.
 4. Hacé los pasos 2 y 3 en cada pedido que aparezca.
 
-**NOTA**: Si la pantalla dice "Falta aceptar el permiso USB", tocá la ruedita de arriba a la derecha y **Pedir permiso USB**.
+**NOTA**: Si la pantalla dice "Falta aceptar el permiso USB", tocá la ruedita de arriba a la derecha y **Pedir permiso USB**. En el kiosco y en el Panel Local, la fila del equipo en el panel lateral dice **Falta permiso**: tocala.
 
 ### Tarea 4: completar el configurador
 
@@ -244,6 +246,16 @@ Estos pasos están en la lista **Puesta en marcha** del paso Kiosco. El punto ve
 4. Tocá el botón de inicio de la tablet.
 5. Controlá que aparezca el kiosco.
 
+**NOTA**: Con la tablet conectada a la computadora, los pasos 1 a 3 se hacen con un comando (una vez por tablet):
+
+```bash
+adb shell cmd package set-home-activity com.guardiavirtual.berrymed/.ui.KioskActivity
+```
+
+Para volver atrás, en la tablet: **Ajustes → Apps → Apps predeterminadas → App de inicio** y elegí el inicio de Android. Para llegar a los Ajustes con Berry Med como inicio: cinco toques en la esquina del kiosco, el PIN, y en la ruedita **Ajustes de Android**.
+
+**NOTA**: Como pantalla de inicio, Berry Med abre el kiosco si tiene la URL del kiosco guardada; si no, la configuración. Si al prenderla no hay Wi-Fi, a los 5 s aparece **Sin conexión** con **Elegir red**.
+
 ### Tarea 11: configurar el tótem en el kiosco
 
 1. En el kiosco, escribí el identificador del tótem.
@@ -282,7 +294,8 @@ Para probar el audio y los instrumentos, seguí la sección [Probar el Panel Loc
 
 Con los colores, las letras y los botones del [Panel Local](#panel-local), para que se lean como una sola app:
 
-- **Cabecera**: el título "Maletín de atención ONDOCTOR365", los chips **Plaqueta**, **Pusher** y **Termómetro** (punto verde conectado, ámbar conectado sin mediciones todavía, gris sin conectar) y la **ruedita**, con **Pedir permiso USB** y **Evitar que se duerma**.
+- **Cabecera**: el título "Maletín de atención ONDOCTOR365", los chips **Plaqueta**, **Pusher** y **Termómetro** (punto verde conectado, ámbar conectado sin mediciones todavía, gris sin conectar) y la **ruedita**, con **Pedir permiso USB**, **Evitar que se duerma** y **Ajustes de Android** (con Berry Med como pantalla de inicio, el camino a los ajustes de la tablet).
+- **Permisos y red al abrir**: la pantalla principal, el kiosco y el Panel Local piden juntos, al abrirse, los permisos de la app que falten (cámara, micrófono, ubicación y, desde Android 13, notificaciones). Si después de 5 s al abrir no hay Wi-Fi, aparece **Sin conexión** («Elegí una red Wi-Fi para usar el maletín.») con **Elegir red**, que abre el panel de Wi-Fi de Android, y **Ahora no**. Se muestra una vez cada vez que se abre la pantalla, se cierra solo al volver la red y no aparece arriba del PIN del Panel Local ni de otro diálogo.
 - **Vitales**: FC, SpO₂, Resp, Temp y PA en tarjetas, cada una en su color fijo, como en el panel.
 - **Estado**: lo que hace la plaqueta, el último dato, Pusher, el termómetro, el hub, la sesión y el último envío.
 - **Botones**: **USB-config** (abre la configuración), **Testing**, **Panel Local** y **ONDOCTOR365** (el kiosco del paciente).
@@ -322,7 +335,9 @@ Para preparar una tablet nueva, seguí [Configuración paso a paso](#configuraci
 
    Conviene abrir el Panel Local una vez y aceptar el permiso de la cámara **antes** de aceptar el permiso USB del otoscopio: en Android 10 o más, Android puede negar sin diálogo el permiso USB de un dispositivo de video si la app todavía no tiene el de cámara.
 
-   Cada equipo se pide una sola vez, para no tapar el kiosco una y otra vez. Si alguien rechaza o cierra el pedido, la pantalla de Berry Med dice "Falta aceptar el permiso USB" y se resuelve con **Pedir permiso USB**, en el menú de la ruedita de arriba a la derecha de la pantalla principal. Un equipo sin permiso no frena a los demás.
+   Los pedidos van **de a uno**, en el orden plaqueta, hub YKUSH3 y termómetro: Android muestra un solo diálogo por vez y, si le llegan varios juntos, abre uno y los demás se pierden sin respuesta (se vio en la tablet al reiniciar). El siguiente sale cuando se contesta el anterior, aceptado o rechazado, o al minuto si nadie lo contestó. Cada equipo se pide una sola vez, para no tapar el kiosco una y otra vez. Si alguien rechaza o cierra el pedido, la pantalla de Berry Med dice "Falta aceptar el permiso USB" y el panel lateral dice **Falta permiso** en la fila del equipo; se resuelve tocando esa fila o con **Pedir permiso USB**, en el menú de la ruedita de arriba a la derecha de la pantalla principal, que vuelve a pedir todo lo que falta, también en fila. Un equipo sin permiso no frena a los demás.
+
+   Android no conserva estos permisos al reiniciar si no quedó marcada la casilla, y una app común no puede evitar el diálogo: eso necesitaría algo a nivel sistema (ver `docs/decisiones.md`).
 3. **Completar el paso Kiosco de la configuración** (ver [Configuración](#configuración)): cargar la URL del kiosco, guardar y dejar en verde la lista de puesta en marcha (permisos de cámara y micrófono, Berry Med como app de inicio, el servicio con cámara y micrófono y sin optimización de batería), abrir el kiosco para configurar el tótem y resolver lo que va fuera de la tablet. La optimización de batería es imprescindible: si Android cierra el servicio, sólo puede volver a levantarlo si la app está excluida.
 4. **Sacar a Berry Med de las listas propias de la marca.** Algunas marcas tienen, además de la optimización de batería de Android, su propia lista de apps que se duermen.
 5. **Sin bloqueo con PIN, patrón ni contraseña.** Con bloqueo seguro Android no avisa el encendido hasta que alguien desbloquea, y la app no arranca.
@@ -384,7 +399,7 @@ Para atención **presencial, sin teleconsulta**: el médico o el enfermero que e
 
 Una columna fija a la derecha, en el [kiosco](#kiosco) y en el [Panel Local](#panel-local), con cuatro cosas siempre a la vista. Al abrir la app aparece **abierto** (296 dp); el botón de arriba lo cierra a un **riel** de 64 dp con los mismos estados en íconos, y tocar el riel lo abre. Abierto o cerrado se mantiene al pasar del kiosco al panel y vuelve a abierto al reiniciar la app. No se abre solo cuando algo pasa a rojo: movería la página en medio de una llamada.
 
-- **Wi-Fi**: el nombre de la red, si la señal es buena o débil (cuatro barras: 4 desde −60 dBm, 3 hasta −70, 2 hasta −80 y 1 por debajo; débil es una barra), "Sin internet" si Android no comprobó que la red llega a internet y "Sin Wi-Fi" si no hay. Sin red, tocar la cabecera abre el Wi-Fi de Android. El nombre necesita el **permiso de ubicación**, que el kiosco pide junto con la cámara y el micrófono: sin él, Android lo esconde y el panel dice "Wi-Fi". Lo lee de la red por defecto con su propio `NetworkCallback` (`WifiWatch`).
+- **Wi-Fi**: el nombre de la red, si la señal es buena o débil (cuatro barras: 4 desde −60 dBm, 3 hasta −70, 2 hasta −80 y 1 por debajo; débil es una barra), "Sin internet" si Android no comprobó que la red llega a internet y "Sin Wi-Fi" si no hay. La cabecera se toca siempre, con red o sin red (el chevron se ve siempre, con red al lado de las barras), y abre el panel de Wi-Fi de Android encima de Berry Med, con la lista de redes y la clave; en el riel, el ícono del Wi-Fi hace lo mismo. El nombre necesita el **permiso de ubicación**, que se pide al abrir junto con los demás: sin él, Android lo esconde, el panel dice "Wi-Fi conectado" y "Falta permiso", y tocar la cabecera pide la ubicación (o abre los ajustes de la app si Android ya no deja pedirla). Lo lee de la red por defecto con su propio `NetworkCallback` (`WifiWatch`).
 - **Modo**: **Remoto** (el kiosco de ONDOCTOR365, teleconsulta) o **Local** (el Panel Local, presencial; "esperando el PIN" mientras está bloqueado), con el botón para pasar al otro:
   - **Remoto → Local**: pregunta "¿Pasar al Panel Local?" y con **Cambiar** abre el Panel Local, que pide su PIN. Es el único PIN de este camino (antes eran dos: el de la esquina del kiosco y el del panel). Con una consulta enviando o la teleconsulta en una sala, el botón queda bloqueado (punteado, con candado) y dice "Hay una consulta en curso. Terminala para cambiar.".
   - **Local → Remoto**: con el panel desbloqueado pregunta "¿Volver a ONDOCTOR365?" y con **Volver** hace lo mismo que **Finalizar** (se detiene el ECG, se apagan el otoscopio y la cámara, se descartan capturas y grabaciones) y abre el kiosco. Desde la pantalla del PIN vuelve sin preguntar: todavía no empezó nada.
@@ -392,7 +407,8 @@ Una columna fija a la derecha, en el [kiosco](#kiosco) y en el [Panel Local](#pa
   - **SpO2, ECG y Presión**: la plaqueta. "Conectado" si mandó datos en los últimos 3 s, "Conectando" si está conectada sin datos frescos, "Desconectado" si no. El ECG dice además "Electrodos sueltos" (ámbar).
   - **Temperatura**: el termómetro infrarrojo, conectado o no.
   - **Otoscopio y Estetoscopio**: "En vivo" encendido o escuchando, "Conectando" mientras arranca, "Conectado" enchufado. En el Panel Local, con el YKUSH3, "Listo": sus puertos arrancan apagados y se encienden al abrirlos, y eso no es un error. Sin YKUSH3, "Sin hub"; con el YKUSH3 en el kiosco y sin el equipo, "Desconectado".
-  - **Hub USB**: el YKUSH3 enchufado y con permiso; "Sin permiso USB" si a algún equipo del tótem le falta el permiso.
+  - **Hub USB**: el YKUSH3 enchufado y con permiso.
+  - **Falta permiso** (ámbar, no el rojo de desconectado): el equipo está enchufado pero sin permiso, y la fila se toca para pedirlo. La plaqueta (SpO2, ECG y Presión), el hub y el termómetro, por el permiso USB: tocar la fila vuelve a pedir en fila lo que falta, como **Pedir permiso USB** pero sin tocar el otoscopio. El otoscopio, por su permiso USB (se apaga y enciende su puerto para que Android lo pida con la casilla) o por el de la cámara de la app. El estetoscopio es audio y no lleva permiso USB: lo que le puede faltar es el micrófono. Los permisos de la app se vuelven a pedir al tocar la fila; si Android ya no deja (rechazado dos veces), se abren los ajustes de la app.
   - El rojo es la única excepción al "sin alarmas" del Panel Local: un instrumento desconectado es algo para resolver antes de atender.
 - **Sonido**: **Auricular** o **Altavoz**, en los dos modos. Con Auricular todo suena por el auricular; con Altavoz la videollamada va por el altavoz y el micrófono de la tablet, y el estetoscopio sigue en el auricular (por el parlante se acopla). Es el mismo ajuste que "Sonido de la videollamada" de la configuración (`callAudioOutput`: Altavoz es "parlante"), se guarda al tocarlo y no pide PIN. Sin nada en el jack, Auricular no se puede tocar y se ve Altavoz, sin cambiar lo guardado: al volver a enchufar el auricular vuelve solo. Sin auricular, el estetoscopio no suena y la ayuda lo dice.
 
@@ -402,7 +418,7 @@ El panel sólo muestra: lee lo que ya sabe la app (`TotemRuntime.statusSnapshot`
 
 El kiosco de OnDoctor corre dentro de Berry Med, como lo hacía la app del proveedor, y no en Chrome: la pantalla **Kiosco** es un `WebView` a pantalla completa, horizontal y sin barras, con la **URL del kiosco** de la configuración.
 
-- **Es la app de inicio** de la tablet: Android la abre al encender y el botón de inicio vuelve a ella. Sin URL configurada, lo dice y ofrece abrir la configuración.
+- **Es la app de inicio** de la tablet (se elige una vez, ver [Tarea 10](#tarea-10-elegir-berry-med-como-app-de-inicio)): Android la abre al encender y el botón de inicio vuelve a ella. Sin URL del kiosco guardada pasa sola a la configuración (`HomeTarget`); mientras no leyó la configuración guardada espera, no decide con los valores de fábrica. Si no hay Wi-Fi, a los 5 s aparece **Sin conexión** con **Elegir red**. Para salir a los ajustes de Android: PIN y **Ajustes de Android** en la ruedita.
 - **También se abre** con el ícono **ONDOCTOR365** de la tablet (violeta) y con el botón **ONDOCTOR365** de la pantalla principal, sin PIN. Los dos vuelven al mismo kiosco, sin recargar la página ni cortar la llamada. El kiosco tiene su propia tarea: el ícono de **Berry Med** muestra siempre la configuración.
 - **Panel lateral.** A la derecha del `WebView` va el [panel lateral](#panel-lateral); la página se achica a su lado (984 dp abierto, 1216 dp con el riel) y se acomoda sola, sin recargar. Desde ahí se pasa al Panel Local, con un solo PIN: el del panel. La pantalla de sin conexión tapa sólo la página.
 - **Atrás no sale.** Para ir a la configuración de Berry Med: **cinco toques en la esquina de arriba a la izquierda** en menos de 3 s y el **PIN del Panel Local** (`1515` por defecto). Con el PIN mal, **Entrar** y **Recargar** no cierran el diálogo: borran el campo y dicen "PIN incorrecto" (o "Cargando la configuración…" si todavía no se leyó la guardada, igual que el panel). **Cancelar** y tocar afuera lo cierran. Al volver, el kiosco sigue donde estaba.
@@ -481,14 +497,16 @@ Los tests no necesitan la plaqueta. `local.properties` (la ruta del SDK) es de c
 Cada versión publicada tiene su APK en [Releases](https://github.com/Guardia-Virtual-Medica/berry-med-android/releases), con el SHA-256 en las notas. No hay CI: el APK de la release se compila a mano (`assembleDebug`) y se sube con `gh release create v<versionName> <apk>`. Para instalarlo en la tablet conectada por USB:
 
 ```bash
-adb install -r berry-med-1.3.8.apk
+adb install -r -g berry-med-1.3.8.apk
 ```
 
 O, recién compilado:
 
 ```bash
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb install -r -g app/build/outputs/apk/debug/app-debug.apk
 ```
+
+`-g` da de entrada los permisos de la app, sin carteles (ver [Tarea 1](#tarea-1-instalar-berry-med)).
 
 El APK es debug y lleva la clave debug de la máquina que lo compiló. Siempre firmado con la misma clave: si cambia, hay que desinstalar y eso borra la configuración (ver [Instalar y dejarla sola](#instalar-y-dejarla-sola)).
 
