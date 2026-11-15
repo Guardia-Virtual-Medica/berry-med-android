@@ -1067,7 +1067,14 @@
 
                                 <TextView
                                     style="@style/Panel.Text"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="22dp"
+                                    android:autoSizeMaxTextSize="17sp"
+                                    android:autoSizeMinTextSize="12sp"
+                                    android:autoSizeStepGranularity="1sp"
+                                    android:autoSizeTextType="uniform"
                                     android:fontFamily="@font/barlow_semibold"
+                                    android:maxLines="1"
                                     android:text="@string/local_otoscope"
                                     android:textSize="17sp" />
 
@@ -1106,7 +1113,14 @@
 
                                 <TextView
                                     style="@style/Panel.Text"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="22dp"
+                                    android:autoSizeMaxTextSize="17sp"
+                                    android:autoSizeMinTextSize="12sp"
+                                    android:autoSizeStepGranularity="1sp"
+                                    android:autoSizeTextType="uniform"
                                     android:fontFamily="@font/barlow_semibold"
+                                    android:maxLines="1"
                                     android:text="@string/local_stetho"
                                     android:textSize="17sp" />
 
@@ -1145,7 +1159,14 @@
 
                                 <TextView
                                     style="@style/Panel.Text"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="22dp"
+                                    android:autoSizeMaxTextSize="17sp"
+                                    android:autoSizeMinTextSize="12sp"
+                                    android:autoSizeStepGranularity="1sp"
+                                    android:autoSizeTextType="uniform"
                                     android:fontFamily="@font/barlow_semibold"
+                                    android:maxLines="1"
                                     android:text="@string/local_camera"
                                     android:textSize="17sp" />
 
