@@ -70,4 +70,10 @@ class PanelFormatTest {
         // Un reloj que vuelve atrás no da minutos negativos.
         assertEquals("recién", PanelFormat.ago(now, now + 5_000))
     }
+
+    @Test
+    fun percentAddsTheSignOnlyWithAValue() {
+        assertEquals("98 %", PanelFormat.percent("98"))
+        assertEquals("—", PanelFormat.percent(PanelFormat.NONE))
+    }
 }

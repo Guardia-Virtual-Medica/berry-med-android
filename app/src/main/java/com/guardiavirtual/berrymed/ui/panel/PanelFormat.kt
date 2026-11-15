@@ -32,6 +32,9 @@ object PanelFormat {
         return text.replace('.', ',')
     }
 
+    /** La saturación con su unidad, "98 %"; sin dato queda en "—", sin el signo. */
+    fun percent(value: String): String = if (value == NONE) NONE else "$value %"
+
     /** Parte "98/72" en saturación y pulso; cada mitad sin dato queda en "—". */
     fun pair(raw: String?): Pair<String, String> {
         val text = raw?.trim().orEmpty()

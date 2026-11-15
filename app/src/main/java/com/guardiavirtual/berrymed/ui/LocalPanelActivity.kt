@@ -1027,11 +1027,20 @@ class LocalPanelActivity : AppCompatActivity() {
         Tone.RECORDING -> R.color.recording
     }
 
+    /** "98 %" con el signo a la mitad del tamaño del número, para que el valor siga mandando. */
+    private fun withSmallUnit(text: String): CharSequence {
+        val space = text.indexOf(' ')
+        if (space < 0) return text
+        return android.text.SpannableString(text).apply {
+            setSpan(android.text.style.RelativeSizeSpan(0.5f), space, text.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+    }
+
     private fun renderVitals(state: PanelState, s: LocalSnapshot) {
         binding.hrValue.text = state.heartRate
         binding.hrNote.text = state.heartNote
         binding.stripHr.text = getString(R.string.local_strip_hr, state.heartRate)
-        binding.spo2Value.text = state.saturation
+        binding.spo2Value.text = withSmallUnit(state.saturation)
         binding.pulseValue.text = state.pulse
         binding.respValue.text = state.respiration
 

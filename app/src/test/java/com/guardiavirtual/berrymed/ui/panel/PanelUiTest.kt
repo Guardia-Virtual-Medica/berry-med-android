@@ -251,7 +251,7 @@ class PanelUiTest {
     fun vitalsUseLongDashesAndComma() {
         val state = build(snapshot(vitals = VitalSigns(heartRate = "- -", spo2Pulse = "97/-", respRate = "16")))
         assertEquals("—", state.heartRate)
-        assertEquals("97", state.saturation)
+        assertEquals("97 %", state.saturation)
         assertEquals("—", state.pulse)
         assertEquals("16", state.respiration)
     }
