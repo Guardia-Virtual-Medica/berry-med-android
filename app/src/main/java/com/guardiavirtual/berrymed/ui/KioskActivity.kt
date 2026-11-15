@@ -173,6 +173,8 @@ class KioskActivity : AppCompatActivity() {
         handler.removeCallbacks(loadLater)
         handler.removeCallbacks(statusTick)
         modeDialog?.dismiss()
+        // Al volver al kiosco no tiene que quedar abierto un «¿Volver al inicio?» de antes.
+        homeDialog?.dismiss()
         noWifi.stop()
         try {
             getSystemService(ConnectivityManager::class.java).unregisterNetworkCallback(networkCallback)
@@ -232,8 +234,7 @@ class KioskActivity : AppCompatActivity() {
 
     /**
      * Remoto → Local: con una consulta en curso el botón está bloqueado; si
-     * no, se confirma y se abre el Panel Local, que pide su PIN. Es el único
-     * PIN de este camino.
+     * no, se confirma y se abre el Panel Local, sin PIN.
      */
     private fun askSwitchToLocal() {
         if (runtime().modeSwitchBlock() != null) {
@@ -508,7 +509,7 @@ class KioskActivity : AppCompatActivity() {
             cornerTaps++
             if (cornerTaps >= TAPS_TO_EXIT) {
                 cornerTaps = 0
-                askHome()
+                askHome(technician = true)
             }
         }
     }
@@ -516,16 +517,37 @@ class KioskActivity : AppCompatActivity() {
     /**
      * La casita y los cinco toques: a Inicio, sin PIN (el PIN es sólo para
      * la configuración). Se confirma igual, para que un toque sin querer no
-     * saque al paciente del kiosco, y deja Recargar a mano.
+     * saque al paciente del kiosco, y deja Recargar a mano. Con una consulta
+     * en curso (signos enviando o la videollamada en la sala) la casita no
+     * deja ni una cosa ni la otra: cortaría la consulta, igual que cambiar de
+     * modo. Los cinco toques ([technician]) sí: son la salida del técnico si
+     * una consulta quedó trabada.
      */
-    private fun askHome() {
+    private fun askHome(technician: Boolean = false) {
+        homeDialog?.dismiss()
+        val blocked = runtime().modeSwitchBlock().takeUnless { technician }
+        if (blocked != null) {
+            homeDialog = AlertDialog.Builder(this)
+                .setTitle(R.string.kiosk_home_blocked_title)
+                .setMessage(blocked)
+                .setPositiveButton(R.string.kiosk_home_ok, null)
+                .show()
+            return
+        }
         val dialog = AlertDialog.Builder(this)
             .setTitle(R.string.kiosk_home_title)
             .setMessage(R.string.kiosk_home_body)
             .setNegativeButton(R.string.kiosk_cancel, null)
-            .setNeutralButton(R.string.kiosk_reload) { _, _ -> reloadConfigured() }
+            // La consulta pudo haber empezado con el diálogo abierto: se vuelve a mirar al tocar.
+            .setNeutralButton(R.string.kiosk_reload) { _, _ ->
+                if (technician || runtime().modeSwitchBlock() == null) reloadConfigured() else askHome()
+            }
             .setPositiveButton(R.string.home_from_local_action) { _, _ ->
-                startActivity(Intent(this, HomeActivity::class.java))
+                if (technician || runtime().modeSwitchBlock() == null) {
+                    startActivity(Intent(this, HomeActivity::class.java))
+                } else {
+                    askHome()
+                }
             }
             .create()
         homeDialog = dialog

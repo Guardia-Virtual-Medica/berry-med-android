@@ -102,6 +102,8 @@
     <string name="kiosk_missing_url">Falta la URL del kiosco. Cargala en la configuración de Berry Med (paso Kiosco).</string>
     <string name="kiosk_open_settings">Abrir la configuración</string>
     <string name="kiosk_home_title">¿Volver al inicio?</string>
+    <string name="kiosk_home_ok">Entendido</string>
+    <string name="kiosk_home_blocked_title">No se puede salir del kiosco</string>
     <string name="kiosk_home_body">Se sale del kiosco de ONDOCTOR365. Recargar lo abre de nuevo desde cero.</string>
     <string name="kiosk_cancel">Cancelar</string>
     <string name="kiosk_enter">Entrar</string>

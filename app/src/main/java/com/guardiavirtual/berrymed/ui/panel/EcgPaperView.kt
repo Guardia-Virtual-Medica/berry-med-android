@@ -159,11 +159,13 @@ class EcgPaperView @JvmOverloads constructor(context: Context, attrs: AttributeS
     /**
      * Si la II quedó plana en los últimos [FLAT_WINDOW] (2 s): menos de
      * [FLAT_UNITS] entre el máximo y el mínimo. Recién arrancado, sin
-     * muestras suficientes, también cuenta como plana.
+     * muestras suficientes, todavía no se sabe: no cuenta como plana, así
+     * Iniciar medición no pasa por gris antes del verde. Sin datos de la
+     * plaqueta o con los electrodos sueltos ya lo dice la señal del panel.
      */
     fun isFlat(): Boolean {
-        val trace = traces.getOrNull(allLeads.indexOf(FLAT_LEAD)) ?: return true
-        val span = trace.recentSpan(FLAT_WINDOW, FLAT_MIN_SAMPLES) ?: return true
+        val trace = traces.getOrNull(allLeads.indexOf(FLAT_LEAD)) ?: return false
+        val span = trace.recentSpan(FLAT_WINDOW, FLAT_MIN_SAMPLES) ?: return false
         return span < FLAT_UNITS
     }
 

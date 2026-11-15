@@ -126,6 +126,15 @@ class LocalPanelActivity : AppCompatActivity() {
 
     /** El ECG midiendo; en espera hasta que se toca Iniciar medición, y de nuevo en espera al salir. */
     private var ecgRunning = false
+
+    /**
+     * Cuándo se tocó por última vez Iniciar/Detener del ECG y Medir/Cancelar
+     * de la presión. Un doble toque no tiene que deshacer el primero: Detener
+     * dos veces volvía a arrancar (el segundo cae en el ECG en espera) y Medir
+     * dos veces cancelaba la medición recién empezada.
+     */
+    private var ecgTapAt = 0L
+    private var paTapAt = 0L
     private var modeDialog: ModeSwitchDialog? = null
 
     /** Los permisos de la app, todos juntos al abrir; los pedidos al usar cada cosa quedan de respaldo. */
@@ -245,6 +254,8 @@ class LocalPanelActivity : AppCompatActivity() {
         setUpStatusPanel()
 
         binding.paButton.setOnClickListener {
+            if (!firstTap(paTapAt)) return@setOnClickListener
+            paTapAt = SystemClock.uptimeMillis()
             if (runtime().localSnapshot().nibpRunning) {
                 nibp { runtime().localNibpStop() }
             } else {
@@ -500,14 +511,22 @@ class LocalPanelActivity : AppCompatActivity() {
         }
         binding.ecgFreezeButton.setOnClickListener { freezeEcg(!ecg.frozen) }
         // Tocar en cualquier lado del ECG en espera, o el botón, empieza a medir.
-        binding.ecgIdle.setOnClickListener { showEcgRunning(true) }
-        binding.ecgStartButton.setOnClickListener { showEcgRunning(true) }
-        // Detener vuelve a la espera; si estaba congelado, se descongela: la espera no guarda nada.
-        binding.ecgStopButton.setOnClickListener {
-            freezeEcg(false)
-            showEcgRunning(false)
-        }
+        binding.ecgIdle.setOnClickListener { toggleEcg(true) }
+        binding.ecgStartButton.setOnClickListener { toggleEcg(true) }
+        binding.ecgStopButton.setOnClickListener { toggleEcg(false) }
     }
+
+    /** Iniciar o Detener, salvo que sea el segundo toque de un doble toque. */
+    private fun toggleEcg(run: Boolean) {
+        if (!firstTap(ecgTapAt)) return
+        ecgTapAt = SystemClock.uptimeMillis()
+        // Detener vuelve a la espera; si estaba congelado, se descongela: la espera no guarda nada.
+        if (!run) freezeEcg(false)
+        showEcgRunning(run)
+    }
+
+    /** Si pasó bastante desde el último toque del mismo control como para no ser un doble toque. */
+    private fun firstTap(lastAt: Long): Boolean = SystemClock.uptimeMillis() - lastAt >= DOUBLE_TAP_MS
 
     /**
      * En espera, el ECG y la tira muestran la grilla apagada, sin ondas, y
@@ -1158,6 +1177,9 @@ class LocalPanelActivity : AppCompatActivity() {
 
         /** El °C al lado del valor de la temperatura, relativo a su tamaño. */
         private const val UNIT_SIZE = 0.5f
+
+        /** Un segundo toque antes de esto es parte de un doble toque y se ignora. */
+        private const val DOUBLE_TAP_MS = 700L
 
         /** Congelar con el ECG en espera: se ve, apagado. */
         private const val DISABLED_ALPHA = 0.4f
