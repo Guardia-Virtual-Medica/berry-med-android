@@ -7,7 +7,7 @@ Una columna fija a la derecha de la tablet con cuatro cosas siempre a la vista:
 1. **Wi-Fi**: la red y la señal.
 2. **Modo**: Remoto (kiosco ONDOCTOR365, teleconsulta) o Local (Panel Local, presencial), con el botón para pasar al otro.
 3. **Dispositivos**: SpO2, ECG, Presión, Temperatura, Otoscopio, Estetoscopio y el hub USB, cada uno en verde o en rojo.
-4. **Sonido de la llamada**: Auricular o Tablet.
+4. **Sonido**: Auricular o Altavoz, para toda la app (el estetoscopio sigue siempre en el auricular).
 
 Es **nativo y va fijo en el código**. Se ve en los dos modos: al lado del WebView de ONDOCTOR365 en `KioskActivity` y al lado del Panel Local en `LocalPanelActivity`. Al abrir la app siempre aparece **abierto**. Se puede cerrar a un riel de 64 dp, y cerrado dura hasta que se cierra la app.
 
@@ -151,21 +151,21 @@ El rojo es aro y el verde punto lleno: se distinguen por la forma, no sólo por 
 
 Las reglas de qué estado lleva cada dispositivo están en el plan, punto 3.
 
-### 4. Sonido de la llamada
+### 4. Sonido
 
-- **Etiqueta:** «SONIDO DE LA LLAMADA».
+- **Etiqueta:** «SONIDO». Se ve igual en Remoto y en Local.
+- **Qué cambia:** con Altavoz, la videollamada va por el parlante y el micrófono de la tablet. El estetoscopio sigue sólo en el auricular, porque por el parlante se acopla.
 - **Segmentado** con el estilo del Panel Local:
   - contenedor con fondo `bg` #0B0F14, borde 1 dp `line`, radio 11, padding 3 dp, gap 2 dp;
   - dos segmentos iguales de 48 dp, radio 8, ícono de 20 dp + Barlow 600, 15 sp:
     - «Auricular» con `headset_mic`;
-    - «Tablet» con `tablet_android`.
+    - «Altavoz» con `volume_up`.
   - Elegido: fondo `text` #E8EDF2 y texto `bg`. No elegido: texto `muted`.
-  - Sin nada en el jack: «Auricular» en `faint`, no se puede tocar, y queda elegida Tablet.
+  - Sin nada en el jack: «Auricular» en `faint`, no se puede tocar, y queda elegido Altavoz.
 - **Ayuda** a 8 dp, Barlow 500, 13 sp, `muted`:
-  - Auricular: «Se escucha y se habla por el auricular.»
-  - Tablet: «Parlante y micrófono de la tablet.»
-  - Sin auricular: «No hay auricular en el jack: se usa la tablet.»
-  - En Local, todo eso va precedido por «Para la teleconsulta. ».
+  - Auricular: «Todo suena por el auricular.»
+  - Altavoz: «La llamada va por el altavoz y el micrófono de la tablet. El estetoscopio sigue en el auricular.»
+  - Sin auricular: «Sin auricular en el jack: la llamada va por el altavoz y el estetoscopio no suena.»
 
 ## Panel cerrado: el riel (64 dp)
 
@@ -175,7 +175,7 @@ Las reglas de qué estado lleva cada dispositivo están en el plan, punto 3.
   1. **Wi-Fi:** `wifi`, `network_wifi_1_bar` o `wifi_off`. Punto verde, ámbar o rojo (aro). Sin red: fondo `alarmBg`.
   2. **Modo:** cuadro de 32 dp, radio 9, del color del modo, con su ícono de 20 dp.
   3. **Dispositivos:** `usb` + el conteo «6/7» en Barlow Semi Condensed 600, 13 sp. Con algún rojo: fondo `alarmBg`, texto en `alarmText` y aro rojo.
-  4. **Sonido**, pegado abajo con borde superior `line`: `headset_mic` o `tablet_android`.
+  4. **Sonido**, pegado abajo con borde superior `line`: `headset_mic` o `volume_up`.
 - **No se abre solo** cuando algo pasa a rojo: correría el WebView en medio de una llamada. Alcanza con el rojo del riel.
 
 ## Diálogos de cambio de modo
@@ -199,7 +199,7 @@ Desde la pantalla de PIN del Panel Local, «Volver a ONDOCTOR365» no pregunta: 
 
 Material Symbols Rounded, peso 400, sin relleno, importados como vectores (`res/drawable/ic_*.xml`, como los que ya usa el Panel Local):
 
-`wifi`, `network_wifi_1_bar`, `network_wifi_2_bar`, `network_wifi_3_bar`, `wifi_off`, `video_call`, `stethoscope`, `swap_horiz`, `lock`, `info`, `headset_mic`, `tablet_android`, `usb`, `chevron_right`, `chevron_left`.
+`wifi`, `network_wifi_1_bar`, `network_wifi_2_bar`, `network_wifi_3_bar`, `wifi_off`, `video_call`, `stethoscope`, `swap_horiz`, `lock`, `info`, `headset_mic`, `volume_up`, `usb`, `chevron_right`, `chevron_left`.
 
 ## Textos
 

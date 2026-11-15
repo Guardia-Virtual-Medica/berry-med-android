@@ -11,7 +11,7 @@ Una columna nativa de 296 dp a la derecha con cuatro secciones:
 - Wi-Fi en la cabecera;
 - Modo, con el botón para cambiar;
 - Dispositivos;
-- Sonido de la llamada.
+- Sonido.
 
 Se cierra a un riel de 64 dp. Va en `KioskActivity` (al lado del WebView) y en `LocalPanelActivity` (al lado del Panel Local). Al arrancar el proceso aparece abierto.
 
@@ -93,7 +93,7 @@ Va en una función pura en `StatusPanelUi`, con test por fila. Entra el `StatusS
 - Manifiesto: `ACCESS_WIFI_STATE` y `ACCESS_FINE_LOCATION`. Pedí la ubicación junto con cámara y micrófono en `KioskActivity.askPermissions` (`:351-354`). Si la niegan, el nombre de la red dice «Wi-Fi» y nada más.
 - Sin red, la cabecera abre `Settings.Panel.ACTION_WIFI` en API 29 o más, y `Settings.ACTION_WIFI_SETTINGS` antes.
 
-## 5. Sonido de la llamada
+## 5. Sonido
 
 **Qué pasa hoy.**
 
@@ -103,12 +103,12 @@ Va en una función pura en `StatusPanelUi`, con test por fila. Entra el `StatusS
 
 **Cambios.**
 
-- El segmentado escribe `callAudioOutput`: Auricular es `"auricular"` y Tablet es `"parlante"`.
+- El segmentado escribe `callAudioOutput`: Auricular es `"auricular"` y Altavoz (al principio «Tablet») es `"parlante"`.
   - Guardá con `ConfigStore.save(config.copy(callAudioOutput = …))` fuera del hilo principal. El runtime ya reacciona al cambio y llama a `callAudio.refresh()` (`TotemRuntime.kt:305-309`).
   - **No pide PIN:** es el mismo ajuste de la configuración, y no toca nada clínico.
-- `jackPresent`: algún dispositivo de salida con `AudioPick.isJack(type)` (`:44`). Sin jack, el segmento Auricular queda deshabilitado y se ve Tablet elegida, aunque el ajuste guardado diga `"auricular"`. No reescribas el ajuste: cuando vuelva el auricular, vuelve solo.
+- `jackPresent`: algún dispositivo de salida con `AudioPick.isJack(type)` (`:44`). Sin jack, el segmento Auricular queda deshabilitado y se ve Altavoz elegido, aunque el ajuste guardado diga `"auricular"`. No reescribas el ajuste: cuando vuelva el auricular, vuelve solo.
 - `callRoute` (lo que se muestra): `TABLET` si el ajuste es `"parlante"` o no hay jack, y `HEADSET` si no. Función pura con test.
-- En Local se ve igual, con la ayuda que empieza con «Para la teleconsulta.».
+- Se llama «Sonido» y se ve igual en los dos modos. La opción se llama «Altavoz», no «Tablet». Altavoz mueve la llamada; el estetoscopio sigue sólo en el auricular (cambio del 15 de noviembre de 2026, ver `docs/decisiones.md`).
 
 ## 6. El kiosco con el panel
 
@@ -174,7 +174,7 @@ Va en una función pura en `StatusPanelUi`, con test por fila. Entra el `StatusS
   - `docs/decisiones.md`: una entrada con fecha 14 de noviembre de 2026 con las decisiones de este plan:
     - el rojo para desconectado;
     - «Listo» en Local;
-    - Tablet = `"parlante"`;
+    - Altavoz = `"parlante"`;
     - no se abre solo;
     - la ubicación para el SSID.
 - Rama `feat/panel-lateral` desde `main`; PR contra `main`. Commits en español con `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. Commiteá este plan y la carpeta del handoff.

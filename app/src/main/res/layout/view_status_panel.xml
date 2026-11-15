@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     El panel lateral abierto, 296 dp: la cabecera con el Wi-Fi, Modo,
-    Dispositivos y, pegado abajo, Sonido de la llamada. Modo y Dispositivos
+    Dispositivos y, pegado abajo, Sonido. Modo y Dispositivos
     scrollean si no entran (con el aviso del botón bloqueado, en una tablet
     más baja); Sonido queda siempre a la vista.
 -->
@@ -297,7 +297,7 @@
 
     <View style="@style/Status.Divider" />
 
-    <!-- Sonido de la llamada, pegado abajo. -->
+    <!-- Sonido, pegado abajo: auricular o tablet para toda la app (el estetoscopio, siempre en el auricular). -->
     <LinearLayout style="@style/Status.Section">
 
         <TextView
@@ -332,11 +332,11 @@
 
                 <ImageView
                     style="@style/Status.SegmentIcon"
-                    android:src="@drawable/ic_tablet_android" />
+                    android:src="@drawable/ic_volume_up" />
 
                 <TextView
                     style="@style/Status.SegmentText"
-                    android:text="@string/status_tablet" />
+                    android:text="@string/status_speaker" />
             </LinearLayout>
         </LinearLayout>
 
@@ -348,6 +348,6 @@
             android:lineSpacingMultiplier="1.2"
             android:textColor="@color/muted"
             android:textSize="13sp"
-            tools:text="Se escucha y se habla por el auricular." />
+            tools:text="Todo suena por el auricular." />
     </LinearLayout>
 </LinearLayout>

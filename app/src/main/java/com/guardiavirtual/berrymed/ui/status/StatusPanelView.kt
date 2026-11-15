@@ -174,12 +174,12 @@ class StatusPanelView @JvmOverloads constructor(
 
     private fun renderAudio(s: StatusPanelState) {
         val headset = s.callRoute == CallRoute.HEADSET
-        // Sin nada en el jack, Auricular no se puede tocar y se ve elegida Tablet.
+        // Sin nada en el jack, Auricular no se puede tocar y se ve elegido Altavoz.
         panel.headsetSegment.isEnabled = s.jackPresent
         panel.headsetSegment.isSelected = headset
         panel.tabletSegment.isSelected = !headset
         panel.callHelp.text = s.callHelp
-        rail.railAudioIcon.setImageResource(if (headset) R.drawable.ic_headset_mic else R.drawable.ic_tablet_android)
+        rail.railAudioIcon.setImageResource(if (headset) R.drawable.ic_headset_mic else R.drawable.ic_volume_up)
     }
 
     /** Verde y ámbar, punto lleno; rojo, aro hueco. */

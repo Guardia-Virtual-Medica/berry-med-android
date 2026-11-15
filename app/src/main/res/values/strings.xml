@@ -277,9 +277,9 @@
     <string name="status_back_to_remote">Volver a ONDOCTOR365</string>
     <string name="status_devices">Dispositivos</string>
     <string name="status_count">%1$d/%2$d</string>
-    <string name="status_call_audio">Sonido de la llamada</string>
+    <string name="status_call_audio">Sonido</string>
     <string name="status_headset">Auricular</string>
-    <string name="status_tablet">Tablet</string>
+    <string name="status_speaker">Altavoz</string>
     <string name="status_wifi_settings">Abrir el Wi-Fi de Android</string>
     <string name="mode_cancel">Cancelar</string>
     <string name="mode_to_local_title">¿Pasar al Panel Local?</string>

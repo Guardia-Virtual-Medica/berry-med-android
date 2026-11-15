@@ -35,7 +35,7 @@ data class WifiRow(
 )
 
 /** Por dónde va la llamada, como se muestra: el auricular del jack o la tablet. */
-enum class CallRoute { HEADSET, TABLET }
+enum class CallRoute { HEADSET, SPEAKER }
 
 /** En qué pantalla está el panel: el kiosco, el Panel Local o su pantalla de PIN. */
 enum class PanelMode { REMOTE, LOCAL, LOCAL_LOCKED }
@@ -82,7 +82,7 @@ object StatusPanelUi {
             countTone = countTone(rows),
             jackPresent = s.jackPresent,
             callRoute = route,
-            callHelp = callHelp(route, s.jackPresent, local = mode != PanelMode.REMOTE),
+            callHelp = callHelp(route, s.jackPresent),
         )
     }
 
@@ -179,19 +179,21 @@ object StatusPanelUi {
     }
 
     /**
-     * Lo que se ve elegido: Tablet con «parlante» o sin nada en el jack, y si
+     * Lo que se ve elegido: Altavoz con «parlante» o sin nada en el jack, y si
      * no Auricular. No reescribe el ajuste: cuando vuelve el auricular, vuelve solo.
      */
     fun callRoute(choice: String, jackPresent: Boolean): CallRoute =
-        if (choice == CALL_AUDIO_SPEAKER || !jackPresent) CallRoute.TABLET else CallRoute.HEADSET
+        if (choice == CALL_AUDIO_SPEAKER || !jackPresent) CallRoute.SPEAKER else CallRoute.HEADSET
 
-    /** La ayuda debajo del segmentado; en el Panel Local, precedida por «Para la teleconsulta.». */
-    fun callHelp(route: CallRoute, jackPresent: Boolean, local: Boolean): String {
-        val help = when {
-            !jackPresent -> "No hay auricular en el jack: se usa la tablet."
-            route == CallRoute.HEADSET -> "Se escucha y se habla por el auricular."
-            else -> "Parlante y micrófono de la tablet."
-        }
-        return if (local) "Para la teleconsulta. $help" else help
+    /**
+     * La ayuda debajo del segmentado de Sonido, igual en los dos modos.
+     * Altavoz mueve la llamada al parlante y al micrófono de la tablet, pero el
+     * estetoscopio sigue sólo en el auricular: por el parlante se acopla
+     * ([com.guardiavirtual.berrymed.audio.AudioPick.stethoOutput]).
+     */
+    fun callHelp(route: CallRoute, jackPresent: Boolean): String = when {
+        !jackPresent -> "Sin auricular en el jack: la llamada va por el altavoz y el estetoscopio no suena."
+        route == CallRoute.HEADSET -> "Todo suena por el auricular."
+        else -> "La llamada va por el altavoz y el micrófono de la tablet. El estetoscopio sigue en el auricular."
     }
 }
