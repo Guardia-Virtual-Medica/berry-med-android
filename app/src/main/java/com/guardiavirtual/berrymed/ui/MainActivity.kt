@@ -50,6 +50,7 @@ import com.guardiavirtual.berrymed.service.MonitorService
 import com.guardiavirtual.berrymed.service.TotemRuntime
 import com.guardiavirtual.berrymed.service.TotemState
 import com.guardiavirtual.berrymed.ui.panel.Link
+import com.guardiavirtual.berrymed.ui.status.NoWifiNotice
 import kotlinx.coroutines.runBlocking
 import kotlin.concurrent.thread
 
@@ -64,10 +65,13 @@ class MainActivity : AppCompatActivity() {
     private val closeConfigOnBack = object : OnBackPressedCallback(false) {
         override fun handleOnBackPressed() = showConfig(false)
     }
+    private val permissions = AppPermissionAsker(this) { renderChecklist() }
+    private val noWifi = NoWifiNotice(this)
     private val tick = object : Runnable {
         override fun run() {
             if (::binding.isInitialized) {
                 render(runtime().state.value)
+                noWifi.update(connected = runtime().wifiState.connected, blocked = false)
                 // Los tipos del servicio cambian un rato después de promote: el paso los sigue.
                 if (step == STEP_KIOSK) renderChecklist()
             }
@@ -81,7 +85,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         binding.root.padForSystemBars()
         ContextCompat.startForegroundService(this, Intent(this, MonitorService::class.java))
-        askPermissions()
+        permissions.askMissingOnOpen()
         showStep(0)
         onBackPressedDispatcher.addCallback(this, closeConfigOnBack)
         binding.configClose.setOnClickListener { showConfig(false) }
@@ -165,6 +169,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
+        noWifi.start()
         handler.post(tick)
     }
 
@@ -174,19 +179,6 @@ class MainActivity : AppCompatActivity() {
         MonitorService.promote(this)
         // Al volver de Ajustes (app de inicio, batería, permisos) la lista muestra lo nuevo.
         renderChecklist()
-    }
-
-    /**
-     * Las notificaciones, y la cámara y el micrófono para el otoscopio y el
-     * estetoscopio de la teleconsulta. Sólo los que faltan.
-     */
-    private fun askPermissions() {
-        val wanted = buildList {
-            if (Build.VERSION.SDK_INT >= 33) add(Manifest.permission.POST_NOTIFICATIONS)
-            add(Manifest.permission.CAMERA)
-            add(Manifest.permission.RECORD_AUDIO)
-        }.filter { ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED }
-        if (wanted.isNotEmpty()) ActivityCompat.requestPermissions(this, wanted.toTypedArray(), REQUEST_STARTUP)
     }
 
     /** "Dar permisos" del paso Kiosco: cámara y micrófono, los que falten. */
@@ -322,6 +314,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStop() {
         handler.removeCallbacks(tick)
+        noWifi.stop()
         super.onStop()
     }
 
@@ -605,7 +598,6 @@ class MainActivity : AppCompatActivity() {
 
         /** El paso Kiosco, el cuarto hijo de `steps`. */
         private const val STEP_KIOSK = 3
-        private const val REQUEST_STARTUP = 1
         private const val REQUEST_MEDIA = 2
         private val MEDIA_PERMISSIONS = listOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
         /** En el orden de los chips: Producción, Dev. */

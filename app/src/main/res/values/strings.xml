@@ -281,6 +281,11 @@
     <string name="status_headset">Auricular</string>
     <string name="status_speaker">Altavoz</string>
     <string name="status_wifi_settings">Abrir el Wi-Fi de Android</string>
+    <string name="status_ask_permission">Pedir el permiso que falta</string>
+    <string name="no_wifi_title">Sin conexión</string>
+    <string name="no_wifi_body">Elegí una red Wi-Fi para usar el maletín.</string>
+    <string name="no_wifi_action">Elegir red</string>
+    <string name="no_wifi_later">Ahora no</string>
     <string name="mode_cancel">Cancelar</string>
     <string name="mode_to_local_title">¿Pasar al Panel Local?</string>
     <string name="mode_to_local_body">Se cierra el kiosco de ONDOCTOR365. El Panel Local te va a pedir el PIN.</string>

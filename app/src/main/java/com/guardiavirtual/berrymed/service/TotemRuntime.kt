@@ -261,6 +261,9 @@ class TotemRuntime(context: Context) {
 
     /** El Wi-Fi del panel lateral. */
     private val wifi = WifiWatch(appContext)
+
+    /** La red de la tablet, para el aviso «Sin conexión» de la pantalla principal. */
+    val wifiState get() = wifi.state
     private val audioManager = appContext.getSystemService(AudioManager::class.java)
 
     /**
@@ -354,6 +357,17 @@ class TotemRuntime(context: Context) {
     }
 
     /**
+     * La fila de la plaqueta, el hub o el termómetro en el panel lateral:
+     * vuelve a pedir lo que falta, en fila, como «Pedir permiso USB» pero sin
+     * tocar el otoscopio. Su pedido es el de Android al ciclar el puerto, que
+     * saldría a la par del de la fila y uno de los dos se perdería; el
+     * otoscopio tiene su propia fila ([askOtoscopePermission]).
+     */
+    fun requestUsbPermissions() {
+        hub.forgetAsked()
+    }
+
+    /**
      * Vuelve a pedir el permiso del otoscopio con el pedido de Android que trae
      * «Usar de forma predeterminada»: apaga y enciende su puerto, y Android lo
      * ve como recién conectado. Va por el hilo del otoscopio, en orden con lo
@@ -412,7 +426,9 @@ class TotemRuntime(context: Context) {
         hub.requestPermission(device)
     }
 
+    /** La respuesta de un pedido de permiso USB: libera el pedido en vuelo y la vuelta siguiente de [watchLoop] pide el próximo. */
     fun onUsbPermission(device: UsbDevice?, granted: Boolean) {
+        hub.permissionAnswered(device?.deviceId)
         if (device != null) {
             log("[USB] Permiso ${if (granted) "aceptado" else "rechazado"} para ${device.deviceName}")
         }
@@ -1116,7 +1132,10 @@ class TotemRuntime(context: Context) {
         local = localSnapshot(),
         wifi = wifi.state,
         ykushPlugged = hub.ykushPlugged(),
-        usbPermissionMissing = hub.permissionMissing(),
+        usbMissing = hub.missingPermissions(),
+        appMissing = AppPermissions.missingForPanel { permission ->
+            ContextCompat.checkSelfPermission(appContext, permission) == PackageManager.PERMISSION_GRANTED
+        },
         localMode = localMode,
         sessionActive = sessionActive,
         teleInRoom = tele.status.room != RoomState.DISCONNECTED,

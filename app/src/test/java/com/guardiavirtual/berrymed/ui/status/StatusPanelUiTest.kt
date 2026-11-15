@@ -9,7 +9,9 @@ import com.guardiavirtual.berrymed.protocol.EcgInfo
 import com.guardiavirtual.berrymed.protocol.LiveFeed
 import com.guardiavirtual.berrymed.protocol.VitalSigns
 import com.guardiavirtual.berrymed.service.LocalSnapshot
+import com.guardiavirtual.berrymed.service.AppPermission
 import com.guardiavirtual.berrymed.service.StatusSnapshot
+import com.guardiavirtual.berrymed.usb.UsbRole
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -27,7 +29,8 @@ class StatusPanelUiTest {
         stethoStarting: Boolean = false,
         stethoRunning: Boolean = false,
         ykushPlugged: Boolean = true,
-        usbPermissionMissing: Boolean = false,
+        usbMissing: Set<UsbRole> = emptySet(),
+        appMissing: Set<AppPermission> = emptySet(),
         localMode: Boolean = false,
         sessionActive: Boolean = false,
         teleInRoom: Boolean = false,
@@ -57,7 +60,8 @@ class StatusPanelUiTest {
         ),
         wifi = wifi,
         ykushPlugged = ykushPlugged,
-        usbPermissionMissing = usbPermissionMissing,
+        usbMissing = usbMissing,
+        appMissing = appMissing,
         localMode = localMode,
         sessionActive = sessionActive,
         teleInRoom = teleInRoom,
@@ -140,7 +144,66 @@ class StatusPanelUiTest {
     fun hubRow() {
         assertEquals(ok("Conectado"), row(status(), "Hub USB").pair())
         assertEquals(bad("Desconectado"), row(status(ykushPlugged = false), "Hub USB").pair())
-        assertEquals(bad("Sin permiso USB"), row(status(usbPermissionMissing = true), "Hub USB").pair())
+        // Enchufado sin permiso: ámbar, no el rojo de desconectado, y se toca para pedirlo.
+        val missing = row(status(usbMissing = setOf(UsbRole.HUB)), "Hub USB")
+        assertEquals(warn("Falta permiso"), missing.pair())
+        assertEquals(StatusAction.USB_PERMISSION, missing.action)
+        // Al que le falta es a otro equipo: el hub sigue conectado.
+        assertEquals(ok("Conectado"), row(status(usbMissing = setOf(UsbRole.THERMOMETER)), "Hub USB").pair())
+        assertNull(row(status(), "Hub USB").action)
+    }
+
+    @Test
+    fun boardWithoutUsbPermission() {
+        val s = status(berryUp = false, lastDataAge = null, usbMissing = setOf(UsbRole.BOARD))
+        for (name in listOf("SpO2", "ECG", "Presión")) {
+            assertEquals(warn("Falta permiso"), row(s, name).pair())
+            assertEquals(StatusAction.USB_PERMISSION, row(s, name).action)
+        }
+        // Desenchufada sigue en rojo, sin nada que tocar.
+        assertNull(row(status(berryUp = false), "SpO2").action)
+    }
+
+    @Test
+    fun thermometerWithoutUsbPermission() {
+        val missing = row(status(thermoConnected = false, usbMissing = setOf(UsbRole.THERMOMETER)), "Temperatura")
+        assertEquals(warn("Falta permiso"), missing.pair())
+        assertEquals(StatusAction.USB_PERMISSION, missing.action)
+    }
+
+    @Test
+    fun otoscopeWithoutPermissions() {
+        val usb = row(status(usbMissing = setOf(UsbRole.OTOSCOPE)), "Otoscopio")
+        assertEquals(warn("Falta permiso"), usb.pair())
+        assertEquals(StatusAction.OTOSCOPE_PERMISSION, usb.action)
+        val camera = row(status(appMissing = setOf(AppPermission.CAMERA)), "Otoscopio")
+        assertEquals(warn("Falta permiso"), camera.pair())
+        assertEquals(StatusAction.CAMERA, camera.action)
+        // Primero el USB: sin él no hay cámara que pedir.
+        assertEquals(
+            StatusAction.OTOSCOPE_PERMISSION,
+            row(status(usbMissing = setOf(UsbRole.OTOSCOPE), appMissing = setOf(AppPermission.CAMERA)), "Otoscopio").action,
+        )
+        // En vivo manda lo que se ve.
+        assertEquals(ok("En vivo"), row(status(otoscopeState = OtoscopePower.State.ON, appMissing = setOf(AppPermission.CAMERA)), "Otoscopio").pair())
+        assertNull(row(status(), "Otoscopio").action)
+    }
+
+    @Test
+    fun stethoscopeWithoutMicrophone() {
+        val missing = row(status(appMissing = setOf(AppPermission.MICROPHONE)), "Estetoscopio")
+        assertEquals(warn("Falta permiso"), missing.pair())
+        assertEquals(StatusAction.MICROPHONE, missing.action)
+        assertNull(row(status(), "Estetoscopio").action)
+        // La cámara no es del estetoscopio.
+        assertEquals(ok("Conectado"), row(status(appMissing = setOf(AppPermission.CAMERA)), "Estetoscopio").pair())
+    }
+
+    @Test
+    fun aMissingPermissionIsNotGreenInTheCount() {
+        val state = StatusPanelUi.build(status(appMissing = setOf(AppPermission.MICROPHONE)), PanelMode.REMOTE)
+        assertEquals(6, state.okCount)
+        assertEquals(StatusTone.WARN, state.countTone)
     }
 
     @Test
@@ -161,6 +224,34 @@ class StatusPanelUiTest {
         val both = StatusPanelUi.build(status(stethoStarting = true, thermoConnected = false), PanelMode.REMOTE)
         assertEquals(5, both.okCount)
         assertEquals(StatusTone.BAD, both.countTone)
+    }
+
+    @Test
+    fun theWifiRowIsAlwaysTappable() {
+        // Con red o sin red abre el panel de Wi-Fi de Android.
+        assertEquals(StatusAction.OPEN_WIFI, StatusPanelUi.wifi(WifiState()).action)
+        assertEquals(
+            StatusAction.OPEN_WIFI,
+            StatusPanelUi.wifi(WifiState(connected = true, validated = true, ssid = "Consultorio-5G", rssi = -55)).action,
+        )
+    }
+
+    @Test
+    fun wifiWithoutLocation() {
+        val noName = WifiState(connected = true, validated = true, rssi = -55)
+        assertEquals(
+            WifiRow(WifiIcon.WIFI, "Wi-Fi conectado", "Falta permiso", StatusTone.WARN, 4, offline = false, action = StatusAction.LOCATION),
+            StatusPanelUi.wifi(noName, locationGranted = false),
+        )
+        // Sin internet importa más que el nombre.
+        assertEquals("Sin internet", StatusPanelUi.wifi(noName.copy(validated = false), locationGranted = false).text)
+        // Sin red, la ubicación no importa: se elige una red.
+        assertEquals(StatusAction.OPEN_WIFI, StatusPanelUi.wifi(WifiState(), locationGranted = false).action)
+        // Desde el snapshot.
+        assertEquals(
+            StatusAction.LOCATION,
+            StatusPanelUi.build(status(wifi = noName, appMissing = setOf(AppPermission.LOCATION)), PanelMode.REMOTE).wifi.action,
+        )
     }
 
     @Test
@@ -190,7 +281,7 @@ class StatusPanelUiTest {
         assertEquals(WifiRow(WifiIcon.OFF, "Sin Wi-Fi", "Tocá para elegir una red", StatusTone.BAD, 0, offline = true), none)
 
         // Sin el permiso de ubicación Android no da el nombre.
-        assertEquals("Wi-Fi", StatusPanelUi.wifi(WifiState(connected = true, validated = true, rssi = -55)).name)
+        assertEquals("Wi-Fi conectado", StatusPanelUi.wifi(WifiState(connected = true, validated = true, rssi = -55)).name)
     }
 
     @Test

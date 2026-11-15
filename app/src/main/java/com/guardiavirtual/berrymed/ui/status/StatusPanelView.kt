@@ -38,7 +38,8 @@ class StatusPanelView @JvmOverloads constructor(
 
     var onSwitchMode: () -> Unit = {}
     var onAudioChoice: (String) -> Unit = {}
-    var onOpenWifi: () -> Unit = {}
+    /** Tocar la fila del Wi-Fi (o su ícono en el riel) o una fila que dice «Falta permiso». */
+    var onAction: (StatusAction) -> Unit = {}
     var onToggle: (open: Boolean) -> Unit = {}
 
     init {
@@ -46,7 +47,12 @@ class StatusPanelView @JvmOverloads constructor(
         rail.root.setOnClickListener { toggle(true) }
         rail.openButton.setOnClickListener { toggle(true) }
         panel.modeButton.setOnClickListener { onSwitchMode() }
-        panel.wifiArea.setOnClickListener { if (state?.wifi?.offline == true) onOpenWifi() }
+        // Con red o sin red: abre el panel de Wi-Fi, o pide la ubicación si es lo que falta.
+        panel.wifiArea.setOnClickListener { state?.wifi?.let { onAction(it.action) } }
+        rail.railWifi.setOnClickListener { state?.wifi?.let { onAction(it.action) } }
+        rows.forEachIndexed { index, row ->
+            row.root.setOnClickListener { state?.devices?.getOrNull(index)?.action?.let(onAction) }
+        }
         panel.headsetSegment.setOnClickListener { onAudioChoice(CALL_AUDIO_HEADSET) }
         panel.tabletSegment.setOnClickListener { onAudioChoice(CALL_AUDIO_SPEAKER) }
         setOpen(true)
@@ -98,14 +104,18 @@ class StatusPanelView @JvmOverloads constructor(
         panel.wifiStatus.text = w.text
         panel.wifiStatus.setTextColor(color(statusColor(w.tone)))
         panel.wifiBars.visibility = if (w.offline) View.GONE else View.VISIBLE
-        panel.wifiChevron.visibility = if (w.offline) View.VISIBLE else View.GONE
+        // El chevron siempre: la fila siempre se toca. Con red, al lado de las barras.
+        panel.wifiChevron.visibility = View.VISIBLE
         val on = color(if (w.tone == StatusTone.WARN) R.color.warn else R.color.text2)
         val off = color(R.color.line3)
         listOf(panel.bar1, panel.bar2, panel.bar3, panel.bar4).forEachIndexed { index, bar ->
             bar.backgroundTintList = ColorStateList.valueOf(if (index < w.bars) on else off)
         }
-        panel.wifiArea.isClickable = w.offline
-        panel.wifiArea.contentDescription = if (w.offline) context.getString(R.string.status_wifi_settings) else null
+        val description = context.getString(
+            if (w.action == StatusAction.LOCATION) R.string.status_ask_permission else R.string.status_wifi_settings,
+        )
+        panel.wifiArea.contentDescription = description
+        rail.railWifi.contentDescription = description
 
         rail.railWifiIcon.setImageResource(icon)
         rail.railWifi.background = if (w.offline) drawable(R.drawable.status_icon_box_alarm) else null
@@ -158,6 +168,10 @@ class StatusPanelView @JvmOverloads constructor(
             row.deviceStatus.text = device.text
             row.deviceStatus.setTextColor(color(statusColor(device.tone)))
             dot(row.deviceDot, device.tone)
+            // Sólo se tocan las que dicen «Falta permiso».
+            row.root.isClickable = device.action != null
+            row.root.contentDescription =
+                if (device.action != null) "${device.name}: ${context.getString(R.string.status_ask_permission)}" else null
         }
         val count = context.getString(R.string.status_count, s.okCount, s.devices.size)
         val bad = s.countTone == StatusTone.BAD

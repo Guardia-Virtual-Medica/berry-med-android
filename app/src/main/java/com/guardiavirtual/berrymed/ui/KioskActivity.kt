@@ -13,7 +13,6 @@ import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.provider.Settings
 import android.os.SystemClock
 import android.text.InputType
 import android.util.Log
@@ -39,7 +38,6 @@ import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -52,7 +50,9 @@ import com.guardiavirtual.berrymed.service.MonitorService
 import com.guardiavirtual.berrymed.service.TotemRuntime
 import com.guardiavirtual.berrymed.tele.KioskUrls
 import com.guardiavirtual.berrymed.ui.status.ModeSwitchDialog
+import com.guardiavirtual.berrymed.ui.status.NoWifiNotice
 import com.guardiavirtual.berrymed.ui.status.PanelMode
+import com.guardiavirtual.berrymed.ui.status.StatusPanelActions
 import com.guardiavirtual.berrymed.ui.status.StatusPanelUi
 import com.guardiavirtual.berrymed.ui.status.StatusPanelView
 import kotlinx.coroutines.runBlocking
@@ -94,6 +94,9 @@ class KioskActivity : AppCompatActivity() {
     private lateinit var root: FrameLayout
     private lateinit var statusPanel: StatusPanelView
     private var modeDialog: ModeSwitchDialog? = null
+    private var pinDialog: AlertDialog? = null
+    private val permissions = AppPermissionAsker(this)
+    private val noWifi = NoWifiNotice(this)
     private lateinit var empty: LinearLayout
     private lateinit var offline: LinearLayout
     private var loadedUrl: String? = null
@@ -150,7 +153,8 @@ class KioskActivity : AppCompatActivity() {
                 override fun handleOnBackPressed() = Unit
             },
         )
-        askPermissions()
+        // Cámara y micrófono para Zoom y la teleconsulta, la ubicación para el nombre del Wi-Fi y las notificaciones.
+        permissions.askMissingOnOpen()
     }
 
     override fun onStart() {
@@ -160,6 +164,7 @@ class KioskActivity : AppCompatActivity() {
         getSystemService(ConnectivityManager::class.java).registerDefaultNetworkCallback(networkCallback)
         // Abierto o en el riel, como se dejó en el Panel Local.
         statusPanel.setOpen(runtime().statusPanelOpen)
+        noWifi.start()
         handler.removeCallbacks(statusTick)
         statusTick.run()
     }
@@ -169,6 +174,7 @@ class KioskActivity : AppCompatActivity() {
         handler.removeCallbacks(retryLater)
         handler.removeCallbacks(statusTick)
         modeDialog?.dismiss()
+        noWifi.stop()
         try {
             getSystemService(ConnectivityManager::class.java).unregisterNetworkCallback(networkCallback)
         } catch (_: IllegalArgumentException) {
@@ -209,12 +215,17 @@ class KioskActivity : AppCompatActivity() {
             renderStatus()
         }
         onAudioChoice = { choice -> runtime().setCallAudioOutput(choice) }
-        onOpenWifi = { startActivity(wifiSettingsIntent()) }
+        onAction = { action -> StatusPanelActions.handle(this@KioskActivity, runtime(), permissions, action) }
         onSwitchMode = { askSwitchToLocal() }
     }
 
     private fun renderStatus() {
-        statusPanel.render(StatusPanelUi.build(runtime().statusSnapshot(), PanelMode.REMOTE))
+        val snapshot = runtime().statusSnapshot()
+        statusPanel.render(StatusPanelUi.build(snapshot, PanelMode.REMOTE))
+        noWifi.update(
+            connected = snapshot.wifi.connected,
+            blocked = modeDialog?.showing == true || pinDialog?.isShowing == true,
+        )
     }
 
     /**
@@ -417,27 +428,6 @@ class KioskActivity : AppCompatActivity() {
     private fun granted(permission: String) =
         ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
 
-    /**
-     * Zoom y la teleconsulta necesitan cámara y micrófono; se piden antes de
-     * que la página los quiera. La ubicación es sólo para que el panel lateral
-     * muestre el nombre del Wi-Fi: sin ella dice «Wi-Fi». Desde Android 12 la
-     * precisa se pide junto con la aproximada, o Android ignora el pedido.
-     */
-    private fun askPermissions() {
-        val missing = listOf(
-            Manifest.permission.CAMERA,
-            Manifest.permission.RECORD_AUDIO,
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION,
-        ).filterNot(::granted)
-        if (missing.isNotEmpty()) ActivityCompat.requestPermissions(this, missing.toTypedArray(), 1)
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        MonitorService.promote(this)
-    }
-
     private fun hideSystemBars() {
         val controller = WindowCompat.getInsetsController(window, window.decorView)
         controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
@@ -543,6 +533,7 @@ class KioskActivity : AppCompatActivity() {
                 }
             }
         }
+        pinDialog = dialog
         dialog.show()
     }
 
@@ -558,14 +549,6 @@ class KioskActivity : AppCompatActivity() {
         input.error = getString(reason)
         return false
     }
-
-    /** Sin red: el panel de Wi-Fi de Android encima del kiosco, o la configuración de Wi-Fi antes de Android 10. */
-    private fun wifiSettingsIntent(): Intent =
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            Intent(Settings.Panel.ACTION_WIFI)
-        } else {
-            Intent(Settings.ACTION_WIFI_SETTINGS)
-        }
 
     private fun configIntent() =
         Intent(this, MainActivity::class.java).putExtra(MainActivity.EXTRA_OPEN_CONFIG, true)

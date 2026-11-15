@@ -63,7 +63,9 @@ import com.guardiavirtual.berrymed.ui.panel.TempCard
 import com.guardiavirtual.berrymed.ui.panel.Tile
 import com.guardiavirtual.berrymed.ui.panel.Tone
 import com.guardiavirtual.berrymed.ui.status.ModeSwitchDialog
+import com.guardiavirtual.berrymed.ui.status.NoWifiNotice
 import com.guardiavirtual.berrymed.ui.status.PanelMode
+import com.guardiavirtual.berrymed.ui.status.StatusPanelActions
 import com.guardiavirtual.berrymed.ui.status.StatusPanelUi
 import kotlin.concurrent.thread
 import kotlin.math.roundToInt
@@ -122,6 +124,10 @@ class LocalPanelActivity : AppCompatActivity() {
     private var openDevice: PanelDevice? = null
     private var finishOpen = false
     private var modeDialog: ModeSwitchDialog? = null
+
+    /** Los permisos de la app, todos juntos al abrir; los pedidos al usar cada cosa quedan de respaldo. */
+    private val permissions = AppPermissionAsker(this) { renderStatus() }
+    private val noWifi = NoWifiNotice(this)
 
     /**
      * El panel lateral se refresca cada medio segundo desde que la pantalla
@@ -284,6 +290,7 @@ class LocalPanelActivity : AppCompatActivity() {
 
         setUpStethoscope()
         showDevice(null)
+        permissions.askMissingOnOpen()
     }
 
     /** Cada vez que el panel vuelve al frente pide el PIN de nuevo. */
@@ -295,6 +302,7 @@ class LocalPanelActivity : AppCompatActivity() {
         clock.run()
         // Abierto o en el riel, como se dejó en el kiosco.
         showStatusPanel(runtime().statusPanelOpen)
+        noWifi.start()
         binding.statusPanel.removeCallbacks(statusTick)
         statusTick.run()
     }
@@ -318,6 +326,7 @@ class LocalPanelActivity : AppCompatActivity() {
         binding.ecgPaper.removeCallbacks(frame)
         binding.clock.removeCallbacks(clock)
         binding.statusPanel.removeCallbacks(statusTick)
+        noWifi.stop()
         // Primero la cámara del otoscopio: stopLocal apaga su puerto, y antes tiene que estar suelta.
         releaseOtoscope()
         cameraProvider?.unbindAll()
@@ -341,15 +350,7 @@ class LocalPanelActivity : AppCompatActivity() {
             showStatusPanel(open)
         }
         panel.onAudioChoice = { choice -> runtime().setCallAudioOutput(choice) }
-        panel.onOpenWifi = {
-            startActivity(
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                    Intent(android.provider.Settings.Panel.ACTION_WIFI)
-                } else {
-                    Intent(android.provider.Settings.ACTION_WIFI_SETTINGS)
-                },
-            )
-        }
+        panel.onAction = { action -> StatusPanelActions.handle(this, runtime(), permissions, action) }
         panel.onSwitchMode = { switchToKiosk() }
     }
 
@@ -362,7 +363,13 @@ class LocalPanelActivity : AppCompatActivity() {
 
     private fun renderStatus() {
         val mode = if (unlocked) PanelMode.LOCAL else PanelMode.LOCAL_LOCKED
-        binding.statusPanel.render(StatusPanelUi.build(runtime().statusSnapshot(), mode))
+        val snapshot = runtime().statusSnapshot()
+        binding.statusPanel.render(StatusPanelUi.build(snapshot, mode))
+        // No va arriba de la pantalla del PIN, de Finalizar ni del cambio de modo: espera a que se cierren.
+        noWifi.update(
+            connected = snapshot.wifi.connected,
+            blocked = !unlocked || finishOpen || modeDialog?.showing == true,
+        )
     }
 
     /**
