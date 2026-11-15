@@ -535,7 +535,8 @@ class LiveKitBackend(
         /** Hay que dar tiempo a mirar el otoscopio, prenderlo y elegir «Computer» en su pantalla. */
         private const val FIRST_FRAME_TIMEOUT_MS = 60_000L
         private const val POLL_MS = 250L
-        private const val OTOSCOPE_WAIT_NANOS = 8L * 1_000_000_000L
+        /** Como en el Panel Local: darle corriente no lo prende si se apagó solo; hay que apretar su botón y elegir «Computer». */
+        private const val OTOSCOPE_WAIT_NANOS = 60L * 1_000_000_000L
         private const val CAMERA2_GRACE_NANOS = 2L * 1_000_000_000L
         private const val STETHO_WAIT_NANOS = 5L * 1_000_000_000L
     }

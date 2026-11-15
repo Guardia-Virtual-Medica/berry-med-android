@@ -1036,9 +1036,9 @@ class TotemRuntime(context: Context) {
                 !ykush.setPort(port, true) -> log("[OTOSCOPIO] El YKUSH3 no encendió el puerto $port: se espera igual")
             }
             if (!otoscope.portReady(System.nanoTime())) return
-            progress("Esperando la cámara…")
+            progress(OTOSCOPE_HINT)
         } else {
-            progress("Sin YKUSH3: se intenta directo. Esperando la cámara…")
+            progress("Sin YKUSH3: se intenta directo. $OTOSCOPE_HINT")
         }
         while (true) {
             when (val poll = otoscope.poll(System.nanoTime(), otoscopeProbe.cameraSeen(), otoscopeProbe.usbReady())) {
@@ -1070,7 +1070,7 @@ class TotemRuntime(context: Context) {
                     }
                     if (next == OtoscopePower.Timeout.PORT_OFF) turnOffOtoscopePort()
                     log("[OTOSCOPIO] No apareció en ${OTOSCOPE_WAIT_NANOS / 1_000_000_000L} s")
-                    done(null, "El otoscopio no aparece como cámara.")
+                    done(null, "El otoscopio no apareció. Prendelo con su botón, tocá Encender y elegí «Computer» en su pantalla.")
                     return
                 }
             }
@@ -1392,7 +1392,14 @@ class TotemRuntime(context: Context) {
         private const val INVENTORY_NANOS = 3L * 1_000_000_000L
         private const val STETHO_WAIT_NANOS = 5L * 1_000_000_000L
         private const val DEVICE_POLL_MS = 250L
-        private const val OTOSCOPE_WAIT_NANOS = 8L * 1_000_000_000L
+        /**
+         * Lo que se espera a que el otoscopio aparezca después de encender su
+         * puerto. Darle corriente no lo prende si se había apagado solo: hay
+         * que apretar su botón y elegir «Computer», y eso lleva su tiempo.
+         */
+        private const val OTOSCOPE_WAIT_NANOS = 60L * 1_000_000_000L
+
+        private const val OTOSCOPE_HINT = "Prendé el otoscopio y elegí «Computer» en su pantalla."
 
         /** Lo que se espera a que el otro instrumento se suelte antes de tocar los puertos. */
         private const val INSTRUMENT_RELEASE_NANOS = 5L * 1_000_000_000L
