@@ -13,7 +13,7 @@ import kotlin.math.ceil
 /** El dispositivo abierto en el área principal, en lugar del ECG. */
 enum class PanelDevice { OTOSCOPE, STETHOSCOPE, CAMERA }
 
-/** El estado de un chip de la cabecera. */
+/** El estado de un chip de la cabecera de la pantalla principal. */
 enum class Link { CONNECTED, CONNECTING, DISCONNECTED }
 
 /**
@@ -24,15 +24,6 @@ enum class Link { CONNECTED, CONNECTING, DISCONNECTED }
 enum class Tone { OK, WARN, MUTED, FAINT, RECORDING }
 
 data class Status(val text: String, val tone: Tone)
-
-data class Chips(
-    val ecg: Link,
-    val spo2: Link,
-    val pressure: Link,
-    val temperature: Link,
-    val otoscope: Link,
-    val stethoscope: Link,
-)
 
 /** Las derivaciones a la vista: la II sola, las tres de los miembros o las siete. */
 enum class EcgLeads(val label: String, val leads: List<String>) {
@@ -132,7 +123,6 @@ data class ScreenState(
 
 /** Todo lo que el Panel Local muestra en un refresco, aparte de las ondas. */
 data class PanelState(
-    val chips: Chips,
     val signal: Status,
     val heartRate: String,
     /** Debajo de la FC: electrodos sueltos o el código de arritmia; vacío si no hay nada que decir. */
@@ -174,7 +164,6 @@ class PanelUi {
         val otoscopeStatus = otoscopeStatus(s, screen.otoscopeLabel, screen.otoscopeFps)
         val stethoscopeStatus = stethoscopeStatus(s)
         return PanelState(
-            chips = chips(s),
             signal = signal(s),
             heartRate = PanelFormat.value(s.vitals.heartRate),
             heartNote = heartNote(s),
@@ -242,6 +231,9 @@ class PanelUi {
 
     companion object {
         const val INFLATING = "Inflando…"
+
+        /** La nota de la FC con los electrodos sueltos; el panel lateral la usa en la fila del ECG. */
+        const val LEADS_OFF = "Electrodos sueltos"
         const val MEASURING = "Midiendo…"
 
         /** La barra de la presión se llena a 175 mmHg, más o menos donde para de inflar. */
@@ -333,33 +325,6 @@ class PanelUi {
         fun berryLive(s: LocalSnapshot): Boolean =
             s.berryUp && s.lastDataAge != null && s.lastDataAge <= PanelFormat.LIVE_SECONDS
 
-        fun chips(s: LocalSnapshot): Chips {
-            val berry = when {
-                berryLive(s) -> Link.CONNECTED
-                s.berryUp -> Link.CONNECTING
-                else -> Link.DISCONNECTED
-            }
-            val otoscope = when {
-                s.otoscopeState == OtoscopePower.State.POWERING_PORT ||
-                    s.otoscopeState == OtoscopePower.State.WAITING_CAMERA -> Link.CONNECTING
-                s.otoscopeState == OtoscopePower.State.ON || s.otoscopePlugged -> Link.CONNECTED
-                else -> Link.DISCONNECTED
-            }
-            val stethoscope = when {
-                s.stethoStarting -> Link.CONNECTING
-                s.stethoRunning || s.stethoPlugged -> Link.CONNECTED
-                else -> Link.DISCONNECTED
-            }
-            return Chips(
-                ecg = berry,
-                spo2 = berry,
-                pressure = berry,
-                temperature = if (s.thermoConnected) Link.CONNECTED else Link.DISCONNECTED,
-                otoscope = otoscope,
-                stethoscope = stethoscope,
-            )
-        }
-
         /** La señal del ECG: sin datos o con los electrodos sueltos no hay señal. */
         fun signal(s: LocalSnapshot): Status = when {
             !berryLive(s) || s.ecgInfo.leadOff != false -> Status("Sin señal", Tone.FAINT)
@@ -368,7 +333,7 @@ class PanelUi {
         }
 
         fun heartNote(s: LocalSnapshot): String = when {
-            s.ecgInfo.leadOff == true -> "Electrodos sueltos"
+            s.ecgInfo.leadOff == true -> LEADS_OFF
             else -> PanelFormat.arrhythmia(s.ecgInfo.hrv).orEmpty()
         }
 

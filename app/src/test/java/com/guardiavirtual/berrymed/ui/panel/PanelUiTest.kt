@@ -77,43 +77,6 @@ class PanelUiTest {
         PanelUi().build(s, now, screen, zone)
 
     @Test
-    fun berryChipsFollowTheBoard() {
-        val live = PanelUi.chips(snapshot())
-        assertEquals(Link.CONNECTED, live.ecg)
-        assertEquals(Link.CONNECTED, live.spo2)
-        assertEquals(Link.CONNECTED, live.pressure)
-        // Conectada pero callada: todavía conectando.
-        assertEquals(Link.CONNECTING, PanelUi.chips(snapshot(lastDataAge = null)).ecg)
-        assertEquals(Link.CONNECTING, PanelUi.chips(snapshot(lastDataAge = 3.5)).spo2)
-        assertEquals(Link.CONNECTED, PanelUi.chips(snapshot(lastDataAge = 3.0)).pressure)
-        assertEquals(Link.DISCONNECTED, PanelUi.chips(snapshot(berryUp = false, lastDataAge = 0.1)).ecg)
-    }
-
-    @Test
-    fun thermometerChip() {
-        assertEquals(Link.DISCONNECTED, PanelUi.chips(snapshot()).temperature)
-        assertEquals(Link.CONNECTED, PanelUi.chips(snapshot(thermoConnected = true)).temperature)
-    }
-
-    @Test
-    fun otoscopeChip() {
-        assertEquals(Link.DISCONNECTED, PanelUi.chips(snapshot(otoscopeAvailable = true)).otoscope)
-        assertEquals(Link.CONNECTED, PanelUi.chips(snapshot(otoscopePlugged = true)).otoscope)
-        for (state in listOf(OtoscopePower.State.POWERING_PORT, OtoscopePower.State.WAITING_CAMERA)) {
-            assertEquals(Link.CONNECTING, PanelUi.chips(snapshot(otoscopePlugged = true, otoscopeState = state)).otoscope)
-        }
-        assertEquals(Link.CONNECTED, PanelUi.chips(snapshot(otoscopeState = OtoscopePower.State.ON)).otoscope)
-    }
-
-    @Test
-    fun stethoscopeChip() {
-        assertEquals(Link.DISCONNECTED, PanelUi.chips(snapshot(stethoAvailable = true)).stethoscope)
-        assertEquals(Link.CONNECTED, PanelUi.chips(snapshot(stethoPlugged = true)).stethoscope)
-        assertEquals(Link.CONNECTED, PanelUi.chips(snapshot(stethoRunning = true)).stethoscope)
-        assertEquals(Link.CONNECTING, PanelUi.chips(snapshot(stethoPlugged = true, stethoStarting = true)).stethoscope)
-    }
-
-    @Test
     fun ecgSignal() {
         assertEquals(Status("Señal buena", Tone.OK), PanelUi.signal(snapshot()))
         assertEquals(Status("Señal débil", Tone.WARN), PanelUi.signal(snapshot(ecgInfo = EcgInfo(leadOff = false, weakSignal = true))))

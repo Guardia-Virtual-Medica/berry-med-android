@@ -13,6 +13,7 @@ import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
 import android.os.SystemClock
 import android.text.InputType
 import android.util.Log
@@ -50,6 +51,10 @@ import com.guardiavirtual.berrymed.config.checkPin
 import com.guardiavirtual.berrymed.service.MonitorService
 import com.guardiavirtual.berrymed.service.TotemRuntime
 import com.guardiavirtual.berrymed.tele.KioskUrls
+import com.guardiavirtual.berrymed.ui.status.ModeSwitchDialog
+import com.guardiavirtual.berrymed.ui.status.PanelMode
+import com.guardiavirtual.berrymed.ui.status.StatusPanelUi
+import com.guardiavirtual.berrymed.ui.status.StatusPanelView
 import kotlinx.coroutines.runBlocking
 import kotlin.concurrent.thread
 
@@ -77,11 +82,18 @@ import kotlin.concurrent.thread
  * contestar), Berry Med lo dice en su propia pantalla y reintenta solo: al
  * volver la red, cada 10 s y al volver al kiosco. Con el PIN también se puede
  * recargar la URL del kiosco desde cero.
+ *
+ * A la derecha va el panel lateral de estado ([StatusPanelView]): el WebView
+ * se achica a su lado y la página se acomoda sola. Desde ahí se pasa al Panel
+ * Local, que pide su PIN.
  */
 class KioskActivity : AppCompatActivity() {
     private val handler = Handler(Looper.getMainLooper())
     private var webView: WebView? = null
+    /** El lado izquierdo: el WebView, `empty`, `offline` y la esquina. El panel lateral queda afuera. */
     private lateinit var root: FrameLayout
+    private lateinit var statusPanel: StatusPanelView
+    private var modeDialog: ModeSwitchDialog? = null
     private lateinit var empty: LinearLayout
     private lateinit var offline: LinearLayout
     private var loadedUrl: String? = null
@@ -91,6 +103,14 @@ class KioskActivity : AppCompatActivity() {
     /** La página principal no cargó: la pantalla de sin conexión queda puesta hasta que cargue. */
     private var failed = false
     private val retryLater = Runnable { retry() }
+
+    /** El panel lateral se refresca cada medio segundo mientras el kiosco se ve. */
+    private val statusTick = object : Runnable {
+        override fun run() {
+            renderStatus()
+            handler.postDelayed(this, STATUS_MS)
+        }
+    }
 
     /** Android avisa en otro hilo; el reintento va al principal. */
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
@@ -108,7 +128,15 @@ class KioskActivity : AppCompatActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         ContextCompat.startForegroundService(this, Intent(this, MonitorService::class.java))
         root = FrameLayout(this).apply { setBackgroundColor(getColor(R.color.bg)) }
-        setContentView(root)
+        statusPanel = buildStatusPanel()
+        setContentView(
+            LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setBackgroundColor(getColor(R.color.bg))
+                addView(root, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f))
+                addView(statusPanel, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT))
+            },
+        )
         empty = buildEmptyView()
         root.addView(empty)
         offline = buildOfflineView()
@@ -130,11 +158,17 @@ class KioskActivity : AppCompatActivity() {
         // Con el kiosco adelante el otoscopio y el estetoscopio quedan encendidos: sólo energía, no transmiten.
         runtime().setKioskVisible(true)
         getSystemService(ConnectivityManager::class.java).registerDefaultNetworkCallback(networkCallback)
+        // Abierto o en el riel, como se dejó en el Panel Local.
+        statusPanel.setOpen(runtime().statusPanelOpen)
+        handler.removeCallbacks(statusTick)
+        statusTick.run()
     }
 
     override fun onStop() {
         // Con otra pantalla adelante no se reintenta: al volver, show() lo retoma.
         handler.removeCallbacks(retryLater)
+        handler.removeCallbacks(statusTick)
+        modeDialog?.dismiss()
         try {
             getSystemService(ConnectivityManager::class.java).unregisterNetworkCallback(networkCallback)
         } catch (_: IllegalArgumentException) {
@@ -168,6 +202,42 @@ class KioskActivity : AppCompatActivity() {
     }
 
     private fun runtime() = (application as BerryMedApp).runtime
+
+    private fun buildStatusPanel(): StatusPanelView = StatusPanelView(this).apply {
+        onToggle = { open ->
+            runtime().statusPanelOpen = open
+            renderStatus()
+        }
+        onAudioChoice = { choice -> runtime().setCallAudioOutput(choice) }
+        onOpenWifi = { startActivity(wifiSettingsIntent()) }
+        onSwitchMode = { askSwitchToLocal() }
+    }
+
+    private fun renderStatus() {
+        statusPanel.render(StatusPanelUi.build(runtime().statusSnapshot(), PanelMode.REMOTE))
+    }
+
+    /**
+     * Remoto → Local: con una consulta en curso el botón está bloqueado; si
+     * no, se confirma y se abre el Panel Local, que pide su PIN. Es el único
+     * PIN de este camino.
+     */
+    private fun askSwitchToLocal() {
+        if (runtime().modeSwitchBlock() != null) {
+            renderStatus()
+            return
+        }
+        modeDialog?.dismiss()
+        modeDialog = ModeSwitchDialog.show(
+            this,
+            title = R.string.mode_to_local_title,
+            body = R.string.mode_to_local_body,
+            action = R.string.mode_to_local_action,
+        ) {
+            // La consulta pudo haber empezado con el diálogo abierto.
+            if (runtime().modeSwitchBlock() == null) startActivity(Intent(this, LocalPanelActivity::class.java))
+        }
+    }
 
     /** La URL guardada; si cambió en la configuración, se vuelve a cargar. */
     private fun loadConfiguredUrl() {
@@ -347,9 +417,19 @@ class KioskActivity : AppCompatActivity() {
     private fun granted(permission: String) =
         ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
 
-    /** Zoom y la teleconsulta necesitan cámara y micrófono; se piden antes de que la página los quiera. */
+    /**
+     * Zoom y la teleconsulta necesitan cámara y micrófono; se piden antes de
+     * que la página los quiera. La ubicación es sólo para que el panel lateral
+     * muestre el nombre del Wi-Fi: sin ella dice «Wi-Fi». Desde Android 12 la
+     * precisa se pide junto con la aproximada, o Android ignora el pedido.
+     */
     private fun askPermissions() {
-        val missing = listOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO).filterNot(::granted)
+        val missing = listOf(
+            Manifest.permission.CAMERA,
+            Manifest.permission.RECORD_AUDIO,
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+        ).filterNot(::granted)
         if (missing.isNotEmpty()) ActivityCompat.requestPermissions(this, missing.toTypedArray(), 1)
     }
 
@@ -479,6 +559,14 @@ class KioskActivity : AppCompatActivity() {
         return false
     }
 
+    /** Sin red: el panel de Wi-Fi de Android encima del kiosco, o la configuración de Wi-Fi antes de Android 10. */
+    private fun wifiSettingsIntent(): Intent =
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            Intent(Settings.Panel.ACTION_WIFI)
+        } else {
+            Intent(Settings.ACTION_WIFI_SETTINGS)
+        }
+
     private fun configIntent() =
         Intent(this, MainActivity::class.java).putExtra(MainActivity.EXTRA_OPEN_CONFIG, true)
 
@@ -486,6 +574,7 @@ class KioskActivity : AppCompatActivity() {
         private const val CORNER_DP = 64
         private const val TAPS_TO_EXIT = 5
         private const val TAPS_WINDOW_MS = 3_000L
+        private const val STATUS_MS = 500L
 
         /** Los orígenes de Zoom Video SDK que pueden pedir cámara y micrófono además del kiosco. */
         private val ZOOM_HOSTS = listOf("zoom.us", "zoom.com", "zoomgov.com")

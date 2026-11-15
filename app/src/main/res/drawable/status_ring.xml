@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- El estado rojo: un aro hueco de 2 dp, para que no se distinga sólo por el color. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
+    <solid android:color="@android:color/transparent" />
+    <stroke android:width="2dp" android:color="@color/alarm" />
+    <size android:width="8dp" android:height="8dp" />
+</shape>

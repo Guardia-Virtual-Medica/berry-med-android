@@ -6,8 +6,10 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.hardware.usb.UsbDevice
+import android.media.AudioManager
 import android.util.Log
 import androidx.core.content.ContextCompat
+import com.guardiavirtual.berrymed.audio.AudioPick
 import com.guardiavirtual.berrymed.audio.CallAudioRouter
 import com.guardiavirtual.berrymed.audio.StethoDsp
 import com.guardiavirtual.berrymed.audio.StethoFilter
@@ -20,6 +22,7 @@ import com.guardiavirtual.berrymed.otoscope.OtoscopePower
 import com.guardiavirtual.berrymed.otoscope.OtoscopeProbe
 import com.guardiavirtual.berrymed.net.PostOutcome
 import com.guardiavirtual.berrymed.net.SessionPusher
+import com.guardiavirtual.berrymed.net.WifiWatch
 import com.guardiavirtual.berrymed.protocol.BmDataParser
 import com.guardiavirtual.berrymed.protocol.LiveFeed
 import com.guardiavirtual.berrymed.protocol.SampleWindow
@@ -34,6 +37,7 @@ import com.guardiavirtual.berrymed.protocol.summarize
 import com.guardiavirtual.berrymed.tele.Instrument
 import com.guardiavirtual.berrymed.tele.KioskUrls
 import com.guardiavirtual.berrymed.tele.LiveKitBackend
+import com.guardiavirtual.berrymed.tele.RoomState
 import com.guardiavirtual.berrymed.tele.TeleOrder
 import com.guardiavirtual.berrymed.tele.TeleStreamer
 import com.guardiavirtual.berrymed.tele.TeleView
@@ -255,6 +259,17 @@ class TotemRuntime(context: Context) {
     /** Fija la salida de la videollamada del `WebView`, que corre en este proceso. */
     private val callAudio = CallAudioRouter(appContext, { config }, ::log)
 
+    /** El Wi-Fi del panel lateral. */
+    private val wifi = WifiWatch(appContext)
+    private val audioManager = appContext.getSystemService(AudioManager::class.java)
+
+    /**
+     * Si el panel lateral está abierto o en el riel. Vive sólo en memoria: se
+     * mantiene entre el kiosco y el Panel Local y vuelve a abierto al
+     * reiniciar el proceso. Se toca desde el hilo principal.
+     */
+    var statusPanelOpen = true
+
     private val pusher = SessionPusher(::log, object : SessionPusher.Listener {
         override fun onStart() = startSession()
 
@@ -310,6 +325,7 @@ class TotemRuntime(context: Context) {
             }
         }
         callAudio.start()
+        wifi.start()
         thread(name = "berry-usb", isDaemon = true) { berry.run() }
         thread(name = "berry-thermo", isDaemon = true) { thermo.run() }
         thread(name = "berry-post", isDaemon = true) { postLoop() }
@@ -1091,6 +1107,50 @@ class TotemRuntime(context: Context) {
         for (port in ports) ykush.setPort(port, false)
         log("[OTOSCOPIO] Se apagó el puerto ${ports.joinToString(", ")} del YKUSH3, que había encendido el panel")
     }
+
+    /**
+     * Lo que muestra el panel lateral, sin efectos: se puede pedir cada medio
+     * segundo desde la pantalla. No usa [testingSnapshot], que avanza la prueba.
+     */
+    fun statusSnapshot(): StatusSnapshot = StatusSnapshot(
+        local = localSnapshot(),
+        wifi = wifi.state,
+        ykushPlugged = hub.ykushPlugged(),
+        usbPermissionMissing = hub.permissionMissing(),
+        localMode = localMode,
+        sessionActive = sessionActive,
+        teleInRoom = tele.status.room != RoomState.DISCONNECTED,
+        callAudioChoice = config.callAudioOutput,
+        jackPresent = jackPresent(),
+    )
+
+    /** El texto que bloquea el botón de cambiar de modo, o null si se puede cambiar. */
+    fun modeSwitchBlock(): String? =
+        StatusSnapshot.modeSwitchBlock(sessionActive, tele.status.room != RoomState.DISCONNECTED)
+
+    /**
+     * El segmentado de sonido del panel lateral: guarda [choice] ("auricular"
+     * o "parlante") en la configuración, fuera del hilo principal. El cambio
+     * vuelve por [ConfigStore.flow] y ahí se llama a `callAudio.refresh()`,
+     * como al guardarlo desde la configuración. Antes de leer lo guardado no
+     * se escribe nada: se pisaría la configuración con la de fábrica.
+     */
+    fun setCallAudioOutput(choice: String) {
+        if (!configLoaded || config.callAudioOutput == choice) return
+        val saved = config.copy(callAudioOutput = choice)
+        scope.launch {
+            try {
+                store.save(saved)
+                log("[AUDIO] Sonido de la llamada desde el panel lateral: $choice")
+            } catch (error: Exception) {
+                log("[AUDIO] No se pudo guardar el sonido de la llamada: $error")
+            }
+        }
+    }
+
+    /** Si hay algo enchufado en el jack de la tablet: Android lo lista sólo mientras está. */
+    private fun jackPresent(): Boolean =
+        audioManager?.getDevices(AudioManager.GET_DEVICES_OUTPUTS)?.any { AudioPick.isJack(it.type) } == true
 
     fun localSnapshot(): LocalSnapshot {
         val stats = parser.stats()

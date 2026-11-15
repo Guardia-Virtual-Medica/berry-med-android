@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- El panel lateral y el riel: fondo surface con un borde izquierdo de 1 dp en line. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/line" />
+        </shape>
+    </item>
+    <item android:left="1dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/surface" />
+        </shape>
+    </item>
+</layer-list>

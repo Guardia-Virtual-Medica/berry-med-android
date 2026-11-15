@@ -1,0 +1,353 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    El panel lateral abierto, 296 dp: la cabecera con el Wi-Fi, Modo,
+    Dispositivos y, pegado abajo, Sonido de la llamada. Modo y Dispositivos
+    scrollean si no entran (con el aviso del botón bloqueado, en una tablet
+    más baja); Sonido queda siempre a la vista.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/status_panel_bg"
+    android:orientation="vertical"
+    android:paddingStart="1dp">
+
+    <!-- Cabecera: 64 dp. Sin red, todo menos el botón de cerrar abre el Wi-Fi de Android. -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="63dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingEnd="12dp">
+
+        <LinearLayout
+            android:id="@+id/wifiArea"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="15dp">
+
+            <ImageView
+                android:id="@+id/wifiIcon"
+                style="@style/Status.IconBox"
+                android:background="@drawable/panel_icon_box"
+                android:src="@drawable/ic_wifi"
+                app:tint="@color/text2" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/wifiName"
+                    style="@style/Panel.Text"
+                    android:layout_width="match_parent"
+                    android:ellipsize="end"
+                    android:fontFamily="@font/barlow_semibold"
+                    android:maxLines="1"
+                    android:textSize="16sp"
+                    tools:text="Consultorio-5G" />
+
+                <TextView
+                    android:id="@+id/wifiStatus"
+                    style="@style/Status.Sub"
+                    android:layout_width="match_parent"
+                    tools:text="Señal buena" />
+            </LinearLayout>
+
+            <!-- Cuatro barras de 5, 8, 12 y 16 dp, alineadas abajo. -->
+            <LinearLayout
+                android:id="@+id/wifiBars"
+                android:layout_width="wrap_content"
+                android:layout_height="16dp"
+                android:layout_marginStart="12dp"
+                android:gravity="bottom"
+                android:orientation="horizontal">
+
+                <View
+                    android:id="@+id/bar1"
+                    style="@style/Status.Bar"
+                    android:layout_height="5dp"
+                    android:layout_marginStart="0dp" />
+
+                <View
+                    android:id="@+id/bar2"
+                    style="@style/Status.Bar"
+                    android:layout_height="8dp" />
+
+                <View
+                    android:id="@+id/bar3"
+                    style="@style/Status.Bar"
+                    android:layout_height="12dp" />
+
+                <View
+                    android:id="@+id/bar4"
+                    style="@style/Status.Bar"
+                    android:layout_height="16dp" />
+            </LinearLayout>
+
+            <ImageView
+                android:id="@+id/wifiChevron"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_marginStart="8dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_chevron_right"
+                android:visibility="gone"
+                app:tint="@color/faint" />
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/closeButton"
+            style="@style/Status.Close"
+            android:layout_marginStart="12dp"
+            android:contentDescription="@string/status_close"
+            android:src="@drawable/ic_chevron_right" />
+    </LinearLayout>
+
+    <View style="@style/Status.Divider" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:overScrollMode="never"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Modo. -->
+            <LinearLayout style="@style/Status.Section">
+
+                <TextView
+                    style="@style/Status.Label"
+                    android:text="@string/status_mode" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/modeIcon"
+                        style="@style/Status.IconBox"
+                        android:background="@drawable/status_mode_box"
+                        android:backgroundTint="@color/ondoctor_icon"
+                        android:src="@drawable/ic_video_call"
+                        app:tint="@color/text" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/modeName"
+                            style="@style/Panel.Text"
+                            android:fontFamily="@font/barlow_bold"
+                            android:textSize="18sp"
+                            tools:text="Remoto" />
+
+                        <TextView
+                            android:id="@+id/modeSub"
+                            style="@style/Status.Sub"
+                            tools:text="ONDOCTOR365 · teleconsulta" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/modeButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/status_mode_button"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/modeButtonIcon"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:duplicateParentState="true"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_swap_horiz"
+                        app:tint="@color/status_mode_icon" />
+
+                    <TextView
+                        android:id="@+id/modeButtonText"
+                        style="@style/Panel.Text"
+                        android:layout_marginStart="10dp"
+                        android:duplicateParentState="true"
+                        android:fontFamily="@font/barlow_semibold"
+                        android:textColor="@color/status_mode_text"
+                        android:textSize="15sp"
+                        tools:text="Cambiar a Panel Local" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/modeBlocked"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:orientation="horizontal"
+                    android:visibility="gone"
+                    tools:visibility="visible">
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_info"
+                        app:tint="@color/muted" />
+
+                    <TextView
+                        android:id="@+id/modeBlockedText"
+                        style="@style/Panel.Text"
+                        android:layout_width="0dp"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:lineSpacingMultiplier="1.2"
+                        android:textColor="@color/muted"
+                        android:textSize="13sp"
+                        tools:text="Hay una consulta en curso. Terminala para cambiar." />
+                </LinearLayout>
+            </LinearLayout>
+
+            <View style="@style/Status.Divider" />
+
+            <!-- Dispositivos, en el orden fijo. -->
+            <LinearLayout
+                style="@style/Status.Section"
+                android:paddingBottom="12dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="26dp"
+                    android:layout_marginBottom="8dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        style="@style/Status.Label"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:text="@string/status_devices" />
+
+                    <TextView
+                        android:id="@+id/deviceCount"
+                        style="@style/Panel.Text"
+                        android:layout_height="26dp"
+                        android:background="@drawable/status_count"
+                        android:fontFamily="@font/barlow_semi_condensed_semibold"
+                        android:fontFeatureSettings="tnum"
+                        android:gravity="center"
+                        android:paddingStart="10dp"
+                        android:paddingEnd="10dp"
+                        android:textColor="@color/ok"
+                        android:textSize="14sp"
+                        tools:text="7/7" />
+                </LinearLayout>
+
+                <include
+                    android:id="@+id/device0"
+                    layout="@layout/item_status_device" />
+
+                <include
+                    android:id="@+id/device1"
+                    layout="@layout/item_status_device" />
+
+                <include
+                    android:id="@+id/device2"
+                    layout="@layout/item_status_device" />
+
+                <include
+                    android:id="@+id/device3"
+                    layout="@layout/item_status_device" />
+
+                <include
+                    android:id="@+id/device4"
+                    layout="@layout/item_status_device" />
+
+                <include
+                    android:id="@+id/device5"
+                    layout="@layout/item_status_device" />
+
+                <include
+                    android:id="@+id/device6"
+                    layout="@layout/item_status_device" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+
+    <View style="@style/Status.Divider" />
+
+    <!-- Sonido de la llamada, pegado abajo. -->
+    <LinearLayout style="@style/Status.Section">
+
+        <TextView
+            style="@style/Status.Label"
+            android:text="@string/status_call_audio" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/status_segments"
+            android:orientation="horizontal"
+            android:padding="3dp">
+
+            <LinearLayout
+                android:id="@+id/headsetSegment"
+                style="@style/Status.Segment">
+
+                <ImageView
+                    style="@style/Status.SegmentIcon"
+                    android:src="@drawable/ic_headset_mic" />
+
+                <TextView
+                    style="@style/Status.SegmentText"
+                    android:text="@string/status_headset" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/tabletSegment"
+                style="@style/Status.Segment"
+                android:layout_marginStart="2dp">
+
+                <ImageView
+                    style="@style/Status.SegmentIcon"
+                    android:src="@drawable/ic_tablet_android" />
+
+                <TextView
+                    style="@style/Status.SegmentText"
+                    android:text="@string/status_tablet" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/callHelp"
+            style="@style/Panel.Text"
+            android:layout_width="match_parent"
+            android:layout_marginTop="8dp"
+            android:lineSpacingMultiplier="1.2"
+            android:textColor="@color/muted"
+            android:textSize="13sp"
+            tools:text="Se escucha y se habla por el auricular." />
+    </LinearLayout>
+</LinearLayout>
