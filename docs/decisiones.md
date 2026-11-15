@@ -239,8 +239,29 @@ Pedidos del usuario probando en la tablet (rk3576, 1920×1080 a 160 dpi), sin pl
 - **Dobles toques.** Medir dos veces cancelaba la presión recién empezada y Detener dos veces volvía a arrancar el ECG: un segundo toque dentro de 0,7 s se ignora.
 - Detalles: panel lateral cerrado al arrancar y con fondo azul para distinguirlo; la tarjeta del PIN más arriba del teclado; «Temperatura» con el valor «36,4 °C» y «Apretá el botón para medir».
 
+## 15 de noviembre de 2026
+
+### El otoscopio y «Computer»
+
+Visto en la tablet de pruebas y confirmado con el código del proveedor Koplak, que usa el mismo otoscopio (`349C:3301`, PAKISS Q10):
+
+- El otoscopio no manda imagen hasta que alguien elige **«Computer»** en el menú de su pantalla. El menú aparece cuando detecta un equipo que le habla por USB; si nadie elige, al minuto y medio se desconecta.
+- Al elegir «Computer» se desenchufa y se vuelve a enchufar solo, con otro `deviceId`. `UvcOtoscope` se quedaba con el de antes y la imagen no llegaba nunca, con el encabezado diciendo «En vivo».
+- Ahora, con el otoscopio abierto, se mira una vez por segundo si cambió el `deviceId`; si cambió, se espera 1,2 s (el video no está listo en el primer instante) y se abre de nuevo. La regla, `UvcOtoscope.Reconnect`, con test.
+- El panel dice «Esperando imagen» y muestra el pedido de elegir «Computer» hasta que llega el primer segundo de cuadros; «En vivo» y **Congelar** recién con imagen.
+- Se probó bajar a 480×480 (lo que pide el proveedor): no cambia la cadencia, que en la tablet fue de 5 a 9 cuadros por segundo con las dos resoluciones. Queda 800×800. El otoscopio declara 30 y 5 cuadros; falta confirmar con buena luz si baja solo cuando está oscuro.
+- Se descartó en el camino que fuera falta de corriente o el cableado: enchufado directo a una Mac se comporta igual (sin elegir «Computer» se va solo).
+
+### El YKUSH3 al arrancar la tablet
+
+- Si el hub no contesta en los primeros segundos del arranque, el kernel de la tablet lo intenta dos veces (`device not accepting address`, `unable to enumerate USB device`) y no reintenta más: el hub queda prendido, con su luz verde, y la tablet no ve ni el hub ni lo que cuelga de él. Volver a buscarlo (desenlazar y enlazar el hub de arriba, con root) lo recupera al instante.
+- Enchufar o desenchufar un equipo con todo prendido también lo dejó colgado una vez; ahí hizo falta cortarle la corriente.
+- La app no puede forzar esa búsqueda sin root. Pendiente: un ajuste de sistema en la tablet que la repita si el hub no apareció al arrancar.
+
 ## Pendiente
 
+- El otoscopio en la teleconsulta (`UvcOtoscopeFrames`) no reabre al reconectarse: si el médico lo pide antes de que alguien elija «Computer», falla. El panel lateral dice «En vivo» apenas abre, sin esperar la imagen. La cadencia del otoscopio (5 a 9 cuadros por segundo), a confirmar con buena luz.
+- Que la tablet reintente tomar el YKUSH3 si no apareció al arrancar (ajuste de sistema), y probar los puertos siempre encendidos con el audio de la videollamada.
 - Prueba con el hardware real en la tablet (ver "Probar el Panel Local en el tótem" en el `README.md` y los riesgos de `docs/hardware.md`).
 - Los hallazgos 8 a 14, 16, 17 y 19 a 26 de `docs/revisiones/revision-codigo-opus.md` (el 15 y el 18 se resolvieron en el plan 15).
 - Plan 15 en la tablet real: una temperatura tomada en el Panel Local no aparece al cerrarlo ni en la consulta siguiente; con el inicio perdido, una lectura de hace más de 60 s no llega al médico y una reciente sí; el panel abre sin presión hasta Medir.

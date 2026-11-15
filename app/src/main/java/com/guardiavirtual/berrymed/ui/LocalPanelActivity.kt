@@ -922,7 +922,7 @@ class LocalPanelActivity : AppCompatActivity() {
                 if (otoscope !== source || !unlocked) return@open
                 if (reason == null) {
                     otoscopeOpened = true
-                    setOtoscopeMessage(getString(R.string.local_otoscope_ready, source.label))
+                    setOtoscopeMessage(getString(R.string.local_otoscope_pick_computer))
                 } else {
                     runtime.log("[OTOSCOPIO] No abrió ${source.label}: $reason")
                     otoscopeOff(null)
@@ -1110,7 +1110,8 @@ class LocalPanelActivity : AppCompatActivity() {
         binding.otoscopePowerButton.setText(if (otoscopeIdle) R.string.local_otoscope_on else R.string.local_otoscope_off)
         binding.otoscopePowerButton.isEnabled = s.otoscopeState != OtoscopePower.State.POWERING_OFF &&
             (s.otoscopeAvailable || !otoscopeIdle)
-        val otoscopeLive = otoscopeOpened && s.otoscopeState == OtoscopePower.State.ON
+        // Con imagen de verdad: abrir no alcanza, el otoscopio manda recién cuando se elige «Computer» en su pantalla.
+        val otoscopeLive = otoscopeOpened && s.otoscopeState == OtoscopePower.State.ON && otoscopeFps != null
         otoscopeFreeze.setCanFreeze(otoscopeLive)
         // Mientras hay imagen el mensaje se va: lo dice el estado del encabezado.
         binding.otoscopeMessage.visibility = if (otoscopeLive) View.GONE else View.VISIBLE

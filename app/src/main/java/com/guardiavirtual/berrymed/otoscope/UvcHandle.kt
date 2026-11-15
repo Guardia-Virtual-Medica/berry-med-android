@@ -19,6 +19,8 @@ internal class UvcHandle private constructor(
     val size: OtoscopeResolution.Size,
     /** Los cuadros por segundo pedidos, o null si la cadencia la eligió la cámara. */
     val fps: Int?,
+    /** El `deviceId` con el que Android veía el otoscopio al abrirlo: cambia si se reconecta. */
+    val deviceId: Int,
 ) {
     /** Cómo se abrió, para el log: "800×800 MJPEG, 30 cuadros/s". */
     fun describe(): String {
@@ -70,7 +72,7 @@ internal class UvcHandle private constructor(
                 val size = OtoscopeResolution.best(offered)
                     ?: OtoscopeResolution.Size(OtoscopeResolution.TARGET, OtoscopeResolution.TARGET)
                 val fps = setPreviewSize(camera, size)
-                return Opened.Ok(UvcHandle(usb, camera, size, fps))
+                return Opened.Ok(UvcHandle(usb, camera, size, fps, device.deviceId))
             } catch (error: Throwable) {
                 try {
                     uvc?.destroy()
