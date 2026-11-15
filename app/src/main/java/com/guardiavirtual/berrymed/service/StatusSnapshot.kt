@@ -2,6 +2,7 @@
 package com.guardiavirtual.berrymed.service
 
 import com.guardiavirtual.berrymed.net.WifiState
+import com.guardiavirtual.berrymed.usb.UsbRole
 
 /**
  * Lo que dibuja el panel lateral en cada refresco. Lo arma
@@ -12,8 +13,10 @@ data class StatusSnapshot(
     val wifi: WifiState,
     /** Si está enchufado el YKUSH3, tenga permiso o no. */
     val ykushPlugged: Boolean,
-    /** Si a algún equipo del tótem le falta el permiso USB. */
-    val usbPermissionMissing: Boolean,
+    /** Los equipos del tótem enchufados sin permiso USB. */
+    val usbMissing: Set<UsbRole>,
+    /** Los permisos de la app que no están dados: cámara, micrófono, ubicación. */
+    val appMissing: Set<AppPermission>,
     val localMode: Boolean,
     val sessionActive: Boolean,
     /** Si la teleconsulta está en una sala de LiveKit (conectando, conectada o con error). */

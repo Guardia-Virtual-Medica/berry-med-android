@@ -92,6 +92,25 @@ class SweepTrace(val samplesPerScreen: Int) {
         return if (min <= max) min to max else null
     }
 
+    /**
+     * Cuánto varió la onda en las últimas [samples] muestras (máximo menos
+     * mínimo), hacia atrás desde el cursor. Null si hay menos de
+     * [minSamples] seguidas: recién arrancó y todavía no se puede decir.
+     */
+    fun recentSpan(samples: Int, minSamples: Int): Float? {
+        var min = Float.POSITIVE_INFINITY
+        var max = Float.NEGATIVE_INFINITY
+        var seen = 0
+        for (k in 1..minOf(samples, samplesPerScreen)) {
+            val v = values[(head - k + samplesPerScreen) % samplesPerScreen]
+            if (v.isNaN()) break
+            if (v < min) min = v
+            if (v > max) max = v
+            seen++
+        }
+        return if (seen >= maxOf(1, minSamples)) max - min else null
+    }
+
     companion object {
         /** Lo más que se trae por cuadro: dos segundos de ECG. Si la pantalla se atrasó más, descarta lo viejo. */
         const val SCRATCH = 512

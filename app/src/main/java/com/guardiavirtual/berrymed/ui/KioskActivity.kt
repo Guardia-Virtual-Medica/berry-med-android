@@ -13,9 +13,7 @@ import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.provider.Settings
 import android.os.SystemClock
-import android.text.InputType
 import android.util.Log
 import android.view.Gravity
 import android.view.View
@@ -32,27 +30,26 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Button
-import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.Lifecycle
 import com.guardiavirtual.berrymed.BerryMedApp
 import com.guardiavirtual.berrymed.R
-import com.guardiavirtual.berrymed.config.PinCheck
-import com.guardiavirtual.berrymed.config.checkPin
 import com.guardiavirtual.berrymed.service.MonitorService
 import com.guardiavirtual.berrymed.service.TotemRuntime
 import com.guardiavirtual.berrymed.tele.KioskUrls
 import com.guardiavirtual.berrymed.ui.status.ModeSwitchDialog
+import com.guardiavirtual.berrymed.ui.status.NoWifiNotice
 import com.guardiavirtual.berrymed.ui.status.PanelMode
+import com.guardiavirtual.berrymed.ui.status.StatusPanelActions
 import com.guardiavirtual.berrymed.ui.status.StatusPanelUi
 import com.guardiavirtual.berrymed.ui.status.StatusPanelView
 import kotlinx.coroutines.runBlocking
@@ -74,14 +71,14 @@ import kotlin.concurrent.thread
  * que trae `serverUrl` y `token` hace entrar a la sala del encuentro, y el
  * inicio o el login la hacen salir. El token no se escribe en ningún lado.
  *
- * Atrás no sale: el paciente no tiene que poder irse. Se sale a la
- * configuración con cinco toques en la esquina de arriba a la izquierda y el
- * PIN del Panel Local.
+ * Atrás no sale: el paciente no tiene que poder irse. Se vuelve a Inicio
+ * con la casita del panel lateral o cinco toques en la esquina de arriba a
+ * la izquierda, confirmando (sin PIN: el PIN es sólo para la configuración).
  *
  * Si la página no carga (la tablet todavía sin wifi, el servidor sin
  * contestar), Berry Med lo dice en su propia pantalla y reintenta solo: al
- * volver la red, cada 10 s y al volver al kiosco. Con el PIN también se puede
- * recargar la URL del kiosco desde cero.
+ * volver la red, cada 10 s y al volver al kiosco. Desde la casita también se
+ * puede recargar la URL del kiosco desde cero.
  *
  * A la derecha va el panel lateral de estado ([StatusPanelView]): el WebView
  * se achica a su lado y la página se acomoda sola. Desde ahí se pasa al Panel
@@ -94,6 +91,9 @@ class KioskActivity : AppCompatActivity() {
     private lateinit var root: FrameLayout
     private lateinit var statusPanel: StatusPanelView
     private var modeDialog: ModeSwitchDialog? = null
+    private var homeDialog: AlertDialog? = null
+    private val permissions = AppPermissionAsker(this)
+    private val noWifi = NoWifiNotice(this)
     private lateinit var empty: LinearLayout
     private lateinit var offline: LinearLayout
     private var loadedUrl: String? = null
@@ -103,6 +103,7 @@ class KioskActivity : AppCompatActivity() {
     /** La página principal no cargó: la pantalla de sin conexión queda puesta hasta que cargue. */
     private var failed = false
     private val retryLater = Runnable { retry() }
+    private val loadLater = Runnable { loadConfiguredUrl() }
 
     /** El panel lateral se refresca cada medio segundo mientras el kiosco se ve. */
     private val statusTick = object : Runnable {
@@ -150,7 +151,8 @@ class KioskActivity : AppCompatActivity() {
                 override fun handleOnBackPressed() = Unit
             },
         )
-        askPermissions()
+        // Cámara y micrófono para Zoom y la teleconsulta, la ubicación para el nombre del Wi-Fi y las notificaciones.
+        permissions.askMissingOnOpen()
     }
 
     override fun onStart() {
@@ -160,6 +162,7 @@ class KioskActivity : AppCompatActivity() {
         getSystemService(ConnectivityManager::class.java).registerDefaultNetworkCallback(networkCallback)
         // Abierto o en el riel, como se dejó en el Panel Local.
         statusPanel.setOpen(runtime().statusPanelOpen)
+        noWifi.start()
         handler.removeCallbacks(statusTick)
         statusTick.run()
     }
@@ -167,8 +170,12 @@ class KioskActivity : AppCompatActivity() {
     override fun onStop() {
         // Con otra pantalla adelante no se reintenta: al volver, show() lo retoma.
         handler.removeCallbacks(retryLater)
+        handler.removeCallbacks(loadLater)
         handler.removeCallbacks(statusTick)
         modeDialog?.dismiss()
+        // Al volver al kiosco no tiene que quedar abierto un «¿Volver al inicio?» de antes.
+        homeDialog?.dismiss()
+        noWifi.stop()
         try {
             getSystemService(ConnectivityManager::class.java).unregisterNetworkCallback(networkCallback)
         } catch (_: IllegalArgumentException) {
@@ -203,24 +210,31 @@ class KioskActivity : AppCompatActivity() {
 
     private fun runtime() = (application as BerryMedApp).runtime
 
-    private fun buildStatusPanel(): StatusPanelView = StatusPanelView(this).apply {
+    // El panel lateral a la escala de diseño; la página web queda como está (ver UiScale).
+    private fun buildStatusPanel(): StatusPanelView = StatusPanelView(UiScale.wrap(this)).apply {
         onToggle = { open ->
             runtime().statusPanelOpen = open
             renderStatus()
         }
         onAudioChoice = { choice -> runtime().setCallAudioOutput(choice) }
-        onOpenWifi = { startActivity(wifiSettingsIntent()) }
+        onAction = { action -> StatusPanelActions.handle(this@KioskActivity, runtime(), permissions, action) }
         onSwitchMode = { askSwitchToLocal() }
+        // La casita: a Inicio confirmando, como los cinco toques.
+        onHome = { askHome() }
     }
 
     private fun renderStatus() {
-        statusPanel.render(StatusPanelUi.build(runtime().statusSnapshot(), PanelMode.REMOTE))
+        val snapshot = runtime().statusSnapshot()
+        statusPanel.render(StatusPanelUi.build(snapshot, PanelMode.REMOTE))
+        noWifi.update(
+            connected = snapshot.wifi.connected,
+            blocked = modeDialog?.showing == true || homeDialog?.isShowing == true,
+        )
     }
 
     /**
      * Remoto → Local: con una consulta en curso el botón está bloqueado; si
-     * no, se confirma y se abre el Panel Local, que pide su PIN. Es el único
-     * PIN de este camino.
+     * no, se confirma y se abre el Panel Local, sin PIN.
      */
     private fun askSwitchToLocal() {
         if (runtime().modeSwitchBlock() != null) {
@@ -241,22 +255,36 @@ class KioskActivity : AppCompatActivity() {
 
     /** La URL guardada; si cambió en la configuración, se vuelve a cargar. */
     private fun loadConfiguredUrl() {
+        handler.removeCallbacks(loadLater)
         thread(name = "berry-kiosk-config") {
-            val saved = try {
-                runBlocking { runtime().store.load() }.kioskUrl.trim()
+            val (saved, loaded) = try {
+                Pair(runBlocking { runtime().store.load() }.kioskUrl.trim(), true)
             } catch (error: Exception) {
                 Log.e(TotemRuntime.TAG, "[KIOSCO] No se pudo leer la configuración: $error")
-                runtime().config.kioskUrl.trim()
+                // Lo que tiene el runtime vale sólo si ya leyó la configuración: si no, son los valores de fábrica.
+                Pair(runtime().config.kioskUrl.trim(), runtime().configLoaded)
             }
-            handler.post { if (!isDestroyed) show(saved) }
+            handler.post { if (!isDestroyed) show(saved, loaded) }
         }
     }
 
-    private fun show(url: String) {
-        if (url.isEmpty() || KioskUrls.origin(url) == null) {
-            empty.visibility = View.VISIBLE
+    /**
+     * El kiosco se muestra si está configurado; si no, pasa a la
+     * configuración. Sin la configuración leída, se reintenta en un segundo
+     * ([HomeTarget]).
+     */
+    private fun show(url: String, loaded: Boolean) {
+        val target = HomeTarget.of(loaded, url)
+        if (target != HomeTarget.KIOSK) {
+            empty.visibility = if (target == HomeTarget.SETTINGS) View.VISIBLE else View.GONE
             webView?.visibility = View.GONE
             hideOffline()
+            if (target == HomeTarget.WAIT) {
+                handler.postDelayed(loadLater, CONFIG_RETRY_MS)
+            } else if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                runtime().log("[KIOSCO] Sin URL del kiosco: se abre la configuración")
+                startActivity(configIntent())
+            }
             return
         }
         empty.visibility = View.GONE
@@ -417,27 +445,6 @@ class KioskActivity : AppCompatActivity() {
     private fun granted(permission: String) =
         ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
 
-    /**
-     * Zoom y la teleconsulta necesitan cámara y micrófono; se piden antes de
-     * que la página los quiera. La ubicación es sólo para que el panel lateral
-     * muestre el nombre del Wi-Fi: sin ella dice «Wi-Fi». Desde Android 12 la
-     * precisa se pide junto con la aproximada, o Android ignora el pedido.
-     */
-    private fun askPermissions() {
-        val missing = listOf(
-            Manifest.permission.CAMERA,
-            Manifest.permission.RECORD_AUDIO,
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION,
-        ).filterNot(::granted)
-        if (missing.isNotEmpty()) ActivityCompat.requestPermissions(this, missing.toTypedArray(), 1)
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        MonitorService.promote(this)
-    }
-
     private fun hideSystemBars() {
         val controller = WindowCompat.getInsetsController(window, window.decorView)
         controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
@@ -489,7 +496,7 @@ class KioskActivity : AppCompatActivity() {
         )
     }
 
-    /** La esquina de arriba a la izquierda: cinco toques en 3 s piden el PIN para ir a la configuración. */
+    /** La esquina de arriba a la izquierda: cinco toques en 3 s llevan a Inicio. */
     private fun buildCorner(): View = View(this).apply {
         val size = (CORNER_DP * resources.displayMetrics.density).toInt()
         layoutParams = FrameLayout.LayoutParams(size, size, Gravity.TOP or Gravity.START)
@@ -502,70 +509,50 @@ class KioskActivity : AppCompatActivity() {
             cornerTaps++
             if (cornerTaps >= TAPS_TO_EXIT) {
                 cornerTaps = 0
-                askPin()
+                askHome(technician = true)
             }
         }
     }
 
     /**
-     * Entrar y Recargar piden el PIN. Sus botones se asignan después de
-     * mostrar el diálogo, sobre los del `AlertDialog`, porque los del builder
-     * lo cierran siempre: con el PIN mal (o la configuración sin cargar) el
-     * diálogo queda abierto, borra el campo y dice por qué. Cancelar y tocar
-     * afuera cierran como siempre.
+     * La casita y los cinco toques: a Inicio, sin PIN (el PIN es sólo para
+     * la configuración). Se confirma igual, para que un toque sin querer no
+     * saque al paciente del kiosco, y deja Recargar a mano. Con una consulta
+     * en curso (signos enviando o la videollamada en la sala) la casita no
+     * deja ni una cosa ni la otra: cortaría la consulta, igual que cambiar de
+     * modo. Los cinco toques ([technician]) sí: son la salida del técnico si
+     * una consulta quedó trabada.
      */
-    private fun askPin() {
-        val input = EditText(this).apply {
-            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD
-            setHint(R.string.kiosk_pin_hint)
+    private fun askHome(technician: Boolean = false) {
+        homeDialog?.dismiss()
+        val blocked = runtime().modeSwitchBlock().takeUnless { technician }
+        if (blocked != null) {
+            homeDialog = AlertDialog.Builder(this)
+                .setTitle(R.string.kiosk_home_blocked_title)
+                .setMessage(blocked)
+                .setPositiveButton(R.string.kiosk_home_ok, null)
+                .show()
+            return
         }
         val dialog = AlertDialog.Builder(this)
-            .setTitle(R.string.kiosk_pin_title)
-            .setView(input)
+            .setTitle(R.string.kiosk_home_title)
+            .setMessage(R.string.kiosk_home_body)
             .setNegativeButton(R.string.kiosk_cancel, null)
-            // Recargar también pide el PIN: un paciente no tiene que poder reiniciar el kiosco en plena consulta.
-            .setNeutralButton(R.string.kiosk_reload, null)
-            .setPositiveButton(R.string.kiosk_enter, null)
+            // La consulta pudo haber empezado con el diálogo abierto: se vuelve a mirar al tocar.
+            .setNeutralButton(R.string.kiosk_reload) { _, _ ->
+                if (technician || runtime().modeSwitchBlock() == null) reloadConfigured() else askHome()
+            }
+            .setPositiveButton(R.string.home_from_local_action) { _, _ ->
+                if (technician || runtime().modeSwitchBlock() == null) {
+                    startActivity(Intent(this, HomeActivity::class.java))
+                } else {
+                    askHome()
+                }
+            }
             .create()
-        dialog.setOnShowListener {
-            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
-                if (pinOk(input)) {
-                    dialog.dismiss()
-                    reloadConfigured()
-                }
-            }
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                if (pinOk(input)) {
-                    dialog.dismiss()
-                    // La pantalla principal; con la configuración abierta sólo si falta la URL del kiosco.
-                    val missingUrl = runtime().config.kioskUrl.isBlank()
-                    startActivity(if (missingUrl) configIntent() else Intent(this, MainActivity::class.java))
-                }
-            }
-        }
+        homeDialog = dialog
         dialog.show()
     }
-
-    /** Si el PIN del campo vale. Si no, borra el campo y muestra el motivo en él. */
-    private fun pinOk(input: EditText): Boolean {
-        val runtime = runtime()
-        val reason = when (checkPin(input.text?.toString(), runtime.config.localPanelPin, runtime.configLoaded)) {
-            PinCheck.ACCEPTED -> return true
-            PinCheck.WRONG -> R.string.local_pin_wrong
-            PinCheck.LOADING -> R.string.local_pin_loading
-        }
-        input.setText("")
-        input.error = getString(reason)
-        return false
-    }
-
-    /** Sin red: el panel de Wi-Fi de Android encima del kiosco, o la configuración de Wi-Fi antes de Android 10. */
-    private fun wifiSettingsIntent(): Intent =
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            Intent(Settings.Panel.ACTION_WIFI)
-        } else {
-            Intent(Settings.ACTION_WIFI_SETTINGS)
-        }
 
     private fun configIntent() =
         Intent(this, MainActivity::class.java).putExtra(MainActivity.EXTRA_OPEN_CONFIG, true)
@@ -575,6 +562,7 @@ class KioskActivity : AppCompatActivity() {
         private const val TAPS_TO_EXIT = 5
         private const val TAPS_WINDOW_MS = 3_000L
         private const val STATUS_MS = 500L
+        private const val CONFIG_RETRY_MS = 1_000L
 
         /** Los orígenes de Zoom Video SDK que pueden pedir cámara y micrófono además del kiosco. */
         private val ZOOM_HOSTS = listOf("zoom.us", "zoom.com", "zoomgov.com")

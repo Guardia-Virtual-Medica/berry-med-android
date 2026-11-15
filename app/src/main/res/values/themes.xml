@@ -353,6 +353,30 @@
         Testing y Panel Local secundarios, ONDOCTOR365 primario en el violeta
         de su ícono. Todos del mismo alto y la misma forma.
     -->
+    <!-- El breadcrumb de Configuración: el paso actual en gris, Inicio en azul porque se toca. -->
+    <style name="Crumb" parent="Panel.Text">
+        <item name="android:textColor">@color/body</item>
+        <item name="android:textSize">15sp</item>
+    </style>
+
+    <style name="Crumb.Link">
+        <item name="android:textColor">@color/primary</item>
+        <item name="android:fontFamily">@font/barlow_semibold</item>
+        <item name="android:background">?attr/selectableItemBackground</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:paddingTop">4dp</item>
+        <item name="android:paddingBottom">4dp</item>
+    </style>
+
+    <style name="Crumb.Separator">
+        <item name="android:text">›</item>
+        <item name="android:textColor">@color/muted</item>
+        <item name="android:paddingStart">8dp</item>
+        <item name="android:paddingEnd">8dp</item>
+        <item name="android:importantForAccessibility">no</item>
+    </style>
+
     <style name="MainButton" parent="Panel.Button.Secondary">
         <item name="android:layout_width">0dp</item>
         <item name="android:layout_weight">1</item>
@@ -494,5 +518,43 @@
         <item name="backgroundTint">@color/text</item>
         <item name="rippleColor">#33000000</item>
         <item name="strokeWidth">0dp</item>
+    </style>
+    <!--
+        Las cards de Inicio: 400 dp de alto, el fondo y el borde del tile del
+        dock, el ícono en una caja de 88 dp con el color de su lugar.
+    -->
+    <style name="HomeCard">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:background">@drawable/panel_tile</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:padding">32dp</item>
+    </style>
+
+    <style name="HomeCardIcon">
+        <item name="android:layout_width">88dp</item>
+        <item name="android:layout_height">88dp</item>
+        <item name="android:background">@drawable/status_mode_box</item>
+        <item name="android:importantForAccessibility">no</item>
+        <item name="android:padding">20dp</item>
+        <item name="tint">@color/text</item>
+    </style>
+
+    <style name="HomeCardTitle" parent="Panel.Text">
+        <item name="android:fontFamily">@font/barlow_semibold</item>
+        <item name="android:textSize">32sp</item>
+    </style>
+
+    <style name="HomeCardBody" parent="Panel.Text">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_marginTop">12dp</item>
+        <item name="android:includeFontPadding">true</item>
+        <item name="android:lineSpacingExtra">3dp</item>
+        <item name="android:minLines">3</item>
+        <item name="android:textColor">@color/body</item>
+        <item name="android:textSize">18sp</item>
     </style>
 </resources>

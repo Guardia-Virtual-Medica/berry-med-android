@@ -65,4 +65,28 @@ class SweepTraceTest {
         assertEquals(1000, SweepTrace.samplesPerScreen(600f, 6f, 25f, 250f))
         assertEquals(2000, SweepTrace.samplesPerScreen(600f, 6f, 12.5f, 250f))
     }
+
+    @Test
+    fun recentSpanLooksBackFromTheCursorOnly() {
+        val trace = SweepTrace(6)
+        // Un pico viejo y después tres muestras quietas.
+        trace.feed(channelWith(128, 200, 128, 129, 128))
+        assertEquals(1f, trace.recentSpan(samples = 3, minSamples = 2))
+        assertEquals(72f, trace.recentSpan(samples = 5, minSamples = 2))
+        // Con la vuelta al principio sigue mirando hacia atrás.
+        trace.feed(channelWith(128, 200, 128, 129, 128, 130, 127))
+        assertEquals(3f, trace.recentSpan(samples = 3, minSamples = 2))
+    }
+
+    @Test
+    fun recentSpanIsNullUntilThereAreEnoughSamples() {
+        val trace = SweepTrace(10)
+        assertNull(trace.recentSpan(samples = 5, minSamples = 1))
+        trace.feed(channelWith(128, 140))
+        assertNull(trace.recentSpan(samples = 5, minSamples = 3))
+        assertEquals(12f, trace.recentSpan(samples = 5, minSamples = 2))
+        // Después de un wipe, en blanco: no se puede decir.
+        trace.wipe()
+        assertNull(trace.recentSpan(samples = 5, minSamples = 1))
+    }
 }

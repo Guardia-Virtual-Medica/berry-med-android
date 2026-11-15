@@ -29,6 +29,9 @@ import kotlin.math.ceil
  *
  * En modo [compact] es la tira de abajo del dispositivo abierto: la II sola,
  * una grilla fija de 20 × 14 dp y la amplitud acotada al 38 % del alto.
+ *
+ * Sin [running] está en espera: la grilla apagada y sin ondas, hasta que se
+ * toca Iniciar medición. Con [muted] las ondas van en gris: sin señal.
  */
 class EcgPaperView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) : View(context, attrs) {
     private val allLeads = Pm6750Protocol.LEADS
@@ -94,6 +97,33 @@ class EcgPaperView @JvmOverloads constructor(context: Context, attrs: AttributeS
             invalidate()
         }
 
+    /**
+     * En espera no lee ni dibuja ondas: la grilla apagada. Al arrancar, el
+     * barrido empieza en x = 0 desde lo que llega ahora, sin lo de antes.
+     */
+    var running = true
+        set(value) {
+            if (field == value) return
+            field = value
+            if (value) {
+                val source = feed
+                for ((index, trace) in traces.withIndex()) {
+                    trace.wipe(source?.ecg?.getValue(allLeads[index])?.count())
+                }
+            }
+            invalidate()
+        }
+
+    /** Sin señal (electrodos sueltos u onda plana): las ondas en gris, como deshabilitadas. */
+    var muted = false
+        set(value) {
+            if (field == value) return
+            field = value
+            tracePaint.color = ContextCompat.getColor(context, if (value) R.color.faint else R.color.ecg)
+            invalidate()
+        }
+
+    private val idlePaper = Paint().apply { alpha = IDLE_ALPHA }
     private val background = Paint().apply { color = ContextCompat.getColor(context, R.color.ecgBg) }
     private val minorGrid = Paint().apply {
         color = ContextCompat.getColor(context, R.color.gridMinor)
@@ -126,9 +156,22 @@ class EcgPaperView @JvmOverloads constructor(context: Context, attrs: AttributeS
         invalidate()
     }
 
-    /** Trae lo nuevo de cada derivación y redibuja si llegó algo. Congelado no lee. */
+    /**
+     * Si la II quedó plana en los últimos [FLAT_WINDOW] (2 s): menos de
+     * [FLAT_UNITS] entre el máximo y el mínimo. Recién arrancado, sin
+     * muestras suficientes, todavía no se sabe: no cuenta como plana, así
+     * Iniciar medición no pasa por gris antes del verde. Sin datos de la
+     * plaqueta o con los electrodos sueltos ya lo dice la señal del panel.
+     */
+    fun isFlat(): Boolean {
+        val trace = traces.getOrNull(allLeads.indexOf(FLAT_LEAD)) ?: return false
+        val span = trace.recentSpan(FLAT_WINDOW, FLAT_MIN_SAMPLES) ?: return false
+        return span < FLAT_UNITS
+    }
+
+    /** Trae lo nuevo de cada derivación y redibuja si llegó algo. Congelado o en espera no lee. */
     fun tick() {
-        if (frozen) return
+        if (frozen || !running) return
         val source = feed ?: return
         var fresh = 0
         for ((index, lead) in allLeads.withIndex()) {
@@ -200,10 +243,14 @@ class EcgPaperView @JvmOverloads constructor(context: Context, attrs: AttributeS
         val w = width.toFloat()
         val h = height.toFloat()
         val grid = paper()
-        if (grid != null) canvas.drawBitmap(grid, 0f, 0f, null)
-        if (traces.isEmpty()) return
+        if (grid != null) canvas.drawBitmap(grid, 0f, 0f, if (running) null else idlePaper)
         val shown = leads.leads
         val laneHeight = h / shown.size
+        if (!running) {
+            if (!compact) drawLabels(canvas, shown, laneHeight)
+            return
+        }
+        if (traces.isEmpty()) return
         // Del papel y no del ancho: así 25 mm/s son 25 mm reales aunque la última muestra no entre entera.
         val pxPerSample = pxPerMm * mmPerSecond / Pm6750Protocol.ECG_SAMPLE_RATE_HZ.toFloat()
         val gap = ceil(ERASE_DP * density / pxPerSample).toInt()
@@ -231,9 +278,14 @@ class EcgPaperView @JvmOverloads constructor(context: Context, attrs: AttributeS
             )
             if (count > 0) canvas.drawLines(lines, 0, count, tracePaint)
             canvas.restore()
-            if (!compact) {
-                canvas.drawText(lead, LABEL_LEFT_DP * density, top + LABEL_TOP_DP * density - labelPaint.ascent(), labelPaint)
-            }
+        }
+        if (!compact) drawLabels(canvas, shown, laneHeight)
+    }
+
+    private fun drawLabels(canvas: Canvas, shown: List<String>, laneHeight: Float) {
+        for ((row, lead) in shown.withIndex()) {
+            val top = row * laneHeight
+            canvas.drawText(lead, LABEL_LEFT_DP * density, top + LABEL_TOP_DP * density - labelPaint.ascent(), labelPaint)
         }
     }
 
@@ -260,5 +312,18 @@ class EcgPaperView @JvmOverloads constructor(context: Context, attrs: AttributeS
         /** En la tira, un milivoltio ocupa el 30 % del alto y nada pasa del 38 %. */
         const val COMPACT_MV_FRACTION = 0.30f
         const val COMPACT_LIMIT = 0.38f
+
+        /** La grilla en espera: al 40 %. */
+        const val IDLE_ALPHA = 102
+
+        /** La plana se mira en la II, la de la tira y la de 3 derivaciones. */
+        const val FLAT_LEAD = "II"
+
+        /** Dos segundos a 250 por segundo; hace falta medio segundo seguido para decidir. */
+        const val FLAT_WINDOW = 500
+        const val FLAT_MIN_SAMPLES = 125
+
+        /** Una décima de milivoltio (ver [UNITS_PER_MV]): menos que eso es ruido de una línea quieta. */
+        const val FLAT_UNITS = 4f
     }
 }

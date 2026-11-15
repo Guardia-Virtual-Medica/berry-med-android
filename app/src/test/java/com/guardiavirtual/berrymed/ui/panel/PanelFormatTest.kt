@@ -56,6 +56,7 @@ class PanelFormatTest {
         assertEquals("10:07", PanelFormat.clock(at(10, 7), zone))
         assertEquals("09:05", PanelFormat.clock(at(9, 5), zone))
         assertEquals("10:12:09", PanelFormat.clockSeconds(at(10, 12, 9), zone))
+        assertEquals("29/10/2026 09:05", PanelFormat.dateTime(at(9, 5), zone))
         assertEquals("Jueves 29 de octubre de 2026", PanelFormat.date(at(10, 12), zone))
     }
 

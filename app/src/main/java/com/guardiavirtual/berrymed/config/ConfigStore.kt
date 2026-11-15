@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.delay
@@ -72,6 +73,7 @@ class ConfigStore(private val context: Context) {
             prefs[HEADSET] = config.headsetName
             prefs[KIOSK_URL] = config.kioskUrl
             prefs[CALL_AUDIO] = config.callAudioOutput
+            if (config.savedAt > 0L) prefs[SAVED_AT] = config.savedAt
         }
 
         /**
@@ -127,6 +129,7 @@ class ConfigStore(private val context: Context) {
             headsetName = this[HEADSET]?.takeIf { it.isNotBlank() } ?: DEFAULT_HEADSET,
             kioskUrl = this[KIOSK_URL].orEmpty(),
             callAudioOutput = callAudioOutputOrDefault(this[CALL_AUDIO]),
+            savedAt = this[SAVED_AT] ?: 0L,
         )
 
         private val ENVIRONMENT = stringPreferencesKey("environment")
@@ -154,5 +157,6 @@ class ConfigStore(private val context: Context) {
         private val HEADSET = stringPreferencesKey("headset_name")
         private val KIOSK_URL = stringPreferencesKey("kiosk_url")
         private val CALL_AUDIO = stringPreferencesKey("call_audio_output")
+        private val SAVED_AT = longPreferencesKey("saved_at")
     }
 }

@@ -44,4 +44,15 @@ class ConfigStoreTest {
         assertFalse(legacyHeadset in prefs)
         assertEquals(BerryConfig(ykushThermometerPort = 3), ConfigStore.read(prefs))
     }
+
+    @Test
+    fun theLastSaveTimeIsKeptAndACopyWithoutItDoesNotEraseIt() {
+        val prefs = mutablePreferencesOf()
+        assertEquals(0L, ConfigStore.read(prefs).savedAt)
+        ConfigStore.write(prefs, BerryConfig(savedAt = 1_763_000_000_000L))
+        assertEquals(1_763_000_000_000L, ConfigStore.read(prefs).savedAt)
+        // Lo que se guarda sin pasar por USB-config (el sonido del panel lateral) parte de lo leído.
+        ConfigStore.write(prefs, ConfigStore.read(prefs).copy(callAudioOutput = "parlante"))
+        assertEquals(1_763_000_000_000L, ConfigStore.read(prefs).savedAt)
+    }
 }

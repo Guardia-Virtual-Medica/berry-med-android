@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- La columna de vitales del Panel Local, la del handoff a 1280 dp de ancho. -->
+    <dimen name="panel_vitals_width">312dp</dimen>
+</resources>

@@ -23,6 +23,7 @@ object PanelFormat {
     private val clock = DateTimeFormatter.ofPattern("HH:mm", argentina)
     private val clockSeconds = DateTimeFormatter.ofPattern("HH:mm:ss", argentina)
     private val longDate = DateTimeFormatter.ofPattern("EEEE d 'de' MMMM 'de' yyyy", argentina)
+    private val shortDateTime = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", argentina)
 
     /** "-", "- -", "- -/- -" o vacío pasan a "—"; un número con punto pasa a coma. */
     fun value(raw: String?): String {
@@ -66,6 +67,10 @@ object PanelFormat {
     /** "10:12:09": cuándo se congeló el ECG o una imagen. */
     fun clockSeconds(millis: Long, zone: ZoneId = ZoneId.systemDefault()): String =
         clockSeconds.format(Instant.ofEpochMilli(millis).atZone(zone))
+
+    /** "15/11/2026 04:58": la última actualización de la configuración. */
+    fun dateTime(millis: Long, zone: ZoneId = ZoneId.systemDefault()): String =
+        shortDateTime.format(Instant.ofEpochMilli(millis).atZone(zone))
 
     /** "Miércoles 29 de octubre de 2026": con mayúscula inicial y sin coma. */
     fun date(millis: Long, zone: ZoneId = ZoneId.systemDefault()): String =

@@ -2,7 +2,8 @@
 <!--
     Una fila de Dispositivos: 44 dp, punto de 8 dp, nombre y estado a la
     derecha. El margen de −10 dp con 10 dp de relleno deja que el fondo de la
-    fila en rojo llegue más allá del texto sin cortarse.
+    fila en rojo llegue más allá del texto sin cortarse. Con «Falta permiso»
+    se toca, y el ripple va en el frente para no pisar ese fondo.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
@@ -11,6 +12,7 @@
     android:layout_marginStart="-10dp"
     android:layout_marginTop="4dp"
     android:layout_marginEnd="-10dp"
+    android:foreground="?attr/selectableItemBackground"
     android:gravity="center_vertical"
     android:orientation="horizontal"
     android:paddingStart="10dp"

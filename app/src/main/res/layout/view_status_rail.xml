@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     El panel lateral cerrado: un riel de 64 dp. Toda la columna se toca y
-    abre el panel. Arriba el botón, después Wi-Fi, Modo y Dispositivos, y
-    Sonido pegado abajo.
+    abre el panel. Arriba el botón y la casita (a Inicio), después Wi-Fi,
+    Modo y Dispositivos, y Sonido pegado abajo.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -28,6 +28,20 @@
             android:src="@drawable/ic_chevron_left" />
     </FrameLayout>
 
+    <!-- La casita: a Inicio. Se toca sola, sin abrir el panel. En Inicio no va. -->
+    <FrameLayout
+        android:id="@+id/railHomeBox"
+        android:layout_width="match_parent"
+        android:layout_height="60dp">
+
+        <ImageButton
+            android:id="@+id/railHome"
+            style="@style/Status.Close"
+            android:layout_gravity="center"
+            android:contentDescription="@string/status_home"
+            android:src="@drawable/ic_home" />
+    </FrameLayout>
+
     <View style="@style/Status.Divider" />
 
     <FrameLayout
@@ -44,7 +58,9 @@
             style="@style/Status.RailDot" />
     </FrameLayout>
 
-    <FrameLayout style="@style/Status.RailItem">
+    <FrameLayout
+        android:id="@+id/railMode"
+        style="@style/Status.RailItem">
 
         <ImageView
             android:id="@+id/railModeIcon"
