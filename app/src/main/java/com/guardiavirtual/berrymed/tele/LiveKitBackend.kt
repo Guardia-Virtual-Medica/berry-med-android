@@ -13,7 +13,6 @@ import com.guardiavirtual.berrymed.otoscope.CameraXOtoscopeFrames
 import com.guardiavirtual.berrymed.otoscope.OtoscopeFrames
 import com.guardiavirtual.berrymed.otoscope.OtoscopePower
 import com.guardiavirtual.berrymed.otoscope.OtoscopeProbe
-import com.guardiavirtual.berrymed.otoscope.OtoscopeReconnect
 import com.guardiavirtual.berrymed.otoscope.OtoscopeResolution
 import com.guardiavirtual.berrymed.otoscope.UvcOtoscopeFrames
 import com.guardiavirtual.berrymed.service.InstrumentPorts
@@ -301,13 +300,9 @@ class LiveKitBackend(
         val deadline = System.nanoTime() + FIRST_FRAME_TIMEOUT_MS * 1_000_000L
         while (true) {
             val arrived = firstFrame.await(POLL_MS)
-            val now = probe.usbDevice()?.deviceId
-            val uvc = source as? UvcOtoscopeFrames
-            val reconnected = uvc != null && OtoscopeReconnect.shouldReopen(uvc.openedId, now)
-            when (FirstFrame.next(arrived, cancelled(), System.nanoTime(), deadline, reconnected)) {
+            when (FirstFrame.next(arrived, cancelled(), System.nanoTime(), deadline)) {
                 FirstFrame.Step.PUBLISH -> break
                 FirstFrame.Step.WAIT -> Unit
-                FirstFrame.Step.REOPEN -> if (uvc != null && now != null) uvc.reopen(now)
                 FirstFrame.Step.CANCELLED -> {
                     releaseOtoscope()
                     return FirstFrame.CANCELLED

@@ -67,6 +67,15 @@ class UvcOtoscope(
     /** La vigilancia de la reconexión; null si no está corriendo. Sólo lo toca el hilo de la pantalla. */
     private var watch: Runnable? = null
 
+    /** Cuándo se dibujó el último cuadro, o cuándo se abrió si todavía no hubo ninguno. Sólo lo toca el hilo de la pantalla. */
+    private var aliveAt = System.nanoTime()
+
+    /** Las veces seguidas que se reabrió por falta de imagen ([OtoscopeReconnect.stallMs]). Sólo lo toca el hilo de la pantalla. */
+    private var stalls = 0
+
+    /** Los cuadros dibujados desde que se abrió o se reabrió. Sólo lo toca el hilo de la pantalla. */
+    private var framesSinceOpen = 0
+
     override fun open(done: (String?) -> Unit, onRate: (Double) -> Unit) {
         closed = false
         kept = null
@@ -90,7 +99,9 @@ class UvcOtoscope(
 
             override fun onSurfaceTextureUpdated(texture: SurfaceTexture) {
                 if (closed) return
-                meter.frame(System.nanoTime())?.let(onRate)
+                aliveAt = System.nanoTime()
+                if (++framesSinceOpen == OtoscopeReconnect.HEALTHY_FRAMES) stalls = 0
+                meter.frame(aliveAt)?.let(onRate)
             }
         }
         val texture = textureView.surfaceTexture
@@ -126,18 +137,28 @@ class UvcOtoscope(
 
     /**
      * Una vez por segundo: si Android ve el otoscopio con otro `deviceId` que
-     * el que se abrió (se reconectó, lo que pasa al elegir «Computer»), se
-     * espera [OtoscopeReconnect.SETTLE_MS] a que termine de presentarse y se abre de nuevo.
+     * el que se abrió (se reconectó, lo que pasa al elegir «Computer»), o es
+     * el mismo pero dejó de mandar imagen, se espera [OtoscopeReconnect.SETTLE_MS]
+     * a que termine de presentarse y se abre de nuevo.
      */
     private fun watchReconnect(texture: SurfaceTexture) {
         watch?.let(main::removeCallbacks)
+        aliveAt = System.nanoTime()
+        stalls = 0
+        framesSinceOpen = 0
         val tick = object : Runnable {
             override fun run() {
                 if (closed) return
+                val opened = openedId
                 val now = probe.usbDevice()?.deviceId
-                if (OtoscopeReconnect.shouldReopen(opened = openedId, now = now)) {
+                val quietMs = (System.nanoTime() - aliveAt) / 1_000_000L
+                if (OtoscopeReconnect.shouldReopen(opened, now, quietMs, stalls)) {
+                    val why = OtoscopeReconnect.why(opened, now)
+                    stalls = if (now != opened) 0 else stalls + 1
+                    framesSinceOpen = 0
                     openedId = now
-                    main.postDelayed({ reopen(texture) }, OtoscopeReconnect.SETTLE_MS)
+                    aliveAt = System.nanoTime() + OtoscopeReconnect.SETTLE_MS * 1_000_000L
+                    main.postDelayed({ reopen(texture, why) }, OtoscopeReconnect.SETTLE_MS)
                 }
                 main.postDelayed(this, WATCH_MS)
             }
@@ -146,10 +167,10 @@ class UvcOtoscope(
         main.postDelayed(tick, WATCH_MS)
     }
 
-    private fun reopen(texture: SurfaceTexture) {
+    private fun reopen(texture: SurfaceTexture, why: String) {
         worker.execute {
             if (closed) return@execute
-            log("[OTOSCOPIO] Se reconectó (pasa al elegir «Computer» en su pantalla): se abre de nuevo")
+            log("[OTOSCOPIO] El otoscopio $why: se abre de nuevo")
             release()
             try {
                 openCamera(texture)?.let { log("[OTOSCOPIO] $it") }

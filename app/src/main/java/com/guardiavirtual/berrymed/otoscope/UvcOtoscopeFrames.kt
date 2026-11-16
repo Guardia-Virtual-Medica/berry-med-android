@@ -13,6 +13,7 @@ import livekit.org.webrtc.VideoFrame
 import java.nio.ByteBuffer
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.Executor
+import kotlin.concurrent.thread
 
 /**
  * Camino UVC para la teleconsulta: el otoscopio por libuvc, sin vista. libuvc
@@ -33,8 +34,10 @@ import java.util.concurrent.Executor
  * cuadros para LiveKit siguen saliendo del callback NV21. Abrir y cerrar van
  * en [worker], como en el Panel Local.
  *
- * Si el otoscopio se reconecta mientras la teleconsulta espera la imagen (al
- * elegir «Computer», [OtoscopeReconnect]), quien espera llama a [reopen].
+ * Mientras está abierto, un hilo propio mira una vez por segundo si el
+ * otoscopio se reconectó (al elegir «Computer») o dejó de mandar cuadros
+ * ([OtoscopeReconnect]), y en ese caso lo abre de nuevo con el mismo destino:
+ * también después de publicado, para que al médico no le quede la imagen congelada.
  */
 class UvcOtoscopeFrames(
     context: Context,
@@ -57,6 +60,16 @@ class UvcOtoscopeFrames(
     @Volatile var openedId: Int? = null
         private set
 
+    /** Cuándo llegó el último cuadro, o cuándo se abrió si todavía no llegó ninguno (`nanoTime`). */
+    @Volatile private var aliveAt = System.nanoTime()
+
+    /** Las veces seguidas que se reabrió por falta de imagen ([OtoscopeReconnect.stallMs]). */
+    @Volatile private var stalls = 0
+
+    /** Los cuadros que llegaron desde que se abrió. Sólo lo toca el hilo de libuvc (y [open] lo pone en cero). */
+    @Volatile private var framesSinceOpen = 0
+    private var watcher: Thread? = null
+
     override fun start(sink: (VideoFrame) -> Unit, done: (String?) -> Unit) {
         closed = false
         this.sink = sink
@@ -69,6 +82,22 @@ class UvcOtoscopeFrames(
             }
             done(reason)
         }
+        watcher = thread(name = "berry-uvc-watch", isDaemon = true) {
+            while (!closed) {
+                try {
+                    Thread.sleep(WATCH_MS)
+                } catch (_: InterruptedException) {
+                    return@thread
+                }
+                val opened = openedId
+                val now = probe.usbDevice()?.deviceId
+                val quietMs = (System.nanoTime() - aliveAt) / 1_000_000L
+                if (!closed && now != null && OtoscopeReconnect.shouldReopen(opened, now, quietMs, stalls)) {
+                    stalls = if (now != opened) 0 else stalls + 1
+                    reopen(now, OtoscopeReconnect.why(opened, now))
+                }
+            }
+        }
     }
 
     private fun open(sink: (VideoFrame) -> Unit): String? {
@@ -79,6 +108,8 @@ class UvcOtoscopeFrames(
         }
         handle = opened
         openedId = opened.deviceId
+        aliveAt = System.nanoTime()
+        framesSinceOpen = 0
         val width = opened.size.width
         val height = opened.size.height
         val bytes = width * height * 3 / 2
@@ -88,6 +119,8 @@ class UvcOtoscopeFrames(
                 // En el hilo de libuvc: una excepción acá no tiene que llegar a la librería nativa.
                 try {
                     if (closed || frame.remaining() < bytes) return@IFrameCallback
+                    aliveAt = System.nanoTime()
+                    if (++framesSinceOpen == OtoscopeReconnect.HEALTHY_FRAMES) stalls = 0
                     val data = spare.poll() ?: ByteArray(bytes)
                     frame.get(data, 0, bytes)
                     val buffer = NV21Buffer(data, width, height) { spare.offer(data) }
@@ -135,13 +168,14 @@ class UvcOtoscopeFrames(
     }
 
     /**
-     * El otoscopio se reconectó como [deviceId]: después de
-     * [OtoscopeReconnect.SETTLE_MS] se suelta lo abierto y se abre de nuevo,
-     * con el mismo destino de cuadros. Anota el `deviceId` ya, para no
-     * pedirlo dos veces.
+     * El otoscopio se reconectó como [deviceId] o dejó de mandar cuadros
+     * ([why]): después de [OtoscopeReconnect.SETTLE_MS] se suelta lo abierto y
+     * se abre de nuevo, con el mismo destino de cuadros. Anota el `deviceId` y
+     * el momento ya, para no pedirlo dos veces.
      */
-    fun reopen(deviceId: Int) {
+    private fun reopen(deviceId: Int, why: String) {
         openedId = deviceId
+        aliveAt = System.nanoTime()
         worker.execute {
             try {
                 Thread.sleep(OtoscopeReconnect.SETTLE_MS)
@@ -149,10 +183,11 @@ class UvcOtoscopeFrames(
                 return@execute
             }
             if (closed) return@execute
-            log("[TELE] El otoscopio se reconectó (pasa al elegir «Computer» en su pantalla): se abre de nuevo")
+            log("[TELE] El otoscopio $why: se abre de nuevo")
             release()
             try {
                 open(sink)?.let { log("[TELE] $it") }
+                aliveAt = System.nanoTime()
             } catch (error: Throwable) {
                 release()
                 log("[TELE] No se pudo reabrir el otoscopio por UVC: ${error.message ?: error.javaClass.simpleName}")
@@ -162,6 +197,8 @@ class UvcOtoscopeFrames(
 
     override fun stop(done: () -> Unit) {
         closed = true
+        watcher?.interrupt()
+        watcher = null
         worker.execute {
             release()
             done()
@@ -190,6 +227,9 @@ class UvcOtoscopeFrames(
 
     companion object {
         private const val SPARE_FRAMES = 3
+
+        /** Cada cuánto se mira si el otoscopio se reconectó o dejó de mandar cuadros. */
+        private const val WATCH_MS = 1_000L
 
         /** Las imágenes de la superficie que nadie ve: dos alcanzan, se sueltan apenas llegan. */
         private const val DRAIN_IMAGES = 2

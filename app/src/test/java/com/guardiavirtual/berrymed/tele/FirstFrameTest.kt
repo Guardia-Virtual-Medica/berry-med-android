@@ -42,22 +42,21 @@ class FirstFrameTest {
 
     @Test
     fun cuttingWinsOverEverything() {
-        assertEquals(FirstFrame.Step.CANCELLED, FirstFrame.next(arrived = true, cancelled = true, now = 99, deadline = 10, reconnected = true))
+        assertEquals(FirstFrame.Step.CANCELLED, FirstFrame.next(arrived = true, cancelled = true, now = 99, deadline = 10))
     }
 
     @Test
     fun anImageIsPublishedEvenAtTheDeadline() {
-        assertEquals(FirstFrame.Step.PUBLISH, FirstFrame.next(arrived = true, cancelled = false, now = 10, deadline = 10, reconnected = false))
+        assertEquals(FirstFrame.Step.PUBLISH, FirstFrame.next(arrived = true, cancelled = false, now = 10, deadline = 10))
     }
 
     @Test
     fun withoutImageItGivesUpAtTheDeadline() {
-        assertEquals(FirstFrame.Step.NO_IMAGE, FirstFrame.next(arrived = false, cancelled = false, now = 10, deadline = 10, reconnected = true))
+        assertEquals(FirstFrame.Step.NO_IMAGE, FirstFrame.next(arrived = false, cancelled = false, now = 10, deadline = 10))
     }
 
     @Test
-    fun aReconnectionBeforeTheDeadlineReopensAndOtherwiseItWaits() {
-        assertEquals(FirstFrame.Step.REOPEN, FirstFrame.next(arrived = false, cancelled = false, now = 5, deadline = 10, reconnected = true))
-        assertEquals(FirstFrame.Step.WAIT, FirstFrame.next(arrived = false, cancelled = false, now = 5, deadline = 10, reconnected = false))
+    fun beforeTheDeadlineItWaits() {
+        assertEquals(FirstFrame.Step.WAIT, FirstFrame.next(arrived = false, cancelled = false, now = 5, deadline = 10))
     }
 }

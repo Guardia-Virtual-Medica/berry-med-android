@@ -32,10 +32,7 @@ class FirstFrame {
         /** Pasó el tope sin imagen. */
         NO_IMAGE,
 
-        /** El otoscopio se reconectó con otro `deviceId`: se suelta y se abre de nuevo. */
-        REOPEN,
-
-        /** Seguir esperando, también si el otoscopio desapareció: vuelve cuando lo prenden. */
+        /** Seguir esperando, también si el otoscopio desapareció o se reconectó: de reabrirlo se ocupa la fuente. */
         WAIT,
     }
 
@@ -47,14 +44,13 @@ class FirstFrame {
         const val CANCELLED = "se cortó la espera"
 
         /**
-         * Una vuelta de la espera: cortar gana a todo, después la imagen, el
-         * tope ([now] contra [deadline]) y la reconexión ([reconnected]).
+         * Una vuelta de la espera: cortar gana a todo, después la imagen y el
+         * tope ([now] contra [deadline]).
          */
-        fun next(arrived: Boolean, cancelled: Boolean, now: Long, deadline: Long, reconnected: Boolean): Step = when {
+        fun next(arrived: Boolean, cancelled: Boolean, now: Long, deadline: Long): Step = when {
             cancelled -> Step.CANCELLED
             arrived -> Step.PUBLISH
             now >= deadline -> Step.NO_IMAGE
-            reconnected -> Step.REOPEN
             else -> Step.WAIT
         }
     }
