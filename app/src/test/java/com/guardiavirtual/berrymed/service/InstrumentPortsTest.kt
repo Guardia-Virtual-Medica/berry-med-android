@@ -55,4 +55,11 @@ class InstrumentPortsTest {
             InstrumentPorts.forUse(use = 1, other = 1, thermometer = 3, listOf(true, false, true)),
         )
     }
+
+    @Test
+    fun `con el otoscopio sin audio para Android el estetoscopio no lo apaga`() {
+        val steps = InstrumentPorts.forUse(use = 2, other = 1, thermometer = 3, listOf(true, false, true), keepOther = true)
+        assertEquals(emptyList<Int>(), steps.off)
+        assertEquals(2, steps.on)
+    }
 }

@@ -25,9 +25,14 @@ object InstrumentPorts {
      * molesta, y dejarlo encendido le saca el audio al estetoscopio. El propio
      * se enciende si no se leyó encendido. Con los dos en el mismo puerto
      * (configuración rara) no se apaga nada.
+     *
+     * [keepOther]: el otro no se apaga. Vale sólo cuando el otro es el
+     * otoscopio y Android no lo tomó como placa de audio (la tablet tiene la
+     * guardia que se lo impide): ahí no le saca nada al estetoscopio, y
+     * dejarlo con corriente le ahorra al paciente volver a elegir «Computer».
      */
-    fun forUse(use: Int, other: Int, thermometer: Int, states: List<Boolean?>): Steps {
-        val off = if (other != use && other != thermometer && states.getOrNull(other - 1) != false) listOf(other) else emptyList()
+    fun forUse(use: Int, other: Int, thermometer: Int, states: List<Boolean?>, keepOther: Boolean = false): Steps {
+        val off = if (!keepOther && other != use && other != thermometer && states.getOrNull(other - 1) != false) listOf(other) else emptyList()
         val on = use.takeIf { states.getOrNull(it - 1) != true }
         return Steps(off, on)
     }
