@@ -328,7 +328,7 @@ class KioskActivity : AppCompatActivity() {
         offline.visibility = View.GONE
     }
 
-    @SuppressLint("SetJavaScriptEnabled")
+    @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
     private fun createWebView(): WebView {
         val debuggable = applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
         WebView.setWebContentsDebuggingEnabled(debuggable)
@@ -344,6 +344,9 @@ class KioskActivity : AppCompatActivity() {
             setAcceptCookie(true)
             setAcceptThirdPartyCookies(view, true)
         }
+        // La web del kiosco pregunta por `window.BerryMed` para saber que corre adentro de Berry Med
+        // y soltar la cámara de la videollamada mientras el otoscopio está encendido (ver KioskMark).
+        view.addJavascriptInterface(KioskMark, KioskMark.NAME)
         view.webViewClient = KioskClient()
         view.webChromeClient = KioskChrome()
         root.addView(view, 0, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
