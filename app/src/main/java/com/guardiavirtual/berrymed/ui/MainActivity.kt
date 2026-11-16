@@ -6,6 +6,7 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.AudioManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -88,6 +89,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Los botones físicos mueven el volumen de medios, el mismo de la barra del panel lateral.
+        volumeControlStream = AudioManager.STREAM_MUSIC
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         binding.root.padForSystemBars()
@@ -649,8 +652,8 @@ class MainActivity : AppCompatActivity() {
         private val MEDIA_PERMISSIONS = listOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
         /** En el orden de los chips: Producción, Dev. */
         private val ENVIRONMENT_VALUES = arrayOf(Environment.Prod.key, Environment.Dev.key)
-        /** En el orden de los chips: Auricular, Parlante de la tablet. */
-        private val CALL_AUDIO_VALUES = arrayOf(CALL_AUDIO_HEADSET, CALL_AUDIO_SPEAKER)
+        /** En el orden de los chips: Parlante de la tablet (el de fábrica), Auricular. */
+        private val CALL_AUDIO_VALUES = arrayOf(CALL_AUDIO_SPEAKER, CALL_AUDIO_HEADSET)
         private val GAIN_VALUES = arrayOf("x0.25", "x0.5", "x1", "x2")
         private val MODE_VALUES = arrayOf("operacion", "monitor", "diagnostico")
         private val NIBP_VALUES = arrayOf("adulto", "nino", "neonato")

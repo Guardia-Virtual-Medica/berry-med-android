@@ -3,6 +3,7 @@ package com.guardiavirtual.berrymed.tele
 
 import kotlin.concurrent.thread
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -37,5 +38,25 @@ class FirstFrameTest {
         val first = FirstFrame()
         repeat(30) { first.arrived() }
         assertTrue(first.await(0))
+    }
+
+    @Test
+    fun cuttingWinsOverEverything() {
+        assertEquals(FirstFrame.Step.CANCELLED, FirstFrame.next(arrived = true, cancelled = true, now = 99, deadline = 10))
+    }
+
+    @Test
+    fun anImageIsPublishedEvenAtTheDeadline() {
+        assertEquals(FirstFrame.Step.PUBLISH, FirstFrame.next(arrived = true, cancelled = false, now = 10, deadline = 10))
+    }
+
+    @Test
+    fun withoutImageItGivesUpAtTheDeadline() {
+        assertEquals(FirstFrame.Step.NO_IMAGE, FirstFrame.next(arrived = false, cancelled = false, now = 10, deadline = 10))
+    }
+
+    @Test
+    fun beforeTheDeadlineItWaits() {
+        assertEquals(FirstFrame.Step.WAIT, FirstFrame.next(arrived = false, cancelled = false, now = 5, deadline = 10))
     }
 }

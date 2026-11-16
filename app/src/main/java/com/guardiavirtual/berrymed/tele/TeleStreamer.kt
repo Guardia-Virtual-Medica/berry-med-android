@@ -3,6 +3,7 @@ package com.guardiavirtual.berrymed.tele
 
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicLong
 
 /** Cómo está la sala de LiveKit, para Testing y el log. */
 enum class RoomState(val label: String) {
@@ -26,6 +27,11 @@ data class TeleStatus(
     val tokenExpiresAtMillis: Long? = null,
     /** El último error, o vacío. */
     val message: String = "",
+    /**
+     * Encendiendo el otoscopio, todavía sin imagen: el kiosco muestra el
+     * cartel «Prendé el otoscopio y elegí «Computer» en su pantalla».
+     */
+    val waitingImage: Boolean = false,
 )
 
 /**
@@ -40,8 +46,12 @@ interface TeleBackend {
     /** Entra a la sala. null si entró; si no, el motivo (y no queda nada abierto). */
     fun connect(credentials: TeleCredentials): String?
 
-    /** Enciende el instrumento y publica su pista. null si quedó publicando; si no, el motivo (y el instrumento queda suelto). */
-    fun publish(instrument: Instrument): String?
+    /**
+     * Enciende el instrumento y publica su pista. null si quedó publicando; si
+     * no, el motivo (y el instrumento queda suelto). Las esperas miran
+     * [cancelled] seguido y, si da true, sueltan todo y vuelven enseguida.
+     */
+    fun publish(instrument: Instrument, cancelled: () -> Boolean): String?
 
     /** Despublica y suelta el instrumento (y apaga el puerto si lo encendió el streamer). */
     fun unpublish(instrument: Instrument)
@@ -61,7 +71,10 @@ interface TeleBackend {
  * cuando el kiosco vuelve al inicio o a las [MAX_ROOM_MILLIS] en la sala.
  *
  * Todo pasa en un solo hilo ([executor]), en el orden en que llegan las
- * cosas. Los errores van al log `[TELE]` y a [status]; nunca el token.
+ * cosas. Publicar el otoscopio puede esperar hasta un minuto la imagen: un
+ * `stop`, otra orden, el inicio del kiosco o el Panel Local cortan esa espera
+ * desde el hilo que los avisa ([cut]), sin esperar su turno. Los errores van
+ * al log `[TELE]` y a [status]; nunca el token.
  */
 class TeleStreamer(
     private val backend: TeleBackend,
@@ -77,8 +90,17 @@ class TeleStreamer(
     /** Encendiendo un instrumento: todavía no figura en [status], pero el puerto ya es de la teleconsulta. */
     @Volatile private var publishing = false
 
+    /** El instrumento que se está encendiendo, o null. */
+    @Volatile private var waitingFor: Instrument? = null
+
     /** Si la teleconsulta tiene un instrumento en uso o lo está encendiendo. */
     val usingInstrument: Boolean get() = publishing || status.instrument != null
+
+    /** Cambia con cada corte: una publicación que empezó con otro valor abandona su espera. */
+    private val cuts = AtomicLong()
+
+    /** Corta, en el acto, la espera de una publicación en curso o encolada. */
+    private fun cut(): Long = cuts.incrementAndGet()
 
     // Sólo desde el hilo del streamer.
     private var credentials: TeleCredentials? = null
@@ -103,6 +125,7 @@ class TeleStreamer(
 
     /** El kiosco volvió al inicio, al login o al setup: el encuentro terminó. */
     fun onKioskHome() {
+        if (!status.manual) cut()
         run("kiosco al inicio") {
             if (status.manual || credentials == null) return@run
             closeAll("el kiosco volvió al inicio")
@@ -112,6 +135,9 @@ class TeleStreamer(
 
     /** Una orden de Pusher. Sólo publica o despublica: la sala la maneja el token del kiosco. */
     fun order(order: TeleOrder) {
+        // Cualquier orden corta la espera en curso, salvo encender otra vez lo mismo.
+        if (!status.manual && !(order.start && order.instrument == waitingFor)) cut()
+        val ticket = cuts.get()
         run("orden ${order.instrument.label}") {
             if (status.manual) {
                 log("[TELE] Llegó ${describe(order)} con la prueba de Testing en la sala: se ignora")
@@ -127,7 +153,7 @@ class TeleStreamer(
                 return@run
             }
             if (order.start) {
-                publishOnly(order.instrument)
+                publishOnly(order.instrument, ticket)
             } else if (status.instrument == order.instrument) {
                 unpublishCurrent("se apagó el ${order.instrument.label}")
             }
@@ -140,6 +166,7 @@ class TeleStreamer(
      * Local que se abre. La prueba de Testing sólo con [includeManual].
      */
     fun unpublishAll(reason: String, includeManual: Boolean = false) {
+        if (!status.manual || includeManual) cut()
         run("despublicar") {
             if (status.manual && !includeManual) return@run
             if (status.instrument != null) unpublishCurrent(reason)
@@ -148,6 +175,7 @@ class TeleStreamer(
 
     /** La prueba manual de Testing: un servidor y un token hechos a mano, como si los hubiera mostrado el kiosco. */
     fun startManual(serverUrl: String, token: String, instrument: Instrument) {
+        val ticket = cut()
         run("prueba manual") {
             val server = serverUrl.trim()
             val jwt = token.trim()
@@ -160,12 +188,13 @@ class TeleStreamer(
                 if (status.room != RoomState.DISCONNECTED || status.instrument != null) closeAll("se abrió la prueba manual de Testing")
                 if (!join(wanted, manual = true)) return@run
             }
-            publishOnly(instrument)
+            publishOnly(instrument, ticket)
         }
     }
 
     /** Cortar la prueba manual: lo que esté publicando y la sala. */
     fun stopManual() {
+        if (status.manual) cut()
         run("cortar la prueba") {
             if (!status.manual) return@run
             closeAll("se cortó la prueba de Testing")
@@ -178,6 +207,7 @@ class TeleStreamer(
      * una sola vez y si el token todavía sirve para entrar, se vuelve a entrar.
      */
     fun roomLost(reason: String) {
+        cut()
         run("sala perdida") {
             if (status.room != RoomState.CONNECTED) return@run
             log("[TELE] Se cortó la sala: $reason")
@@ -229,24 +259,31 @@ class TeleStreamer(
         return true
     }
 
-    /** Con la sala abierta: publica [instrument] y, si había otro, primero lo despublica. */
-    private fun publishOnly(instrument: Instrument) {
+    /**
+     * Con la sala abierta: publica [instrument] y, si había otro, primero lo
+     * despublica. [ticket] es el valor de los cortes cuando llegó la orden: si
+     * cambió, la espera se abandona.
+     */
+    private fun publishOnly(instrument: Instrument, ticket: Long) {
         publishing = true
+        waitingFor = instrument
         try {
-            replaceWith(instrument)
+            replaceWith(instrument, ticket)
         } finally {
             publishing = false
+            waitingFor = null
+            if (status.waitingImage) status = status.copy(waitingImage = false)
         }
     }
 
-    private fun replaceWith(instrument: Instrument) {
+    private fun replaceWith(instrument: Instrument, ticket: Long) {
         val current = status.instrument
         if (current == instrument) {
             log("[TELE] El ${instrument.label} ya se está publicando")
             return
         }
         if (current != null) unpublishCurrent("se enciende el ${instrument.label}")
-        val reason = backend.blocked(instrument) ?: backend.publish(instrument)
+        val reason = backend.blocked(instrument) ?: publishCuttable(instrument, ticket)
         if (reason != null) {
             // Sigue en la sala: la próxima orden del kiosco vuelve a probar.
             log("[TELE] No se publica el ${instrument.label}: $reason")
@@ -255,6 +292,12 @@ class TeleStreamer(
         }
         status = status.copy(instrument = instrument, message = "")
         log("[TELE] Publicando el ${instrument.label}")
+    }
+
+    /** El otoscopio espera la imagen con el cartel puesto; cualquier corte posterior a [ticket] la abandona. */
+    private fun publishCuttable(instrument: Instrument, ticket: Long): String? {
+        if (instrument == Instrument.OTOSCOPE) status = status.copy(waitingImage = true)
+        return backend.publish(instrument) { cuts.get() != ticket }
     }
 
     private fun unpublishCurrent(reason: String) {

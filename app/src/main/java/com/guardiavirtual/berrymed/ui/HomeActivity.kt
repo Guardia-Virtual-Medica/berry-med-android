@@ -3,6 +3,7 @@ package com.guardiavirtual.berrymed.ui
 
 import android.content.Context
 import android.content.Intent
+import android.media.AudioManager
 import android.os.Bundle
 import android.view.View
 import android.view.inputmethod.EditorInfo
@@ -62,6 +63,8 @@ class HomeActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Los botones físicos mueven el volumen de medios, el mismo de la barra del panel lateral.
+        volumeControlStream = AudioManager.STREAM_MUSIC
         binding = ActivityHomeBinding.inflate(layoutInflater)
         setContentView(binding.root)
         binding.homeRoot.padForSystemBars()

@@ -20,28 +20,26 @@ class AudioPickTest {
     private val h390 = output(2, "USB-Audio - Logitech USB Headset H390")
     private val adapter = output(3, "USB Audio Device")
 
+    private val jack = AudioPick.Device(
+        id = 4, type = AudioPick.TYPE_WIRED_HEADPHONES, name = "", isSource = false, isSink = true, usb = false,
+    )
+
     @Test
-    fun theCallGoesToTheHeadsetWhenItIsThere() {
-        val devices = listOf(speaker, adapter, h390)
-        assertEquals(2, AudioPick.callOutput(devices, CALL_AUDIO_HEADSET, "H390")?.id)
+    fun speakerIsAlwaysTheSpeaker() {
+        assertEquals(1, AudioPick.callOutput(listOf(jack, h390, adapter, speaker), CALL_AUDIO_SPEAKER)?.id)
     }
 
     @Test
-    fun withoutTheHeadsetTheCallFallsBackToTheSpeakerAndNeverTheAdapter() {
-        val devices = listOf(adapter, speaker)
-        assertEquals(1, AudioPick.callOutput(devices, CALL_AUDIO_HEADSET, "H390")?.id)
-    }
-
-    @Test
-    fun theSpeakerWinsWhenChosenEvenWithTheHeadsetPlugged() {
-        val devices = listOf(h390, adapter, speaker)
-        assertEquals(1, AudioPick.callOutput(devices, CALL_AUDIO_SPEAKER, "H390")?.id)
+    fun headsetIsTheJackAndWithoutItTheSpeaker() {
+        assertEquals(4, AudioPick.callOutput(listOf(speaker, adapter, jack), CALL_AUDIO_HEADSET)?.id)
+        // Un auricular USB ya no cuenta para la llamada: el armado no lo lleva.
+        assertEquals(1, AudioPick.callOutput(listOf(h390, adapter, speaker), CALL_AUDIO_HEADSET)?.id)
     }
 
     @Test
     fun theAdapterAloneIsNeverTheCallDevice() {
-        assertNull(AudioPick.callOutput(listOf(adapter), CALL_AUDIO_HEADSET, "H390"))
-        assertNull(AudioPick.callOutput(listOf(adapter), CALL_AUDIO_SPEAKER, "H390"))
+        assertNull(AudioPick.callOutput(listOf(adapter), CALL_AUDIO_HEADSET))
+        assertNull(AudioPick.callOutput(listOf(adapter), CALL_AUDIO_SPEAKER))
     }
 
     @Test
@@ -141,24 +139,15 @@ class AudioPickTest {
     }
 
     @Test
-    fun withHeadphonesChosenTheCallGoesToTheJackBeforeTheH390() {
+    fun withHeadphonesChosenTheCallGoesToTheJackEvenWithAnUsbHeadset() {
         val devices = listOf(speaker, h390, adapter, headphones)
-        assertEquals(10, AudioPick.callOutput(devices, CALL_AUDIO_HEADSET, "H390")?.id)
-        assertEquals(11, AudioPick.callOutput(listOf(h390, wiredHeadset, speaker), CALL_AUDIO_HEADSET, "H390")?.id)
+        assertEquals(10, AudioPick.callOutput(devices, CALL_AUDIO_HEADSET)?.id)
+        assertEquals(11, AudioPick.callOutput(listOf(h390, wiredHeadset, speaker), CALL_AUDIO_HEADSET)?.id)
     }
 
     @Test
-    fun theSpeakerWinsWhenChosenEvenWithTheJackPlugged() {
-        val devices = listOf(headphones, h390, speaker)
-        assertEquals(1, AudioPick.callOutput(devices, CALL_AUDIO_SPEAKER, "H390")?.id)
-    }
-
-    @Test
-    fun withoutTheJackTheCallGoesToTheH390AndThenTheSpeaker() {
-        assertEquals(2, AudioPick.callOutput(listOf(speaker, adapter, h390), CALL_AUDIO_HEADSET, "H390")?.id)
-        assertEquals(1, AudioPick.callOutput(listOf(adapter, speaker), CALL_AUDIO_HEADSET, "H390")?.id)
+    fun withoutTheJackTheCallGoesToTheSpeaker() {
         // El micrófono del jack solo no es una salida: la llamada va al parlante.
-        assertEquals(1, AudioPick.callOutput(listOf(wiredHeadsetMic, speaker), CALL_AUDIO_HEADSET, "H390")?.id)
-        assertNull(AudioPick.callOutput(listOf(adapter), CALL_AUDIO_HEADSET, "H390"))
+        assertEquals(1, AudioPick.callOutput(listOf(wiredHeadsetMic, speaker), CALL_AUDIO_HEADSET)?.id)
     }
 }

@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Outline
+import android.media.AudioManager
 import android.os.Bundle
 import android.os.SystemClock
 import android.text.SpannableString
@@ -219,6 +220,8 @@ class LocalPanelActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Los botones físicos mueven el volumen de medios, el mismo de la barra del panel lateral.
+        volumeControlStream = AudioManager.STREAM_MUSIC
         binding = ActivityLocalPanelBinding.inflate(layoutInflater)
         setContentView(binding.root)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -826,6 +829,8 @@ class LocalPanelActivity : AppCompatActivity() {
 
     /** El YKUSH3 y la espera de las placas de audio van en el hilo del estetoscopio, nunca acá. */
     private fun listen() {
+        // Un solo equipo de audio USB a la vez: el otoscopio se apaga como con Apagar (la cámara y después el puerto).
+        if (otoscope != null || runtime().otoscopeState != OtoscopePower.State.OFF) otoscopeOff(R.string.local_otoscope_done)
         binding.stethoMessage.setText(R.string.local_stetho_starting)
         runtime().localStethoStart { text -> runOnUiThread { if (unlocked) binding.stethoMessage.text = text } }
     }
@@ -892,9 +897,14 @@ class LocalPanelActivity : AppCompatActivity() {
      * que corresponde. Ninguna orden al YKUSH3 sale de este hilo.
      */
     private fun otoscopeOn() {
+        // Un solo equipo de audio USB a la vez: si el estetoscopio escucha, se detiene primero.
+        val runtime = runtime()
+        val snapshot = runtime.localSnapshot()
+        if (snapshot.stethoRunning || snapshot.stethoStarting) {
+            runtime.localStethoStop { text -> runOnUiThread { stethoMessage(text) } }
+        }
         pauseTabletCamera()
         setOtoscopeMessage(getString(R.string.local_otoscope_starting))
-        val runtime = runtime()
         runtime.localOtoscopeOn(
             progress = { text -> runOnUiThread { if (unlocked) setOtoscopeMessage(text) } },
             done = { path, text -> runOnUiThread { onOtoscopeFound(path, text) } },
@@ -934,6 +944,7 @@ class LocalPanelActivity : AppCompatActivity() {
             onRate = { rate ->
                 if (otoscope !== source) return@open
                 otoscopeFps = rate.roundToInt()
+                runtime.localOtoscopeImage = true
                 if (low.rate(rate, System.nanoTime())) {
                     runtime.log("[OTOSCOPIO] La imagen ${source.label} viene a ${rate.roundToInt()} cuadros/s")
                 }
@@ -955,6 +966,7 @@ class LocalPanelActivity : AppCompatActivity() {
         otoscopeOpened = false
         otoscopeFps = null
         val runtime = runtime()
+        runtime.localOtoscopeImage = false
         if (source == null) {
             runtime.localOtoscopeOff()
         } else {

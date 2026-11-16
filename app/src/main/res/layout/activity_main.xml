@@ -803,8 +803,8 @@
                                     app:selectionRequired="true"
                                     app:singleSelection="true">
 
-                                    <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="true" android:text="@string/call_audio_headset" />
-                                    <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/call_audio_speaker" />
+                                    <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="true" android:text="@string/call_audio_speaker" />
+                                    <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/call_audio_headset" />
                                 </com.google.android.material.chip.ChipGroup>
 
                                 <TextView style="@style/Help" android:text="@string/help_call_audio" />

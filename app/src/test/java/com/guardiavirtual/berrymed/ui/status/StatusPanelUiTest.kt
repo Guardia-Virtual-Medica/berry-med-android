@@ -36,6 +36,8 @@ class StatusPanelUiTest {
         teleInRoom: Boolean = false,
         callAudioChoice: String = CALL_AUDIO_HEADSET,
         jackPresent: Boolean = true,
+        otoscopeImage: Boolean = false,
+        otoscopeWaitingImage: Boolean = false,
         wifi: WifiState = WifiState(connected = true, validated = true, ssid = "Consultorio-5G", rssi = -55),
     ) = StatusSnapshot(
         local = LocalSnapshot(
@@ -67,10 +69,12 @@ class StatusPanelUiTest {
         teleInRoom = teleInRoom,
         callAudioChoice = callAudioChoice,
         jackPresent = jackPresent,
+        otoscopeImage = otoscopeImage,
+        otoscopeWaitingImage = otoscopeWaitingImage,
     )
 
-    private fun row(s: StatusSnapshot, name: String, localScreen: Boolean = s.localMode): DeviceRow =
-        StatusPanelUi.devices(s, localScreen).single { it.name == name }
+    private fun row(s: StatusSnapshot, name: String): DeviceRow =
+        StatusPanelUi.devices(s).single { it.name == name }
 
     private fun ok(text: String) = Pair(StatusTone.OK, text)
     private fun warn(text: String) = Pair(StatusTone.WARN, text)
@@ -113,16 +117,22 @@ class StatusPanelUiTest {
 
     @Test
     fun otoscopeRow() {
-        assertEquals(ok("En vivo"), row(status(otoscopeState = OtoscopePower.State.ON), "Otoscopio").pair())
+        // Abierto en el Panel Local: «En vivo» recién con cuadros.
+        assertEquals(warn("Esperando imagen"), row(status(otoscopeState = OtoscopePower.State.ON), "Otoscopio").pair())
+        assertEquals(
+            ok("En vivo"),
+            row(status(otoscopeState = OtoscopePower.State.ON, otoscopeImage = true), "Otoscopio").pair(),
+        )
+        // La teleconsulta: esperando la imagen y publicando.
+        assertEquals(warn("Esperando imagen"), row(status(otoscopePlugged = false, otoscopeWaitingImage = true), "Otoscopio").pair())
+        assertEquals(ok("En vivo"), row(status(otoscopeImage = true), "Otoscopio").pair())
         for (state in listOf(OtoscopePower.State.POWERING_PORT, OtoscopePower.State.WAITING_CAMERA)) {
             assertEquals(warn("Conectando"), row(status(otoscopeState = state), "Otoscopio").pair())
         }
         assertEquals(ok("Conectado"), row(status(), "Otoscopio").pair())
-        // En Local el puerto arranca apagado: no es un error.
+        // En reposo el puerto está apagado, también con el kiosco: no es un error.
         assertEquals(ok("Listo"), row(status(otoscopePlugged = false, localMode = true), "Otoscopio").pair())
-        // También en la pantalla del PIN, antes de que empiece el modo local.
-        assertEquals(ok("Listo"), row(status(otoscopePlugged = false), "Otoscopio", localScreen = true).pair())
-        assertEquals(bad("Desconectado"), row(status(otoscopePlugged = false), "Otoscopio").pair())
+        assertEquals(ok("Listo"), row(status(otoscopePlugged = false), "Otoscopio").pair())
         assertEquals(bad("Sin hub"), row(status(otoscopePlugged = false, ykushPlugged = false), "Otoscopio").pair())
         assertEquals(
             bad("Sin hub"),
@@ -136,7 +146,7 @@ class StatusPanelUiTest {
         assertEquals(warn("Conectando"), row(status(stethoStarting = true), "Estetoscopio").pair())
         assertEquals(ok("Conectado"), row(status(), "Estetoscopio").pair())
         assertEquals(ok("Listo"), row(status(stethoPlugged = false, localMode = true), "Estetoscopio").pair())
-        assertEquals(bad("Desconectado"), row(status(stethoPlugged = false), "Estetoscopio").pair())
+        assertEquals(ok("Listo"), row(status(stethoPlugged = false), "Estetoscopio").pair())
         assertEquals(bad("Sin hub"), row(status(stethoPlugged = false, ykushPlugged = false), "Estetoscopio").pair())
     }
 
@@ -185,7 +195,7 @@ class StatusPanelUiTest {
             row(status(usbMissing = setOf(UsbRole.OTOSCOPE), appMissing = setOf(AppPermission.CAMERA)), "Otoscopio").action,
         )
         // En vivo manda lo que se ve.
-        assertEquals(ok("En vivo"), row(status(otoscopeState = OtoscopePower.State.ON, appMissing = setOf(AppPermission.CAMERA)), "Otoscopio").pair())
+        assertEquals(ok("En vivo"), row(status(otoscopeImage = true, appMissing = setOf(AppPermission.CAMERA)), "Otoscopio").pair())
         assertNull(row(status(), "Otoscopio").action)
     }
 
@@ -222,8 +232,9 @@ class StatusPanelUiTest {
         assertEquals(7, all.okCount)
         assertEquals(StatusTone.OK, all.countTone)
 
-        val red = StatusPanelUi.build(status(otoscopePlugged = false), PanelMode.REMOTE)
-        assertEquals(6, red.okCount)
+        val red = StatusPanelUi.build(status(otoscopePlugged = false, ykushPlugged = false), PanelMode.REMOTE)
+        // Sin hub: el otoscopio y el hub en rojo.
+        assertEquals(5, red.okCount)
         assertEquals(StatusTone.BAD, red.countTone)
 
         val amber = StatusPanelUi.build(status(stethoStarting = true), PanelMode.REMOTE)
@@ -313,18 +324,14 @@ class StatusPanelUiTest {
 
     @Test
     fun callHelp() {
-        assertEquals("Todo suena por el auricular.", StatusPanelUi.callHelp(CallRoute.HEADSET, true))
-        assertEquals(
-            "La llamada va por el altavoz y el micrófono de la tablet. El estetoscopio sigue en el auricular.",
-            StatusPanelUi.callHelp(CallRoute.SPEAKER, true),
-        )
-        val noJack = "Sin auricular en el jack: la llamada va por el altavoz y el estetoscopio no suena."
-        assertEquals(noJack, StatusPanelUi.callHelp(CallRoute.SPEAKER, false))
+        assertEquals("La videollamada suena por los auriculares.", StatusPanelUi.callHelp(CallRoute.HEADSET))
+        val speaker = "La videollamada suena por el parlante de la tablet."
+        assertEquals(speaker, StatusPanelUi.callHelp(CallRoute.SPEAKER))
         // Igual en los dos modos: el sonido es de toda la app, no sólo de la llamada.
         for (mode in listOf(PanelMode.REMOTE, PanelMode.LOCAL, PanelMode.LOCAL_LOCKED)) {
             val built = StatusPanelUi.build(status(jackPresent = false), mode)
             assertEquals(CallRoute.SPEAKER, built.callRoute)
-            assertEquals(noJack, built.callHelp)
+            assertEquals(speaker, built.callHelp)
         }
     }
 
