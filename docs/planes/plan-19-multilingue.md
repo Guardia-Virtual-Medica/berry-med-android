@@ -194,8 +194,8 @@ En el paso 4 se le suman dos formas: `Txt.Plural(id, cantidad, args)` y `Txt.Joi
 
 **Fechas y números**
 
-- `PanelFormat` recibe el `Locale` (el de `AppLocale.current()`), no lo tiene fijo.
-- Los patrones de fecha son entradas del diccionario: `fmt_long_date` = `EEEE d 'de' MMMM 'de' yyyy` en español, `EEEE, MMMM d, yyyy` en inglés. Así `PanelFormat` sigue sin Android y con test.
+- `PanelFormat` recibe el `Locale`, no lo tiene fijo. **El idioma de los formatos sale del diccionario**, de la entrada `fmt_locale` (`es-AR` en español, `en-US` en inglés, `pt-BR` en portugués), y no de la configuración de la tablet ni de `Locale.getDefault()`: así fechas y números acompañan siempre al idioma de los textos que se ven. Si siguieran a la tablet, una tablet o el emulador en inglés mostrarían la fecha en inglés rodeada de textos en español. La pantalla lo arma una vez con `panelFormat()` (`ui/panel/PanelFormatRes.kt`, lee `fmt_locale` y los patrones con `getString`).
+- Los patrones de fecha son entradas del diccionario: `fmt_long_date` = `EEEE d 'de' MMMM 'de' yyyy` en español, `EEEE, MMMM d, yyyy` en inglés; `fmt_short_date_time` = `dd/MM/yyyy HH:mm`. Así `PanelFormat` sigue sin Android y con test.
 - La hora queda en 24 h en todos los idiomas.
 - El decimal sale de `DecimalFormatSymbols.getInstance(locale)`, no de `replace('.', ',')`. El `12,5` del layout se pone desde el código.
 - Lo que va a la API sigue con `Locale.US`. No se toca `protocol/Measurements.kt`.

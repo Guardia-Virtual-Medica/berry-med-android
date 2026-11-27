@@ -529,6 +529,8 @@ Por ahora la app está sólo en español. Lo que hay es la red para pasarla a va
 
 **Cómo se agrega un texto.** Va a `app/src/main/res/values/strings.xml`, nunca escrito en el código ni en el layout. Una frase entera por entrada: no se arma pegando pedazos ni metiendo una palabra con su artículo, porque en otro idioma cambian el orden y el género. Los valores van como parámetros numerados (`%1$s`, `%2$d`), así cada idioma los ubica donde quiere. Lo que es igual en todos los idiomas (nombres propios, marcas, unidades) va a `values/donottranslate.xml` con `translatable="false"`. Las líneas de log (`[USB] …`) se quedan en español y en el código.
 
+**Fechas y números.** Siguen al idioma de los textos, no al de la tablet: la entrada `fmt_locale` del diccionario dice con qué idioma y país se escriben (`es-AR`; en inglés sería `en-US`), y `fmt_long_date` y `fmt_short_date_time` son los patrones de fecha. `PanelFormat` los recibe (la pantalla lo arma con `panelFormat()`); el decimal sale del idioma y la hora va siempre en 24 h.
+
 **Qué controla cada test** (corren con `./gradlew test`):
 
 | Test | Qué controla |
