@@ -141,20 +141,20 @@
                                     style="@style/Panel.Text.Title"
                                     android:text="@string/local_ecg" />
 
+                                <!-- Ocupa lo que dejan los segmentos: en un idioma más largo se corta el estado, no la barra. -->
                                 <TextView
                                     android:id="@+id/ecgSignal"
                                     style="@style/Panel.Text.Status"
-                                    android:layout_width="wrap_content"
+                                    android:layout_width="0dp"
                                     android:layout_height="wrap_content"
                                     android:layout_marginStart="16dp"
+                                    android:layout_marginEnd="12dp"
+                                    android:layout_weight="1"
+                                    android:ellipsize="end"
                                     android:fontFamily="@font/barlow_medium"
                                     android:includeFontPadding="false"
+                                    android:maxLines="1"
                                     tools:text="Señal buena" />
-
-                                <Space
-                                    android:layout_width="0dp"
-                                    android:layout_height="0dp"
-                                    android:layout_weight="1" />
 
                                 <LinearLayout
                                     android:id="@+id/ecgSegments"

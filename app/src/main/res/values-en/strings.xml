@@ -180,8 +180,6 @@
     <string name="local_finish_cancel">Cancel</string>
     <string name="local_finish_confirm">Finish session</string>
     <string name="local_ecg">ECG</string>
-    <string name="local_unit_mm_s">mm/s</string>
-    <string name="local_unit_mm_mv">mm/mV</string>
     <string name="local_leads">Leads</string>
     <string name="local_freeze">Freeze</string>
     <string name="local_ecg_idle_title">ECG on standby</string>
@@ -191,7 +189,6 @@
     <string name="local_ecg_no_signal">No signal · check the electrodes</string>
     <string name="local_resume">Resume</string>
     <string name="local_frozen_at">FROZEN · %1$s</string>
-    <string name="local_strip_label">ECG · II</string>
     <string name="local_strip_hr">HR %1$s</string>
     <string name="local_view_ecg">View ECG</string>
     <string name="local_hr">HR</string>
@@ -266,7 +263,6 @@
     <string name="status_to_remote">Switch to ONDOCTOR365</string>
     <string name="status_back_to_remote">Back to ONDOCTOR365</string>
     <string name="status_devices">Devices</string>
-    <string name="status_count">%1$d/%2$d</string>
     <string name="status_call_audio">Sound</string>
     <string name="status_headset">Headset</string>
     <string name="status_speaker">Speaker</string>

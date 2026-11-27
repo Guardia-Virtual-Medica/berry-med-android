@@ -8,8 +8,13 @@
     <string name="local_spo2" translatable="false">SpO₂</string>
     <string name="local_unit_celsius" translatable="false">°C</string>
     <string name="local_unit_mmhg" translatable="false">mmHg</string>
+    <!-- La velocidad y la ganancia del ECG, en la barra del Panel Local. -->
+    <string name="local_unit_mm_s" translatable="false">mm/s</string>
+    <string name="local_unit_mm_mv" translatable="false">mm/mV</string>
     <!-- La derivación II del ECG. -->
     <string name="local_lead_ii" translatable="false">II</string>
+    <!-- El rótulo de la tira de ECG del Panel Local: la sigla y la derivación II. -->
+    <string name="local_strip_label" translatable="false">ECG · II</string>
     <!-- Las ganancias del ECG y de la respiración. -->
     <string name="main_gain_x0_25" translatable="false">x0.25</string>
     <string name="main_gain_x0_5" translatable="false">x0.5</string>
@@ -25,6 +30,8 @@
     <!-- Las filas del panel lateral que son siglas: saturación de oxígeno y electrocardiograma. -->
     <string name="status_device_spo2" translatable="false">SpO2</string>
     <string name="status_device_ecg" translatable="false">ECG</string>
+    <!-- Los equipos en verde sobre el total, «5/7»: sólo números, igual en todos los idiomas. -->
+    <string name="status_count" translatable="false">%1$d/%2$d</string>
     <!-- El camino de la imagen del otoscopio en el Panel Local: «En vivo · UVC · 29 cuadros/s». -->
     <string name="local_otoscope_path_uvc" translatable="false">UVC</string>
     <string name="local_otoscope_path_camera2" translatable="false">Camera2</string>
