@@ -650,8 +650,7 @@
     <!-- Por qué la teleconsulta no puede usar un instrumento (Testing → Teleconsulta). Empiezan en minúscula: van después de otra frase. -->
     <string name="rt_tele_local_open">el Panel Local está abierto</string>
     <string name="rt_tele_camera_permission">falta el permiso de la cámara: abrí Berry Med y aceptalo</string>
-    <!-- «de el» es como sale hoy; se corrige aparte, no en la migración. -->
-    <string name="rt_tele_microphone_permission">falta el permiso de el micrófono: abrí Berry Med y aceptalo</string>
+    <string name="rt_tele_microphone_permission">falta el permiso del micrófono: abrí Berry Med y aceptalo</string>
     <string name="rt_tele_camera_type">el servicio no tiene la cámara en segundo plano. Abrí el kiosco de Berry Med para habilitar otoscopio y estetoscopio en la teleconsulta.</string>
     <string name="rt_tele_microphone_type">el servicio no tiene el micrófono en segundo plano. Abrí el kiosco de Berry Med para habilitar otoscopio y estetoscopio en la teleconsulta.</string>
 
