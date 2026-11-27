@@ -220,7 +220,7 @@ No cambia nada de la app.
 
 1. Del parche, traer tal cual: `i18n/Txt.kt`, `i18n/TxtResolve.kt`, y de los tests `TestStrings.kt`, `HardcodedTextTest.kt`, `StringsCatalogTest.kt`.
 2. Generar las listas: `I18N_REGENERAR=1 ./gradlew testDebugUnitTest --tests '*HardcodedTextTest*'`.
-3. Clasificar `textos-en-codigo.txt` a mano: pasar a `## PERMITIDO` lo que no es texto (cabeceras HTTP, el JSON de `Measurements.kt`, `<unknown ssid>`, `TeleCredentials(…)`) y los motivos que sólo van al log (los argumentos de `guarded(…)`, `run(…)`, `closeAll(…)`, `unpublishAll(…)`, `stopSession(…)`). Ante la duda, queda en `## PENDIENTE`.
+3. Clasificar `textos-en-codigo.txt` a mano: pasar a `## PERMITIDO` lo que no es texto (cabeceras HTTP, el JSON de `Measurements.kt`, `<unknown ssid>`, `TeleCredentials(…)`) y los motivos que sólo van al log (los argumentos de `guarded(…)`, `closeAll(…)`, `unpublishAll(…)`, `stopSession(…)`). Los de `run(…)` de `TeleStreamer` quedan pendientes: cuando algo falla terminan en «Falló …» dentro de `TeleStatus.message`, que se ve en Testing; en el paso 4 se separa el nombre de la tarea (log) del mensaje de estado. Ante la duda, queda en `## PENDIENTE`.
 4. Lint en `app/build.gradle.kts`: `HardcodedText`, `SetTextI18n`, `MissingTranslation`, `ExtraTranslation`, `StringFormatMatches`, `StringFormatCount` y `MissingQuantity` como error, con `lint-baseline.xml` (se crea con `./gradlew updateLintBaselineDebug`).
 5. `values/donottranslate.xml` con lo fijo; `app_name` y `ondoctor` se mudan ahí.
 6. `-Pseudo` en Gradle para compilar con los seudo-idiomas (está en el parche). No va en el APK que se publica: la release es un `assembleDebug`.
