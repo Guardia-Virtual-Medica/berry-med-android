@@ -21,6 +21,9 @@ import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
+import com.guardiavirtual.berrymed.R
+import com.guardiavirtual.berrymed.i18n.Txt
+import com.guardiavirtual.berrymed.i18n.txt
 
 /**
  * Abrir el otoscopio como cámara externa con CameraX, para la tarjeta del
@@ -42,14 +45,14 @@ internal class ExternalCamera(private val context: Context) {
         owner: LifecycleOwner,
         useCase: (CameraInfo?) -> UseCase,
         closed: () -> Boolean,
-        done: (ProcessCameraProvider?, String?) -> Unit,
+        done: (ProcessCameraProvider?, Txt?) -> Unit,
     ) {
         withProvider(closed, done) { provider -> bind(provider, owner, useCase, retried = false, closed, done) }
     }
 
     private fun withProvider(
         closed: () -> Boolean,
-        done: (ProcessCameraProvider?, String?) -> Unit,
+        done: (ProcessCameraProvider?, Txt?) -> Unit,
         use: (ProcessCameraProvider) -> Unit,
     ) {
         val future = ProcessCameraProvider.getInstance(context)
@@ -58,7 +61,7 @@ internal class ExternalCamera(private val context: Context) {
             val provider = try {
                 future.get()
             } catch (error: Exception) {
-                done(null, "No se pudo iniciar la cámara: ${error.message ?: error.javaClass.simpleName}")
+                done(null, txt(R.string.rt_otoscope_camera_start_failed, error.message ?: error.javaClass.simpleName))
                 return@addListener
             }
             use(provider)
@@ -77,11 +80,11 @@ internal class ExternalCamera(private val context: Context) {
         useCase: (CameraInfo?) -> UseCase,
         retried: Boolean,
         closed: () -> Boolean,
-        done: (ProcessCameraProvider?, String?) -> Unit,
+        done: (ProcessCameraProvider?, Txt?) -> Unit,
     ) {
         if (!hasExternal(provider)) {
             if (retried) {
-                done(null, "Android lista el otoscopio como cámara pero CameraX no lo ve.")
+                done(null, txt(R.string.rt_otoscope_camerax_missing))
             } else {
                 restart(provider, owner, useCase, closed, done)
             }
@@ -94,7 +97,7 @@ internal class ExternalCamera(private val context: Context) {
             done(provider, null)
         } catch (error: Exception) {
             if (retried) {
-                done(null, "No se pudo abrir el otoscopio: ${error.message ?: error.javaClass.simpleName}")
+                done(null, txt(R.string.rt_otoscope_camera_open_failed, error.message ?: error.javaClass.simpleName))
             } else {
                 restart(provider, owner, useCase, closed, done)
             }
@@ -108,7 +111,7 @@ internal class ExternalCamera(private val context: Context) {
         owner: LifecycleOwner,
         useCase: (CameraInfo?) -> UseCase,
         closed: () -> Boolean,
-        done: (ProcessCameraProvider?, String?) -> Unit,
+        done: (ProcessCameraProvider?, Txt?) -> Unit,
     ) {
         provider.shutdownAsync().addListener({
             if (closed()) return@addListener

@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package com.guardiavirtual.berrymed.tele
 
+import com.guardiavirtual.berrymed.R
+import com.guardiavirtual.berrymed.i18n.Txt
+import com.guardiavirtual.berrymed.i18n.es
+import com.guardiavirtual.berrymed.i18n.raw
+import com.guardiavirtual.berrymed.i18n.txt
 import java.util.Base64
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -11,24 +16,24 @@ class TeleStreamerTest {
     /** Anota cada llamada; las respuestas se cambian por prueba. */
     private class FakeBackend : TeleBackend {
         val calls = ArrayList<String>()
-        var blockedReason: String? = null
-        var connectError: String? = null
-        var publishError: String? = null
+        var blockedReason: Txt? = null
+        var connectError: Txt? = null
+        var publishError: Txt? = null
 
-        override fun blocked(instrument: Instrument): String? = blockedReason
+        override fun blocked(instrument: Instrument): Txt? = blockedReason
 
-        override fun connect(credentials: TeleCredentials): String? {
+        override fun connect(credentials: TeleCredentials): Txt? {
             calls += "connect ${credentials.serverUrl}"
             return connectError
         }
 
-        override fun publish(instrument: Instrument): String? {
-            calls += "publish ${instrument.label}"
+        override fun publish(instrument: Instrument): Txt? {
+            calls += "publish ${instrument.logName}"
             return publishError
         }
 
         override fun unpublish(instrument: Instrument) {
-            calls += "unpublish ${instrument.label}"
+            calls += "unpublish ${instrument.logName}"
         }
 
         override fun disconnect() {
@@ -39,7 +44,7 @@ class TeleStreamerTest {
     private var now = 1_000_000L
     private val backend = FakeBackend()
     private val logs = ArrayList<String>()
-    private val streamer = TeleStreamer(backend, log = { logs += it }, executor = { it.run() }, clock = { now })
+    private val streamer = TeleStreamer(backend, log = { logs += it }, logText = ::es, executor = { it.run() }, clock = { now })
 
     /** Un JWT de mentira (sin firma válida): sólo importan la sala y el vencimiento. */
     private fun jwt(room: String): String {
@@ -170,26 +175,26 @@ class TeleStreamerTest {
     fun anOrderWithTheLocalPanelOpenIsIgnoredAndTheRoomStays() {
         streamer.onKioskToken(first)
         backend.calls.clear()
-        backend.blockedReason = "el Panel Local está abierto"
+        backend.blockedReason = txt(R.string.rt_tele_local_open)
         start(Instrument.OTOSCOPE)
         assertEquals(emptyList(), backend.calls)
         assertEquals(RoomState.CONNECTED, streamer.status.room)
-        assertEquals("el Panel Local está abierto", streamer.status.message)
+        assertEquals("el Panel Local está abierto", streamer.status.message?.let(::es))
     }
 
     @Test
     fun anInstrumentThatDoesNotOpenKeepsTheRoom() {
         streamer.onKioskToken(first)
-        backend.publishError = "El otoscopio no aparece"
+        backend.publishError = raw("El otoscopio no aparece")
         start(Instrument.OTOSCOPE)
         assertEquals(RoomState.CONNECTED, streamer.status.room)
         assertNull(streamer.status.instrument)
-        assertEquals("El otoscopio no aparece", streamer.status.message)
+        assertEquals("El otoscopio no aparece", streamer.status.message?.let(::es))
     }
 
     @Test
     fun aRoomThatDoesNotOpenIsNotRetriedOnEveryLoadOfTheSamePage() {
-        backend.connectError = "No se pudo entrar a la sala"
+        backend.connectError = raw("No se pudo entrar a la sala")
         streamer.onKioskToken(first)
         streamer.onKioskToken(first)
         assertEquals(listOf("connect wss://gvm.livekit.cloud"), backend.calls)
@@ -241,7 +246,7 @@ class TeleStreamerTest {
     fun theManualTestNeedsServerAndToken() {
         streamer.startManual("", "jwt", Instrument.OTOSCOPE)
         assertEquals(emptyList(), backend.calls)
-        assertEquals("Faltan el servidor o el token", streamer.status.message)
+        assertEquals("Faltan el servidor o el token", streamer.status.message?.let(::es))
     }
 
     @Test
@@ -257,12 +262,49 @@ class TeleStreamerTest {
     @Test
     fun anExceptionDoesNotEscapeAndReleasesEverything() {
         val failing = object : TeleBackend by backend {
-            override fun publish(instrument: Instrument): String? = throw IllegalStateException("roto")
+            override fun publish(instrument: Instrument): Txt? = throw IllegalStateException("roto")
         }
-        val streamer = TeleStreamer(failing, log = {}, executor = { it.run() }, clock = { now })
+        val logs = ArrayList<String>()
+        val streamer = TeleStreamer(failing, log = { logs += it }, logText = ::es, executor = { it.run() }, clock = { now })
         streamer.onKioskToken(first)
         streamer.order(TeleOrder(Instrument.OTOSCOPE, true, "e1"))
         assertEquals(RoomState.ERROR, streamer.status.room)
         assertEquals("disconnect", backend.calls.last())
+        // El log lleva el nombre interno de la tarea; Testing, la frase entera de esa tarea.
+        assertEquals("[TELE] Falló orden otoscopio: IllegalStateException", logs.last())
+        assertEquals("Falló orden otoscopio", streamer.status.message?.let(::es))
+    }
+
+    /** Lo que muestra Testing cuando falla una tarea es lo de antes: «Falló» y el nombre de la tarea del log. */
+    @Test
+    fun eachTaskThatFailsShowsTheSameSentenceAsBefore() {
+        for (task in TeleTask.entries) {
+            assertEquals("Falló ${task.logName}", es(txt(task.failed)), task.name)
+        }
+        assertEquals(TeleTask.ORDER_OTOSCOPE, TeleTask.order(Instrument.OTOSCOPE))
+        assertEquals("orden ${Instrument.STETHOSCOPE.logName}", TeleTask.order(Instrument.STETHOSCOPE).logName)
+    }
+
+    /** A17: el motivo es un texto sin idioma; la línea de log lo escribe en español con el resolvedor que recibe. */
+    @Test
+    fun aReasonGoesToTheLogInSpanish() {
+        streamer.onKioskToken(first)
+        backend.blockedReason = txt(R.string.rt_tele_local_open)
+        start(Instrument.OTOSCOPE)
+        assertEquals("[TELE] No se publica el otoscopio: el Panel Local está abierto", logs.last())
+        backend.blockedReason = null
+        backend.connectError = txt(R.string.rt_tele_join_failed, "Failed to connect to localhost/127.0.0.1:1")
+        streamer.onKioskToken(second)
+        assertEquals("[TELE] No se pudo entrar a la sala: Failed to connect to localhost/127.0.0.1:1", logs.last())
+        assertEquals("No se pudo entrar a la sala: Failed to connect to localhost/127.0.0.1:1", streamer.status.message?.let(::es))
+    }
+
+    @Test
+    fun aLostRoomShowsWhy() {
+        streamer.onKioskToken(first)
+        now += TeleStreamer.TOKEN_ENTRY_MILLIS
+        streamer.roomLost("signal_close")
+        assertEquals("Se cortó la sala: signal_close", streamer.status.message?.let(::es))
+        assertTrue("[TELE] Se cortó la sala: signal_close" in logs, logs.joinToString("\n"))
     }
 }

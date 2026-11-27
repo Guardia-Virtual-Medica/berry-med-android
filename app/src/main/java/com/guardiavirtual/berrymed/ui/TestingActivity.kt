@@ -16,6 +16,7 @@ import com.guardiavirtual.berrymed.R
 import com.guardiavirtual.berrymed.databinding.ActivityTestingBinding
 import com.guardiavirtual.berrymed.databinding.ItemTestCardBinding
 import com.guardiavirtual.berrymed.i18n.resolve
+import com.guardiavirtual.berrymed.otoscope.OtoscopePower
 import com.guardiavirtual.berrymed.service.TestingSession.Measure
 import com.guardiavirtual.berrymed.service.TestingSession.Verdict
 import com.guardiavirtual.berrymed.service.MonitorService
@@ -304,9 +305,10 @@ class TestingActivity : AppCompatActivity() {
             row.portState.setTextColor(getColor(if (port.on == true) R.color.ok else R.color.muted))
         }
 
-        binding.usbList.text = s.inventory.usb.ifEmpty { listOf(getString(R.string.testing_usb_none)) }.joinToString("\n")
-        binding.audioList.text = s.inventory.audio.joinToString("\n")
-        binding.cameraList.text = s.inventory.cameras.joinToString("\n")
+        binding.usbList.text =
+            s.inventory.usb.map { it.resolve(this) }.ifEmpty { listOf(getString(R.string.testing_usb_none)) }.joinToString("\n")
+        binding.audioList.text = s.inventory.audio.joinToString("\n") { it.resolve(this) }
+        binding.cameraList.text = s.inventory.cameras.joinToString("\n") { it.resolve(this) }
 
         renderTele(s.tele)
 
@@ -322,8 +324,15 @@ class TestingActivity : AppCompatActivity() {
     private fun renderTele(t: TeleView) {
         val status = t.status
         dot(binding.teleDot, status.room == RoomState.CONNECTED && status.instrument != null)
-        binding.teleState.text =
-            if (status.manual) getString(R.string.testing_tele_state_manual, status.room.label) else status.room.label
+        val room = getString(
+            when (status.room) {
+                RoomState.DISCONNECTED -> R.string.testing_tele_room_disconnected
+                RoomState.CONNECTING -> R.string.testing_tele_room_connecting
+                RoomState.CONNECTED -> R.string.testing_tele_room_connected
+                RoomState.ERROR -> R.string.testing_tele_room_error
+            },
+        )
+        binding.teleState.text = if (status.manual) getString(R.string.testing_tele_state_manual, room) else room
         val service = when {
             t.serviceCamera && t.serviceMicrophone -> R.string.testing_tele_service_camera_mic
             t.serviceCamera -> R.string.testing_tele_service_camera
@@ -344,7 +353,11 @@ class TestingActivity : AppCompatActivity() {
             null -> getString(R.string.testing_tele_publishes_nothing)
             Instrument.OTOSCOPE -> getString(
                 R.string.testing_tele_publishes_otoscope,
-                t.videoPath.orEmpty(),
+                when (t.videoPath) {
+                    null -> ""
+                    OtoscopePower.Path.UVC -> getString(R.string.testing_tele_path_uvc)
+                    OtoscopePower.Path.CAMERA2 -> getString(R.string.testing_tele_path_camera2)
+                },
                 t.videoSize.orEmpty(),
                 "%.1f".format(numbers, t.framesPerSecond),
             )
@@ -363,12 +376,12 @@ class TestingActivity : AppCompatActivity() {
         }
         binding.teleDetail.text = listOfNotNull(
             getString(service, t.serviceTypes),
-            t.callAudio,
+            t.callAudio.resolve(this),
             // La sala, su nombre y el token, cada uno una frase entera, juntos en un renglón.
-            listOfNotNull(getString(R.string.testing_tele_room, status.room.label), status.roomName, token).joinToString(" · "),
+            listOfNotNull(getString(R.string.testing_tele_room, room), status.roomName, token).joinToString(" · "),
             publishes,
             android,
-            status.message.takeIf { it.isNotBlank() }?.let { getString(R.string.testing_tele_last_error, it) },
+            status.message?.let { getString(R.string.testing_tele_last_error, it.resolve(this)) },
         ).joinToString("\n")
     }
 

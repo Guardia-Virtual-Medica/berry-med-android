@@ -3,6 +3,9 @@ package com.guardiavirtual.berrymed.otoscope
 
 import android.content.Context
 import android.hardware.usb.UsbDevice
+import com.guardiavirtual.berrymed.R
+import com.guardiavirtual.berrymed.i18n.Txt
+import com.guardiavirtual.berrymed.i18n.txt
 import com.serenegiant.usb.USBMonitor
 import com.serenegiant.usb.UVCCamera
 
@@ -48,7 +51,7 @@ internal class UvcHandle private constructor(
         data class Ok(val handle: UvcHandle) : Opened
 
         /** No se intentó: el otoscopio no está o falta su permiso USB. */
-        data class Refused(val reason: String) : Opened
+        data class Refused(val reason: Txt) : Opened
     }
 
     companion object {
@@ -57,9 +60,9 @@ internal class UvcHandle private constructor(
          * abrió y tira el error (Throwable: si la librería nativa no carga es un Error).
          */
         fun open(context: Context, probe: OtoscopeProbe): Opened {
-            val device: UsbDevice = probe.usbDevice() ?: return Opened.Refused("El otoscopio no aparece por USB.")
+            val device: UsbDevice = probe.usbDevice() ?: return Opened.Refused(txt(R.string.rt_otoscope_uvc_missing))
             if (!probe.usbReady()) {
-                return Opened.Refused("Falta el permiso USB del otoscopio: tocá «Pedir permiso USB» en Berry Med.")
+                return Opened.Refused(txt(R.string.rt_otoscope_uvc_permission))
             }
             val usb = USBMonitor(context.applicationContext, IGNORE_EVENTS)
             var uvc: UVCCamera? = null

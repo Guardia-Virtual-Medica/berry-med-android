@@ -1,15 +1,44 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package com.guardiavirtual.berrymed.tele
 
+import androidx.annotation.StringRes
+import com.guardiavirtual.berrymed.R
+import com.guardiavirtual.berrymed.i18n.Txt
+import com.guardiavirtual.berrymed.i18n.txt
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 
-/** Cómo está la sala de LiveKit, para Testing y el log. */
-enum class RoomState(val label: String) {
-    DISCONNECTED("desconectada"),
-    CONNECTING("conectando"),
-    CONNECTED("conectada"),
-    ERROR("error"),
+/** Cómo está la sala de LiveKit. Testing arma su texto («desconectada», «conectada»…). */
+enum class RoomState {
+    DISCONNECTED,
+    CONNECTING,
+    CONNECTED,
+    ERROR,
+}
+
+/**
+ * Lo que hace el streamer en su hilo. [logName] es el nombre de la tarea en
+ * el log `[TELE] Falló …`; si falla, Testing muestra [failed], la frase
+ * entera, igual a la de antes («Falló prueba manual»).
+ */
+enum class TeleTask(val logName: String, @StringRes val failed: Int) {
+    KIOSK_TOKEN("token del kiosco", R.string.rt_tele_failed_kiosk_token),
+    KIOSK_HOME("kiosco al inicio", R.string.rt_tele_failed_kiosk_home),
+    ORDER_OTOSCOPE("orden otoscopio", R.string.rt_tele_failed_order_otoscope),
+    ORDER_STETHOSCOPE("orden estetoscopio", R.string.rt_tele_failed_order_stethoscope),
+    UNPUBLISH("despublicar", R.string.rt_tele_failed_unpublish),
+    MANUAL("prueba manual", R.string.rt_tele_failed_manual),
+    STOP_MANUAL("cortar la prueba", R.string.rt_tele_failed_stop_manual),
+    ROOM_LOST("sala perdida", R.string.rt_tele_failed_room_lost),
+    ROOM_LIMIT("tope de la sala", R.string.rt_tele_failed_room_limit),
+    ;
+
+    companion object {
+        fun order(instrument: Instrument): TeleTask = when (instrument) {
+            Instrument.OTOSCOPE -> ORDER_OTOSCOPE
+            Instrument.STETHOSCOPE -> ORDER_STETHOSCOPE
+        }
+    }
 }
 
 data class TeleStatus(
@@ -24,8 +53,8 @@ data class TeleStatus(
     val tokenSeenAtMillis: Long = 0L,
     /** Cuándo vence el token para entrar, del JWT; null si no se pudo leer. */
     val tokenExpiresAtMillis: Long? = null,
-    /** El último error, o vacío. */
-    val message: String = "",
+    /** El último error, o null. */
+    val message: Txt? = null,
 )
 
 /**
@@ -35,13 +64,13 @@ data class TeleStatus(
  */
 interface TeleBackend {
     /** null si [instrument] se puede usar ahora; si no, el motivo (Panel Local abierto, sin permiso). */
-    fun blocked(instrument: Instrument): String?
+    fun blocked(instrument: Instrument): Txt?
 
     /** Entra a la sala. null si entró; si no, el motivo (y no queda nada abierto). */
-    fun connect(credentials: TeleCredentials): String?
+    fun connect(credentials: TeleCredentials): Txt?
 
     /** Enciende el instrumento y publica su pista. null si quedó publicando; si no, el motivo (y el instrumento queda suelto). */
-    fun publish(instrument: Instrument): String?
+    fun publish(instrument: Instrument): Txt?
 
     /** Despublica y suelta el instrumento (y apaga el puerto si lo encendió el streamer). */
     fun unpublish(instrument: Instrument)
@@ -61,11 +90,14 @@ interface TeleBackend {
  * cuando el kiosco vuelve al inicio o a las [MAX_ROOM_MILLIS] en la sala.
  *
  * Todo pasa en un solo hilo ([executor]), en el orden en que llegan las
- * cosas. Los errores van al log `[TELE]` y a [status]; nunca el token.
+ * cosas. Los errores van al log `[TELE]` y a [status]; nunca el token. Los
+ * motivos llegan como [Txt]: [status] los guarda así, para la pantalla, y el
+ * log los escribe en español con [logText].
  */
 class TeleStreamer(
     private val backend: TeleBackend,
     private val log: (String) -> Unit,
+    private val logText: (Txt) -> String,
     private val executor: Executor = Executors.newSingleThreadExecutor { runnable ->
         Thread(runnable, "berry-tele").apply { isDaemon = true }
     },
@@ -87,7 +119,7 @@ class TeleStreamer(
 
     /** El kiosco cargó una dirección con `serverUrl` y `token`. */
     fun onKioskToken(found: TeleCredentials) {
-        run("token del kiosco") {
+        run(TeleTask.KIOSK_TOKEN) {
             if (found == credentials) {
                 if (status.room == RoomState.CONNECTING || status.room == RoomState.CONNECTED) return@run
                 // La misma dirección se avisa más de una vez por carga: un error reciente no se reintenta enseguida.
@@ -103,7 +135,7 @@ class TeleStreamer(
 
     /** El kiosco volvió al inicio, al login o al setup: el encuentro terminó. */
     fun onKioskHome() {
-        run("kiosco al inicio") {
+        run(TeleTask.KIOSK_HOME) {
             if (status.manual || credentials == null) return@run
             closeAll("el kiosco volvió al inicio")
             credentials = null
@@ -112,7 +144,7 @@ class TeleStreamer(
 
     /** Una orden de Pusher. Sólo publica o despublica: la sala la maneja el token del kiosco. */
     fun order(order: TeleOrder) {
-        run("orden ${order.instrument.label}") {
+        run(TeleTask.order(order.instrument)) {
             if (status.manual) {
                 log("[TELE] Llegó ${describe(order)} con la prueba de Testing en la sala: se ignora")
                 return@run
@@ -129,7 +161,7 @@ class TeleStreamer(
             if (order.start) {
                 publishOnly(order.instrument)
             } else if (status.instrument == order.instrument) {
-                unpublishCurrent("se apagó el ${order.instrument.label}")
+                unpublishCurrent("se apagó el ${order.instrument.logName}")
             }
         }
     }
@@ -140,7 +172,7 @@ class TeleStreamer(
      * Local que se abre. La prueba de Testing sólo con [includeManual].
      */
     fun unpublishAll(reason: String, includeManual: Boolean = false) {
-        run("despublicar") {
+        run(TeleTask.UNPUBLISH) {
             if (status.manual && !includeManual) return@run
             if (status.instrument != null) unpublishCurrent(reason)
         }
@@ -148,11 +180,11 @@ class TeleStreamer(
 
     /** La prueba manual de Testing: un servidor y un token hechos a mano, como si los hubiera mostrado el kiosco. */
     fun startManual(serverUrl: String, token: String, instrument: Instrument) {
-        run("prueba manual") {
+        run(TeleTask.MANUAL) {
             val server = serverUrl.trim()
             val jwt = token.trim()
             if (server.isEmpty() || jwt.isEmpty()) {
-                status = status.copy(message = "Faltan el servidor o el token")
+                status = status.copy(message = txt(R.string.rt_tele_missing_credentials))
                 return@run
             }
             val wanted = TeleCredentials(KioskUrls.serverFor(server), jwt)
@@ -166,7 +198,7 @@ class TeleStreamer(
 
     /** Cortar la prueba manual: lo que esté publicando y la sala. */
     fun stopManual() {
-        run("cortar la prueba") {
+        run(TeleTask.STOP_MANUAL) {
             if (!status.manual) return@run
             closeAll("se cortó la prueba de Testing")
             credentials = null
@@ -178,14 +210,14 @@ class TeleStreamer(
      * una sola vez y si el token todavía sirve para entrar, se vuelve a entrar.
      */
     fun roomLost(reason: String) {
-        run("sala perdida") {
+        run(TeleTask.ROOM_LOST) {
             if (status.room != RoomState.CONNECTED) return@run
             log("[TELE] Se cortó la sala: $reason")
             status.instrument?.let(backend::unpublish)
             backend.disconnect()
             val again = credentials
             val fresh = clock() - status.tokenSeenAtMillis < TOKEN_ENTRY_MILLIS
-            status = status.copy(room = RoomState.ERROR, instrument = null, message = "Se cortó la sala: $reason")
+            status = status.copy(room = RoomState.ERROR, instrument = null, message = txt(R.string.rt_tele_room_lost, reason))
             if (again != null && fresh && !retried && !status.manual) {
                 retried = true
                 log("[TELE] Se vuelve a entrar con el mismo token")
@@ -196,7 +228,7 @@ class TeleStreamer(
 
     /** Se llama seguido (una vez por segundo): el tope de tiempo en la sala. */
     fun tick() {
-        run("tope de la sala") {
+        run(TeleTask.ROOM_LIMIT) {
             if (status.room != RoomState.CONNECTED || joinedAtMillis == 0L) return@run
             if (clock() - joinedAtMillis < MAX_ROOM_MILLIS) return@run
             closeAll("pasaron ${MAX_ROOM_MILLIS / 3_600_000L} h en la sala")
@@ -219,12 +251,12 @@ class TeleStreamer(
         log("[TELE] Token visto para la sala ${info.room ?: "(sin nombre)"} en ${found.serverUrl}: se entra")
         val reason = backend.connect(found)
         if (reason != null) {
-            log("[TELE] $reason")
+            log("[TELE] ${logText(reason)}")
             status = status.copy(room = RoomState.ERROR, message = reason)
             return false
         }
         joinedAtMillis = clock()
-        status = status.copy(room = RoomState.CONNECTED, message = "")
+        status = status.copy(room = RoomState.CONNECTED, message = null)
         log("[TELE] En la sala ${info.room ?: "(sin nombre)"}, sin publicar")
         return true
     }
@@ -242,26 +274,26 @@ class TeleStreamer(
     private fun replaceWith(instrument: Instrument) {
         val current = status.instrument
         if (current == instrument) {
-            log("[TELE] El ${instrument.label} ya se está publicando")
+            log("[TELE] El ${instrument.logName} ya se está publicando")
             return
         }
-        if (current != null) unpublishCurrent("se enciende el ${instrument.label}")
+        if (current != null) unpublishCurrent("se enciende el ${instrument.logName}")
         val reason = backend.blocked(instrument) ?: backend.publish(instrument)
         if (reason != null) {
             // Sigue en la sala: la próxima orden del kiosco vuelve a probar.
-            log("[TELE] No se publica el ${instrument.label}: $reason")
+            log("[TELE] No se publica el ${instrument.logName}: ${logText(reason)}")
             status = status.copy(instrument = null, message = reason)
             return
         }
-        status = status.copy(instrument = instrument, message = "")
-        log("[TELE] Publicando el ${instrument.label}")
+        status = status.copy(instrument = instrument, message = null)
+        log("[TELE] Publicando el ${instrument.logName}")
     }
 
     private fun unpublishCurrent(reason: String) {
         val current = status.instrument ?: return
         backend.unpublish(current)
         status = status.copy(instrument = null)
-        log("[TELE] Se despublica el ${current.label}: $reason")
+        log("[TELE] Se despublica el ${current.logName}: $reason")
     }
 
     /** Despublica lo que haya y sale de la sala. */
@@ -274,15 +306,15 @@ class TeleStreamer(
     }
 
     private fun describe(order: TeleOrder) =
-        "${if (order.start) "encender" else "apagar"} el ${order.instrument.label}"
+        "${if (order.start) "encender" else "apagar"} el ${order.instrument.logName}"
 
     /** Ningún error del streamer cierra la app: queda en el log y en el estado. */
-    private fun run(task: String, block: () -> Unit) {
+    private fun run(task: TeleTask, block: () -> Unit) {
         executor.execute {
             try {
                 block()
             } catch (error: Throwable) {
-                log("[TELE] Falló $task: ${error.javaClass.simpleName}")
+                log("[TELE] Falló ${task.logName}: ${error.javaClass.simpleName}")
                 try {
                     status.instrument?.let(backend::unpublish)
                 } catch (_: Throwable) {
@@ -291,7 +323,7 @@ class TeleStreamer(
                     backend.disconnect()
                 } catch (_: Throwable) {
                 }
-                status = status.copy(room = RoomState.ERROR, instrument = null, message = "Falló $task")
+                status = status.copy(room = RoomState.ERROR, instrument = null, message = txt(task.failed))
             }
         }
     }

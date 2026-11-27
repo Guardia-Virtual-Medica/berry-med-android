@@ -4,8 +4,8 @@ package com.guardiavirtual.berrymed.tele
 import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 
-/** Los dos instrumentos que van a la teleconsulta. */
-enum class Instrument(val label: String) {
+/** Los dos instrumentos que van a la teleconsulta. [logName] es cómo se los nombra en el log `[TELE]`, siempre en español. */
+enum class Instrument(val logName: String) {
     OTOSCOPE("otoscopio"),
     STETHOSCOPE("estetoscopio"),
 }

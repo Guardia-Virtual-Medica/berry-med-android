@@ -255,18 +255,17 @@ class TotemRuntime(context: Context) {
         ykush = ykush,
         probe = otoscopeProbe,
         stethoInput = { cfg -> stetho.devices(cfg).input },
-        // paso 4b: LiveKitBackend todavía recibe el motivo como texto; va en español, como su log.
-        blockedBy = { instrument -> teleBlocked(instrument)?.let(::logText) },
+        blockedBy = ::teleBlocked,
         log = ::log,
     )
 
     /** La sala de LiveKit de la teleconsulta: el otoscopio y el estetoscopio para el médico. */
-    val tele = TeleStreamer(teleBackend, ::log).also { streamer ->
+    val tele = TeleStreamer(teleBackend, ::log, ::logText).also { streamer ->
         teleBackend.onRoomLost = streamer::roomLost
     }
 
     /** Fija la salida de la videollamada del `WebView`, que corre en este proceso. */
-    private val callAudio = CallAudioRouter(appContext, { config }, ::log)
+    private val callAudio = CallAudioRouter(appContext, { config }, ::log, ::logText)
 
     /** El Wi-Fi del panel lateral. */
     private val wifi = WifiWatch(appContext)
@@ -912,8 +911,7 @@ class TotemRuntime(context: Context) {
         // Parar o cerrar el panel durante la espera: no se abre nada.
         if (stethoEpoch != epoch || !localMode) return NO_TEXT
         val reason = stetho.start(cfg)
-        // paso 4b: el motivo llega armado de StethoscopeLink.
-        if (reason != null) return join(notes + raw(reason), " ")
+        if (reason != null) return join(notes + reason, " ")
         if (!stetho.playing) notes += txt(R.string.rt_stetho_no_headphones)
         return join(listOf(txt(R.string.rt_stetho_listening)) + notes, " ")
     }
@@ -951,8 +949,7 @@ class TotemRuntime(context: Context) {
         if (stetho.running || stethoStarting) stopStethoscope(closing = false)
         stethoWorker.execute {
             if (!localMode) return@execute
-            // paso 4b: el motivo llega armado de StethoscopeLink.
-            done(stetho.play(number, config)?.let(::raw) ?: txt(R.string.rt_stetho_playing, number))
+            done(stetho.play(number, config) ?: txt(R.string.rt_stetho_playing, number))
         }
     }
 

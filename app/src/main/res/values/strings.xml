@@ -650,8 +650,7 @@
     <!-- Por qué la teleconsulta no puede usar un instrumento (Testing → Teleconsulta). Empiezan en minúscula: van después de otra frase. -->
     <string name="rt_tele_local_open">el Panel Local está abierto</string>
     <string name="rt_tele_camera_permission">falta el permiso de la cámara: abrí Berry Med y aceptalo</string>
-    <!-- «de el» es como sale hoy; se corrige aparte, no en la migración. -->
-    <string name="rt_tele_microphone_permission">falta el permiso de el micrófono: abrí Berry Med y aceptalo</string>
+    <string name="rt_tele_microphone_permission">falta el permiso del micrófono: abrí Berry Med y aceptalo</string>
     <string name="rt_tele_camera_type">el servicio no tiene la cámara en segundo plano. Abrí el kiosco de Berry Med para habilitar otoscopio y estetoscopio en la teleconsulta.</string>
     <string name="rt_tele_microphone_type">el servicio no tiene el micrófono en segundo plano. Abrí el kiosco de Berry Med para habilitar otoscopio y estetoscopio en la teleconsulta.</string>
 
@@ -689,4 +688,121 @@
     <string name="device_name_otoscope">otoscopio</string>
     <string name="device_name_stetho_adapter">adaptador del estetoscopio</string>
     <string name="device_name_logitech">auricular Logitech</string>
+
+    <!-- Panel Local y teleconsulta: por qué no abre el otoscopio. %1$s es el error tal como llega. -->
+    <string name="rt_otoscope_uvc_missing">El otoscopio no aparece por USB.</string>
+    <string name="rt_otoscope_uvc_permission">Falta el permiso USB del otoscopio: tocá «Pedir permiso USB» en Berry Med.</string>
+    <string name="rt_otoscope_uvc_failed">No se pudo abrir el otoscopio por UVC: %1$s</string>
+    <string name="rt_otoscope_camera_start_failed">No se pudo iniciar la cámara: %1$s</string>
+    <string name="rt_otoscope_camerax_missing">Android lista el otoscopio como cámara pero CameraX no lo ve.</string>
+    <string name="rt_otoscope_camera_open_failed">No se pudo abrir el otoscopio: %1$s</string>
+
+    <!-- Panel Local, estetoscopio: por qué no empieza a escuchar o no reproduce. %1$s es el nombre de la placa de audio que se busca (de la configuración). -->
+    <string name="rt_stetho_mic_permission">Sin permiso para el micrófono.</string>
+    <string name="rt_stetho_adapter_missing">No aparece el adaptador del estetoscopio (\"%1$s\").</string>
+    <string name="rt_stetho_adapter_failed">No se pudo abrir el adaptador del estetoscopio.</string>
+    <string name="rt_stetho_stop_listening_first">Primero hay que parar la escucha.</string>
+    <string name="rt_stetho_recording_gone">Esa grabación ya no está.</string>
+    <string name="rt_stetho_play_no_headphones">Sin auriculares: las grabaciones no salen por el parlante de la tablet.</string>
+    <string name="rt_stetho_headphones_failed">No se pudo abrir el auricular.</string>
+
+    <!-- Testing → Teleconsulta: el último error de la sala. También van al log [TELE], en español. %1$s es el error tal como llega (sin el token). -->
+    <string name="rt_tele_missing_credentials">Faltan el servidor o el token</string>
+    <string name="rt_tele_room_lost">Se cortó la sala: %1$s</string>
+    <string name="rt_tele_join_failed">No se pudo entrar a la sala: %1$s</string>
+    <string name="rt_tele_no_room">No hay sala</string>
+    <string name="rt_tele_no_audio_module">No hay módulo de audio</string>
+    <string name="rt_tele_otoscope_permission">Falta aceptar el permiso USB del otoscopio en la tablet</string>
+    <string name="rt_tele_otoscope_missing">El otoscopio no aparece ni como cámara ni por USB con permiso</string>
+    <!-- %1$d son segundos. -->
+    <string name="rt_tele_otoscope_timeout" tools:ignore="PluralsCandidate">El otoscopio no abrió en %1$d s</string>
+    <string name="rt_tele_otoscope_no_image">El otoscopio abrió pero no manda imagen</string>
+    <string name="rt_tele_otoscope_rejected">LiveKit no aceptó la pista del otoscopio</string>
+    <string name="rt_tele_otoscope_uvc_failed">No se pudo abrir el otoscopio por UVC: %1$s</string>
+    <string name="rt_tele_otoscope_closed">Se apagó mientras abría.</string>
+    <string name="rt_tele_stetho_missing">No aparece el adaptador del estetoscopio (\"%1$s\")</string>
+    <string name="rt_tele_stetho_rejected">LiveKit no aceptó la pista del estetoscopio</string>
+    <!-- Una tarea de la teleconsulta que falló de golpe (una excepción). Una frase por tarea; lo que sigue a «Falló» es el nombre interno de la tarea, el mismo que sale en el log. -->
+    <string name="rt_tele_failed_kiosk_token">Falló token del kiosco</string>
+    <string name="rt_tele_failed_kiosk_home">Falló kiosco al inicio</string>
+    <string name="rt_tele_failed_order_otoscope">Falló orden otoscopio</string>
+    <string name="rt_tele_failed_order_stethoscope">Falló orden estetoscopio</string>
+    <string name="rt_tele_failed_unpublish">Falló despublicar</string>
+    <string name="rt_tele_failed_manual">Falló prueba manual</string>
+    <string name="rt_tele_failed_stop_manual">Falló cortar la prueba</string>
+    <string name="rt_tele_failed_room_lost">Falló sala perdida</string>
+    <string name="rt_tele_failed_room_limit">Falló tope de la sala</string>
+
+    <!-- Testing → Teleconsulta: cómo está la sala («Sala: conectada», y arriba a la derecha). -->
+    <string name="testing_tele_room_disconnected">desconectada</string>
+    <string name="testing_tele_room_connecting">conectando</string>
+    <string name="testing_tele_room_connected">conectada</string>
+    <string name="testing_tele_room_error">error</string>
+    <!-- Por dónde llega la imagen del otoscopio que se publica: «Publica: otoscopio por UVC 800×800 · 30,0 cuadros/s». -->
+    <string name="testing_tele_path_uvc">por UVC</string>
+    <string name="testing_tele_path_camera2">por Camera2</string>
+
+    <!-- Testing → Teleconsulta: el audio de la videollamada. %1$s es el dispositivo de comunicación (rt_call_device_*, el nombre de la placa o testing_call_device_none). -->
+    <string name="testing_call_speaker_unfixable">Llamada: sale por parlante de la tablet · Android no deja fijarla</string>
+    <string name="testing_call_headphones_unfixable">Llamada: sale por auriculares · Android no deja fijarla</string>
+    <string name="testing_call_speaker_in_call">Llamada: sale por parlante de la tablet · dispositivo de comunicación: %1$s · modo comunicación</string>
+    <string name="testing_call_speaker_normal">Llamada: sale por parlante de la tablet · dispositivo de comunicación: %1$s · modo normal (Android no ve una llamada)</string>
+    <string name="testing_call_headphones_in_call">Llamada: sale por auriculares · dispositivo de comunicación: %1$s · modo comunicación</string>
+    <string name="testing_call_headphones_normal">Llamada: sale por auriculares · dispositivo de comunicación: %1$s · modo normal (Android no ve una llamada)</string>
+    <string name="testing_call_device_none">ninguno</string>
+    <!-- El dispositivo de la llamada. También van al log [LLAMADA], en español. %1$d es el número de tipo de Android. -->
+    <string name="rt_call_device_speaker">el parlante</string>
+    <string name="rt_call_device_jack">el jack de la tablet</string>
+    <string name="rt_call_device_type">tipo %1$d</string>
+    <string name="rt_call_speaker_fallback">Nada en el jack ni el auricular USB: la llamada sale por el parlante</string>
+    <!-- Qué graba Berry Med y desde qué entrada. %1$s de testing_call_recordings son los renglones testing_call_recording separados por «; »; en testing_call_recording, %1$s es la fuente de Android (MIC, CAMCORDER…) y %2$s la entrada. -->
+    <string name="testing_call_recordings_unreadable">Entradas grabando: no se pudo leer</string>
+    <string name="testing_call_recordings_none">Entradas grabando: ninguna</string>
+    <string name="testing_call_recordings">Entradas grabando: %1$s</string>
+    <string name="testing_call_recording">%1$s por %2$s</string>
+    <string name="testing_call_source_voice_communication">VOICE_COMMUNICATION (la llamada)</string>
+    <string name="testing_call_source_other">fuente %1$d</string>
+    <string name="testing_call_input_jack">el jack de la tablet</string>
+    <string name="testing_call_input_type">tipo %1$d</string>
+    <string name="testing_call_input_unknown">entrada desconocida</string>
+
+    <!-- Testing → Dispositivos que ve Android: cada renglón son datos separados por « · ». -->
+    <string name="testing_inventory_no_name">sin nombre</string>
+    <string name="testing_inventory_no_interfaces">sin interfaces</string>
+    <string name="testing_inventory_permission_yes">permiso sí</string>
+    <string name="testing_inventory_permission_no">permiso no</string>
+    <string name="testing_inventory_in_out">entrada y salida</string>
+    <string name="testing_inventory_in">entrada</string>
+    <string name="testing_inventory_out">salida</string>
+    <!-- La frecuencia de muestreo más alta y la cantidad de canales («can.», abreviatura de canales). -->
+    <string name="testing_inventory_hz">%1$d Hz</string>
+    <string name="testing_inventory_channels" tools:ignore="PluralsCandidate">%1$d can.</string>
+    <string name="testing_inventory_audio_failed">No se pudo listar el audio: %1$s</string>
+    <!-- %1$s es el número de cámara de Android. -->
+    <string name="testing_inventory_camera_front">cámara %1$s · frontal</string>
+    <string name="testing_inventory_camera_back">cámara %1$s · trasera</string>
+    <string name="testing_inventory_camera_external">cámara %1$s · externa (USB)</string>
+    <string name="testing_inventory_camera_other">cámara %1$s · ?</string>
+    <string name="testing_inventory_no_cameras">Android no lista ninguna cámara</string>
+    <string name="testing_inventory_cameras_failed">No se pudo listar las cámaras: %1$s</string>
+    <!-- La clase de una interfaz USB. %1$d es el número de clase. -->
+    <string name="device_usb_class_audio">audio</string>
+    <string name="device_usb_class_serial">serie</string>
+    <string name="device_usb_class_storage">almacenamiento</string>
+    <string name="device_usb_class_hub">hub</string>
+    <string name="device_usb_class_video">video</string>
+    <string name="device_usb_class_vendor">propietaria</string>
+    <string name="device_usb_class_other">clase %1$d</string>
+    <!-- El tipo de un dispositivo de audio. %1$d es el número de tipo de Android. -->
+    <string name="device_audio_usb_headset">auricular USB</string>
+    <string name="device_audio_usb_device">audio USB</string>
+    <string name="device_audio_usb_accessory">accesorio USB</string>
+    <string name="device_audio_builtin_mic">micrófono de la tablet</string>
+    <string name="device_audio_builtin_speaker">parlante de la tablet</string>
+    <string name="device_audio_builtin_earpiece">auricular interno</string>
+    <string name="device_audio_wired_headset">auricular con cable (jack)</string>
+    <string name="device_audio_wired_headphones">auriculares con cable (jack)</string>
+    <string name="device_audio_telephony">telefonía</string>
+    <string name="device_audio_remote_submix">mezcla interna</string>
+    <string name="device_audio_other">tipo %1$d</string>
 </resources>

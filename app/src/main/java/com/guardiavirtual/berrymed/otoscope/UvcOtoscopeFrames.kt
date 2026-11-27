@@ -6,13 +6,16 @@ import android.graphics.PixelFormat
 import android.media.ImageReader
 import android.os.Handler
 import android.os.HandlerThread
+import com.guardiavirtual.berrymed.R
+import com.guardiavirtual.berrymed.i18n.Txt
+import com.guardiavirtual.berrymed.i18n.txt
 import com.serenegiant.usb.IFrameCallback
 import com.serenegiant.usb.UVCCamera
-import livekit.org.webrtc.NV21Buffer
-import livekit.org.webrtc.VideoFrame
 import java.nio.ByteBuffer
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.Executor
+import livekit.org.webrtc.NV21Buffer
+import livekit.org.webrtc.VideoFrame
 
 /**
  * Camino UVC para la teleconsulta: el otoscopio por libuvc, sin vista. libuvc
@@ -37,7 +40,8 @@ class UvcOtoscopeFrames(
     private val worker: Executor,
     private val log: (String) -> Unit,
 ) : OtoscopeFrames {
-    override val label = "por UVC"
+    override val logName = "por UVC"
+    override val path = OtoscopePower.Path.UVC
     private val appContext = context.applicationContext
 
     // Sólo los toca [worker].
@@ -47,21 +51,21 @@ class UvcOtoscopeFrames(
 
     @Volatile private var closed = false
 
-    override fun start(sink: (VideoFrame) -> Unit, done: (String?) -> Unit) {
+    override fun start(sink: (VideoFrame) -> Unit, done: (Txt?) -> Unit) {
         closed = false
         worker.execute {
             val reason = try {
                 open(sink)
             } catch (error: Throwable) {
                 release()
-                "No se pudo abrir el otoscopio por UVC: ${error.message ?: error.javaClass.simpleName}"
+                txt(R.string.rt_tele_otoscope_uvc_failed, error.message ?: error.javaClass.simpleName)
             }
             done(reason)
         }
     }
 
-    private fun open(sink: (VideoFrame) -> Unit): String? {
-        if (closed) return "Se apagó mientras abría."
+    private fun open(sink: (VideoFrame) -> Unit): Txt? {
+        if (closed) return txt(R.string.rt_tele_otoscope_closed)
         val opened = when (val result = UvcHandle.open(appContext, probe)) {
             is UvcHandle.Opened.Refused -> return result.reason
             is UvcHandle.Opened.Ok -> result.handle

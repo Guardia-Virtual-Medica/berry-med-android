@@ -10,11 +10,14 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
-import livekit.org.webrtc.JavaI420Buffer
-import livekit.org.webrtc.VideoFrame
+import com.guardiavirtual.berrymed.R
+import com.guardiavirtual.berrymed.i18n.Txt
+import com.guardiavirtual.berrymed.i18n.txt
 import java.nio.ByteBuffer
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import livekit.org.webrtc.JavaI420Buffer
+import livekit.org.webrtc.VideoFrame
 
 /**
  * Camino Camera2 para la teleconsulta: el otoscopio como cámara externa con
@@ -26,7 +29,8 @@ class CameraXOtoscopeFrames(
     context: Context,
     private val log: (String) -> Unit,
 ) : OtoscopeFrames {
-    override val label = "por Camera2"
+    override val logName = "por Camera2"
+    override val path = OtoscopePower.Path.CAMERA2
     private val appContext = context.applicationContext
     private val main = Handler(Looper.getMainLooper())
 
@@ -37,11 +41,11 @@ class CameraXOtoscopeFrames(
 
     @Volatile private var closed = false
 
-    override fun start(sink: (VideoFrame) -> Unit, done: (String?) -> Unit) {
+    override fun start(sink: (VideoFrame) -> Unit, done: (Txt?) -> Unit) {
         closed = false
         main.post {
             if (closed) {
-                done("Se apagó mientras abría.")
+                done(txt(R.string.rt_tele_otoscope_closed))
                 return@post
             }
             val lifecycle = Owner().also { it.resume() }

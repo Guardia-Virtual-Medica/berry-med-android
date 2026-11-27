@@ -41,7 +41,7 @@
         errorLine2="                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/guardiavirtual/berrymed/usb/DeviceInventory.kt"
-            line="45"
+            line="50"
             column="30"/>
     </issue>
 
@@ -184,7 +184,7 @@
         errorLine2="                                                     ~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/guardiavirtual/berrymed/otoscope/CameraXOtoscope.kt"
-            line="45"
+            line="46"
             column="54"/>
     </issue>
 

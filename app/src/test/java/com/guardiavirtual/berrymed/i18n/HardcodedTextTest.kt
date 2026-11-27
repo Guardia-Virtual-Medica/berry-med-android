@@ -4,6 +4,8 @@ package com.guardiavirtual.berrymed.i18n
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 /**
  * Que no vuelva a entrar un texto escrito en el código.
@@ -62,6 +64,15 @@ class HardcodedTextTest {
         assertEquals(emptyList(), (allowed - found.toSet()).sorted(), "Ya no están en los layouts: sacalos de textos-en-codigo.txt")
     }
 
+    /** Una palabra sola con mayúscula también es una frase, termine o no en un signo. */
+    @Test
+    fun oneCapitalizedWordWithPunctuationIsProse() {
+        listOf("Conectado", "Escuchando.", "Detenido.", "Grabando.", "Encendiendo…", "Atención:", "Listo!", "Listo?")
+            .forEach { assertTrue(looksLikeProse(it), it) }
+        listOf("berry-usb", "start-monitoring", "HH:mm", "OK.", "[USB] Conectado.")
+            .forEach { assertFalse(looksLikeProse(it), it) }
+    }
+
     private fun kotlinFiles(): List<File> = sources.walkTopDown().filter { it.isFile && it.extension == "kt" }.sortedBy { it.path }.toList()
 
     private fun relative(file: File): String = file.relativeTo(sources).path.substringAfter("com/guardiavirtual/berrymed/")
@@ -114,12 +125,13 @@ class HardcodedTextTest {
         private val logTag = Regex("""^\[[A-ZÁÉÍÓÚÑ0-9 ]+]""")
         private val word = Regex("""\p{L}{3,}""")
         private val twoWords = Regex("""\p{L}{2,}\s+\p{L}{2,}""")
-        private val capitalized = Regex("""^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]{3,}…?$""")
+        private val capitalized = Regex("""^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]{3,}[.…:!?]?$""")
 
         /**
          * ¿Es una frase para una persona? Tiene una palabra y, además, dos
          * palabras seguidas, una letra que no es ASCII (á, ñ, «, …) o es una
-         * sola palabra con mayúscula inicial («Conectado»). Quedan afuera los
+         * sola palabra con mayúscula inicial, sola o con un signo al final
+         * («Conectado», «Escuchando.», «Encendiendo…»). Quedan afuera los
          * identificadores («berry-usb», «start-monitoring», «HH:mm») y las
          * líneas de log por su etiqueta.
          */
