@@ -264,7 +264,7 @@
     <string name="status_back_to_remote">Voltar ao ONDOCTOR365</string>
     <string name="status_devices">Dispositivos</string>
     <string name="status_call_audio">Som</string>
-    <string name="status_headset">Fone de ouvido</string>
+    <string name="status_headset">Fone</string>
     <string name="status_speaker">Alto-falante</string>
     <string name="status_wifi_settings">Abrir o Wi-Fi do Android</string>
     <string name="status_ask_permission">Pedir a permissão que falta</string>
