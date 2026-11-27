@@ -555,4 +555,138 @@
     <string name="testing_verdict_temp_none">La plaqueta no manda temperatura</string>
     <string name="testing_verdict_temp_unplugged">Sensor de temperatura sin conectar</string>
     <string name="testing_verdict_temp_ok">OK, %1$s °C</string>
+
+    <!-- La notificación del servicio, que está siempre en la barra de Android. -->
+    <string name="notif_channel">Tótem Berry</string>
+    <string name="notif_waiting_board">Esperando la plaqueta</string>
+    <string name="notif_usb_permission_missing">Falta el permiso USB</string>
+    <string name="notif_local_open">Panel Local abierto</string>
+    <string name="notif_sending">Plaqueta conectada, enviando mediciones</string>
+    <string name="notif_stopped">Plaqueta conectada, sesión detenida</string>
+    <!-- Segunda línea de la notificación mientras el servicio no tiene cámara y micrófono para la teleconsulta. -->
+    <string name="notif_tele_hint">Abrí el kiosco de Berry Med para habilitar otoscopio y estetoscopio en la teleconsulta.</string>
+
+    <!-- Configuración: el estado de la pantalla principal. %1$.1f son segundos con un decimal. -->
+    <string name="rt_last_data_none">Último dato: sin datos</string>
+    <string name="rt_last_data_ago">Último dato: hace %1$.1f s</string>
+    <!-- El renglón de estado: cada frase es una entrada y se muestran una al lado de la otra, separadas por un espacio. -->
+    <string name="rt_thermo_disconnected">Termómetro sin conectar.</string>
+    <string name="rt_thermo_connected">Termómetro conectado.</string>
+    <string name="rt_thermo_no_reading">Termómetro conectado, sin mediciones todavía.</string>
+    <string name="rt_hub_present">Hub YKUSH3 presente.</string>
+    <string name="rt_hub_absent">Hub YKUSH3 sin conectar.</string>
+    <string name="rt_session_sending">La sesión está enviando.</string>
+    <string name="rt_session_stopped">La sesión está detenida.</string>
+    <!-- %1$s es la lista de lo que falta, separada por comas (las entradas rt_missing_*). -->
+    <string name="rt_missing_config">Falta configurar: %1$s.</string>
+    <string name="rt_usb_permission_hint">Falta aceptar el permiso USB: tocá la ruedita y «Pedir permiso USB».</string>
+    <!-- Lo que falta configurar, en la lista de rt_missing_config. -->
+    <string name="rt_missing_api_url">URL de la API</string>
+    <string name="rt_missing_api_scheme">URL de la API que empiece con https://</string>
+    <string name="rt_missing_totem">tótem</string>
+    <string name="rt_missing_pusher_key">clave de Pusher</string>
+    <string name="rt_missing_channel">canal</string>
+    <string name="rt_missing_public_channel">un canal público (sin private- ni presence-)</string>
+    <string name="rt_missing_distinct_ports">un puerto distinto del YKUSH3 para cada equipo</string>
+
+    <!-- Configuración: el último envío a la API. %1$d de rt_post_http es el código HTTP; %1$s de rt_post_failed y rt_post_error, el error tal como llega. -->
+    <string name="rt_post_none">Todavía no se envió</string>
+    <string name="rt_post_ok">Último envío correcto</string>
+    <string name="rt_post_waiting_take">Esperando que se abra una toma de signos</string>
+    <string name="rt_post_not_open">La plataforma no tiene la toma abierta (404)</string>
+    <string name="rt_post_http">La API respondió %1$d</string>
+    <string name="rt_post_failed">No se pudo enviar: %1$s</string>
+    <string name="rt_post_failed_plain">No se pudo enviar</string>
+    <string name="rt_post_error">Error al enviar: %1$s</string>
+    <string name="rt_post_queue_full">La red está lenta: se llenó la cola de envío</string>
+    <!-- %1$s es el estado del último envío (las entradas rt_post_*); %2$d, cuántos paquetes se tiraron en la consulta. -->
+    <plurals name="rt_post_dropped">
+        <item quantity="one">%1$s · %2$d paquete descartado por cola llena</item>
+        <item quantity="many">%1$s · %2$d paquetes descartados por cola llena</item>
+        <item quantity="other">%1$s · %2$d paquetes descartados por cola llena</item>
+    </plurals>
+
+    <!-- Respuestas a los botones de la presión, en Testing y en el Panel Local. -->
+    <string name="rt_test_start_first">Iniciá la prueba primero.</string>
+    <string name="rt_session_busy">Hay una consulta enviando.</string>
+    <string name="rt_nibp_start_failed">No se pudo iniciar: plaqueta sin conectar o ya está midiendo.</string>
+    <string name="rt_nibp_measuring">Midiendo…</string>
+    <string name="rt_nibp_local_owns">El Panel Local está abierto: la presión la maneja el panel.</string>
+    <string name="rt_nibp_stop_sent">STOP enviado</string>
+    <string name="rt_panel_inactive">El panel no está activo.</string>
+    <string name="rt_nibp_stopped">Medición detenida</string>
+
+    <!-- Por qué no arranca la prueba de Testing o no abre el Panel Local. -->
+    <string name="rt_test_blocked_session">Hay una consulta enviando: la prueba espera a que termine.</string>
+    <string name="rt_test_blocked_local">El Panel Local está abierto: la prueba espera a que se cierre.</string>
+    <string name="rt_local_blocked_session">Hay una consulta enviando: el Panel Local espera a que termine.</string>
+
+    <!-- Panel Local, estetoscopio. %1$s de rt_stetho_start_failed es el error tal como llega; %1$d de rt_stetho_port_failed, el puerto del YKUSH3. -->
+    <string name="rt_stetho_starting">Encendiendo…</string>
+    <string name="rt_stetho_already">Ya está escuchando.</string>
+    <string name="rt_stetho_start_failed">No se pudo empezar: %1$s</string>
+    <string name="rt_stetho_port_failed">El YKUSH3 no encendió el puerto %1$d.</string>
+    <string name="rt_stetho_no_hub">Sin YKUSH3: se intenta directo.</string>
+    <string name="rt_stetho_no_headphones">Sin auriculares: nada en el jack de la tablet ni el auricular USB. Sólo se ve la onda.</string>
+    <string name="rt_stetho_listening">Escuchando.</string>
+    <string name="rt_stetho_stopped">Detenido.</string>
+    <string name="rt_stetho_recording">Grabando.</string>
+    <string name="rt_stetho_record_needs_listening">Para grabar hay que estar escuchando.</string>
+    <string name="rt_stetho_recording_saved">Grabación guardada.</string>
+    <string name="rt_stetho_recording_short">Grabación muy corta: se descartó.</string>
+    <!-- %1$d es el número de la grabación. -->
+    <string name="rt_stetho_playing">Reproduciendo la grabación %1$d.</string>
+
+    <!-- Panel Local, otoscopio. %1$s de rt_otoscope_on_failed es el error tal como llega. -->
+    <string name="rt_otoscope_busy" tools:ignore="Typos">El otoscopio se está encendiendo o apagando: esperá un momento.</string>
+    <string name="rt_otoscope_on_failed">No se pudo encender: %1$s</string>
+    <string name="rt_otoscope_powering">Encendiendo…</string>
+    <string name="rt_otoscope_waiting_camera">Esperando la cámara…</string>
+    <string name="rt_otoscope_no_hub_waiting">Sin YKUSH3: se intenta directo. Esperando la cámara…</string>
+    <string name="rt_otoscope_opening">Abriendo la imagen…</string>
+    <string name="rt_otoscope_permission">Falta aceptar el permiso USB del otoscopio: aceptá el pedido que aparece o, si no aparece, tocá «Pedir permiso USB» en Berry Med. Después, Encender otra vez.</string>
+    <string name="rt_otoscope_missing">El otoscopio no aparece como cámara.</string>
+
+    <!-- Por qué la teleconsulta no puede usar un instrumento (Testing → Teleconsulta). Empiezan en minúscula: van después de otra frase. -->
+    <string name="rt_tele_local_open">el Panel Local está abierto</string>
+    <string name="rt_tele_camera_permission">falta el permiso de la cámara: abrí Berry Med y aceptalo</string>
+    <!-- «de el» es como sale hoy; se corrige aparte, no en la migración. -->
+    <string name="rt_tele_microphone_permission">falta el permiso de el micrófono: abrí Berry Med y aceptalo</string>
+    <string name="rt_tele_camera_type">el servicio no tiene la cámara en segundo plano. Abrí el kiosco de Berry Med para habilitar otoscopio y estetoscopio en la teleconsulta.</string>
+    <string name="rt_tele_microphone_type">el servicio no tiene el micrófono en segundo plano. Abrí el kiosco de Berry Med para habilitar otoscopio y estetoscopio en la teleconsulta.</string>
+
+    <!-- Testing → Hub YKUSH3: las respuestas a Leer estado, Encender, Apagar y Guardar este arranque. %1$d es el número de puerto (no una cantidad: no son plurals). -->
+    <string name="rt_hub_none">No hay hub YKUSH3 conectado.</string>
+    <string name="rt_hub_no_answer">El hub no contesta. Si recién lo enchufaste, aceptá el permiso USB.</string>
+    <string name="rt_hub_state_read">Estado leído</string>
+    <string name="rt_hub_busy_session">Hay una consulta enviando: no se cambia ningún puerto.</string>
+    <string name="rt_hub_busy_local">El Panel Local está abierto: no se cambia ningún puerto.</string>
+    <string name="rt_hub_order_rejected">El hub no aceptó la orden. Mirá la consola.</string>
+    <string name="rt_hub_thermo_off" tools:ignore="PluralsCandidate">Puerto %1$d apagado: el termómetro se vuelve a encender solo</string>
+    <string name="rt_hub_port_turned_on" tools:ignore="PluralsCandidate">Puerto %1$d encendido</string>
+    <string name="rt_hub_port_turned_off" tools:ignore="PluralsCandidate">Puerto %1$d apagado</string>
+    <!-- %1$s es cómo queda cada puerto (rt_hub_port_on / rt_hub_port_off, separados por comas). -->
+    <string name="rt_hub_boot_saved">El hub guardó el arranque, el estado del kiosco: %1$s</string>
+    <!-- %1$s son los números de puerto, separados por comas. -->
+    <string name="rt_hub_boot_rejected">El hub no aceptó el puerto %1$s. Mirá la consola.</string>
+    <!-- Cómo queda un puerto, en una lista separada por comas: «puerto 1 apagado, puerto 3 encendido». También va al log. -->
+    <string name="rt_hub_port_on" tools:ignore="PluralsCandidate">puerto %1$d encendido</string>
+    <string name="rt_hub_port_off" tools:ignore="PluralsCandidate">puerto %1$d apagado</string>
+    <!-- Testing → Hub YKUSH3: el equipo de cada puerto. %1$s es el equipo (device_role_*). -->
+    <string name="rt_port_role_auto_on">%1$s · se vuelve a encender solo</string>
+    <string name="rt_port_free">libre</string>
+    <!-- Dos o tres equipos en el mismo puerto (una configuración que hay que corregir). -->
+    <string name="rt_port_roles_two">%1$s y %2$s</string>
+    <string name="rt_port_roles_three">%1$s y %2$s y %3$s</string>
+
+    <!-- El equipo que va en un puerto del YKUSH3, en Testing. -->
+    <string name="device_role_otoscope">otoscopio</string>
+    <string name="device_role_stethoscope">estetoscopio</string>
+    <string name="device_role_thermometer">termómetro</string>
+    <!-- Cómo se llama un equipo USB conocido, en Testing → Dispositivos que ve Android. -->
+    <string name="device_name_ykush3">hub YKUSH3</string>
+    <string name="device_name_board">plaqueta PM6750</string>
+    <string name="device_name_otoscope">otoscopio</string>
+    <string name="device_name_stetho_adapter">adaptador del estetoscopio</string>
+    <string name="device_name_logitech">auricular Logitech</string>
 </resources>

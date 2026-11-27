@@ -16,7 +16,12 @@ import com.guardiavirtual.berrymed.audio.StethoFilter
 import com.guardiavirtual.berrymed.audio.StethoscopeLink
 import com.guardiavirtual.berrymed.config.BerryConfig
 import com.guardiavirtual.berrymed.config.ConfigStore
+import com.guardiavirtual.berrymed.R
+import com.guardiavirtual.berrymed.i18n.LogText
 import com.guardiavirtual.berrymed.i18n.Txt
+import com.guardiavirtual.berrymed.i18n.join
+import com.guardiavirtual.berrymed.i18n.raw
+import com.guardiavirtual.berrymed.i18n.txt
 import com.guardiavirtual.berrymed.net.MetricsPoster
 import com.guardiavirtual.berrymed.otoscope.OtoscopePermission
 import com.guardiavirtual.berrymed.otoscope.OtoscopePower
@@ -54,7 +59,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.launch
-import java.util.Locale
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
@@ -67,6 +71,9 @@ import kotlin.concurrent.thread
 
 class TotemRuntime(context: Context) {
     private val appContext = context.applicationContext
+
+    /** Los mensajes que entran a una línea de log, siempre en español (ver [logText]). */
+    private val logLanguage = LogText(appContext)
     val state = MutableStateFlow(TotemState())
     val store = ConfigStore(appContext)
     private val parser = BmDataParser()
@@ -101,7 +108,7 @@ class TotemRuntime(context: Context) {
             if (executor.queue.poll() != null) {
                 droppedPackets.incrementAndGet()
                 log("[POST] Se descartó un paquete: la cola estaba llena")
-                lastPost = withDropped("La red está lenta: se llenó la cola de envío")
+                lastPost = withDropped(txt(R.string.rt_post_queue_full))
             }
             executor.execute(runnable)
         },
@@ -203,7 +210,7 @@ class TotemRuntime(context: Context) {
 
     @Volatile var config: BerryConfig = BerryConfig()
     val sessionActive: Boolean get() = gate.sessionActive
-    @Volatile var lastPost: String = "Todavía no se envió"
+    @Volatile var lastPost: Txt = TotemStatus.NOT_SENT
     @Volatile var pusherUp: Boolean = false
 
     /** Con el panel Testing abierto no sale ningún POST de prueba: sólo se mira. */
@@ -233,7 +240,7 @@ class TotemRuntime(context: Context) {
     val console = ConsoleLog()
     private val testingSession = TestingSession()
 
-    var onNotification: (text: String) -> Unit = {}
+    var onNotification: (text: Txt) -> Unit = {}
 
     /**
      * Los tipos con los que el servicio está en primer plano (los pone
@@ -248,7 +255,8 @@ class TotemRuntime(context: Context) {
         ykush = ykush,
         probe = otoscopeProbe,
         stethoInput = { cfg -> stetho.devices(cfg).input },
-        blockedBy = ::teleBlocked,
+        // paso 4b: LiveKitBackend todavía recibe el motivo como texto; va en español, como su log.
+        blockedBy = { instrument -> teleBlocked(instrument)?.let(::logText) },
         log = ::log,
     )
 
@@ -501,8 +509,7 @@ class TotemRuntime(context: Context) {
             hubRest.again()
             return
         }
-        val label = if (kiosk) "Puertos con el kiosco" else "Puertos en reposo"
-        log("[YKUSH] $label: ${HubRestState.describe(wanted)}")
+        log(HubRestState.logLine(wanted, kiosk, ::logText))
     }
 
     /** No se le apaga un equipo a nadie, ni a Testing el que encendió a mano. */
@@ -531,7 +538,7 @@ class TotemRuntime(context: Context) {
                 sendOnce()
             } catch (error: Exception) {
                 log("[DATA] Error en el envío: $error")
-                lastPost = "Error al enviar: ${error.message ?: error.javaClass.simpleName}"
+                lastPost = txt(R.string.rt_post_error, error.message ?: error.javaClass.simpleName)
             }
             next += TICK_NANOS
             val waitMs = (next - System.nanoTime()) / 1_000_000L
@@ -579,7 +586,7 @@ class TotemRuntime(context: Context) {
         } catch (error: Exception) {
             PostOutcome.Failed(error.message ?: error.javaClass.simpleName)
         }
-        lastPost = withDropped(describe(outcome, active))
+        lastPost = withDropped(TotemStatus.lastPost(outcome, active))
         // Si mientras viajaba el POST llegó un inicio o un fin, la respuesta ya no cuenta.
         if (!active) {
             if (outcome == PostOutcome.Ok) resumeSession(epoch)
@@ -589,21 +596,8 @@ class TotemRuntime(context: Context) {
         stopSession("la plataforma no tiene la toma abierta") { gate.epoch == epoch }
     }
 
-    private fun describe(outcome: PostOutcome, active: Boolean): String = when {
-        outcome == PostOutcome.Ok -> "Último envío correcto"
-        outcome is PostOutcome.Http && outcome.code == 404 && !active -> "Esperando que se abra una toma de signos"
-        outcome is PostOutcome.Http && outcome.code == 404 -> "La plataforma no tiene la toma abierta (404)"
-        outcome is PostOutcome.Http -> "La API respondió ${outcome.code}"
-        outcome is PostOutcome.Failed -> "No se pudo enviar: ${outcome.message}"
-        else -> "No se pudo enviar"
-    }
-
     /** Si la cola tiró paquetes en esta consulta, el último envío lo dice. */
-    private fun withDropped(text: String): String {
-        val dropped = droppedPackets.get()
-        if (dropped == 0L) return text
-        return "$text · $dropped ${if (dropped == 1L) "paquete descartado" else "paquetes descartados"} por cola llena"
-    }
+    private fun withDropped(text: Txt): Txt = TotemStatus.withDropped(text, droppedPackets.get())
 
     private fun startSession() {
         // Se mira dentro del lock, igual que en startLocal: nunca quedan abiertos los dos.
@@ -675,33 +669,22 @@ class TotemRuntime(context: Context) {
         val display = { raw: String -> if (!seen) "—" else raw }
         val berryUp = berry.connected
         val active = sessionActive
-        val notification = when {
-            hub.permissionMissing() -> "Falta el permiso USB"
-            !berryUp -> "Esperando la plaqueta"
-            localMode -> "Panel Local abierto"
-            active -> "Plaqueta conectada, enviando mediciones"
-            else -> "Plaqueta conectada, sesión detenida"
-        }
-        val age = berry.lastDataAgeSeconds()
-        val lastData = if (age == null) {
-            "Último dato: sin datos"
-        } else {
-            "Último dato: hace ${"%.1f".format(Locale("es"), age)} s"
-        }
-        val others = buildString {
-            append(
-                when {
-                    !thermo.connected -> "Termómetro sin conectar. "
-                    thermo.measured -> "Termómetro conectado. "
-                    else -> "Termómetro conectado, sin mediciones todavía. "
-                },
-            )
-            append(if (ykush.plugged()) "Hub YKUSH3 presente. " else "Hub YKUSH3 sin conectar. ")
-            append(if (active) "La sesión está enviando." else "La sesión está detenida.")
-            val missing = config.missingFields()
-            if (missing.isNotEmpty()) append(" Falta configurar: ${missing.joinToString(", ")}.")
-            if (hub.permissionMissing()) append(" Falta aceptar el permiso USB: tocá la ruedita y «Pedir permiso USB».")
-        }
+        val notification = TotemStatus.notification(
+            permissionMissing = hub.permissionMissing(),
+            berryUp = berryUp,
+            localMode = localMode,
+            active = active,
+        )
+        // El decimal lo escribe la pantalla con el idioma del diccionario (fmt_locale).
+        val lastData = TotemStatus.lastData(berry.lastDataAgeSeconds())
+        val others = TotemStatus.others(
+            thermoConnected = thermo.connected,
+            thermoMeasured = thermo.measured,
+            hubPlugged = ykush.plugged(),
+            active = active,
+            missing = config.missingFields(),
+            permissionMissing = hub.permissionMissing(),
+        )
         state.value = TotemState(
             heartRate = display(vitals.heartRate),
             respRate = display(vitals.respRate),
@@ -721,11 +704,11 @@ class TotemRuntime(context: Context) {
     }
 
     /** Devuelve el motivo si no se puede probar ahora. */
-    fun startTesting(): String? {
-        if (sessionActive) return "Hay una consulta enviando: la prueba espera a que termine."
+    fun startTesting(): Txt? {
+        if (sessionActive) return txt(R.string.rt_test_blocked_session)
         // Al revés no: abrir el panel sí corta la prueba. Testing es diagnóstico y el
         // panel está atendiendo a un paciente; en pantalla dividida no se le saca la presión.
-        if (localMode) return "El Panel Local está abierto: la prueba espera a que se cierre."
+        if (localMode) return txt(R.string.rt_test_blocked_local)
         testingSession.reset()
         testing = true
         log("[TEST] Prueba iniciada: no se envía nada a la API")
@@ -772,26 +755,26 @@ class TotemRuntime(context: Context) {
     }
 
     fun testNibpStart(): NibpReply {
-        if (!testing) return NibpReply(ok = false, "Iniciá la prueba primero.")
-        if (sessionActive) return NibpReply(ok = false, "Hay una consulta enviando.")
-        if (!berry.startNibp()) return NibpReply(ok = false, "No se pudo iniciar: plaqueta sin conectar o ya está midiendo.")
+        if (!testing) return NibpReply(ok = false, txt(R.string.rt_test_start_first))
+        if (sessionActive) return NibpReply(ok = false, txt(R.string.rt_session_busy))
+        if (!berry.startNibp()) return NibpReply(ok = false, txt(R.string.rt_nibp_start_failed))
         resetNibp()
-        return NibpReply(ok = true, "Midiendo…")
+        return NibpReply(ok = true, txt(R.string.rt_nibp_measuring))
     }
 
     fun testNibpStop(): NibpReply {
         // Una presión pedida por el médico, o por quien atiende en el Panel Local, no se para desde Testing.
-        if (sessionActive) return NibpReply(ok = false, "Hay una consulta enviando.")
-        if (localMode) return NibpReply(ok = false, "El Panel Local está abierto: la presión la maneja el panel.")
+        if (sessionActive) return NibpReply(ok = false, txt(R.string.rt_session_busy))
+        if (localMode) return NibpReply(ok = false, txt(R.string.rt_nibp_local_owns))
         berry.stopNibp()
-        return NibpReply(ok = true, "STOP enviado")
+        return NibpReply(ok = true, txt(R.string.rt_nibp_stop_sent))
     }
 
     /** Devuelve el motivo si el Panel Local no puede abrirse ahora. */
-    fun startLocal(): String? {
+    fun startLocal(): Txt? {
         // Dentro del lock: una prueba aceptada no puede arrancar la consulta entre el chequeo y el cambio.
         synchronized(sessionLock) {
-            if (!gate.openLocal()) return "Hay una consulta enviando: el Panel Local espera a que termine."
+            if (!gate.openLocal()) return txt(R.string.rt_local_blocked_session)
         }
         // El panel usa el otoscopio y el estetoscopio: la teleconsulta (o su prueba) los suelta.
         tele.unpublishAll("se abrió el Panel Local", includeManual = true)
@@ -830,11 +813,11 @@ class TotemRuntime(context: Context) {
     }
 
     fun localNibpStart(): NibpReply {
-        if (!localMode) return NibpReply(ok = false, "El panel no está activo.")
-        if (!berry.startNibp()) return NibpReply(ok = false, "No se pudo iniciar: plaqueta sin conectar o ya está midiendo.")
+        if (!localMode) return NibpReply(ok = false, txt(R.string.rt_panel_inactive))
+        if (!berry.startNibp()) return NibpReply(ok = false, txt(R.string.rt_nibp_start_failed))
         resetNibp()
         localNibpAsked = true
-        return NibpReply(ok = true, "Midiendo…")
+        return NibpReply(ok = true, txt(R.string.rt_nibp_measuring))
     }
 
     /** Una medición nueva: la presión anterior se borra y su hora también. */
@@ -854,9 +837,9 @@ class TotemRuntime(context: Context) {
     }
 
     fun localNibpStop(): NibpReply {
-        if (!localMode) return NibpReply(ok = false, "El panel no está activo.")
+        if (!localMode) return NibpReply(ok = false, txt(R.string.rt_panel_inactive))
         berry.stopNibp()
-        return NibpReply(ok = true, "Medición detenida")
+        return NibpReply(ok = true, txt(R.string.rt_nibp_stopped))
     }
 
     /**
@@ -867,13 +850,13 @@ class TotemRuntime(context: Context) {
      * Todo en otro hilo; [done] se llama desde ese hilo con el mensaje para la
      * tarjeta.
      */
-    fun localStethoStart(done: (String) -> Unit) {
+    fun localStethoStart(done: (Txt) -> Unit) {
         if (!localMode) {
-            done("El panel no está activo.")
+            done(txt(R.string.rt_panel_inactive))
             return
         }
         if (stetho.running || stethoStarting) {
-            done(if (stethoStarting) "Encendiendo…" else "Ya está escuchando.")
+            done(txt(if (stethoStarting) R.string.rt_stetho_starting else R.string.rt_stetho_already))
             return
         }
         stethoStarting = true
@@ -883,16 +866,16 @@ class TotemRuntime(context: Context) {
                 done(startStethoscope(epoch))
             } catch (error: Exception) {
                 log("[ESTETO] Falló al empezar: $error")
-                done("No se pudo empezar: ${error.message ?: error.javaClass.simpleName}")
+                done(txt(R.string.rt_stetho_start_failed, error.message ?: error.javaClass.simpleName))
             } finally {
                 stethoStarting = false
             }
         }
     }
 
-    private fun startStethoscope(epoch: Long): String {
+    private fun startStethoscope(epoch: Long): Txt {
         val cfg = config
-        val notes = ArrayList<String>()
+        val notes = ArrayList<Txt>()
         val hubPresent = ykush.plugged()
         var poweredSome = false
         if (hubPresent) {
@@ -900,7 +883,7 @@ class TotemRuntime(context: Context) {
             val ports = listOf(cfg.ykushStethoscopePort)
             val states = ykush.readAll()
             for (port in stethoPorts.toTurnOn(ports, states)) {
-                if (stethoEpoch != epoch) return ""
+                if (stethoEpoch != epoch) return NO_TEXT
                 if (ykush.setPort(port, true)) {
                     // Sólo si se leyó apagado se apaga al salir; si no se pudo leer, queda encendido.
                     if (!stethoPorts.claim(port, states.getOrNull(port - 1))) {
@@ -908,11 +891,11 @@ class TotemRuntime(context: Context) {
                     }
                     poweredSome = true
                 } else {
-                    notes += "El YKUSH3 no encendió el puerto $port."
+                    notes += txt(R.string.rt_stetho_port_failed, port)
                 }
             }
         } else {
-            notes += "Sin YKUSH3: se intenta directo."
+            notes += txt(R.string.rt_stetho_no_hub)
         }
         var found = stetho.devices(cfg)
         // Encender un puerto es enchufar el equipo: Android tarda un momento en ver
@@ -922,16 +905,17 @@ class TotemRuntime(context: Context) {
         val wait = poweredSome || (!hubPresent && found.input == null)
         val deadline = System.nanoTime() + if (wait) STETHO_WAIT_NANOS else 0L
         while ((found.input == null || found.output == null) && System.nanoTime() < deadline) {
-            if (stethoEpoch != epoch || !localMode) return ""
+            if (stethoEpoch != epoch || !localMode) return NO_TEXT
             sleep(DEVICE_POLL_MS)
             found = stetho.devices(cfg)
         }
         // Parar o cerrar el panel durante la espera: no se abre nada.
-        if (stethoEpoch != epoch || !localMode) return ""
+        if (stethoEpoch != epoch || !localMode) return NO_TEXT
         val reason = stetho.start(cfg)
-        if (reason != null) return (notes + reason).joinToString(" ")
-        if (!stetho.playing) notes += "Sin auriculares: nada en el jack de la tablet ni el auricular USB. Sólo se ve la onda."
-        return (listOf("Escuchando.") + notes).joinToString(" ")
+        // paso 4b: el motivo llega armado de StethoscopeLink.
+        if (reason != null) return join(notes + raw(reason), " ")
+        if (!stetho.playing) notes += txt(R.string.rt_stetho_no_headphones)
+        return join(listOf(txt(R.string.rt_stetho_listening)) + notes, " ")
     }
 
     /**
@@ -939,18 +923,18 @@ class TotemRuntime(context: Context) {
      * estaba grabando, la grabación se guarda con lo que tenga (o se descarta
      * si no llegó a 1 s).
      */
-    fun localStethoStop(done: (String) -> Unit) {
+    fun localStethoStop(done: (Txt) -> Unit) {
         stopStethoscope(closing = false)
-        stethoWorker.execute { done("Detenido.") }
+        stethoWorker.execute { done(txt(R.string.rt_stetho_stopped)) }
     }
 
     /** Grabar 15 s de lo que se está escuchando, en memoria. */
-    fun localStethoRecord(): String =
-        if (stetho.startRecording()) "Grabando." else "Para grabar hay que estar escuchando."
+    fun localStethoRecord(): Txt =
+        txt(if (stetho.startRecording()) R.string.rt_stetho_recording else R.string.rt_stetho_record_needs_listening)
 
     /** Corta la grabación en curso y la guarda si pasó de 1 s. */
-    fun localStethoStopRecording(): String =
-        if (stetho.stopRecording() != null) "Grabación guardada." else "Grabación muy corta: se descartó."
+    fun localStethoStopRecording(): Txt =
+        txt(if (stetho.stopRecording() != null) R.string.rt_stetho_recording_saved else R.string.rt_stetho_recording_short)
 
     /**
      * Reproduce una grabación por el auricular. Si se está escuchando, primero
@@ -959,22 +943,23 @@ class TotemRuntime(context: Context) {
      * grabación. En el hilo del estetoscopio, después de parar; [done] se
      * llama desde ahí con el mensaje para el panel.
      */
-    fun localStethoPlay(number: Int, done: (String) -> Unit) {
+    fun localStethoPlay(number: Int, done: (Txt) -> Unit) {
         if (!localMode) {
-            done("El panel no está activo.")
+            done(txt(R.string.rt_panel_inactive))
             return
         }
         if (stetho.running || stethoStarting) stopStethoscope(closing = false)
         stethoWorker.execute {
             if (!localMode) return@execute
-            done(stetho.play(number, config) ?: "Reproduciendo la grabación $number.")
+            // paso 4b: el motivo llega armado de StethoscopeLink.
+            done(stetho.play(number, config)?.let(::raw) ?: txt(R.string.rt_stetho_playing, number))
         }
     }
 
-    fun localStethoStopPlayback(done: (String) -> Unit) {
+    fun localStethoStopPlayback(done: (Txt) -> Unit) {
         stethoWorker.execute {
             stetho.stopPlayback()
-            done("")
+            done(NO_TEXT)
         }
     }
 
@@ -1010,15 +995,15 @@ class TotemRuntime(context: Context) {
      * abrirlo. Si no aparece, apaga el puerto si lo encendió el panel. Todo en el hilo del otoscopio; [progress] y
      * [done] se llaman desde ahí.
      */
-    fun localOtoscopeOn(progress: (String) -> Unit, done: (OtoscopePower.Path?, String) -> Unit) {
+    fun localOtoscopeOn(progress: (Txt) -> Unit, done: (OtoscopePower.Path?, Txt) -> Unit) {
         if (!localMode) {
-            done(null, "El panel no está activo.")
+            done(null, txt(R.string.rt_panel_inactive))
             return
         }
         val hubPresent = ykush.plugged()
         val actions = otoscope.switchOn(hubPresent, System.nanoTime())
         if (actions == null) {
-            done(null, "El otoscopio se está encendiendo o apagando: esperá un momento.")
+            done(null, txt(R.string.rt_otoscope_busy))
             return
         }
         val port = config.ykushOtoscopePort
@@ -1029,7 +1014,7 @@ class TotemRuntime(context: Context) {
                 log("[OTOSCOPIO] Falló al encender: $error")
                 // Lo que haya quedado encendido se apaga como siempre.
                 localOtoscopeOff()
-                done(null, "No se pudo encender: ${error.message ?: error.javaClass.simpleName}")
+                done(null, txt(R.string.rt_otoscope_on_failed, error.message ?: error.javaClass.simpleName))
             }
         }
     }
@@ -1037,11 +1022,11 @@ class TotemRuntime(context: Context) {
     private fun waitForOtoscope(
         actions: List<OtoscopePower.Action>,
         port: Int,
-        progress: (String) -> Unit,
-        done: (OtoscopePower.Path?, String) -> Unit,
+        progress: (Txt) -> Unit,
+        done: (OtoscopePower.Path?, Txt) -> Unit,
     ) {
         if (OtoscopePower.Action.PORT_ON in actions) {
-            progress("Encendiendo…")
+            progress(txt(R.string.rt_otoscope_powering))
             // Un estado que no se pudo leer se enciende igual, pero no se apaga al salir:
             // pudo estar encendido desde el arranque, para la teleconsulta.
             val states = ykush.readAll()
@@ -1055,17 +1040,20 @@ class TotemRuntime(context: Context) {
                 log("[OTOSCOPIO] El YKUSH3 no encendió el puerto $port: se espera igual")
             }
             if (!otoscope.portReady(System.nanoTime())) return
-            progress("Esperando la cámara…")
+            progress(txt(R.string.rt_otoscope_waiting_camera))
         } else {
-            progress("Sin YKUSH3: se intenta directo. Esperando la cámara…")
+            progress(txt(R.string.rt_otoscope_no_hub_waiting))
         }
         while (true) {
             when (val poll = otoscope.poll(System.nanoTime(), otoscopeProbe.cameraSeen(), otoscopeProbe.usbReady())) {
                 OtoscopePower.Poll.Waiting -> sleep(DEVICE_POLL_MS)
                 OtoscopePower.Poll.Cancelled -> return
                 is OtoscopePower.Poll.Open -> {
-                    log("[OTOSCOPIO] Apareció: se abre ${if (poll.path == OtoscopePower.Path.CAMERA2) "por Camera2" else "por UVC"}")
-                    done(poll.path, "Abriendo la imagen…")
+                    log(
+                        if (poll.path == OtoscopePower.Path.CAMERA2) "[OTOSCOPIO] Apareció: se abre por Camera2"
+                        else "[OTOSCOPIO] Apareció: se abre por UVC",
+                    )
+                    done(poll.path, txt(R.string.rt_otoscope_opening))
                     return
                 }
                 is OtoscopePower.Poll.TimedOut -> {
@@ -1080,16 +1068,12 @@ class TotemRuntime(context: Context) {
                         // y el puerto queda encendido. Si lo encendió el panel, se apaga al salir.
                         log("[OTOSCOPIO] Está enchufado pero sin permiso USB: se vuelve a pedir")
                         askOtoscopePermission()
-                        done(
-                            null,
-                            "Falta aceptar el permiso USB del otoscopio: aceptá el pedido que aparece " +
-                                "o, si no aparece, tocá «Pedir permiso USB» en Berry Med. Después, Encender otra vez.",
-                        )
+                        done(null, txt(R.string.rt_otoscope_permission))
                         return
                     }
                     if (next == OtoscopePower.Timeout.PORT_OFF) turnOffOtoscopePort()
                     log("[OTOSCOPIO] No apareció en ${OTOSCOPE_WAIT_NANOS / 1_000_000_000L} s")
-                    done(null, "El otoscopio no aparece como cámara.")
+                    done(null, txt(R.string.rt_otoscope_missing))
                     return
                 }
             }
@@ -1210,17 +1194,18 @@ class TotemRuntime(context: Context) {
      * sin el tipo de servicio, Android le da a Berry Med una cámara que no
      * abre o un micrófono mudo.
      */
-    private fun teleBlocked(instrument: Instrument): String? {
-        if (localMode) return "el Panel Local está abierto"
-        val (permission, type, what) = when (instrument) {
-            Instrument.OTOSCOPE -> Triple(Manifest.permission.CAMERA, ForegroundAccess.CAMERA, "la cámara")
-            Instrument.STETHOSCOPE -> Triple(Manifest.permission.RECORD_AUDIO, ForegroundAccess.MICROPHONE, "el micrófono")
+    private fun teleBlocked(instrument: Instrument): Txt? {
+        if (localMode) return txt(R.string.rt_tele_local_open)
+        val (permission, type) = when (instrument) {
+            Instrument.OTOSCOPE -> Pair(Manifest.permission.CAMERA, ForegroundAccess.CAMERA)
+            Instrument.STETHOSCOPE -> Pair(Manifest.permission.RECORD_AUDIO, ForegroundAccess.MICROPHONE)
         }
+        val camera = instrument == Instrument.OTOSCOPE
         if (ContextCompat.checkSelfPermission(appContext, permission) != PackageManager.PERMISSION_GRANTED) {
-            return "falta el permiso de $what: abrí Berry Med y aceptalo"
+            return txt(if (camera) R.string.rt_tele_camera_permission else R.string.rt_tele_microphone_permission)
         }
         if (Build.VERSION.SDK_INT >= 30 && foregroundTypes and type == 0) {
-            return "el servicio no tiene $what en segundo plano. ${MonitorService.TELE_HINT}"
+            return txt(if (camera) R.string.rt_tele_camera_type else R.string.rt_tele_microphone_type)
         }
         return null
     }
@@ -1259,12 +1244,12 @@ class TotemRuntime(context: Context) {
     )
 
     /** Lee los tres puertos del YKUSH3 sin cambiarlos. Bloquea hasta tres segundos: llamarlo fuera del hilo de la pantalla. */
-    fun testYkushRead(): String {
-        if (!ykush.plugged()) return "No hay hub YKUSH3 conectado."
+    fun testYkushRead(): Txt {
+        if (!ykush.plugged()) return txt(R.string.rt_hub_none)
         if (hub.permissionMissing() && ykush.lastStates.all { it == null }) hub.forgetAsked()
         val states = ykush.readAll()
-        if (states.all { it == null }) return "El hub no contesta. Si recién lo enchufaste, aceptá el permiso USB."
-        return "Estado leído"
+        if (states.all { it == null }) return txt(R.string.rt_hub_no_answer)
+        return txt(R.string.rt_hub_state_read)
     }
 
     /**
@@ -1273,18 +1258,18 @@ class TotemRuntime(context: Context) {
      * médico, o a quien atiende, sin un equipo.
      * Bloquea hasta cuatro segundos: llamarlo fuera del hilo de la pantalla.
      */
-    fun testYkushSet(port: Int, on: Boolean): String = when {
-        sessionActive -> "Hay una consulta enviando: no se cambia ningún puerto."
+    fun testYkushSet(port: Int, on: Boolean): Txt = when {
+        sessionActive -> txt(R.string.rt_hub_busy_session)
         // Lo mismo con el panel: podría apagarle el otoscopio o el estetoscopio a quien atiende.
-        localMode -> "El Panel Local está abierto: no se cambia ningún puerto."
-        !ykush.plugged() -> "No hay hub YKUSH3 conectado."
-        !ykush.setPort(port, on) -> "El hub no aceptó la orden. Mirá la consola."
+        localMode -> txt(R.string.rt_hub_busy_local)
+        !ykush.plugged() -> txt(R.string.rt_hub_none)
+        !ykush.setPort(port, on) -> txt(R.string.rt_hub_order_rejected)
         !on && port == config.ykushThermometerPort -> {
             // Es una prueba a mano: el termómetro vuelve a encenderse en la vuelta siguiente de watchLoop.
             hubRest.again()
-            "Puerto $port apagado: el termómetro se vuelve a encender solo"
+            txt(R.string.rt_hub_thermo_off, port)
         }
-        else -> "Puerto $port ${if (on) "encendido" else "apagado"}"
+        else -> txt(if (on) R.string.rt_hub_port_turned_on else R.string.rt_hub_port_turned_off, port)
     }
 
     /**
@@ -1293,17 +1278,17 @@ class TotemRuntime(context: Context) {
      * Con el termómetro encendido, como siempre. Un puerto libre no se manda. Es persistente en el hub: sale sólo con este
      * botón. Fuera del hilo de la pantalla.
      */
-    fun testYkushSaveBoot(): String {
-        if (!ykush.plugged()) return "No hay hub YKUSH3 conectado."
+    fun testYkushSaveBoot(): Txt {
+        if (!ykush.plugged()) return txt(R.string.rt_hub_none)
         val wanted = HubRestState.wanted(config, kiosk = true)
         val rejected = wanted.mapIndexedNotNull { index, on ->
             val port = index + 1
             port.takeIf { on != null && !ykush.setDefaultState(port, on) }
         }
         return if (rejected.isEmpty()) {
-            "El hub guardó el arranque, el estado del kiosco: ${HubRestState.describe(wanted)}"
+            txt(R.string.rt_hub_boot_saved, HubRestState.describe(wanted))
         } else {
-            "El hub no aceptó el puerto ${rejected.joinToString(", ")}. Mirá la consola."
+            txt(R.string.rt_hub_boot_rejected, raw(rejected.joinToString(", ")))
         }
     }
 
@@ -1347,7 +1332,7 @@ class TotemRuntime(context: Context) {
             ykushPlugged = ykush.plugged(),
             ykushPorts = cfg.ykushPortRoles().mapIndexed { index, role ->
                 val port = index + 1
-                val label = if (port == cfg.ykushThermometerPort) "$role · se vuelve a encender solo" else role
+                val label = if (port == cfg.ykushThermometerPort) txt(R.string.rt_port_role_auto_on, role) else role
                 YkushPortView(port = port, role = label, on = ykush.lastStates.getOrNull(index))
             },
             inventory = inventorySnapshot(),
@@ -1373,6 +1358,13 @@ class TotemRuntime(context: Context) {
         console.add(message)
     }
 
+    /**
+     * Un mensaje de pantalla dentro de una línea de log: siempre en español,
+     * sea cual sea el idioma de la pantalla. Lo reciben como función las
+     * reglas sin Android que arman su línea de log.
+     */
+    internal fun logText(text: Txt): String = logLanguage.resolve(text)
+
     private fun sleep(ms: Long) {
         try {
             Thread.sleep(ms)
@@ -1383,6 +1375,9 @@ class TotemRuntime(context: Context) {
 
     companion object {
         const val TAG = "BerryMed"
+
+        /** Un mensaje vacío: borra el de la tarjeta (al parar una grabación) o no dice nada (una espera abandonada). */
+        private val NO_TEXT: Txt = raw("")
         private const val TICK_NANOS = 1_000_000_000L
         private const val CONFIG_RETRY_MS = 5_000L
         private const val INVENTORY_NANOS = 3L * 1_000_000_000L

@@ -42,7 +42,8 @@ object TestStrings {
     fun catalog(language: String = ""): Map<String, Entry> = cache.getOrPut(language) {
         val files =
             if (language.isEmpty()) listOf(File(resDir, "values/strings.xml"), File(resDir, "values/donottranslate.xml")).filter { it.exists() }
-            else listOf(File(resDir, "values-$language/strings.xml"))
+            // Un idioma que todavía no tiene carpeta no tiene entradas: todo cae al español.
+            else listOf(File(resDir, "values-$language/strings.xml")).filter { it.exists() }
         val entries = LinkedHashMap<String, Entry>()
         for (file in files) {
             val root = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file).documentElement
@@ -60,15 +61,67 @@ object TestStrings {
     private fun unescape(raw: String): String =
         raw.trim().replace("\\'", "'").replace("\\\"", "\"").replace("\\n", "\n").replace("\\@", "@").replace("\\?", "?")
 
+    /** id de `R.plurals` → nombre de la entrada. */
+    private val pluralNames: Map<Int, String> by lazy {
+        R.plurals::class.java.fields.associate { it.getInt(null) to it.name }
+    }
+
+    private val pluralCache = HashMap<String, Map<String, Map<String, String>>>()
+
+    /** Las entradas `<plurals>` de [language]: nombre → cantidad («one», «other»…) → texto. */
+    fun plurals(language: String = ""): Map<String, Map<String, String>> = pluralCache.getOrPut(language) {
+        val file = File(resDir, if (language.isEmpty()) "values/strings.xml" else "values-$language/strings.xml")
+        if (!file.exists()) return@getOrPut emptyMap()
+        val root = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file).documentElement
+        val nodes = root.getElementsByTagName("plurals")
+        val out = LinkedHashMap<String, Map<String, String>>()
+        for (i in 0 until nodes.length) {
+            val node = nodes.item(i) as Element
+            val items = node.getElementsByTagName("item")
+            out[node.getAttribute("name")] = (0 until items.length).associate { j ->
+                val item = items.item(j) as Element
+                item.getAttribute("quantity") to unescape(item.textContent)
+            }
+        }
+        out
+    }
+
+    /**
+     * La forma que elige Android para [quantity] con números enteros: «one»
+     * para 1 (en portugués también para 0), «many» para los millones exactos
+     * en español y portugués, «other» el resto.
+     */
+    private fun quantityKey(language: String, quantity: Int): String = when {
+        quantity == 1 || (language == "pt" && quantity == 0) -> "one"
+        (language.isEmpty() || language == "pt") && quantity != 0 && quantity % 1_000_000 == 0 -> "many"
+        else -> "other"
+    }
+
+    /** El idioma de fechas y números de [language], como lo arma `resolve` en la app. */
+    private fun formatLocale(language: String): Locale =
+        Locale.forLanguageTag((catalog(language)["fmt_locale"] ?: catalog()["fmt_locale"] ?: error("Falta fmt_locale")).value)
+
     /** [text] como lo vería alguien en [language]; lo que falta traducir cae al español, como en Android. */
     fun resolve(text: Txt, language: String = ""): String = when (text) {
         is Txt.Raw -> text.value
         is Txt.Res -> {
             val name = names[text.id] ?: error("No hay R.string con id ${text.id}")
             val pattern = (catalog(language)[name] ?: catalog()[name] ?: error("Falta $name en values/strings.xml")).value
-            val args = text.args.map { if (it is Txt) resolve(it, language) else it }
-            if (args.isEmpty()) pattern else String.format(pattern, *args.toTypedArray())
+            format(pattern, text.args, language)
         }
+        is Txt.Plural -> {
+            val name = pluralNames[text.id] ?: error("No hay R.plurals con id ${text.id}")
+            val forms = plurals(language)[name] ?: plurals()[name] ?: error("Falta el plurals $name en values/strings.xml")
+            val pattern = forms[quantityKey(language, text.quantity)] ?: forms["other"] ?: error("$name no tiene other")
+            format(pattern, text.args, language)
+        }
+        is Txt.Join -> text.parts.joinToString(text.separator) { resolve(it, language) }
+    }
+
+    private fun format(pattern: String, args: List<Any>, language: String): String {
+        if (args.isEmpty()) return pattern
+        val values = args.map { if (it is Txt) resolve(it, language) else it }
+        return String.format(formatLocale(language), pattern, *values.toTypedArray())
     }
 }
 

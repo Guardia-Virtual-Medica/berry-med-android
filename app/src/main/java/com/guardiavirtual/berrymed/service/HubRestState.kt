@@ -1,8 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package com.guardiavirtual.berrymed.service
 
+import com.guardiavirtual.berrymed.R
 import com.guardiavirtual.berrymed.config.BerryConfig
 import com.guardiavirtual.berrymed.config.YKUSH_PORTS
+import com.guardiavirtual.berrymed.i18n.Txt
+import com.guardiavirtual.berrymed.i18n.join
+import com.guardiavirtual.berrymed.i18n.txt
 
 /**
  * Cómo quedan los puertos del YKUSH3 cuando nadie los usa. Con el kiosco
@@ -52,10 +56,17 @@ object HubRestState {
         }
 
     /** Para el log y para Testing, como "puerto 1 apagado, puerto 3 encendido". */
-    fun describe(wanted: List<Boolean?>): String =
-        wanted.mapIndexedNotNull { index, on ->
-            on?.let { "puerto ${index + 1} ${if (it) "encendido" else "apagado"}" }
-        }.joinToString(", ")
+    fun describe(wanted: List<Boolean?>): Txt =
+        join(
+            wanted.mapIndexedNotNull { index, on ->
+                on?.let { txt(if (it) R.string.rt_hub_port_on else R.string.rt_hub_port_off, index + 1) }
+            },
+            ", ",
+        )
+
+    /** La línea de log al dejar los puertos: siempre en español, con [text] (el resolvedor del log). */
+    fun logLine(wanted: List<Boolean?>, kiosk: Boolean, text: (Txt) -> String): String =
+        (if (kiosk) "[YKUSH] Puertos con el kiosco: " else "[YKUSH] Puertos en reposo: ") + text(describe(wanted))
 
     /**
      * Si falta aplicar el estado: una vez por hub, porque cada conexión es un

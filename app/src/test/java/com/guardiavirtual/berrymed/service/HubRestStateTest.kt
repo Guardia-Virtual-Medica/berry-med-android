@@ -4,6 +4,7 @@ package com.guardiavirtual.berrymed.service
 import com.guardiavirtual.berrymed.config.BerryConfig
 import com.guardiavirtual.berrymed.config.CALL_AUDIO_HEADSET
 import com.guardiavirtual.berrymed.config.CALL_AUDIO_SPEAKER
+import com.guardiavirtual.berrymed.i18n.es
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -63,7 +64,7 @@ class HubRestStateTest {
         assertEquals(listOf(1 to false, 2 to false), HubRestState.changes(HubRestState.wanted(config, kiosk = false), kiosk))
         assertEquals(
             "puerto 1 encendido, puerto 2 encendido, puerto 3 encendido",
-            HubRestState.describe(kiosk),
+            es(HubRestState.describe(kiosk)),
         )
     }
 
@@ -82,7 +83,21 @@ class HubRestStateTest {
 
     @Test
     fun itDescribesOnlyThePortsWithADevice() {
-        assertEquals("puerto 1 apagado, puerto 3 encendido", HubRestState.describe(listOf(false, null, true)))
+        assertEquals("puerto 1 apagado, puerto 3 encendido", es(HubRestState.describe(listOf(false, null, true))))
+    }
+
+    /** A17: la línea de log se arma con el resolvedor del log, que es siempre el español. */
+    @Test
+    fun theLogLineIsInSpanish() {
+        val config = BerryConfig()
+        assertEquals(
+            "[YKUSH] Puertos en reposo: puerto 1 apagado, puerto 2 apagado, puerto 3 encendido",
+            HubRestState.logLine(HubRestState.wanted(config, kiosk = false), kiosk = false, ::es),
+        )
+        assertEquals(
+            "[YKUSH] Puertos con el kiosco: puerto 1 encendido, puerto 2 encendido, puerto 3 encendido",
+            HubRestState.logLine(HubRestState.wanted(config, kiosk = true), kiosk = true, ::es),
+        )
     }
 
     @Test

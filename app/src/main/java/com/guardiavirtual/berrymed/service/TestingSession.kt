@@ -154,7 +154,7 @@ class ConsoleLog(private val capacity: Int = 200) {
 }
 
 /** Un puerto del YKUSH3 en la pantalla: qué equipo lleva y si está encendido (null: no se leyó). */
-data class YkushPortView(val port: Int, val role: String, val on: Boolean?)
+data class YkushPortView(val port: Int, val role: Txt, val on: Boolean?)
 
 /** Lo que muestra el panel Testing en cada refresco. */
 data class TestingSnapshot(

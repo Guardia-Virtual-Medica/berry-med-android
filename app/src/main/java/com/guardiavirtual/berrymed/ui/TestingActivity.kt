@@ -79,7 +79,7 @@ class TestingActivity : AppCompatActivity() {
         binding.backButton.setOnClickListener { finish() }
         binding.startButton.setOnClickListener {
             val blocked = runtime().startTesting()
-            binding.testMessage.text = blocked.orEmpty()
+            binding.testMessage.text = blocked?.resolve(this).orEmpty()
             if (blocked == null) measureCards.values.forEach { it.cardResult.text = "" }
         }
         binding.stopButton.setOnClickListener {
@@ -90,23 +90,23 @@ class TestingActivity : AppCompatActivity() {
         measureCards.forEach { (measure, card) -> card.cardButton.setOnClickListener { check(measure) } }
 
         binding.nibpCard.cardButton.setOnClickListener {
-            binding.nibpCard.cardResult.text = runtime().testNibpStart().message
+            binding.nibpCard.cardResult.text = runtime().testNibpStart().message.resolve(this)
         }
         binding.nibpCard.cardButton2.setOnClickListener {
-            binding.nibpCard.cardResult.text = runtime().testNibpStop().message
+            binding.nibpCard.cardResult.text = runtime().testNibpStop().message.resolve(this)
         }
         binding.ykushReadButton.setOnClickListener {
             binding.ykushMessage.setText(R.string.testing_ykush_reading)
             thread(name = "berry-test-ykush") {
                 val text = runtime().testYkushRead()
-                handler.post { binding.ykushMessage.text = text }
+                handler.post { binding.ykushMessage.text = text.resolve(this) }
             }
         }
         binding.ykushSaveBootButton.setOnClickListener {
             binding.ykushMessage.setText(R.string.testing_ykush_saving)
             thread(name = "berry-test-ykush") {
                 val text = runtime().testYkushSaveBoot()
-                handler.post { binding.ykushMessage.text = text }
+                handler.post { binding.ykushMessage.text = text.resolve(this) }
             }
         }
         ykushPorts.forEachIndexed { index, row ->
@@ -191,7 +191,7 @@ class TestingActivity : AppCompatActivity() {
             getString(if (on) R.string.testing_ykush_turning_on else R.string.testing_ykush_turning_off, port)
         thread(name = "berry-test-ykush") {
             val text = runtime().testYkushSet(port, on)
-            handler.post { binding.ykushMessage.text = text }
+            handler.post { binding.ykushMessage.text = text.resolve(this) }
         }
     }
 
@@ -293,7 +293,7 @@ class TestingActivity : AppCompatActivity() {
         binding.ykushStatus.setText(if (s.ykushPlugged) R.string.testing_ykush_connected else R.string.testing_ykush_disconnected)
         s.ykushPorts.forEachIndexed { index, port ->
             val row = ykushPorts[index]
-            row.portLabel.text = getString(R.string.testing_ykush_port, port.port, port.role)
+            row.portLabel.text = getString(R.string.testing_ykush_port, port.port, port.role.resolve(this))
             row.portState.setText(
                 when (port.on) {
                     true -> R.string.testing_ykush_port_on

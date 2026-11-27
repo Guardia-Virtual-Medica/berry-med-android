@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package com.guardiavirtual.berrymed.config
 
+import com.guardiavirtual.berrymed.i18n.es
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -22,14 +23,14 @@ class BerryConfigTest {
     @Test
     fun aPublicChannelIsReady() {
         assertTrue(ready.pusherReady())
-        assertTrue(ready.missingFields().none { "público" in it })
+        assertTrue(ready.missingFields().none { "público" in es(it) })
     }
 
     @Test
     fun aUrlWithoutSchemeIsNotPostedAndTheScreenSaysWhy() {
         val config = BerryConfig(apiBaseUrl = "api.ejemplo.com/v1", totemId = "t1", apiUsername = "u", apiPassword = "p")
         assertFalse(config.postReady())
-        assertTrue(config.missingFields().any { "https://" in it })
+        assertTrue(config.missingFields().any { "https://" in es(it) })
         assertTrue(config.copy(apiBaseUrl = " HTTPS://api.ejemplo.com/v1").postReady())
         assertTrue(config.copy(apiBaseUrl = "http://10.0.0.5/v1").postReady())
     }
@@ -39,17 +40,17 @@ class BerryConfigTest {
         for (channel in listOf("private-totem.01", "presence-totem.01")) {
             val config = ready.copy(publicChannel = channel)
             assertFalse(config.pusherReady())
-            assertTrue(config.missingFields().any { "canal público" in it })
+            assertTrue(config.missingFields().any { "canal público" in es(it) })
         }
     }
 
     @Test
     fun twoDevicesCannotShareAHubPortAndTheScreenSaysWhy() {
         assertFalse(ready.ykushPortsShared())
-        assertTrue(ready.missingFields().none { "YKUSH3" in it })
+        assertTrue(ready.missingFields().none { "YKUSH3" in es(it) })
         val shared = ready.copy(ykushOtoscopePort = 2, ykushStethoscopePort = 2)
         assertTrue(shared.ykushPortsShared())
-        assertTrue(shared.missingFields().any { "YKUSH3" in it })
+        assertTrue(shared.missingFields().any { "YKUSH3" in es(it) })
         assertTrue(ready.copy(ykushThermometerPort = 1).ykushPortsShared())
         assertTrue(ready.copy(ykushThermometerPort = 2).ykushPortsShared())
         assertEquals(3, BerryConfig().ykushThermometerPort)

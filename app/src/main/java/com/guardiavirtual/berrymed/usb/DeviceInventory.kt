@@ -9,6 +9,7 @@ import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
+import com.guardiavirtual.berrymed.i18n.resolve
 
 /**
  * Lo que Android ve enchufado, para la pantalla de Testing: los dispositivos
@@ -34,7 +35,10 @@ class DeviceInventory(context: Context) {
     fun snapshot(): Snapshot = Snapshot(usbLines(), audioLines(), cameraLines(), System.nanoTime())
 
     private fun usbLines(): List<String> =
-        usb.deviceList.values.sortedBy { it.deviceName }.map { device -> describe(device, usb.hasPermission(device)) }
+        usb.deviceList.values.sortedBy { it.deviceName }.map { device ->
+            // paso 4b: el renglón entero pasa a Txt; por ahora el nombre conocido se resuelve acá.
+            describe(device, usb.hasPermission(device), KnownDevices.name(device.vendorId, device.productId)?.resolve(appContext))
+        }
 
     private fun audioLines(): List<String> {
         val devices = try {
@@ -65,8 +69,7 @@ class DeviceInventory(context: Context) {
     }
 
     companion object {
-        fun describe(device: UsbDevice, permitted: Boolean): String {
-            val known = KnownDevices.name(device.vendorId, device.productId)
+        fun describe(device: UsbDevice, permitted: Boolean, known: String?): String {
             val name = listOfNotNull(device.manufacturerName?.trim(), device.productName?.trim())
                 .filter { it.isNotEmpty() }
                 .joinToString(" ")
