@@ -3,6 +3,7 @@ package com.guardiavirtual.berrymed.service
 
 import com.guardiavirtual.berrymed.config.BerryConfig
 import com.guardiavirtual.berrymed.i18n.es
+import com.guardiavirtual.berrymed.i18n.inLanguage
 import com.guardiavirtual.berrymed.net.PostOutcome
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -76,5 +77,22 @@ class TotemStatusTest {
         assertEquals("Esperando la plaqueta", es(state.notification))
         assertEquals("Último dato: sin datos", es(state.lastData))
         assertEquals("—", state.heartRate)
+    }
+
+    /** Lo mismo leído en inglés y en portugués: cada idioma con su decimal y su plural. */
+    @Test
+    fun theSameTextsInOtherLanguages() {
+        val sending = TotemStatus.notification(permissionMissing = false, berryUp = true, localMode = false, active = true)
+        assertEquals("Board connected, sending measurements", sending.inLanguage("en"))
+        assertEquals("Placa conectada, enviando medições", sending.inLanguage("pt"))
+        assertEquals("Last data: 12.3 s ago", TotemStatus.lastData(12.34).inLanguage("en"))
+        assertEquals("Último dado: há 12,3 s", TotemStatus.lastData(12.34).inLanguage("pt"))
+        assertEquals("Thermometer not connected. YKUSH3 hub not connected. The session is stopped.", TotemState().others.inLanguage("en"))
+        assertEquals("Termômetro não conectado. Hub YKUSH3 não conectado. A sessão está parada.", TotemState().others.inLanguage("pt"))
+        val ok = TotemStatus.lastPost(PostOutcome.Ok, active = true)
+        assertEquals("Last send succeeded · 1 packet dropped because the queue was full", TotemStatus.withDropped(ok, 1).inLanguage("en"))
+        assertEquals("Last send succeeded · 12 packets dropped because the queue was full", TotemStatus.withDropped(ok, 12).inLanguage("en"))
+        assertEquals("Último envio bem-sucedido · 12 pacotes descartados por fila cheia", TotemStatus.withDropped(ok, 12).inLanguage("pt"))
+        assertEquals("The API responded 500", TotemStatus.lastPost(PostOutcome.Http(500), active = true).inLanguage("en"))
     }
 }

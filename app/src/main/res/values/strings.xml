@@ -45,7 +45,7 @@
     <string name="help_from_environment">Viene del entorno elegido. Cambiala sólo si te indicaron otra.</string>
     <string name="help_channel">Se arma con el identificador del tótem. Tiene que ser público.</string>
     <string name="help_cluster">Por defecto sa1. Cambialo sólo si te indicaron otro.</string>
-    <string-array name="pusher_clusters">
+    <string-array name="pusher_clusters" translatable="false">
         <item>us2</item>
         <item>sa1</item>
     </string-array>
@@ -221,6 +221,8 @@
     <string name="local_thermo_wait">Apretá el botón para medir</string>
     <string name="local_unit_bpm">lpm</string>
     <string name="local_unit_rpm">rpm</string>
+    <!-- La saturación con su signo: «98 %». %1$s es el número. En inglés y en portugués de Brasil va sin espacio. -->
+    <string name="local_percent">%1$s %%</string>
 
     <!-- Panel Local: el dock y los dispositivos. -->
     <string name="local_otoscope">Otoscopio</string>
@@ -309,6 +311,12 @@
     <string name="home_config_body">Ajustes y parámetros del sistema</string>
     <string name="home_pin_title">Configuración</string>
     <string name="home_pin_help">Para el técnico: la configuración del tótem y las pruebas de los dispositivos.</string>
+    <!-- El selector de idioma de Inicio. Los nombres de los idiomas no se traducen (están en donottranslate.xml). %1$s es el nombre del idioma en uso, para el lector de pantalla. -->
+    <string name="language_button">Idioma: %1$s</string>
+    <string name="language_title">Idioma</string>
+    <string name="language_cancel">Cancelar</string>
+    <!-- Debajo del botón de idioma, con una consulta en curso: cambiar el idioma recarga el kiosco y cortaría la videollamada. -->
+    <string name="language_blocked">Hay una consulta en curso. Terminala para cambiar el idioma.</string>
     <!-- La casita del panel lateral. -->
     <string name="status_home">Ir al inicio</string>
     <string name="home_from_local_title">¿Volver al inicio?</string>

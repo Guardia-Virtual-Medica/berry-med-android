@@ -4,6 +4,7 @@ package com.guardiavirtual.berrymed.tele
 import com.guardiavirtual.berrymed.R
 import com.guardiavirtual.berrymed.i18n.Txt
 import com.guardiavirtual.berrymed.i18n.es
+import com.guardiavirtual.berrymed.i18n.inLanguage
 import com.guardiavirtual.berrymed.i18n.raw
 import com.guardiavirtual.berrymed.i18n.txt
 import java.util.Base64
@@ -297,6 +298,16 @@ class TeleStreamerTest {
         streamer.onKioskToken(second)
         assertEquals("[TELE] No se pudo entrar a la sala: Failed to connect to localhost/127.0.0.1:1", logs.last())
         assertEquals("No se pudo entrar a la sala: Failed to connect to localhost/127.0.0.1:1", streamer.status.message?.let(::es))
+    }
+
+    /** A17: con la pantalla en inglés, Testing muestra el mensaje en inglés y el log lo sigue escribiendo en español. */
+    @Test
+    fun theScreenInEnglishTheLogInSpanish() {
+        backend.connectError = txt(R.string.rt_tele_join_failed, "timeout")
+        streamer.onKioskToken(first)
+        assertEquals("Couldn't join the room: timeout", streamer.status.message?.inLanguage("en"))
+        assertEquals("Não foi possível entrar na sala: timeout", streamer.status.message?.inLanguage("pt"))
+        assertEquals("[TELE] No se pudo entrar a la sala: timeout", logs.last())
     }
 
     @Test

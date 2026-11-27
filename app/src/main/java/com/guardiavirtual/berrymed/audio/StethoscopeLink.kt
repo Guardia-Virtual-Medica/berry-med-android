@@ -18,6 +18,7 @@ import com.guardiavirtual.berrymed.i18n.Txt
 import com.guardiavirtual.berrymed.i18n.txt
 import com.guardiavirtual.berrymed.protocol.LiveFeed
 import com.guardiavirtual.berrymed.usb.DeviceInventory
+import java.util.Locale
 
 /**
  * El estetoscopio del Panel Local: captura del adaptador USB, uno de los
@@ -319,11 +320,11 @@ class StethoscopeLink(
         val seconds = current.seconds
         val samples = current.take()
         if (seconds < StethoRecorder.MIN_SECONDS) {
-            log("[ESTETO] Grabación de ${"%.1f".format(seconds)} s: muy corta, se descarta")
+            log("[ESTETO] Grabación de ${"%.1f".format(Locale.US, seconds)} s: muy corta, se descarta")
             return null
         }
         val saved = recordings.add(recordFilter, recordStartedAt, samples)
-        log("[ESTETO] Grabación ${saved.number} guardada en memoria: ${"%.1f".format(seconds)} s")
+        log("[ESTETO] Grabación ${saved.number} guardada en memoria: ${"%.1f".format(Locale.US, seconds)} s")
         return saved
     }
 

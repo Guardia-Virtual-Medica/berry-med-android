@@ -36,4 +36,9 @@
     <string name="device_usb_class_hid" translatable="false">HID</string>
     <string name="device_audio_bluetooth" translatable="false">Bluetooth</string>
     <string name="device_audio_hdmi" translatable="false">HDMI</string>
+
+    <!-- Los idiomas del selector de Inicio, cada uno con su nombre propio: no se traducen, así lo encuentra quien no lee el idioma en uso. -->
+    <string name="language_name_es" translatable="false">Español</string>
+    <string name="language_name_en" translatable="false">English</string>
+    <string name="language_name_pt" translatable="false">Português</string>
 </resources>

@@ -4,6 +4,7 @@ package com.guardiavirtual.berrymed.ui.status
 import com.guardiavirtual.berrymed.config.CALL_AUDIO_HEADSET
 import com.guardiavirtual.berrymed.config.CALL_AUDIO_SPEAKER
 import com.guardiavirtual.berrymed.i18n.es
+import com.guardiavirtual.berrymed.i18n.inLanguage
 import com.guardiavirtual.berrymed.net.WifiState
 import com.guardiavirtual.berrymed.otoscope.OtoscopePower
 import com.guardiavirtual.berrymed.protocol.EcgInfo
@@ -347,5 +348,23 @@ class StatusPanelUiTest {
         assertEquals(text, StatusPanelUi.build(status(teleInRoom = true), PanelMode.REMOTE).modeBlocked?.let(::es))
         // Volver a ONDOCTOR365 desde el Panel Local no se bloquea.
         assertNull(StatusPanelUi.build(status(sessionActive = true), PanelMode.LOCAL_LOCKED).modeBlocked)
+    }
+
+    /** La misma regla leída en inglés y en portugués; el nombre del Wi-Fi no se traduce. */
+    @Test
+    fun theSameRowsInOtherLanguages() {
+        val rows = StatusPanelUi.devices(status(berryUp = false))
+        assertEquals(listOf("SpO2", "ECG", "BP", "Temperature", "Otoscope", "Stethoscope", "USB hub"), rows.map { it.name.inLanguage("en") })
+        assertEquals(listOf("SpO2", "ECG", "Pressão", "Temperatura", "Otoscópio", "Estetoscópio", "Hub USB"), rows.map { it.name.inLanguage("pt") })
+        assertEquals("Disconnected", rows[0].text.inLanguage("en"))
+        assertEquals("Desconectado", rows[0].text.inLanguage("pt"))
+        val wifi = StatusPanelUi.wifi(WifiState(connected = true, validated = true, ssid = "Consultorio-5G", rssi = -65))
+        assertEquals("Consultorio-5G", wifi.name.inLanguage("en"))
+        assertEquals("Consultorio-5G", wifi.name.inLanguage("pt"))
+        assertEquals("Good signal", wifi.text.inLanguage("en"))
+        assertEquals("Sinal bom", wifi.text.inLanguage("pt"))
+        val leads = row(status(leadOff = true), "ECG").text
+        assertEquals("Leads off", leads.inLanguage("en"))
+        assertEquals("Eletrodos soltos", leads.inLanguage("pt"))
     }
 }

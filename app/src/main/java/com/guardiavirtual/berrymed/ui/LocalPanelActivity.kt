@@ -1037,10 +1037,11 @@ class LocalPanelActivity : AppCompatActivity() {
 
     /** "98 %" con el signo a la mitad del tamaño del número, para que el valor siga mandando. */
     private fun withSmallUnit(text: String): CharSequence {
-        val space = text.indexOf(' ')
-        if (space < 0) return text
+        // La unidad empieza donde termina el número: « %» en español, «%» en inglés y portugués.
+        val unit = text.indexOfFirst { !it.isDigit() && it != ',' && it != '.' }
+        if (unit <= 0) return text
         return android.text.SpannableString(text).apply {
-            setSpan(android.text.style.RelativeSizeSpan(0.5f), space, text.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            setSpan(android.text.style.RelativeSizeSpan(0.5f), unit, text.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
     }
 
@@ -1048,7 +1049,7 @@ class LocalPanelActivity : AppCompatActivity() {
         binding.hrValue.text = state.heartRate
         binding.hrNote.text = state.heartNote.resolve(this)
         binding.stripHr.text = getString(R.string.local_strip_hr, state.heartRate)
-        binding.spo2Value.text = withSmallUnit(state.saturation)
+        binding.spo2Value.text = withSmallUnit(state.saturation.resolve(this))
         binding.pulseValue.text = state.pulse
         binding.respValue.text = state.respiration
 

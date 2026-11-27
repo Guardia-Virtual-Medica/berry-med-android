@@ -99,8 +99,11 @@ class PanelFormat(val locale: Locale, longDatePattern: String, shortDateTimePatt
         /** El código que no dice nada al médico: la plaqueta todavía está analizando. */
         const val ARRHYTHMIA_ANALYZING = "analizando"
 
-        /** La saturación con su unidad, "98 %"; sin dato queda en "—", sin el signo. */
-        fun percent(value: String): String = if (value == NONE) NONE else "$value %"
+        /**
+         * La saturación con su unidad (`local_percent`): «98 %» en español, «98%»
+         * en inglés y en portugués; sin dato queda en "—", sin el signo.
+         */
+        fun percent(value: String): Txt = if (value == NONE) raw(NONE) else txt(R.string.local_percent, value)
 
         /**
          * El código de arritmia de la plaqueta en palabras; "analizando" no dice

@@ -2,6 +2,7 @@
 package com.guardiavirtual.berrymed
 
 import android.app.Application
+import com.guardiavirtual.berrymed.i18n.AppLocale
 import com.guardiavirtual.berrymed.service.TotemRuntime
 
 class BerryMedApp : Application() {
@@ -10,6 +11,8 @@ class BerryMedApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // Sin idioma elegido, español: antes de cualquier pantalla y del runtime (ver AppLocale).
+        AppLocale.init(this)
         runtime = TotemRuntime(this)
     }
 }

@@ -131,7 +131,7 @@ data class PanelState(
     val heartRate: String,
     /** Debajo de la FC: electrodos sueltos o la arritmia; vacío si no hay nada que decir. */
     val heartNote: Txt,
-    val saturation: String,
+    val saturation: Txt,
     val pulse: String,
     val respiration: String,
     val pressure: PressureCard,

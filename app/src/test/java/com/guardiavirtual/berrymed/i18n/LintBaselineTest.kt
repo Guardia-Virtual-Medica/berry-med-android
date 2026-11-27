@@ -8,7 +8,9 @@ import java.io.File
 /**
  * Desde el paso 2 del plan 19 las pantallas no tienen textos escritos a mano:
  * el baseline del lint no puede esconder ninguno. Uno nuevo se arregla
- * pasándolo al diccionario, no agregándolo al baseline.
+ * pasándolo al diccionario, no agregándolo al baseline. Desde el paso 5,
+ * con los tres idiomas completos, tampoco esconde una traducción que falta
+ * (`MissingTranslation`) o que sobra (`ExtraTranslation`).
  */
 class LintBaselineTest {
     private val baseline = File("lint-baseline.xml")
@@ -18,10 +20,10 @@ class LintBaselineTest {
         assertTrue("No se encontró ${baseline.absolutePath}", baseline.isFile)
         val text = baseline.readText()
         val hidden = FORBIDDEN.filter { text.contains("id=\"$it\"") }
-        assertTrue("lint-baseline.xml esconde $hidden: pasá esos textos a strings.xml", hidden.isEmpty())
+        assertTrue("lint-baseline.xml esconde $hidden: pasá esos textos a strings.xml y traducilos", hidden.isEmpty())
     }
 
     private companion object {
-        val FORBIDDEN = listOf("HardcodedText", "SetTextI18n")
+        val FORBIDDEN = listOf("HardcodedText", "SetTextI18n", "MissingTranslation", "ExtraTranslation")
     }
 }

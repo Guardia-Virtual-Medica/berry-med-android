@@ -2,6 +2,7 @@
 package com.guardiavirtual.berrymed.service
 
 import com.guardiavirtual.berrymed.i18n.es
+import com.guardiavirtual.berrymed.i18n.inLanguage
 import com.guardiavirtual.berrymed.protocol.EcgInfo
 import com.guardiavirtual.berrymed.protocol.FrameCounts
 import com.guardiavirtual.berrymed.protocol.ParserStats
@@ -111,4 +112,18 @@ class TestingSessionTest {
         VitalSigns(heartRate = hr, spo2Pulse = spo2Pulse, temperature = temp),
         EcgInfo(leadOff = leadOff),
     )
+
+    /** El mismo veredicto leído en inglés y en portugués. */
+    @Test
+    fun theSameVerdictsInOtherLanguages() {
+        val none = TestingSession.verdict(Measure.Ecg, stats(), stats(), 5.0).text
+        assertEquals("No ECG wave coming in", none.inLanguage("en"))
+        assertEquals("A onda do ECG não chega", none.inLanguage("pt"))
+        val loose = TestingSession.verdict(Measure.Ecg, stats(), stats(ecg = 1_250, leadOff = true), 5.0).text
+        assertEquals("Leads off", loose.inLanguage("en"))
+        assertEquals("Eletrodos soltos", loose.inLanguage("pt"))
+        val spo2 = TestingSession.verdict(Measure.Spo2, stats(), stats(spo2Wave = 250, spo2 = 5, spo2Pulse = "98/72"), 5.0).text
+        assertEquals("OK, SpO₂/pulse 98/72", spo2.inLanguage("en"))
+        assertEquals("OK, SpO₂/pulso 98/72", spo2.inLanguage("pt"))
+    }
 }

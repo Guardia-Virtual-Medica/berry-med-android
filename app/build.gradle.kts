@@ -11,8 +11,8 @@ android {
         applicationId = "com.guardiavirtual.berrymed"
         minSdk = 26
         targetSdk = 35
-        versionCode = 18
-        versionName = "1.4.0"
+        versionCode = 19
+        versionName = "1.5.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Sólo ARM: la tablet es ARM, el emulador berry_tablet también (Mac con Apple Silicon),
         // y libuvc (el otoscopio por UVC) no trae x86. WebRTC de LiveKit trae las cuatro
@@ -20,6 +20,11 @@ android {
         ndk {
             abiFilters += listOf("arm64-v8a", "armeabi-v7a")
         }
+        // Sólo los idiomas de la app: Material, AppCompat y LiveKit traen textos en más de
+        // 80 idiomas y, sin esto, un diálogo del sistema podría salir en uno que la app no tiene.
+        resourceConfigurations += listOf("es", "en", "pt")
+        // ./gradlew assembleDebug -Pseudo: suma los seudo-idiomas (ver buildTypes.debug). No va en el APK que se publica.
+        if (project.hasProperty("seudo")) resourceConfigurations += listOf("en-rXA", "ar-rXB")
     }
 
     buildTypes {

@@ -24,6 +24,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.IntentCompat
 import com.guardiavirtual.berrymed.BerryMedApp
 import com.guardiavirtual.berrymed.R
+import com.guardiavirtual.berrymed.i18n.AppLocale
 import com.guardiavirtual.berrymed.i18n.Txt
 import com.guardiavirtual.berrymed.i18n.resolve
 import com.guardiavirtual.berrymed.ui.MainActivity
@@ -191,10 +192,12 @@ class MonitorService : Service() {
     }
 
     private fun buildNotification(txt: Txt): android.app.Notification {
-        val text = txt.resolve(this)
+        // El servicio no es una pantalla: los textos, en el idioma elegido para la app (ver [AppLocale]).
+        val res = AppLocale.localized(this)
+        val text = txt.resolve(res)
         val builder = NotificationCompat.Builder(this, CHANNEL)
             .setSmallIcon(R.drawable.ic_stat)
-            .setContentTitle(getString(R.string.app_name))
+            .setContentTitle(res.getString(R.string.app_name))
             .setContentText(text)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
@@ -207,14 +210,14 @@ class MonitorService : Service() {
                 ),
             )
         if (Build.VERSION.SDK_INT >= 30 && !(ForegroundAccess.hasCamera(types) && ForegroundAccess.hasMicrophone(types))) {
-            builder.setStyle(NotificationCompat.BigTextStyle().bigText("$text\n${getString(R.string.notif_tele_hint)}"))
+            builder.setStyle(NotificationCompat.BigTextStyle().bigText("$text\n${res.getString(R.string.notif_tele_hint)}"))
         }
         return builder.build()
     }
 
     private fun createChannel() {
         if (Build.VERSION.SDK_INT < 26) return
-        val channel = NotificationChannel(CHANNEL, getString(R.string.notif_channel), NotificationManager.IMPORTANCE_LOW)
+        val channel = NotificationChannel(CHANNEL, AppLocale.localized(this).getString(R.string.notif_channel), NotificationManager.IMPORTANCE_LOW)
         channel.setShowBadge(false)
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
