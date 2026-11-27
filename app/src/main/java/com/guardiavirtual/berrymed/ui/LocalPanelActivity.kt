@@ -35,6 +35,7 @@ import androidx.core.widget.TextViewCompat
 import com.google.android.material.button.MaterialButton
 import com.guardiavirtual.berrymed.BerryMedApp
 import com.guardiavirtual.berrymed.R
+import com.guardiavirtual.berrymed.i18n.resolve
 import com.guardiavirtual.berrymed.audio.StethoDsp
 import com.guardiavirtual.berrymed.audio.StethoFilter
 import com.guardiavirtual.berrymed.databinding.ActivityLocalPanelBinding
@@ -63,6 +64,7 @@ import com.guardiavirtual.berrymed.ui.panel.Status
 import com.guardiavirtual.berrymed.ui.panel.TempCard
 import com.guardiavirtual.berrymed.ui.panel.Tile
 import com.guardiavirtual.berrymed.ui.panel.Tone
+import com.guardiavirtual.berrymed.ui.panel.panelFormat
 import com.guardiavirtual.berrymed.ui.status.ModeSwitchDialog
 import com.guardiavirtual.berrymed.ui.status.NoWifiNotice
 import com.guardiavirtual.berrymed.ui.status.PanelMode
@@ -86,7 +88,9 @@ import kotlin.math.roundToInt
  */
 class LocalPanelActivity : AppCompatActivity() {
     private lateinit var binding: ActivityLocalPanelBinding
-    private val ui = PanelUi()
+    /** Fechas y números en el idioma de los textos (del diccionario, no de la tablet). */
+    private val format by lazy { panelFormat() }
+    private val ui by lazy { PanelUi(format) }
     private var unlocked = false
 
     /** Por qué no se pudo entrar (una consulta enviando); vacío al bloquear. */
@@ -189,7 +193,7 @@ class LocalPanelActivity : AppCompatActivity() {
         override fun run() {
             val now = System.currentTimeMillis()
             binding.clock.text = PanelFormat.clock(now)
-            binding.date.text = PanelFormat.date(now)
+            binding.date.text = format.date(now)
             // Esperando una consulta que envía: el aviso se mantiene y el panel entra solo cuando termina.
             if (!unlocked) {
                 if (runtime().sessionActive) showLockMessage() else tryUnlock()
@@ -504,6 +508,8 @@ class LocalPanelActivity : AppCompatActivity() {
         leadSegments = Segments(listOf(binding.leadsII, binding.leads3, binding.leads7), initial = 2) { index ->
             ecg.leads = EcgLeads.entries[index]
         }
+        // 12,5 o 12.5, con el separador decimal del idioma.
+        binding.speed12.text = PanelUi.speedLabel(PanelUi.SPEEDS[0], format)
         speeds = Segments(listOf(binding.speed12, binding.speed25, binding.speed50), initial = 1) { index ->
             ecg.mmPerSecond = PanelUi.SPEEDS[index]
         }
@@ -986,7 +992,7 @@ class LocalPanelActivity : AppCompatActivity() {
     }
 
     private fun screenState() = ScreenState(
-        otoscopeLabel = otoscope?.label?.takeIf { otoscopeOpened },
+        otoscopePath = otoscope?.path?.takeIf { otoscopeOpened },
         otoscopeFps = otoscopeFps.takeIf { otoscopeOpened },
         camera = cameraState,
         cameraFront = lensFacing == CameraSelector.LENS_FACING_FRONT,
@@ -1015,7 +1021,7 @@ class LocalPanelActivity : AppCompatActivity() {
     /** Un texto de estado con su punto, los dos del color del tono. */
     private fun status(view: TextView, status: Status) {
         val color = getColor(toneColor(status.tone))
-        view.text = status.text
+        view.text = status.text.resolve(this)
         view.setTextColor(color)
         TextViewCompat.setCompoundDrawableTintList(view, ColorStateList.valueOf(color))
     }
@@ -1039,7 +1045,7 @@ class LocalPanelActivity : AppCompatActivity() {
 
     private fun renderVitals(state: PanelState, s: LocalSnapshot) {
         binding.hrValue.text = state.heartRate
-        binding.hrNote.text = state.heartNote
+        binding.hrNote.text = state.heartNote.resolve(this)
         binding.stripHr.text = getString(R.string.local_strip_hr, state.heartRate)
         binding.spo2Value.text = withSmallUnit(state.saturation)
         binding.pulseValue.text = state.pulse
@@ -1053,11 +1059,11 @@ class LocalPanelActivity : AppCompatActivity() {
             is PressureCard.Result -> {
                 binding.paValue.text = pressure.value
                 binding.paMean.text = pressure.mean
-                binding.paTime.text = pressure.at
+                binding.paTime.text = pressure.at.resolve(this)
             }
             is PressureCard.Measuring -> {
                 binding.paCuff.text = pressure.cuff
-                binding.paPhase.text = pressure.phase
+                binding.paPhase.text = pressure.phase.resolve(this)
                 binding.paProgress.progress = (pressure.progress * binding.paProgress.max).toInt()
                 binding.paTime.setText(R.string.local_pa_measuring)
             }
@@ -1088,7 +1094,7 @@ class LocalPanelActivity : AppCompatActivity() {
             }
             is TempCard.Reading -> {
                 binding.tempValue.text = withUnit(temperature.value, getString(R.string.local_unit_celsius))
-                binding.tempTime.text = temperature.at
+                binding.tempTime.text = temperature.at.resolve(this)
             }
         }
     }
@@ -1104,7 +1110,7 @@ class LocalPanelActivity : AppCompatActivity() {
         val active = openDevice == device
         view.isEnabled = tile.enabled
         view.isClickable = tile.enabled
-        statusView.text = tile.status.text
+        statusView.text = tile.status.text.resolve(this)
         statusView.setTextColor(getColor(toneColor(tile.status.tone)))
         icon.visibility = if (tile.enabled) View.VISIBLE else View.INVISIBLE
         icon.setImageResource(if (active) R.drawable.ic_close else R.drawable.ic_chevron_right)

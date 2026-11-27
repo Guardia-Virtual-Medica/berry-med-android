@@ -43,6 +43,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.Lifecycle
 import com.guardiavirtual.berrymed.BerryMedApp
 import com.guardiavirtual.berrymed.R
+import com.guardiavirtual.berrymed.i18n.resolve
 import com.guardiavirtual.berrymed.service.MonitorService
 import com.guardiavirtual.berrymed.service.TotemRuntime
 import com.guardiavirtual.berrymed.tele.KioskUrls
@@ -529,7 +530,7 @@ class KioskActivity : AppCompatActivity() {
         if (blocked != null) {
             homeDialog = AlertDialog.Builder(this)
                 .setTitle(R.string.kiosk_home_blocked_title)
-                .setMessage(blocked)
+                .setMessage(blocked.resolve(this))
                 .setPositiveButton(R.string.kiosk_home_ok, null)
                 .show()
             return

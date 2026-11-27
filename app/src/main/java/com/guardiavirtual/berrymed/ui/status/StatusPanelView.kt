@@ -16,6 +16,7 @@ import com.guardiavirtual.berrymed.config.CALL_AUDIO_SPEAKER
 import com.guardiavirtual.berrymed.databinding.ItemStatusDeviceBinding
 import com.guardiavirtual.berrymed.databinding.ViewStatusPanelBinding
 import com.guardiavirtual.berrymed.databinding.ViewStatusRailBinding
+import com.guardiavirtual.berrymed.i18n.resolve
 
 /**
  * El panel lateral de estado: abierto (296 dp) o en el riel (64 dp). Sólo
@@ -104,8 +105,8 @@ class StatusPanelView @JvmOverloads constructor(
         panel.wifiIcon.setImageResource(icon)
         panel.wifiIcon.setBackgroundResource(if (w.offline) R.drawable.status_icon_box_alarm else R.drawable.panel_icon_box)
         tint(panel.wifiIcon, if (w.offline) R.color.alarmText else R.color.text2)
-        panel.wifiName.text = w.name
-        panel.wifiStatus.text = w.text
+        panel.wifiName.text = w.name.resolve(context)
+        panel.wifiStatus.text = w.text.resolve(context)
         panel.wifiStatus.setTextColor(color(statusColor(w.tone)))
         panel.wifiBars.visibility = if (w.offline) View.GONE else View.VISIBLE
         // El chevron siempre: la fila siempre se toca. Con red, al lado de las barras.
@@ -165,7 +166,7 @@ class StatusPanelView @JvmOverloads constructor(
         panel.modeButton.isEnabled = blocked == null
         panel.modeButtonIcon.setImageResource(if (blocked == null) R.drawable.ic_swap_horiz else R.drawable.ic_lock)
         panel.modeBlocked.visibility = if (blocked == null) View.GONE else View.VISIBLE
-        panel.modeBlockedText.text = blocked.orEmpty()
+        panel.modeBlockedText.text = blocked?.resolve(context).orEmpty()
     }
 
     private fun renderDevices(s: StatusPanelState) {
@@ -178,9 +179,9 @@ class StatusPanelView @JvmOverloads constructor(
             row.root.visibility = View.VISIBLE
             val bad = device.tone == StatusTone.BAD
             row.root.background = if (bad) drawable(R.drawable.status_row_bad) else null
-            row.deviceName.text = device.name
+            row.deviceName.text = device.name.resolve(context)
             row.deviceName.setTextColor(color(if (bad) R.color.text else R.color.text2))
-            row.deviceStatus.text = device.text
+            row.deviceStatus.text = device.text.resolve(context)
             row.deviceStatus.setTextColor(color(statusColor(device.tone)))
             dot(row.deviceDot, device.tone)
             // Sólo se tocan las que dicen «Falta permiso».
@@ -189,7 +190,7 @@ class StatusPanelView @JvmOverloads constructor(
                 if (device.action != null) {
                     context.getString(
                         R.string.status_device_action,
-                        device.name,
+                        device.name.resolve(context),
                         context.getString(R.string.status_ask_permission),
                     )
                 } else {
@@ -215,7 +216,7 @@ class StatusPanelView @JvmOverloads constructor(
         panel.headsetSegment.isEnabled = s.jackPresent
         panel.headsetSegment.isSelected = headset
         panel.tabletSegment.isSelected = !headset
-        panel.callHelp.text = s.callHelp
+        panel.callHelp.text = s.callHelp.resolve(context)
         rail.railAudioIcon.setImageResource(if (headset) R.drawable.ic_headset_mic else R.drawable.ic_volume_up)
     }
 

@@ -50,22 +50,6 @@ otoscope/UvcOtoscopeFrames.kt	por UVC
 service/MonitorService.kt	Abrí el kiosco de Berry Med para habilitar otoscopio y estetoscopio en la teleconsulta.
 service/MonitorService.kt	Esperando la plaqueta
 service/MonitorService.kt	Tótem Berry
-service/StatusSnapshot.kt	Hay una consulta en curso. Terminala para cambiar.
-service/TestingSession.kt	Electrodos sueltos
-service/TestingSession.kt	La plaqueta no manda temperatura
-service/TestingSession.kt	Llegan {} muestras/s, se esperan unas 250
-service/TestingSession.kt	No llega la onda de ECG
-service/TestingSession.kt	No llega la onda de SpO₂
-service/TestingSession.kt	No llega la onda de respiración
-service/TestingSession.kt	No llegan los valores de SpO₂
-service/TestingSession.kt	OK, {} muestras/s, señal débil
-service/TestingSession.kt	Plaqueta sin conectar
-service/TestingSession.kt	Probando…
-service/TestingSession.kt	Probando… {} s
-service/TestingSession.kt	Respiración
-service/TestingSession.kt	Sensor de temperatura sin conectar
-service/TestingSession.kt	Sin dedo en el sensor
-service/TestingSession.kt	Temperatura
 service/TotemRuntime.kt	 Falta aceptar el permiso USB: tocá la ruedita y «Pedir permiso USB».
 service/TotemRuntime.kt	 Falta configurar: {}.
 service/TotemRuntime.kt	Abriendo la imagen…
@@ -164,51 +148,6 @@ tele/TeleStreamer.kt	prueba manual
 tele/TeleStreamer.kt	sala perdida
 tele/TeleStreamer.kt	token del kiosco
 tele/TeleStreamer.kt	tope de la sala
-ui/panel/PanelFormat.kt	dd/MM/yyyy HH:mm
-ui/panel/PanelFormat.kt	hace {} min
-ui/panel/PanelFormat.kt	recién
-ui/panel/PanelUi.kt	Apagado
-ui/panel/PanelUi.kt	Apagando…
-ui/panel/PanelUi.kt	Conectado
-ui/panel/PanelUi.kt	Conectando
-ui/panel/PanelUi.kt	Electrodos sueltos
-ui/panel/PanelUi.kt	En pausa
-ui/panel/PanelUi.kt	En vivo
-ui/panel/PanelUi.kt	En vivo · {}
-ui/panel/PanelUi.kt	En vivo · {} · {} cuadros/s
-ui/panel/PanelUi.kt	Escuchando
-ui/panel/PanelUi.kt	Esperando imagen
-ui/panel/PanelUi.kt	Grabando
-ui/panel/PanelUi.kt	Grabando · {} s
-ui/panel/PanelUi.kt	Inflando…
-ui/panel/PanelUi.kt	Lista
-ui/panel/PanelUi.kt	Midiendo…
-ui/panel/PanelUi.kt	Reproduciendo
-ui/panel/PanelUi.kt	Señal buena
-ui/panel/PanelUi.kt	Señal débil
-ui/panel/PanelUi.kt	Sin imagen
-ui/panel/PanelUi.kt	Sin señal
-ui/status/StatusPanelUi.kt	Conectado
-ui/status/StatusPanelUi.kt	Conectando
-ui/status/StatusPanelUi.kt	Desconectado
-ui/status/StatusPanelUi.kt	En vivo
-ui/status/StatusPanelUi.kt	Estetoscopio
-ui/status/StatusPanelUi.kt	Falta permiso
-ui/status/StatusPanelUi.kt	Hub USB
-ui/status/StatusPanelUi.kt	La llamada va por el altavoz y el micrófono de la tablet. El estetoscopio sigue en el auricular.
-ui/status/StatusPanelUi.kt	Listo
-ui/status/StatusPanelUi.kt	Otoscopio
-ui/status/StatusPanelUi.kt	Presión
-ui/status/StatusPanelUi.kt	Señal buena
-ui/status/StatusPanelUi.kt	Señal débil
-ui/status/StatusPanelUi.kt	Sin Wi-Fi
-ui/status/StatusPanelUi.kt	Sin auricular en el jack: la llamada va por el altavoz y el estetoscopio no suena.
-ui/status/StatusPanelUi.kt	Sin hub
-ui/status/StatusPanelUi.kt	Sin internet
-ui/status/StatusPanelUi.kt	Temperatura
-ui/status/StatusPanelUi.kt	Tocá para elegir una red
-ui/status/StatusPanelUi.kt	Todo suena por el auricular.
-ui/status/StatusPanelUi.kt	Wi-Fi conectado
 usb/DeviceInventory.kt	 · permiso 
 usb/DeviceInventory.kt	 · {} can.
 usb/DeviceInventory.kt	Android no lista ninguna cámara

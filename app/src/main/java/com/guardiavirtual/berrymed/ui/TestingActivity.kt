@@ -15,6 +15,7 @@ import com.guardiavirtual.berrymed.BerryMedApp
 import com.guardiavirtual.berrymed.R
 import com.guardiavirtual.berrymed.databinding.ActivityTestingBinding
 import com.guardiavirtual.berrymed.databinding.ItemTestCardBinding
+import com.guardiavirtual.berrymed.i18n.resolve
 import com.guardiavirtual.berrymed.service.TestingSession.Measure
 import com.guardiavirtual.berrymed.service.TestingSession.Verdict
 import com.guardiavirtual.berrymed.service.MonitorService
@@ -22,7 +23,7 @@ import com.guardiavirtual.berrymed.service.TestingSnapshot
 import com.guardiavirtual.berrymed.tele.Instrument
 import com.guardiavirtual.berrymed.tele.RoomState
 import com.guardiavirtual.berrymed.tele.TeleView
-import java.util.Locale
+import com.guardiavirtual.berrymed.ui.panel.panelFormat
 import kotlin.concurrent.thread
 
 /**
@@ -33,6 +34,9 @@ import kotlin.concurrent.thread
 class TestingActivity : AppCompatActivity() {
     private lateinit var binding: ActivityTestingBinding
     private val handler = Handler(Looper.getMainLooper())
+
+    /** El idioma de los números y la hora: el de los textos (del diccionario), no el de la tablet. */
+    private val numbers by lazy { panelFormat().locale }
     private var consolePaused = false
     private var lastPreview: String? = null
     private val tick = object : Runnable {
@@ -217,7 +221,7 @@ class TestingActivity : AppCompatActivity() {
         binding.berryLine.text = when {
             !s.berryUp -> getString(R.string.testing_berry_disconnected)
             age == null -> getString(R.string.testing_berry_line_no_data, berryPort, s.rates.badChecksum)
-            else -> getString(R.string.testing_berry_line, berryPort, "%.1f".format(Locale("es"), age), s.rates.badChecksum)
+            else -> getString(R.string.testing_berry_line, berryPort, "%.1f".format(numbers, age), s.rates.badChecksum)
         }
 
         val vitals = s.stats.vitals
@@ -309,7 +313,7 @@ class TestingActivity : AppCompatActivity() {
         binding.previewUrl.text = s.url?.let { getString(R.string.testing_preview_url, it) } ?: getString(R.string.testing_preview_url_missing)
         lastPreview = s.preview
         binding.previewBody.text = s.preview?.let { body ->
-            getString(R.string.testing_preview_body, body.take(PREVIEW_CHARS), "%.1f".format(Locale("es"), body.length / 1024.0))
+            getString(R.string.testing_preview_body, body.take(PREVIEW_CHARS), "%.1f".format(numbers, body.length / 1024.0))
         } ?: getString(R.string.testing_preview_empty)
 
         if (!consolePaused) binding.consoleText.text = s.console.take(CONSOLE_LINES).joinToString("\n")
@@ -342,7 +346,7 @@ class TestingActivity : AppCompatActivity() {
                 R.string.testing_tele_publishes_otoscope,
                 t.videoPath.orEmpty(),
                 t.videoSize.orEmpty(),
-                "%.1f".format(Locale("es"), t.framesPerSecond),
+                "%.1f".format(numbers, t.framesPerSecond),
             )
             Instrument.STETHOSCOPE -> getString(R.string.testing_tele_publishes_stetho, t.levelPercent)
         }
@@ -369,7 +373,7 @@ class TestingActivity : AppCompatActivity() {
     }
 
     private fun clock(millis: Long): String =
-        java.text.SimpleDateFormat("HH:mm", Locale("es")).format(java.util.Date(millis))
+        java.text.SimpleDateFormat("HH:mm", numbers).format(java.util.Date(millis))
 
     /** El título en el color fijo del parámetro, como en el Panel Local. */
     private fun ItemTestCardBinding.setup(title: Int, color: Int, button: Int?, button2: Int? = null) {
@@ -389,7 +393,7 @@ class TestingActivity : AppCompatActivity() {
     }
 
     private fun ItemTestCardBinding.verdict(verdict: Verdict) {
-        cardResult.text = verdict.message
+        cardResult.text = verdict.text.resolve(this@TestingActivity)
         cardResult.setTextColor(
             getColor(
                 when (verdict.ok) {

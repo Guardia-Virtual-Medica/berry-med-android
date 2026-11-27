@@ -343,9 +343,6 @@
     <string name="main_nibp_mode_child">Niño</string>
     <string name="main_nibp_mode_neonate">Neonato</string>
 
-    <!-- Panel Local: la velocidad del ECG, en mm/s. Es un número: lleva el separador decimal del idioma (12,5 o 12.5). -->
-    <string name="local_speed_12_5">12,5</string>
-
     <!-- Testing: las tarjetas (título y botones). -->
     <string name="testing_card_ecg">ECG</string>
     <string name="testing_card_ecg_check">Probar ECG</string>
@@ -428,4 +425,134 @@
 
     <!-- El panel lateral: la descripción de una fila para el lector de pantalla. %1$s es el equipo; %2$s, lo que pasa al tocarla. -->
     <string name="status_device_action">%1$s: %2$s</string>
+
+    <!-- El panel lateral: el Wi-Fi, las filas de Dispositivos y la ayuda de Sonido. -->
+    <string name="status_connected">Conectado</string>
+    <string name="status_connecting">Conectando</string>
+    <string name="status_disconnected">Desconectado</string>
+    <!-- Un equipo con el puerto del hub apagado, listo para encenderse al abrirlo. -->
+    <string name="status_ready">Listo</string>
+    <string name="status_live">En vivo</string>
+    <!-- Falta el hub USB YKUSH3. -->
+    <string name="status_no_hub">Sin hub</string>
+    <string name="status_no_permission">Falta permiso</string>
+    <!-- La fila del ECG con los electrodos despegados del paciente. -->
+    <string name="status_leads_off">Electrodos sueltos</string>
+    <!-- En lugar del nombre de la red, cuando Android no lo da. -->
+    <string name="status_wifi_connected">Wi-Fi conectado</string>
+    <string name="status_wifi_off">Sin Wi-Fi</string>
+    <string name="status_wifi_pick">Tocá para elegir una red</string>
+    <string name="status_wifi_no_internet">Sin internet</string>
+    <string name="status_signal_weak">Señal débil</string>
+    <string name="status_signal_good">Señal buena</string>
+    <!-- Los nombres de las filas de Dispositivos (SpO2 y ECG no se traducen: están en donottranslate.xml). -->
+    <string name="status_device_pressure">Presión</string>
+    <string name="status_device_temperature">Temperatura</string>
+    <string name="status_device_otoscope">Otoscopio</string>
+    <string name="status_device_stethoscope">Estetoscopio</string>
+    <string name="status_device_hub">Hub USB</string>
+    <!-- La ayuda debajo de Sonido: por dónde va la llamada y si suena el estetoscopio. -->
+    <string name="status_call_help_no_jack">Sin auricular en el jack: la llamada va por el altavoz y el estetoscopio no suena.</string>
+    <string name="status_call_help_headset">Todo suena por el auricular.</string>
+    <string name="status_call_help_speaker">La llamada va por el altavoz y el micrófono de la tablet. El estetoscopio sigue en el auricular.</string>
+    <!-- Por qué no se puede cambiar de modo (también en el aviso de la casita del kiosco). -->
+    <string name="status_mode_blocked">Hay una consulta en curso. Terminala para cambiar.</string>
+
+    <!-- Panel Local: los estados de la cabecera del ECG, del dock y de cada dispositivo. -->
+    <string name="local_signal_none">Sin señal</string>
+    <string name="local_signal_weak">Señal débil</string>
+    <string name="local_signal_good">Señal buena</string>
+    <!-- Debajo de la FC: los electrodos del ECG despegados del paciente. -->
+    <string name="local_leads_off">Electrodos sueltos</string>
+    <string name="local_status_live">En vivo</string>
+    <string name="local_status_connecting">Conectando</string>
+    <string name="local_status_connected">Conectado</string>
+    <!-- En minúscula: va debajo del nombre del dispositivo en el dock. -->
+    <string name="local_status_disconnected">desconectado</string>
+    <string name="local_status_off">Apagado</string>
+    <string name="local_status_powering_off">Apagando…</string>
+    <!-- El otoscopio abrió y todavía no llegó ninguna imagen. -->
+    <string name="local_status_waiting_image">Esperando imagen</string>
+    <!-- %1$s es el camino de la imagen (UVC o Camera2); %2$d, los cuadros por segundo. Es una tasa: va en plural siempre (por eso no es un plurals). -->
+    <string name="local_status_otoscope_live" tools:ignore="PluralsCandidate">En vivo · %1$s · %2$d cuadros/s</string>
+    <string name="local_status_listening">Escuchando</string>
+    <string name="local_status_recording">Grabando</string>
+    <!-- %1$d son los segundos que le quedan a la grabación. -->
+    <string name="local_status_recording_left">Grabando · %1$d s</string>
+    <string name="local_status_playing">Reproduciendo</string>
+    <string name="local_status_paused">En pausa</string>
+    <!-- La cámara de la tablet, en el dock: femenino, como «cámara». -->
+    <string name="local_status_camera_ready">Lista</string>
+    <string name="local_status_no_image">Sin imagen</string>
+    <string name="local_camera_live_back">En vivo · trasera</string>
+    <string name="local_camera_live_front">En vivo · frontal</string>
+    <!-- La fase de la presión mientras mide: el manguito sube o baja. -->
+    <string name="local_pa_inflating">Inflando…</string>
+    <string name="local_pa_deflating">Midiendo…</string>
+    <!-- La hora de la última presión y hace cuánto: «10:07 · hace 5 min». -->
+    <string name="local_pa_at">%1$s · %2$s</string>
+    <!-- La temperatura: IR es el termómetro infrarrojo; %1$s, la hora de la lectura. -->
+    <string name="local_temp_source">IR</string>
+    <string name="local_temp_at">IR · %1$s</string>
+    <!-- Hace cuánto se midió. Abreviados: «min» y «h» no cambian con la cantidad (por eso no son plurals). -->
+    <string name="local_ago_now">recién</string>
+    <string name="local_ago_minutes" tools:ignore="PluralsCandidate">hace %1$d min</string>
+    <string name="local_ago_hours" tools:ignore="PluralsCandidate">hace %1$d h</string>
+
+    <!-- Panel Local: el nombre de la arritmia que detecta la plaqueta, debajo de la FC. En minúscula. Es texto clínico: lo revisa un médico en cada idioma. -->
+    <!-- Ritmo normal: la plaqueta no detecta arritmia. -->
+    <string name="arrhythmia_normal">normal</string>
+    <!-- Paro cardíaco (asistolia). -->
+    <string name="arrhythmia_paro">paro</string>
+    <!-- Fibrilación ventricular. -->
+    <string name="arrhythmia_fibrilacion_ventricular">fibrilación ventricular</string>
+    <!-- Fenómeno R sobre T: una extrasístole ventricular sobre la onda T del latido anterior. -->
+    <string name="arrhythmia_r_sobre_t">R sobre T</string>
+    <!-- Extrasístoles ventriculares múltiples (multifocales o en salvas). -->
+    <string name="arrhythmia_extrasistoles_ventriculares_multiples">extrasístoles ventriculares múltiples</string>
+    <!-- Extrasístoles ventriculares dobles: dos seguidas (duplas, couplets). -->
+    <string name="arrhythmia_extrasistoles_ventriculares_dobles">extrasístoles ventriculares dobles</string>
+    <!-- Una extrasístole ventricular aislada (latido prematuro ventricular). -->
+    <string name="arrhythmia_extrasistole_ventricular">extrasístole ventricular</string>
+    <!-- Bigeminismo ventricular: un latido normal y una extrasístole, alternados. -->
+    <string name="arrhythmia_bigeminismo">bigeminismo</string>
+    <!-- Trigeminismo ventricular: dos latidos normales y una extrasístole. -->
+    <string name="arrhythmia_trigeminismo">trigeminismo</string>
+    <!-- Taquicardia: frecuencia cardíaca alta. -->
+    <string name="arrhythmia_taquicardia">taquicardia</string>
+    <!-- Bradicardia: frecuencia cardíaca baja. -->
+    <string name="arrhythmia_bradicardia">bradicardia</string>
+    <!-- Latido perdido: una pausa sin el latido esperado. -->
+    <string name="arrhythmia_latido_perdido">latido perdido</string>
+
+    <!-- Fechas y números. fmt_locale es la etiqueta del idioma y país con que se escriben fechas y números en este idioma; en inglés en-US, en portugués pt-BR. -->
+    <string name="fmt_locale">es-AR</string>
+    <!-- La fecha larga de la cabecera del Panel Local, como patrón de java.time: «Jueves 29 de octubre de 2026»; en inglés sería EEEE, MMMM d, yyyy. -->
+    <string name="fmt_long_date">EEEE d \'de\' MMMM \'de\' yyyy</string>
+    <!-- La fecha y hora de Configuración, como patrón de java.time: «29/10/2026 09:05». La hora va siempre en 24 h (HH:mm). -->
+    <string name="fmt_short_date_time">dd/MM/yyyy HH:mm</string>
+
+    <!-- Testing: el resultado de la prueba de 5 s de cada medición de la plaqueta. «muestras/s» es una tasa: va en plural siempre (por eso no es un plurals). -->
+    <string name="testing_verdict_checking">Probando…</string>
+    <!-- %1$d son los segundos que le quedan a la prueba. -->
+    <string name="testing_verdict_checking_left">Probando… %1$d s</string>
+    <string name="testing_verdict_board_off">Plaqueta sin conectar</string>
+    <string name="testing_verdict_ecg_no_wave">No llega la onda de ECG</string>
+    <string name="testing_verdict_ecg_slow" tools:ignore="PluralsCandidate">Llegan %1$d muestras/s, se esperan unas 250</string>
+    <!-- Los electrodos del ECG despegados del paciente. -->
+    <string name="testing_verdict_leads_off">Electrodos sueltos</string>
+    <string name="testing_verdict_ecg_weak" tools:ignore="PluralsCandidate">OK, %1$d muestras/s, señal débil</string>
+    <!-- FC: frecuencia cardíaca; %2$s es el valor como lo manda la plaqueta. -->
+    <string name="testing_verdict_ecg_ok" tools:ignore="PluralsCandidate">OK, %1$d muestras/s, FC %2$s</string>
+    <string name="testing_verdict_spo2_no_wave">No llega la onda de SpO₂</string>
+    <string name="testing_verdict_spo2_no_values">No llegan los valores de SpO₂</string>
+    <string name="testing_verdict_no_finger">Sin dedo en el sensor</string>
+    <!-- %1$s es saturación/pulso como lo manda la plaqueta: «98/72». -->
+    <string name="testing_verdict_spo2_ok">OK, SpO₂/pulso %1$s</string>
+    <string name="testing_verdict_resp_no_wave">No llega la onda de respiración</string>
+    <!-- FR: frecuencia respiratoria. -->
+    <string name="testing_verdict_resp_ok">OK, FR %1$s</string>
+    <string name="testing_verdict_temp_none">La plaqueta no manda temperatura</string>
+    <string name="testing_verdict_temp_unplugged">Sensor de temperatura sin conectar</string>
+    <string name="testing_verdict_temp_ok">OK, %1$s °C</string>
 </resources>

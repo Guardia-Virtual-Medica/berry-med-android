@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package com.guardiavirtual.berrymed.service
 
+import com.guardiavirtual.berrymed.R
+import com.guardiavirtual.berrymed.i18n.Txt
+import com.guardiavirtual.berrymed.i18n.txt
 import com.guardiavirtual.berrymed.net.WifiState
 import com.guardiavirtual.berrymed.usb.UsbRole
 
@@ -27,10 +30,10 @@ data class StatusSnapshot(
     val jackPresent: Boolean,
 ) {
     companion object {
-        const val MODE_SWITCH_BLOCKED = "Hay una consulta en curso. Terminala para cambiar."
+        val MODE_SWITCH_BLOCKED = txt(R.string.status_mode_blocked)
 
         /** Con una consulta enviando o la teleconsulta en una sala no se cambia de modo. */
-        fun modeSwitchBlock(sessionActive: Boolean, teleInRoom: Boolean): String? =
+        fun modeSwitchBlock(sessionActive: Boolean, teleInRoom: Boolean): Txt? =
             if (sessionActive || teleInRoom) MODE_SWITCH_BLOCKED else null
     }
 }

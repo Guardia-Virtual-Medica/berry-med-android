@@ -51,7 +51,7 @@ import com.guardiavirtual.berrymed.service.MonitorService
 import com.guardiavirtual.berrymed.service.TotemRuntime
 import com.guardiavirtual.berrymed.service.TotemState
 import com.guardiavirtual.berrymed.ui.panel.Link
-import com.guardiavirtual.berrymed.ui.panel.PanelFormat
+import com.guardiavirtual.berrymed.ui.panel.panelFormat
 import com.guardiavirtual.berrymed.ui.status.NoWifiNotice
 import kotlinx.coroutines.runBlocking
 import kotlin.concurrent.thread
@@ -350,7 +350,7 @@ class MainActivity : AppCompatActivity() {
     /** La línea de la cabecera: cuándo se guardó USB-config, o que nunca. */
     private fun showLastUpdate(savedAt: Long) {
         binding.lastUpdate.text = if (savedAt > 0L) {
-            getString(R.string.last_update, PanelFormat.dateTime(savedAt))
+            getString(R.string.last_update, panelFormat().dateTime(savedAt))
         } else {
             getString(R.string.last_update_never)
         }

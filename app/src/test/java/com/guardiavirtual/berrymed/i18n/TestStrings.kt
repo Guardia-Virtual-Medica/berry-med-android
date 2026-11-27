@@ -2,7 +2,9 @@
 package com.guardiavirtual.berrymed.i18n
 
 import com.guardiavirtual.berrymed.R
+import com.guardiavirtual.berrymed.ui.panel.PanelFormat
 import java.io.File
+import java.util.Locale
 import javax.xml.parsers.DocumentBuilderFactory
 import org.w3c.dom.Element
 
@@ -75,3 +77,12 @@ fun es(text: Txt): String = TestStrings.resolve(text)
 
 /** El texto en [language] («en», «pt»). */
 fun Txt.inLanguage(language: String): String = TestStrings.resolve(this, language)
+
+/**
+ * Los formatos de fechas y números de [language], leídos del diccionario
+ * (`fmt_locale`, `fmt_long_date`, `fmt_short_date_time`) como los arma la pantalla.
+ */
+fun panelFormatIn(language: String = ""): PanelFormat {
+    fun entry(name: String) = (TestStrings.catalog(language)[name] ?: TestStrings.catalog()[name] ?: error("Falta $name")).value
+    return PanelFormat(Locale.forLanguageTag(entry("fmt_locale")), entry("fmt_long_date"), entry("fmt_short_date_time"))
+}

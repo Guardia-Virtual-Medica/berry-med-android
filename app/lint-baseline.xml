@@ -184,7 +184,7 @@
         errorLine2="                                                     ~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/guardiavirtual/berrymed/otoscope/CameraXOtoscope.kt"
-            line="44"
+            line="45"
             column="54"/>
     </issue>
 
