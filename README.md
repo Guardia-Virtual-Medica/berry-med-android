@@ -531,6 +531,10 @@ Por ahora la app está sólo en español. Lo que hay es la red para pasarla a va
 
 **Fechas y números.** Siguen al idioma de los textos, no al de la tablet: la entrada `fmt_locale` del diccionario dice con qué idioma y país se escriben (`es-AR`; en inglés sería `en-US`), y `fmt_long_date` y `fmt_short_date_time` son los patrones de fecha. `PanelFormat` los recibe (la pantalla lo arma con `panelFormat()`); el decimal sale del idioma y la hora va siempre en 24 h.
 
+**Textos que arma el código.** Lo que no es una pantalla (los modelos, el runtime, el servicio) devuelve un `Txt` (`i18n/Txt.kt`): la clave y sus parámetros, y la pantalla lo resuelve con `resolve(context)`. `Txt.Plural` es una entrada `<plurals>` (en español y portugués con `one`, `many` y `other`, `many` igual a `other`); `Txt.Join` pone frases enteras una al lado de la otra («Termómetro sin conectar. Hub YKUSH3 sin conectar.», «a, b, c»). Un número con decimales entra como número y la entrada dice cómo escribirlo (`%1$.1f`): `resolve` lo escribe con `fmt_locale` del mismo diccionario, así «hace 1,5 s» sale con coma aunque la tablet esté en inglés.
+
+**El log, siempre en español.** Cuando una línea de log lleva un mensaje que también se ve en pantalla, se resuelve con `LogText` (`i18n/LogText.kt`), un contexto fijo en español que arma una vez el runtime (`TotemRuntime.logText`). A las reglas sin Android se les pasa como función (`HubRestState.logLine(…, ::logText)`), y en los tests se les pasa `::es`.
+
 **Qué controla cada test** (corren con `./gradlew test`):
 
 | Test | Qué controla |

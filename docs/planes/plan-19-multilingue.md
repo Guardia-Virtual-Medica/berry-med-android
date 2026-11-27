@@ -184,12 +184,12 @@ raw(wifi.ssid)
 
 La pantalla lo resuelve con sus recursos: `row.deviceStatus.text = device.text.resolve(context)`. Dos `Txt` iguales son el mismo texto, así que las reglas que comparaban frases comparan claves.
 
-En el paso 4 se le suman dos formas: `Txt.Plural(id, cantidad, args)` y `Txt.Join(partes, separador)` para lo que hoy junta frases sueltas (el campo `others` de `TotemState`).
+En el paso 4 se le suman dos formas: `Txt.Plural(id, cantidad, args)` y `Txt.Join(partes, separador)` para lo que hoy junta frases sueltas (el campo `others` de `TotemState`). Hecho en 4a: los números con decimales entran como número (`%1$.1f` en la entrada) y `resolve` los escribe con `fmt_locale` del mismo diccionario, no con el idioma de Android; `TestStrings` hace lo mismo.
 
 **El log**
 
 - Las líneas `[ETIQUETA] …` se quedan como literales en español.
-- Cuando una línea de log lleva adentro un mensaje que también se muestra, se resuelve con un contexto fijo en español: `AppLocale.withLanguage(appContext, AppLanguage.SPANISH)`. `TotemRuntime` lo arma una vez y ofrece `logText(txt)`; a las clases sin Android (`TeleStreamer`) se les pasa como función, igual que hoy reciben `log`.
+- Cuando una línea de log lleva adentro un mensaje que también se muestra, se resuelve con un contexto fijo en español. Hecho en 4a con `i18n/LogText` (`createConfigurationContext` con `Locale("es")`, que sin `values-es` toma `values/`): `TotemRuntime` lo arma una vez y ofrece `logText(txt)`; a las clases sin Android (`HubRestState.logLine`, y en 4b `TeleStreamer`) se les pasa como función, igual que hoy reciben `log`.
 - Los números del log, con `Locale.US` explícito.
 
 **Fechas y números**
