@@ -523,6 +523,36 @@ El APK es debug y lleva la clave debug de la máquina que lo compiló. Siempre f
 
 Para probar sin tablet está el emulador `berry_tablet`: Android 15, 2560×1600 a 320 dpi, que son los 1280×800 dp para los que está pensado el Panel Local.
 
+## Idiomas
+
+Por ahora la app está sólo en español. Lo que hay es la red para pasarla a varios idiomas (el plan está en [`docs/planes/plan-19-multilingue.md`](docs/planes/plan-19-multilingue.md)): unos tests y el lint que no dejan entrar textos nuevos escritos en el código, mientras se migran los que ya están.
+
+**Cómo se agrega un texto.** Va a `app/src/main/res/values/strings.xml`, nunca escrito en el código ni en el layout. Una frase entera por entrada: no se arma pegando pedazos ni metiendo una palabra con su artículo, porque en otro idioma cambian el orden y el género. Los valores van como parámetros numerados (`%1$s`, `%2$d`), así cada idioma los ubica donde quiere. Lo que es igual en todos los idiomas (nombres propios, marcas, unidades) va a `values/donottranslate.xml` con `translatable="false"`. Las líneas de log (`[USB] …`) se quedan en español y en el código.
+
+**Qué controla cada test** (corren con `./gradlew test`):
+
+| Test | Qué controla |
+|---|---|
+| `HardcodedTextTest.noNewHardcodedTextInKotlin` | Ninguna frase nueva escrita en un `.kt` de `src/main`. Lo que ya no está en el código tiene que salir de la lista: la lista sólo se achica. |
+| `HardcodedTextTest.layoutsHaveNoHardcodedText` | Ningún texto con letras, ni número con decimal, escrito en un layout (`tools:text` no cuenta). |
+| `StringsCatalogTest` | Las traducciones contra el español: las mismas entradas, nada de más, nada traducido que sea `translatable="false"`, los mismos parámetros, ningún `%s` sin número y ninguna entrada vacía. Lo que todavía no se tradujo está en `sin-traducir.txt`. |
+
+**Las listas.** Están en `app/src/test/resources/i18n/`. `textos-en-codigo.txt` tiene tres partes: `## PENDIENTE` es lo que falta pasar al diccionario, `## LAYOUTS` lo mismo en los layouts, y `## PERMITIDO` lo que se queda en el código a propósito, revisado uno por uno: lo que no es texto para una persona (cabeceras HTTP, `<unknown ssid>`, el nombre que se busca de un equipo) y los motivos que sólo terminan en una línea de log. Algo pasa a `## PERMITIDO` sólo si se siguió el valor y de verdad no llega a ninguna pantalla. Las listas se regeneran contra el código con:
+
+```bash
+I18N_REGENERAR=1 JAVA_HOME=/opt/homebrew/opt/openjdk@17 ./gradlew testDebugUnitTest --tests '*HardcodedTextTest*' --tests '*StringsCatalogTest*'
+```
+
+Regenerar conserva lo que ya está en `## PERMITIDO` (si sigue en el código) y manda todo lo demás a `## PENDIENTE`. Después se mira el diff: una línea nueva en `## PENDIENTE` es un texto que tendría que haber ido al diccionario.
+
+**El lint.** `./gradlew lintDebug` da error con `HardcodedText`, `SetTextI18n`, `MissingTranslation`, `ExtraTranslation`, `StringFormatMatches`, `StringFormatCount` y `MissingQuantity`. Lo que ya estaba antes está en `app/lint-baseline.xml` y se va sacando con la migración; el baseline no se agranda.
+
+**Seudo-idiomas.** `./gradlew assembleDebug -Pseudo` compila con los seudo-idiomas de Android: `en-XA` (acentos y textos un 30 % más largos) y `ar-XB` (de derecha a izquierda). En el emulador, con el idioma en `en-XA`, lo que pasa por el diccionario sale `[Çöñ åçéñţöš]` y lo que sigue escrito en el código sale normal; además se ve qué se corta o se desborda con un texto más largo. No va en el APK que se publica.
+
+```bash
+adb -s emulator-5554 shell cmd locale set-app-locales com.guardiavirtual.berrymed --locales en-XA
+```
+
 ## Licencia
 
 GNU GPLv3, igual que el monitor de Windows del que sale el protocolo. Ver [LICENSE](LICENSE).
