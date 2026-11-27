@@ -12,7 +12,8 @@ class BerryMedApp : Application() {
     override fun onCreate() {
         super.onCreate()
         // Sin idioma elegido, español: antes de cualquier pantalla y del runtime (ver AppLocale).
-        AppLocale.init(this)
+        val spanishByDefault = AppLocale.init(this)
         runtime = TotemRuntime(this)
+        if (spanishByDefault) runtime.log("[IDIOMA] Nadie eligió idioma: la app queda en español")
     }
 }

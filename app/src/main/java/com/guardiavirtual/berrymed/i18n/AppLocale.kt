@@ -31,17 +31,18 @@ object AppLocale {
     /**
      * Desde `BerryMedApp.onCreate`. En Android 13 o más, sin idioma elegido,
      * fija el español en el sistema antes de que se abra ninguna pantalla
-     * (`AppCompatDelegate` no puede: todavía no hay ninguna).
+     * (`AppCompatDelegate` no puede: todavía no hay ninguna). Devuelve true
+     * si lo fijó, para el log. Al arrancar la tablet el sistema ya devuelve el
+     * idioma elegido (se probó reiniciando el emulador con inglés elegido).
      */
-    fun init(context: Context) {
-        if (Build.VERSION.SDK_INT >= 33) {
-            val manager = context.getSystemService(LocaleManager::class.java) ?: return
-            localeManager = manager
-            skipAppCompatSync(context)
-            if (AppLanguage.match(manager.applicationLocales.toLanguageTags()) == null) {
-                manager.applicationLocales = LocaleList.forLanguageTags(AppLanguage.DEFAULT.tag)
-            }
-        }
+    fun init(context: Context): Boolean {
+        if (Build.VERSION.SDK_INT < 33) return false
+        val manager = context.getSystemService(LocaleManager::class.java) ?: return false
+        localeManager = manager
+        skipAppCompatSync(context)
+        if (AppLanguage.match(manager.applicationLocales.toLanguageTags()) != null) return false
+        manager.applicationLocales = LocaleList.forLanguageTags(AppLanguage.DEFAULT.tag)
+        return true
     }
 
     /**
