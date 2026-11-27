@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Un idioma en el selector: cuadrado (se toca); el que está en uso, con borde azul y la tilde. -->
+<com.google.android.material.button.MaterialButton xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    style="@style/Panel.Button"
+    android:layout_width="match_parent"
+    android:layout_height="56dp"
+    android:layout_marginTop="8dp"
+    android:gravity="start|center_vertical"
+    android:paddingStart="20dp"
+    android:paddingEnd="20dp"
+    android:textSize="18sp"
+    app:iconGravity="end"
+    tools:text="@string/language_name_es" />

@@ -4,6 +4,7 @@ package com.guardiavirtual.berrymed.ui.panel
 import com.guardiavirtual.berrymed.audio.StethoFilter
 import com.guardiavirtual.berrymed.audio.StethoRecording
 import com.guardiavirtual.berrymed.i18n.es
+import com.guardiavirtual.berrymed.i18n.inLanguage
 import com.guardiavirtual.berrymed.i18n.panelFormatIn
 import com.guardiavirtual.berrymed.otoscope.OtoscopePower
 import com.guardiavirtual.berrymed.protocol.EcgInfo
@@ -279,7 +280,7 @@ class PanelUiTest {
     fun vitalsUseLongDashesAndComma() {
         val state = build(snapshot(vitals = VitalSigns(heartRate = "- -", spo2Pulse = "97/-", respRate = "16")))
         assertEquals("—", state.heartRate)
-        assertEquals("97 %", state.saturation)
+        assertEquals("97 %", es(state.saturation))
         assertEquals("—", state.pulse)
         assertEquals("16", state.respiration)
     }
@@ -377,5 +378,25 @@ class PanelUiTest {
         assertEquals(VideoButtons(null, discard = true, help = false, backToLive = true), PanelUi.videoButtons(VideoMode.REVIEW))
         // Congelado sin guardar sí se descarta: el botón sigue diciendo "Descartar y volver".
         assertFalse(PanelUi.videoButtons(VideoMode.FROZEN).backToLive)
+    }
+
+    /** El mismo Panel Local leído en inglés y en portugués, con los formatos de cada diccionario. */
+    @Test
+    fun theSamePanelInOtherLanguages() {
+        assertEquals("Weak signal", PanelUi.signal(snapshot(ecgInfo = EcgInfo(leadOff = false, weakSignal = true))).text.inLanguage("en"))
+        assertEquals("Sinal fraco", PanelUi.signal(snapshot(ecgInfo = EcgInfo(leadOff = false, weakSignal = true))).text.inLanguage("pt"))
+        assertEquals("Leads off", PanelUi.heartNote(snapshot(ecgInfo = EcgInfo(leadOff = true))).inLanguage("en"))
+        assertEquals("Eletrodos soltos", PanelUi.heartNote(snapshot(ecgInfo = EcgInfo(leadOff = true))).inLanguage("pt"))
+        assertEquals("tachycardia", PanelUi.heartNote(snapshot(ecgInfo = EcgInfo(leadOff = false, hrv = "taquicardia"))).inLanguage("en"))
+        assertEquals("Inflating…", PanelUi.INFLATING.inLanguage("en"))
+        assertEquals("Insuflando…", PanelUi.INFLATING.inLanguage("pt"))
+
+        val s = snapshot(vitals = VitalSigns(nibp = "120/80", spo2Pulse = "97/72"), nibp = LiveFeed.NibpState(status = 0, cuffMmhg = 0), nibpAtMillis = at(10, 7))
+        for ((language, ago, percent) in listOf(Triple("en", "10:07 · 5 min ago", "97%"), Triple("pt", "10:07 · há 5 min", "97%"))) {
+            val state = PanelUi(panelFormatIn(language)).build(s, at(10, 12), ScreenState(), zone)
+            val pressure = state.pressure as PressureCard.Result
+            assertEquals(ago, pressure.at.inLanguage(language))
+            assertEquals(percent, state.saturation.inLanguage(language))
+        }
     }
 }

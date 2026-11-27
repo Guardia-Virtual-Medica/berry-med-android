@@ -270,23 +270,24 @@ El paso más grande y el de más riesgo: toca el servicio. Dos PR.
 
 Hecho cuando: `## PENDIENTE` está **vacía**, y el log de una sesión de prueba en el emulador (`adb -s emulator-5554 logcat -s BerryMed`, o la consola de Testing) es igual al de antes: mismas líneas, mismo español.
 
-#### Paso 5 — Idiomas y selector (rama `feat/i18n-5-idiomas`)
+#### Paso 5 — Idiomas y selector (rama `feat/i18n-5-idiomas`) — hecho, 1.5.0
 
-1. Del parche: `AppLanguage`, `AppLocale`, `AppLanguageTest`, `locales_config.xml`, el manifest y `resourceConfigurations`.
-2. **Español hasta que alguien elija** (decisión 3): si no hay idioma elegido, fijar `es`. En Android 13 o más, desde `BerryMedApp.onCreate` con el `LocaleManager` del sistema; en los anteriores, en la primera pantalla con `AppCompatDelegate`. **Esto no está en el spike: hay que probarlo** (prueba M12).
-3. El selector de Inicio, vestido, con el bloqueo y su regla con test (`LanguageSwitch.blocked`).
-4. `values-en/strings.xml` y `values-pt/strings.xml` **completos**: `sin-traducir.txt` queda vacío. Las 66 entradas del parche sirven de arranque.
-5. Glosario para la revisión clínica, en `docs/glosario-idiomas.md`, con los términos que una persona tiene que aprobar: FC, PA, SpO₂, lpm, rpm, derivaciones, electrodos sueltos, señal débil, los 12 nombres de arritmia, otoscopio, estetoscopio, fonocardiograma, manguito, tótem, maletín, kiosco.
-6. El largo: recorrer todas las pantallas con `en-XA` y arreglar lo que se corta o se desborda (ya se sabe de la barra del ECG del Panel Local y del conteo del riel lateral).
-7. Quitar del `KioskActivity` la línea de log «Spike idioma» si llegó del parche.
+Hecho el 27 de noviembre de 2026:
 
-Hecho cuando: pasan todas las pruebas de la parte D en el emulador, en los tres idiomas.
+1. `AppLanguage`, `AppLocale`, `LanguageSwitch`, `locales_config.xml`, el manifest (`localeConfig`, `AppLocalesMetadataHolderService` con `autoStoreLocales`) y `resourceConfigurations` (más `en-rXA` y `ar-rXB` con `-Pseudo`). Los nombres de los idiomas están en `donottranslate.xml`.
+2. **Español hasta que alguien elija**, probado en el emulador en `en-US` (M12): `BerryMedApp` lo fija con el `LocaleManager`; cada pantalla pasa por `AppLocale.wrap` porque la primera la arma Android antes de que arranque el proceso; y `AppLocale` habilita el servicio de AppCompat antes de que AppCompat copie al sistema su idioma guardado (ninguno) encima del español al actualizar desde 1.4.0. Android 12 o menos: implementado (la primera pantalla) y sin probar.
+3. El selector de Inicio con el estilo de `ModeSwitchDialog`, bloqueado con una consulta en curso; el motivo va a la izquierda del botón.
+4. `values-en` y `values-pt` completos; `sin-traducir.txt` vacía. El porcentaje pasó a `local_percent`; `mm/s`, `mm/mV`, «ECG · II» y el conteo «5/7» a `donottranslate.xml`.
+5. `docs/glosario-idiomas.md`.
+6. El largo: la barra del ECG (el estado de la señal se corta con puntos suspensivos), el conteo del riel y el auricular en portugués («Fone»). Con el seudo-idioma sólo se desbordan los textos de un 30 % más (los botones del diálogo de Finalizar, Congelar en la barra del ECG): en los tres idiomas reales entra todo.
+7. La línea «Spike idioma» del kiosco no llegó a `main`.
+
+Queda: el paso 6 (las pruebas T en la tablet) y la revisión clínica del glosario.
 
 #### Paso 6 — La tablet y la release
 
 1. Con el OK de Nico y sin consulta en curso: las pruebas M de la tablet.
-2. `docs/decisiones.md` (entrada del plan 19), README y `docs/hardware.md` si cambió algo.
-3. Versión 1.5.0, `versionCode` 19.
+2. `docs/hardware.md` si cambió algo (la entrada de `docs/decisiones.md`, el README y la versión 1.5.0 ya están en el paso 5).
 
 ### C.3 Lo que no entra
 

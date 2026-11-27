@@ -64,8 +64,11 @@ class TxtTest {
             Locale.setDefault(Locale.US)
             assertEquals("Último dato: hace 1,5 s", es(txt(R.string.rt_last_data_ago, 1.5)))
             assertEquals("Último dato: hace 12,0 s", es(txt(R.string.rt_last_data_ago, 12.0)))
-            // Un idioma sin traducción cae al español, con su fmt_locale.
-            assertEquals("Último dato: hace 0,3 s", txt(R.string.rt_last_data_ago, 0.25).inLanguage("en"))
+            // Cada idioma con su fmt_locale: punto en inglés, coma en portugués, sea cual sea el de la JVM.
+            Locale.setDefault(Locale.GERMANY)
+            assertEquals("Last data: 0.3 s ago", txt(R.string.rt_last_data_ago, 0.25).inLanguage("en"))
+            Locale.setDefault(Locale.US)
+            assertEquals("Último dado: há 0,3 s", txt(R.string.rt_last_data_ago, 0.25).inLanguage("pt"))
             // Los enteros no cambian: los textos de los pasos anteriores resuelven igual.
             assertEquals("En vivo · UVC · 29 cuadros/s", es(txt(R.string.local_status_otoscope_live, txt(R.string.local_otoscope_path_uvc), 29)))
         } finally {

@@ -18,6 +18,9 @@ import com.guardiavirtual.berrymed.R
 import com.guardiavirtual.berrymed.config.PinCheck
 import com.guardiavirtual.berrymed.config.checkPin
 import com.guardiavirtual.berrymed.databinding.ActivityHomeBinding
+import com.guardiavirtual.berrymed.i18n.AppLocale
+import com.guardiavirtual.berrymed.i18n.LanguageSwitch
+import com.guardiavirtual.berrymed.i18n.resolve
 import com.guardiavirtual.berrymed.service.MonitorService
 import com.guardiavirtual.berrymed.ui.status.PanelMode
 import com.guardiavirtual.berrymed.ui.status.StatusPanelActions
@@ -32,6 +35,9 @@ import com.guardiavirtual.berrymed.ui.status.StatusPanelUi
  * - ONDOCTOR365 abre el kiosco; sin la URL configurada, pide el PIN y abre la configuración.
  * - Panel Local abre el Panel Local, sin PIN.
  * - Configuración pide el PIN (el único de la app) y abre la pantalla técnica ([MainActivity]).
+ *
+ * Arriba a la derecha, el idioma de la app ([LanguageDialog]); con una
+ * consulta en curso no se cambia ([LanguageSwitch]).
  */
 class HomeActivity : AppCompatActivity() {
     private lateinit var binding: ActivityHomeBinding
@@ -39,6 +45,9 @@ class HomeActivity : AppCompatActivity() {
 
     /** Qué se abre al aceptar el PIN: la configuración, con el formulario abierto o no. */
     private var afterPin: Intent? = null
+
+    /** El selector de idioma, si está abierto: se cierra si empieza una consulta. */
+    private var languageDialog: LanguageDialog? = null
 
     /** El panel lateral se refresca cada medio segundo mientras Inicio se ve. */
     private val statusTick = object : Runnable {
@@ -57,11 +66,13 @@ class HomeActivity : AppCompatActivity() {
 
     /** Toda la pantalla a la escala de diseño: ver [UiScale]. */
     override fun attachBaseContext(newBase: Context) {
-        super.attachBaseContext(UiScale.scaled(newBase))
+        super.attachBaseContext(UiScale.scaled(AppLocale.wrap(newBase)))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Android 12 o menos: sin idioma elegido, español (en 13 o más lo fija BerryMedApp).
+        AppLocale.ensureChosen()
         binding = ActivityHomeBinding.inflate(layoutInflater)
         setContentView(binding.root)
         binding.homeRoot.padForSystemBars()
@@ -74,6 +85,10 @@ class HomeActivity : AppCompatActivity() {
         binding.homeOndoctor.setOnClickListener { openOndoctor() }
         binding.homeLocal.setOnClickListener { startActivity(Intent(this, LocalPanelActivity::class.java)) }
         binding.homeConfig.setOnClickListener { showPin(Intent(this, MainActivity::class.java)) }
+        val language = AppLocale.current()
+        binding.languageButton.setText(language.nativeName)
+        binding.languageButton.contentDescription = getString(R.string.language_button, getString(language.nativeName))
+        binding.languageButton.setOnClickListener { pickLanguage() }
 
         binding.pinLayer.setOnClickListener { showPin(null) }
         binding.pinBackButton.setOnClickListener { showPin(null) }
@@ -131,7 +146,40 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun renderStatus() {
-        binding.statusPanel.render(StatusPanelUi.build(runtime().statusSnapshot(), PanelMode.HOME))
+        val snapshot = runtime().statusSnapshot()
+        binding.statusPanel.render(StatusPanelUi.build(snapshot, PanelMode.HOME))
+        renderLanguage(LanguageSwitch.blocked(snapshot.sessionActive, snapshot.teleInRoom) != null)
+    }
+
+    /** Con una consulta en curso el botón de idioma se deshabilita y el motivo queda a la vista. */
+    private fun renderLanguage(blocked: Boolean) {
+        binding.languageButton.isEnabled = !blocked
+        binding.languageBlocked.visibility = if (blocked) View.VISIBLE else View.GONE
+        if (blocked) {
+            languageDialog?.dismiss()
+            languageDialog = null
+        }
+    }
+
+    /**
+     * El idioma de la app. Android recrea las pantallas abiertas con los textos
+     * nuevos; por eso, con una consulta en curso, no se cambia: el kiosco
+     * recargaría la web y se cortaría la videollamada.
+     */
+    private fun pickLanguage() {
+        val snapshot = runtime().statusSnapshot()
+        val blocked = LanguageSwitch.blocked(snapshot.sessionActive, snapshot.teleInRoom)
+        if (blocked != null) {
+            renderLanguage(true)
+            binding.languageButton.announceForAccessibility(blocked.resolve(this))
+            return
+        }
+        languageDialog?.dismiss()
+        languageDialog = LanguageDialog.show(this, AppLocale.current()) { picked ->
+            languageDialog = null
+            val now = runtime().statusSnapshot()
+            if (LanguageSwitch.blocked(now.sessionActive, now.teleInRoom) == null) AppLocale.set(picked)
+        }
     }
 
     private fun kioskTarget(): HomeTarget {

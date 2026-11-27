@@ -2,6 +2,7 @@
 package com.guardiavirtual.berrymed.ui.panel
 
 import com.guardiavirtual.berrymed.i18n.es
+import com.guardiavirtual.berrymed.i18n.inLanguage
 import com.guardiavirtual.berrymed.i18n.panelFormatIn
 import com.guardiavirtual.berrymed.protocol.NO_PAIR
 import java.time.LocalDateTime
@@ -79,20 +80,22 @@ class PanelFormatTest {
 
     @Test
     fun percentAddsTheSignOnlyWithAValue() {
-        assertEquals("98 %", PanelFormat.percent("98"))
-        assertEquals("—", PanelFormat.percent(PanelFormat.NONE))
+        assertEquals("98 %", es(PanelFormat.percent("98")))
+        assertEquals("—", es(PanelFormat.percent(PanelFormat.NONE)))
     }
 
     /**
-     * Fechas y números en otros idiomas, con el idioma y los patrones pasados a
-     * mano (todavía no hay traducciones): el decimal sale del idioma y la hora
-     * queda en 24 h en todos.
+     * A13: fechas y números en cada idioma, con el idioma y los patrones de cada
+     * diccionario (`fmt_locale`, `fmt_long_date`, `fmt_short_date_time`): el
+     * decimal sale del idioma y la hora queda en 24 h en los tres.
      */
     @Test
     fun theSameInstantAndNumbersInEachLanguage() {
-        val spanish = PanelFormat(Locale.forLanguageTag("es-AR"), "EEEE d 'de' MMMM 'de' yyyy", "dd/MM/yyyy HH:mm")
-        val english = PanelFormat(Locale.forLanguageTag("en-US"), "EEEE, MMMM d, yyyy", "MM/dd/yyyy HH:mm")
-        val portuguese = PanelFormat(Locale.forLanguageTag("pt-BR"), "EEEE, d 'de' MMMM 'de' yyyy", "dd/MM/yyyy HH:mm")
+        val spanish = panelFormatIn()
+        val english = panelFormatIn("en")
+        val portuguese = panelFormatIn("pt")
+        assertEquals(Locale.forLanguageTag("en-US"), english.locale)
+        assertEquals(Locale.forLanguageTag("pt-BR"), portuguese.locale)
 
         assertEquals("12,5", spanish.number(12.5f))
         assertEquals("12.5", english.number(12.5f))
@@ -111,6 +114,21 @@ class PanelFormatTest {
         assertEquals("10/29/2026 21:05", english.dateTime(at(21, 5), zone))
         assertEquals("29/10/2026 21:05", portuguese.dateTime(at(21, 5), zone))
         assertEquals("21:05", PanelFormat.clock(at(21, 5), zone))
+    }
+
+    /** «hace N min» y el porcentaje en cada idioma. */
+    @Test
+    fun agoAndPercentInEachLanguage() {
+        val now = at(10, 12)
+        assertEquals("just now", PanelFormat.ago(now, now - 59_000).inLanguage("en"))
+        assertEquals("1 min ago", PanelFormat.ago(now, now - 60_000).inLanguage("en"))
+        assertEquals("5 min ago", PanelFormat.ago(now, now - 300_000).inLanguage("en"))
+        assertEquals("há 5 min", PanelFormat.ago(now, now - 300_000).inLanguage("pt"))
+        assertEquals("2 h ago", PanelFormat.ago(now, at(8, 0)).inLanguage("en"))
+        assertEquals("há 2 h", PanelFormat.ago(now, at(8, 0)).inLanguage("pt"))
+        assertEquals("98%", PanelFormat.percent("98").inLanguage("en"))
+        assertEquals("98%", PanelFormat.percent("98").inLanguage("pt"))
+        assertEquals("—", PanelFormat.percent(PanelFormat.NONE).inLanguage("en"))
     }
 
     /** El español del diccionario es el mismo que el de arriba, escrito a mano. */

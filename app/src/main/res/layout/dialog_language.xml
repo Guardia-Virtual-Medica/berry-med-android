@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    El selector de idioma de Inicio, con el estilo del diálogo de cambio de
+    modo: scrim y una tarjeta de 440 dp. Las filas de los idiomas las pone
+    LanguageDialog (item_language.xml), una por AppLanguage.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/scrim"
+    android:clickable="true"
+    android:focusable="true">
+
+    <LinearLayout
+        android:id="@+id/languageCard"
+        android:layout_width="440dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:background="@drawable/panel_dialog"
+        android:clickable="true"
+        android:focusable="true"
+        android:orientation="vertical"
+        android:padding="28dp">
+
+        <TextView
+            style="@style/Panel.Text"
+            android:fontFamily="@font/barlow_semibold"
+            android:text="@string/language_title"
+            android:textSize="22sp" />
+
+        <LinearLayout
+            android:id="@+id/languageList"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="vertical" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:gravity="end"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/languageCancel"
+                style="@style/Panel.Button.Outline"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:text="@string/language_cancel" />
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>
