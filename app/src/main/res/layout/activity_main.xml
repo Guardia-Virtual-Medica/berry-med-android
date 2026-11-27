@@ -6,6 +6,7 @@
     formulario es una capa que tapa ese contenido y se abre con USB-config.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -163,7 +164,7 @@
                 <LinearLayout style="@style/Panel.CardTop">
                     <TextView
                         style="@style/Panel.CardLabel"
-                        android:text="FC"
+                        android:text="@string/main_vital_hr"
                         android:textColor="@color/ecg" />
 
                     <View
@@ -173,7 +174,7 @@
 
                     <TextView
                         style="@style/Panel.CardUnit"
-                        android:text="lpm" />
+                        android:text="@string/main_unit_bpm" />
                 </LinearLayout>
 
                 <TextView
@@ -194,7 +195,7 @@
                 <LinearLayout style="@style/Panel.CardTop">
                     <TextView
                         style="@style/Panel.CardLabel"
-                        android:text="SpO₂"
+                        android:text="@string/local_spo2"
                         android:textColor="@color/spo2" />
 
                     <View
@@ -204,7 +205,7 @@
 
                     <TextView
                         style="@style/Panel.CardUnit"
-                        android:text="% / lpm" />
+                        android:text="@string/main_unit_spo2" />
                 </LinearLayout>
 
                 <TextView
@@ -225,7 +226,7 @@
                 <LinearLayout style="@style/Panel.CardTop">
                     <TextView
                         style="@style/Panel.CardLabel"
-                        android:text="Resp"
+                        android:text="@string/main_vital_resp"
                         android:textColor="@color/resp" />
 
                     <View
@@ -235,7 +236,7 @@
 
                     <TextView
                         style="@style/Panel.CardUnit"
-                        android:text="rpm" />
+                        android:text="@string/main_unit_rpm" />
                 </LinearLayout>
 
                 <TextView
@@ -256,7 +257,7 @@
                 <LinearLayout style="@style/Panel.CardTop">
                     <TextView
                         style="@style/Panel.CardLabel"
-                        android:text="Temp"
+                        android:text="@string/main_vital_temp"
                         android:textColor="@color/temp" />
 
                     <View
@@ -266,7 +267,7 @@
 
                     <TextView
                         style="@style/Panel.CardUnit"
-                        android:text="°C" />
+                        android:text="@string/local_unit_celsius" />
                 </LinearLayout>
 
                 <TextView
@@ -287,7 +288,7 @@
                 <LinearLayout style="@style/Panel.CardTop">
                     <TextView
                         style="@style/Panel.CardLabel"
-                        android:text="PA"
+                        android:text="@string/main_vital_pa"
                         android:textColor="@color/pa" />
 
                     <View
@@ -297,7 +298,7 @@
 
                     <TextView
                         style="@style/Panel.CardUnit"
-                        android:text="mmHg" />
+                        android:text="@string/local_unit_mmhg" />
                 </LinearLayout>
 
                 <TextView
@@ -564,7 +565,7 @@
                                         android:layout_height="wrap_content"
                                         android:inputType="text"
                                         android:singleLine="true"
-                                        android:text="start-monitoring" />
+                                        android:text="@string/main_start_event_default" />
                                 </com.google.android.material.textfield.TextInputLayout>
 
                                 <com.google.android.material.textfield.TextInputLayout style="@style/Field" android:hint="@string/hint_stop">
@@ -574,7 +575,7 @@
                                         android:layout_height="wrap_content"
                                         android:inputType="text"
                                         android:singleLine="true"
-                                        android:text="stop-monitoring" />
+                                        android:text="@string/main_stop_event_default" />
                                 </com.google.android.material.textfield.TextInputLayout>
                             </LinearLayout>
 
@@ -602,10 +603,10 @@
                                     app:selectionRequired="true"
                                     app:singleSelection="true">
 
-                                    <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="x0.25" />
-                                    <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="x0.5" />
-                                    <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="true" android:text="x1" />
-                                    <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="x2" />
+                                    <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/main_gain_x0_25" />
+                                    <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/main_gain_x0_5" />
+                                    <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="true" android:text="@string/main_gain_x1" />
+                                    <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/main_gain_x2" />
                                 </com.google.android.material.chip.ChipGroup>
 
                                 <TextView
@@ -623,9 +624,9 @@
                                     app:selectionRequired="true"
                                     app:singleSelection="true">
 
-                                    <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Operación" />
-                                    <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="true" android:text="Monitor" />
-                                    <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Diagnóstico" />
+                                    <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/main_ecg_mode_operation" />
+                                    <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="true" android:text="@string/main_ecg_mode_monitor" />
+                                    <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/main_ecg_mode_diagnostic" />
                                 </com.google.android.material.chip.ChipGroup>
 
                                 <TextView
@@ -643,10 +644,10 @@
                                     app:selectionRequired="true"
                                     app:singleSelection="true">
 
-                                    <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="x0.25" />
-                                    <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="x0.5" />
-                                    <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="true" android:text="x1" />
-                                    <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="x2" />
+                                    <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/main_gain_x0_25" />
+                                    <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/main_gain_x0_5" />
+                                    <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="true" android:text="@string/main_gain_x1" />
+                                    <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/main_gain_x2" />
                                 </com.google.android.material.chip.ChipGroup>
 
                                 <TextView
@@ -664,9 +665,9 @@
                                     app:selectionRequired="true"
                                     app:singleSelection="true">
 
-                                    <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="true" android:text="Adulto" />
-                                    <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Niño" />
-                                    <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Neonato" />
+                                    <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="true" android:text="@string/main_nibp_mode_adult" />
+                                    <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/main_nibp_mode_child" />
+                                    <com.google.android.material.chip.Chip style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/main_nibp_mode_neonate" />
                                 </com.google.android.material.chip.ChipGroup>
 
                                 <com.google.android.material.textfield.TextInputLayout
@@ -693,6 +694,7 @@
                                         android:layout_height="wrap_content"
                                         android:inputType="number"
                                         android:singleLine="true"
+                                        tools:ignore="HardcodedText"
                                         android:text="1" />
                                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -705,6 +707,7 @@
                                         android:layout_height="wrap_content"
                                         android:inputType="number"
                                         android:singleLine="true"
+                                        tools:ignore="HardcodedText"
                                         android:text="2" />
                                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -717,6 +720,7 @@
                                         android:layout_height="wrap_content"
                                         android:inputType="number"
                                         android:singleLine="true"
+                                        tools:ignore="HardcodedText"
                                         android:text="3" />
                                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -732,7 +736,7 @@
                                         android:layout_height="wrap_content"
                                         android:inputType="text"
                                         android:singleLine="true"
-                                        android:text="USB Audio" />
+                                        android:text="@string/main_stetho_input_default" />
                                 </com.google.android.material.textfield.TextInputLayout>
 
                                 <com.google.android.material.textfield.TextInputLayout
@@ -744,7 +748,7 @@
                                         android:layout_height="wrap_content"
                                         android:inputType="text"
                                         android:singleLine="true"
-                                        android:text="H390" />
+                                        android:text="@string/main_headset_default" />
                                 </com.google.android.material.textfield.TextInputLayout>
 
                                 <TextView style="@style/FormTitle" android:layout_marginTop="16dp" android:text="@string/section_local" />
@@ -759,6 +763,7 @@
                                         android:layout_height="wrap_content"
                                         android:inputType="number"
                                         android:singleLine="true"
+                                        tools:ignore="HardcodedText"
                                         android:text="1515" />
                                 </com.google.android.material.textfield.TextInputLayout>
                             </LinearLayout>

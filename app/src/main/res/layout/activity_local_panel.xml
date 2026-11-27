@@ -170,18 +170,20 @@
                                         <TextView
                                             android:id="@+id/leadsII"
                                             style="@style/Panel.Segment"
-                                            android:text="II" />
+                                            android:text="@string/local_lead_ii" />
 
                                         <TextView
                                             android:id="@+id/leads3"
                                             style="@style/Panel.Segment"
                                             android:layout_marginStart="2dp"
+                                            tools:ignore="HardcodedText"
                                             android:text="3" />
 
                                         <TextView
                                             android:id="@+id/leads7"
                                             style="@style/Panel.Segment"
                                             android:layout_marginStart="2dp"
+                                            tools:ignore="HardcodedText"
                                             android:text="7" />
                                     </LinearLayout>
 
@@ -192,18 +194,20 @@
                                         <TextView
                                             android:id="@+id/speed12"
                                             style="@style/Panel.Segment"
-                                            android:text="12,5" />
+                                            android:text="@string/local_speed_12_5" />
 
                                         <TextView
                                             android:id="@+id/speed25"
                                             style="@style/Panel.Segment"
                                             android:layout_marginStart="2dp"
+                                            tools:ignore="HardcodedText"
                                             android:text="25" />
 
                                         <TextView
                                             android:id="@+id/speed50"
                                             style="@style/Panel.Segment"
                                             android:layout_marginStart="2dp"
+                                            tools:ignore="HardcodedText"
                                             android:text="50" />
                                     </LinearLayout>
 
@@ -219,18 +223,21 @@
                                         <TextView
                                             android:id="@+id/gain5"
                                             style="@style/Panel.Segment"
+                                            tools:ignore="HardcodedText"
                                             android:text="5" />
 
                                         <TextView
                                             android:id="@+id/gain10"
                                             style="@style/Panel.Segment"
                                             android:layout_marginStart="2dp"
+                                            tools:ignore="HardcodedText"
                                             android:text="10" />
 
                                         <TextView
                                             android:id="@+id/gain20"
                                             style="@style/Panel.Segment"
                                             android:layout_marginStart="2dp"
+                                            tools:ignore="HardcodedText"
                                             android:text="20" />
                                     </LinearLayout>
 
