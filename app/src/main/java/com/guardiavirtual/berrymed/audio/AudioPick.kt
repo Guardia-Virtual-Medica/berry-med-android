@@ -9,9 +9,8 @@ import com.guardiavirtual.berrymed.config.CALL_AUDIO_SPEAKER
  * regla se prueba sola.
  *
  * Suena por lo que esté enchufado en el jack de la tablet y, si no hay nada,
- * por el auricular USB H390 (ver [stethoOutput]). La videollamada con
- * Auriculares sigue el mismo orden y, como último respaldo, el parlante
- * ([callOutput]).
+ * por el auricular USB H390 (ver [stethoOutput]). La videollamada es más
+ * simple: el parlante o el jack ([callOutput]).
  *
  * Nunca se usa el micrófono ni el parlante por defecto: con el micrófono del
  * otoscopio y el del H390 enchufados, el "por defecto" puede ser cualquiera, y
@@ -81,17 +80,14 @@ object AudioPick {
     /**
      * Por dónde sale la videollamada, entre los dispositivos de comunicación
      * de Android (que incluyen los auriculares del jack mientras están
-     * enchufados). Con [choice] auriculares es la misma regla que el
-     * estetoscopio, [stethoOutput]: el jack de la tablet, si no el H390 y, si
-     * tampoco, el parlante: nunca se pierde el audio. Con parlante, el parlante
-     * aunque haya algo en el jack. Nunca el adaptador del estetoscopio, aunque
-     * sea el único USB: Chromium agrupa todo lo USB y, librado a sí mismo,
-     * puede sacar la llamada por ese jack.
+     * enchufados). Altavoz: el parlante de la tablet, siempre. Auricular: lo
+     * que esté enchufado en el jack y, si no hay nada, el parlante. Nada más:
+     * nunca un USB, ni el adaptador del estetoscopio.
      */
-    fun callOutput(devices: List<Device>, choice: String, headsetName: String): Device? {
+    fun callOutput(devices: List<Device>, choice: String): Device? {
         val speaker = devices.firstOrNull { it.type == TYPE_BUILTIN_SPEAKER }
         if (choice == CALL_AUDIO_SPEAKER) return speaker
-        return stethoOutput(devices, headsetName) ?: speaker
+        return devices.firstOrNull { it.isSink && isJack(it.type) } ?: speaker
     }
 
     private fun isHeadset(device: Device, headsetName: String): Boolean {

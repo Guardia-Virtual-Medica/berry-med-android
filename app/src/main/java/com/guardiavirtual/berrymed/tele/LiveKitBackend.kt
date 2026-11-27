@@ -15,7 +15,7 @@ import com.guardiavirtual.berrymed.otoscope.OtoscopePower
 import com.guardiavirtual.berrymed.otoscope.OtoscopeProbe
 import com.guardiavirtual.berrymed.otoscope.OtoscopeResolution
 import com.guardiavirtual.berrymed.otoscope.UvcOtoscopeFrames
-import com.guardiavirtual.berrymed.service.PanelPorts
+import com.guardiavirtual.berrymed.service.InstrumentPorts
 import com.guardiavirtual.berrymed.usb.YkushHub
 import io.livekit.android.AudioOptions
 import io.livekit.android.AudioType
@@ -50,21 +50,26 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.concurrent.thread
+import com.guardiavirtual.berrymed.audio.StethoDsp
 
 /**
  * La sala de LiveKit de verdad: el SDK, el otoscopio, el adaptador del
  * estetoscopio y el YKUSH3. Todo lo llama [TeleStreamer] desde su hilo.
  *
- * El audio es lo delicado: con Chrome en la llamada de Zoom, Berry Med no
- * puede tocar el `AudioManager` (ni modo, ni foco, ni ruteo) porque le rompe
- * el audio a Zoom. Por eso el manejador de audio del SDK es [NoAudioHandler],
- * el tipo de audio es el de medios (sin `MODE_IN_COMMUNICATION` ni el truco
- * del audio mudo que lo sostiene) y el módulo de audio de WebRTC lo arma acá:
- * fuente `UNPROCESSED` (o `MIC`), sin cancelación de eco ni supresión de
- * ruido por hardware, en mono a 48 kHz, con el adaptador como dispositivo
- * preferido y el filtro Amplio aplicado al buffer de captura antes de
- * codificar ([StethoStreamDsp]). La sala no se suscribe a nada: Berry Med no
- * reproduce nada.
+ * El audio: el modo de comunicación lo maneja [com.guardiavirtual.berrymed.audio.CallAudioRouter]
+ * (lo pone con el kiosco adelante, para la llamada del `WebView`), no
+ * LiveKit. Por eso el manejador de audio del SDK es [NoAudioHandler], el tipo
+ * de audio es el de medios (sin el truco del audio mudo que sostiene el modo)
+ * y el módulo de audio de WebRTC lo arma acá: fuente `UNPROCESSED` (o `MIC`),
+ * sin cancelación de eco ni supresión de ruido por hardware, en mono a 48 kHz,
+ * con el adaptador como dispositivo preferido y el filtro Amplio aplicado al
+ * buffer de captura antes de codificar ([StethoStreamDsp]). La captura de
+ * WebRTC (`WebRtcAudioRecord`) sólo usa `setPreferredDevice` y no escucha los
+ * cambios del dispositivo de comunicación: el modo comunicación no la reabre
+ * ni le cambia la entrada desde el código. Que Android respete el preferido
+ * en ese modo queda por confirmar en la tablet. La sala no se suscribe a
+ * nada: Berry Med no reproduce nada.
  */
 class LiveKitBackend(
     context: Context,
@@ -88,9 +93,13 @@ class LiveKitBackend(
         Thread(runnable, "berry-tele-uvc").apply { isDaemon = true }
     }
 
-    /** Lo que encendió la teleconsulta en el YKUSH3: sólo eso se apaga al terminar. */
-    private val otoscopePorts = PanelPorts()
-    private val stethoPorts = PanelPorts()
+    /**
+     * El puerto del YKUSH3 que se encendió para cada instrumento: se apaga al
+     * soltarlo. En reposo están apagados, así que lo que enciende la
+     * teleconsulta es siempre suyo. Sólo desde el hilo del streamer.
+     */
+    private var otoscopePort: Int? = null
+    private var stethoPort: Int? = null
 
     val dsp = StethoStreamDsp()
 
@@ -156,8 +165,8 @@ class LiveKitBackend(
         }
     }
 
-    override fun publish(instrument: Instrument): String? = when (instrument) {
-        Instrument.OTOSCOPE -> publishOtoscope()
+    override fun publish(instrument: Instrument, cancelled: () -> Boolean): String? = when (instrument) {
+        Instrument.OTOSCOPE -> publishOtoscope(cancelled)
         Instrument.STETHOSCOPE -> publishStethoscope()
     }
 
@@ -173,7 +182,7 @@ class LiveKitBackend(
         if (videoTrack != null || frames != null) releaseOtoscope()
         if (audioTrack != null) releaseStethoscope()
         // Un otoscopio que quedó esperando el permiso USB tiene el puerto encendido sin publicar.
-        powerOff(otoscopePorts, "otoscopio")
+        otoscopePort = powerOff(otoscopePort, "otoscopio")
         closing = true
         val old = room
         room = null
@@ -220,22 +229,26 @@ class LiveKitBackend(
             .createAudioDeviceModule()
     }
 
-    private fun publishOtoscope(): String? {
+    private fun publishOtoscope(cancelled: () -> Boolean): String? {
         val lk = room ?: return "No hay sala"
         val cfg = config()
-        // Con el kiosco adelante el puerto ya está encendido y powerOn no lo toca.
-        powerOn(cfg.ykushOtoscopePort, otoscopePorts, "otoscopio")
-        val path = waitForOtoscope() ?: run {
+        otoscopePort = cfg.ykushOtoscopePort
+        powerFor(cfg.ykushOtoscopePort, cfg.ykushStethoscopePort, "otoscopio")
+        val path = waitForOtoscope(cancelled) ?: run {
+            if (cancelled()) {
+                otoscopePort = powerOff(otoscopePort, "otoscopio")
+                return FirstFrame.CANCELLED
+            }
             val next = OtoscopePower.afterTimeout(portOff = true, usbPresent = probe.usbPresent(), usbReady = probe.usbReady())
             if (next == OtoscopePower.Timeout.ASK_PERMISSION) {
                 // Como el Panel Local: no se apaga el puerto y se pide de nuevo, con el pedido
                 // de Android que trae la casilla (OtoscopePermission). El próximo start_oth lo
-                // usa. Si el puerto lo encendió la teleconsulta, se apaga al cortar.
+                // usa. El puerto se apaga al cortar la sala.
                 log("[TELE] El otoscopio está enchufado pero sin permiso USB: se vuelve a pedir")
                 probe.askPermissionAgain()
                 return "Falta aceptar el permiso USB del otoscopio en la tablet"
             }
-            powerOff(otoscopePorts, "otoscopio")
+            otoscopePort = powerOff(otoscopePort, "otoscopio")
             return "El otoscopio no aparece ni como cámara ni por USB con permiso"
         }
         val source = when (path) {
@@ -277,17 +290,33 @@ class LiveKitBackend(
                 opened.countDown()
             },
         )
-        opened.await(OPEN_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        val openDeadline = System.nanoTime() + OPEN_TIMEOUT_MS * 1_000_000L
+        while (!opened.await(POLL_MS, TimeUnit.MILLISECONDS) && !cancelled() && System.nanoTime() < openDeadline) Unit
+        if (cancelled()) reason = FirstFrame.CANCELLED
         reason?.let {
             releaseOtoscope()
             return it
         }
-        // Una pista sin cuadros le llega al médico como video negro: se publica recién con imagen.
-        if (!firstFrame.await(FIRST_FRAME_TIMEOUT_MS)) {
-            log("[TELE] El otoscopio ${source.label} abrió pero no mandó ningún cuadro en ${FIRST_FRAME_TIMEOUT_MS / 1000} s: no se publica")
-            releaseOtoscope()
-            return FirstFrame.NO_IMAGE
+        // Una pista sin cuadros le llega al médico como video negro: se publica recién con imagen,
+        // que llega cuando alguien elige «Computer» en la pantalla del otoscopio.
+        val deadline = System.nanoTime() + FIRST_FRAME_TIMEOUT_MS * 1_000_000L
+        while (true) {
+            val arrived = firstFrame.await(POLL_MS)
+            when (FirstFrame.next(arrived, cancelled(), System.nanoTime(), deadline)) {
+                FirstFrame.Step.PUBLISH -> break
+                FirstFrame.Step.WAIT -> Unit
+                FirstFrame.Step.CANCELLED -> {
+                    releaseOtoscope()
+                    return FirstFrame.CANCELLED
+                }
+                FirstFrame.Step.NO_IMAGE -> {
+                    log("[TELE] El otoscopio ${source.label} abrió pero no mandó ningún cuadro en ${FIRST_FRAME_TIMEOUT_MS / 1000} s: no se publica")
+                    releaseOtoscope()
+                    return FirstFrame.NO_IMAGE
+                }
+            }
         }
+        log("[TELE] Llegó la imagen del otoscopio ${source.label}: se publica")
         val published = try {
             runBlocking {
                 lk.localParticipant.publishVideoTrack(
@@ -313,12 +342,12 @@ class LiveKitBackend(
         return null
     }
 
-    /** Espera el otoscopio con la misma regla que el Panel Local. null si no apareció. */
-    private fun waitForOtoscope(): OtoscopePower.Path? {
+    /** Espera el otoscopio con la misma regla que el Panel Local. null si no apareció o se cortó. */
+    private fun waitForOtoscope(cancelled: () -> Boolean): OtoscopePower.Path? {
         val power = OtoscopePower(OTOSCOPE_WAIT_NANOS, CAMERA2_GRACE_NANOS)
-        // El puerto ya lo manejó powerOn: acá sólo se espera.
+        // El puerto ya lo manejó powerFor: acá sólo se espera.
         power.switchOn(hubPresent = false, now = System.nanoTime())
-        while (true) {
+        while (!cancelled()) {
             when (val poll = power.poll(System.nanoTime(), probe.cameraSeen(), probe.usbReady())) {
                 OtoscopePower.Poll.Waiting -> Thread.sleep(POLL_MS)
                 OtoscopePower.Poll.Cancelled -> return null
@@ -326,6 +355,7 @@ class LiveKitBackend(
                 is OtoscopePower.Poll.TimedOut -> return null
             }
         }
+        return null
     }
 
     private fun releaseOtoscope() {
@@ -352,23 +382,48 @@ class LiveKitBackend(
         frames = null
         videoPath = null
         videoSize = null
-        powerOff(otoscopePorts, "otoscopio")
+        if (otoscopeStaysOn()) {
+            // Sigue en «Computer»: el próximo start_oth lo abre sin que nadie toque su pantalla.
+            // Se apaga al cerrar la sala (disconnect).
+            log("[TELE] El otoscopio queda con corriente para la próxima vez: Android no usa su micrófono")
+        } else {
+            otoscopePort = powerOff(otoscopePort, "otoscopio")
+        }
+    }
+
+    /**
+     * Si el otoscopio puede quedar encendido sin molestar: está enchufado y
+     * Android no lo tomó como placa de audio. Eso pasa sólo en una tablet con
+     * la guardia que le desautoriza las interfaces de audio; sin ella, su
+     * micrófono le saca el lugar al adaptador del estetoscopio y se lleva el
+     * micrófono de la videollamada, y hay que apagarlo como siempre.
+     */
+    private fun otoscopeStaysOn(): Boolean {
+        val name = probe.usbDevice()?.productName?.trim().orEmpty()
+        if (name.isEmpty()) return false
+        return try {
+            audio.getDevices(AudioManager.GET_DEVICES_INPUTS).none { it.productName?.toString().orEmpty().contains(name, ignoreCase = true) }
+        } catch (_: Exception) {
+            false
+        }
     }
 
     private fun publishStethoscope(): String? {
         val lk = room ?: return "No hay sala"
         val adm = module ?: return "No hay módulo de audio"
         val cfg = config()
-        val powered = powerOn(cfg.ykushStethoscopePort, stethoPorts, "estetoscopio")
+        stethoPort = cfg.ykushStethoscopePort
+        powerFor(cfg.ykushStethoscopePort, cfg.ykushOtoscopePort, "estetoscopio", keepOther = otoscopeStaysOn())
+        // Encender el puerto es enchufar el adaptador, y apagar el del otoscopio le devuelve
+        // su lugar de placa de audio: Android tarda un momento en verlo.
         var input = stethoInput(cfg)
-        // Encender el puerto es enchufar el adaptador: Android tarda un momento en verlo.
-        val deadline = System.nanoTime() + if (powered || input == null) STETHO_WAIT_NANOS else 0L
+        val deadline = System.nanoTime() + STETHO_WAIT_NANOS
         while (input == null && System.nanoTime() < deadline) {
             Thread.sleep(POLL_MS)
             input = stethoInput(cfg)
         }
         if (input == null) {
-            powerOff(stethoPorts, "estetoscopio")
+            stethoPort = powerOff(stethoPort, "estetoscopio")
             return "No aparece el adaptador del estetoscopio (\"${cfg.stethoInputName}\")"
         }
         adm.setPreferredInputDevice(input)
@@ -408,7 +463,40 @@ class LiveKitBackend(
         }
         val sourceName = if (audioSource == MediaRecorder.AudioSource.UNPROCESSED) "UNPROCESSED" else "MIC"
         log("[TELE] Estetoscopio por ${input.productName} ($sourceName, filtro Amplio, $AUDIO_BITRATE bps, sin DTX)")
+        watchStethoscope(track)
         return null
+    }
+
+    /**
+     * Mientras [track] siga publicada, deja en el registro cada 5 s el nivel
+     * que entra del estetoscopio y qué está grabando Android para Berry Med
+     * (el estetoscopio y el micrófono de la videollamada, de qué equipo y si
+     * los silencia): con eso se sabe desde la tablet si al médico le sale sonido.
+     */
+    private fun watchStethoscope(track: LocalAudioTrack) {
+        thread(name = "berry-tele-steth-log", isDaemon = true) {
+            var peak = 0
+            var ticks = 0
+            while (audioTrack === track) {
+                try {
+                    Thread.sleep(STETHO_LOG_TICK_MS)
+                } catch (_: InterruptedException) {
+                    return@thread
+                }
+                peak = maxOf(peak, StethoDsp.levelPercent(dsp.level))
+                if (++ticks < STETHO_LOG_TICKS) continue
+                val recording = try {
+                    audio.activeRecordingConfigurations.joinToString("; ") {
+                        "${it.audioDevice?.productName ?: "sin equipo"}${if (Build.VERSION.SDK_INT >= 29 && it.isClientSilenced) " (silenciada)" else ""}"
+                    }.ifEmpty { "nada" }
+                } catch (_: Exception) {
+                    "no se pudo leer"
+                }
+                if (audioTrack === track) log("[TELE] Estetoscopio: nivel máximo $peak % en ${STETHO_LOG_TICK_MS * STETHO_LOG_TICKS / 1000} s. Grabando: $recording")
+                peak = 0
+                ticks = 0
+            }
+        }
     }
 
     private fun releaseStethoscope() {
@@ -426,34 +514,33 @@ class LiveKitBackend(
             }
         }
         dsp.reset()
-        powerOff(stethoPorts, "estetoscopio")
+        stethoPort = powerOff(stethoPort, "estetoscopio")
     }
 
     /**
-     * Enciende [port] en el YKUSH3 si está apagado, con la regla del Panel
-     * Local: sólo se anota para apagar al final si se leyó apagado de verdad.
-     * Devuelve si encendió algo.
+     * Un solo equipo de audio USB a la vez ([InstrumentPorts]): apaga el puerto
+     * del otro instrumento si el hub no lo lee apagado (aunque no lo haya
+     * encendido la teleconsulta) y enciende el de [use].
      */
-    private fun powerOn(port: Int, owned: PanelPorts, what: String): Boolean {
-        if (!ykush.plugged()) return false
-        val states = ykush.readAll()
-        if (owned.toTurnOn(listOf(port), states).isEmpty()) return false
-        if (!ykush.setPort(port, true)) {
+    private fun powerFor(use: Int, other: Int, what: String, keepOther: Boolean = false) {
+        if (!ykush.plugged()) return
+        val steps = InstrumentPorts.forUse(use, other, config().ykushThermometerPort, ykush.readAll(), keepOther)
+        for (port in steps.off) {
+            if (ykush.setPort(port, false)) log("[TELE] Se apagó el puerto $port antes de encender el $what: un solo equipo de audio USB a la vez")
+        }
+        val port = steps.on ?: return
+        if (ykush.setPort(port, true)) {
+            log("[TELE] Puerto $port del $what encendido")
+        } else {
             log("[TELE] El YKUSH3 no encendió el puerto $port del $what: se espera igual")
-            return false
         }
-        if (!owned.claim(port, states.getOrNull(port - 1))) {
-            log("[TELE] No se pudo leer el puerto $port antes de encenderlo: queda encendido al terminar")
-        }
-        log("[TELE] Puerto $port del $what encendido")
-        return true
     }
 
-    private fun powerOff(owned: PanelPorts, what: String) {
-        val ports = owned.takeToTurnOff()
-        if (ports.isEmpty() || !ykush.plugged()) return
-        for (port in ports) ykush.setPort(port, false)
-        log("[TELE] Se apagó el puerto ${ports.joinToString(", ")} del $what, que había encendido la teleconsulta")
+    /** Apaga [port] si hay uno. Devuelve null, para olvidarlo en la misma línea. */
+    private fun powerOff(port: Int?, what: String): Int? {
+        if (port == null || !ykush.plugged()) return null
+        if (ykush.setPort(port, false)) log("[TELE] Se apagó el puerto $port del $what")
+        return null
     }
 
     /** Cuadros por segundo entregados desde la última vez que se preguntó. */
@@ -498,10 +585,16 @@ class LiveKitBackend(
         private const val CONNECT_TIMEOUT_MS = 20_000L
         private const val OPEN_TIMEOUT_MS = 15_000L
         private const val CLOSE_TIMEOUT_MS = 5_000L
-        private const val FIRST_FRAME_TIMEOUT_MS = 5_000L
+        /** Hay que dar tiempo a mirar el otoscopio, prenderlo y elegir «Computer» en su pantalla. */
+        private const val FIRST_FRAME_TIMEOUT_MS = 60_000L
         private const val POLL_MS = 250L
-        private const val OTOSCOPE_WAIT_NANOS = 8L * 1_000_000_000L
+        /** Como en el Panel Local: darle corriente no lo prende si se apagó solo; hay que apretar su botón y elegir «Computer». */
+        private const val OTOSCOPE_WAIT_NANOS = 60L * 1_000_000_000L
         private const val CAMERA2_GRACE_NANOS = 2L * 1_000_000_000L
         private const val STETHO_WAIT_NANOS = 5L * 1_000_000_000L
+
+        /** El nivel del estetoscopio se mira cada medio segundo y se anota el máximo cada 5 s. */
+        private const val STETHO_LOG_TICK_MS = 500L
+        private const val STETHO_LOG_TICKS = 10
     }
 }

@@ -89,7 +89,7 @@
     <string name="testing_ykush_help">Cada puerto lleva un equipo. Apagar un puerto es desenchufar ese equipo para Android; encenderlo, enchufarlo de nuevo. Con una consulta enviando no se cambia nada. Mientras estás en esta pantalla, Berry Med no lleva el hub al reposo: lo que encendés queda encendido hasta que salís, y al salir los puertos vuelven a lo que corresponda. El termómetro queda siempre encendido: si lo apagás, se vuelve a encender solo enseguida.</string>
     <string name="testing_ykush_read">Leer estado</string>
     <string name="testing_ykush_save_boot">Guardar este arranque en el hub</string>
-    <string name="testing_ykush_save_boot_help">Guarda en el hub el estado del kiosco (otoscopio, estetoscopio y termómetro encendidos), porque la tablet arranca en el kiosco, para los segundos entre que se prende y arranca el servicio. Queda en la memoria del hub: usarlo sólo al instalar o al cambiar de puerto un equipo.</string>
+    <string name="testing_ykush_save_boot_help">Guarda en el hub el reposo (otoscopio y estetoscopio apagados, termómetro encendido) para los segundos entre que se prende y arranca el servicio. Queda en la memoria del hub: usarlo sólo al instalar o al cambiar de puerto un equipo.</string>
     <string name="testing_on">Encender</string>
     <string name="testing_off">Apagar</string>
     <string name="testing_devices">Dispositivos que ve Android</string>
@@ -106,6 +106,8 @@
     <string name="kiosk_cancel">Cancelar</string>
     <string name="kiosk_enter">Entrar</string>
     <string name="kiosk_reload">Recargar</string>
+    <!-- El cartel arriba del kiosco mientras la teleconsulta espera la imagen del otoscopio. -->
+    <string name="kiosk_otoscope_waiting">Prendé el otoscopio y elegí «Computer» en su pantalla.</string>
     <string name="kiosk_offline">No se pudo abrir el kiosco. Sin conexión con el servidor. Se vuelve a intentar solo cuando haya red.</string>
     <string name="kiosk_retry">Reintentar</string>
     <string name="hint_kiosk_url">URL del kiosco</string>
@@ -119,7 +121,7 @@
     <string name="label_call_audio">Audio de la videollamada</string>
     <string name="call_audio_headset">Auriculares (jack de la tablet)</string>
     <string name="call_audio_speaker">Parlante de la tablet</string>
-    <string name="help_call_audio">Con Auriculares, la llamada y el estetoscopio salen por los auriculares enchufados en el jack de la tablet; un auricular USB, si hubiera uno, queda de respaldo. Con Parlante sólo la llamada va al parlante: el estetoscopio sigue por los auriculares.</string>
+    <string name="help_call_audio">Parlante: la videollamada suena por el parlante de la tablet. Auriculares: suena por los auriculares del jack y, si no hay nada enchufado, por el parlante.</string>
     <string name="section_kiosk_checklist">Puesta en marcha</string>
     <string name="help_kiosk_checklist">Verde, hecho; ámbar, falta; gris, Berry Med no lo puede ver ahora. Se actualiza al volver a esta pantalla.</string>
     <string name="check_permissions">Cámara y micrófono</string>
@@ -140,7 +142,7 @@
     <string name="check_otoscope_granted">El otoscopio está enchufado y Berry Med tiene su permiso USB.</string>
     <string name="check_otoscope_missing">El otoscopio está enchufado pero falta su permiso USB.</string>
     <string name="check_otoscope_absent">El otoscopio no está enchufado (su puerto está apagado): no se puede ver si tiene el permiso.</string>
-    <string name="check_otoscope_detail">Con el kiosco adelante su puerto queda encendido, así que alcanza con aceptar el permiso una vez marcando la casilla. El pedido es uno solo, el de Android; si se cerró sin aceptar, «Pedir permiso USB» lo hace aparecer de nuevo. Con el permiso de cámara dado, encendelo en Testing → Hub YKUSH3, aceptá el permiso marcando «Usar de forma predeterminada» y salí de Testing. Berry Med no puede saber si quedó marcada la casilla.</string>
+    <string name="check_otoscope_detail">Su puerto está apagado en reposo y lo enciende quien lo usa (la teleconsulta o el Panel Local), así que hay que aceptar el permiso una vez marcando la casilla. El pedido es uno solo, el de Android; si se cerró sin aceptar, «Pedir permiso USB» lo hace aparecer de nuevo. Con el permiso de cámara dado, encendelo en Testing → Hub YKUSH3, aceptá el permiso marcando «Usar de forma predeterminada» y salí de Testing. Berry Med no puede saber si quedó marcada la casilla.</string>
     <string name="check_otoscope_action">Abrir Testing</string>
     <string name="check_totem">Configurar el tótem en el kiosco</string>
     <string name="check_totem_detail">La primera vez el kiosco pide el identificador y la contraseña del tótem: Berry Med no usa la sesión de Chrome.</string>
@@ -272,6 +274,7 @@
     <string name="local_recording_pause">Parar la grabación %1$d</string>
     <string name="local_capture_back_live">Volver al vivo</string>
     <!-- El panel lateral de estado, en el kiosco y en el Panel Local. -->
+    <string name="status_volume">Volumen</string>
     <string name="status_close">Cerrar el panel de estado</string>
     <string name="status_open">Abrir el panel de estado</string>
     <string name="status_mode">Modo</string>

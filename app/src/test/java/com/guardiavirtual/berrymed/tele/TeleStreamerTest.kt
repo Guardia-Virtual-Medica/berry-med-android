@@ -15,6 +15,12 @@ class TeleStreamerTest {
         var connectError: String? = null
         var publishError: String? = null
 
+        /** Lo que hace la publicación mientras "espera": para simular un corte que llega de otro hilo. */
+        var duringPublish: (Instrument) -> Unit = {}
+        var sawWaitingImage = false
+        var sawCancelled = false
+        lateinit var streamer: TeleStreamer
+
         override fun blocked(instrument: Instrument): String? = blockedReason
 
         override fun connect(credentials: TeleCredentials): String? {
@@ -22,8 +28,12 @@ class TeleStreamerTest {
             return connectError
         }
 
-        override fun publish(instrument: Instrument): String? {
+        override fun publish(instrument: Instrument, cancelled: () -> Boolean): String? {
             calls += "publish ${instrument.label}"
+            sawWaitingImage = streamer.status.waitingImage
+            duringPublish(instrument)
+            sawCancelled = cancelled()
+            if (sawCancelled) return FirstFrame.CANCELLED
             return publishError
         }
 
@@ -39,7 +49,9 @@ class TeleStreamerTest {
     private var now = 1_000_000L
     private val backend = FakeBackend()
     private val logs = ArrayList<String>()
-    private val streamer = TeleStreamer(backend, log = { logs += it }, executor = { it.run() }, clock = { now })
+    private val streamer = TeleStreamer(backend, log = { logs += it }, executor = { it.run() }, clock = { now }).also {
+        backend.streamer = it
+    }
 
     /** Un JWT de mentira (sin firma válida): sólo importan la sala y el vencimiento. */
     private fun jwt(room: String): String {
@@ -257,12 +269,56 @@ class TeleStreamerTest {
     @Test
     fun anExceptionDoesNotEscapeAndReleasesEverything() {
         val failing = object : TeleBackend by backend {
-            override fun publish(instrument: Instrument): String? = throw IllegalStateException("roto")
+            override fun publish(instrument: Instrument, cancelled: () -> Boolean): String? = throw IllegalStateException("roto")
         }
         val streamer = TeleStreamer(failing, log = {}, executor = { it.run() }, clock = { now })
         streamer.onKioskToken(first)
         streamer.order(TeleOrder(Instrument.OTOSCOPE, true, "e1"))
         assertEquals(RoomState.ERROR, streamer.status.room)
         assertEquals("disconnect", backend.calls.last())
+    }
+
+    @Test
+    fun theOtoscopeWaitsForItsImageWithTheNoticeAndTheStethoscopeDoesNot() {
+        streamer.onKioskToken(first)
+        start(Instrument.OTOSCOPE)
+        assertTrue(backend.sawWaitingImage)
+        assertEquals(false, streamer.status.waitingImage)
+        assertEquals(Instrument.OTOSCOPE, streamer.status.instrument)
+        start(Instrument.STETHOSCOPE)
+        assertEquals(false, backend.sawWaitingImage)
+    }
+
+    @Test
+    fun aStopWhileWaitingCutsTheWaitAtOnce() {
+        streamer.onKioskToken(first)
+        // El stop llega mientras la publicación espera: corta antes de que le toque su turno.
+        backend.duringPublish = { stop(Instrument.OTOSCOPE) }
+        start(Instrument.OTOSCOPE)
+        assertTrue(backend.sawCancelled)
+        assertNull(streamer.status.instrument)
+        assertEquals(false, streamer.status.waitingImage)
+    }
+
+    @Test
+    fun theKioskBackHomeCutsTheWaitToo() {
+        streamer.onKioskToken(first)
+        backend.duringPublish = { streamer.onKioskHome() }
+        start(Instrument.OTOSCOPE)
+        assertTrue(backend.sawCancelled)
+    }
+
+    @Test
+    fun theSameStartAgainDoesNotCutTheWait() {
+        streamer.onKioskToken(first)
+        var again = true
+        backend.duringPublish = {
+            if (again) {
+                again = false
+                start(Instrument.OTOSCOPE)
+            }
+        }
+        start(Instrument.OTOSCOPE)
+        assertEquals(false, backend.sawCancelled)
     }
 }

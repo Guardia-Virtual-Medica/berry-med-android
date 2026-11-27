@@ -10,13 +10,14 @@ class BerryConfigTest {
     private val ready = BerryConfig(pusherKey = "clave", publicChannel = "totem.01")
 
     @Test
-    fun theCallSoundsThroughTheHeadsetUnlessTheSpeakerWasChosen() {
-        assertEquals(CALL_AUDIO_HEADSET, BerryConfig().callAudioOutput)
+    fun theCallSoundsThroughTheSpeakerUnlessTheHeadsetWasChosen() {
+        assertEquals(CALL_AUDIO_SPEAKER, BerryConfig().callAudioOutput)
         assertEquals(CALL_AUDIO_SPEAKER, callAudioOutputOrDefault(CALL_AUDIO_SPEAKER))
+        // Una tablet que ya guardó Auricular lo conserva.
         assertEquals(CALL_AUDIO_HEADSET, callAudioOutputOrDefault(CALL_AUDIO_HEADSET))
-        assertEquals(CALL_AUDIO_HEADSET, callAudioOutputOrDefault("bluetooth"))
-        assertEquals(CALL_AUDIO_HEADSET, callAudioOutputOrDefault(""))
-        assertEquals(CALL_AUDIO_HEADSET, callAudioOutputOrDefault(null))
+        assertEquals(CALL_AUDIO_SPEAKER, callAudioOutputOrDefault("bluetooth"))
+        assertEquals(CALL_AUDIO_SPEAKER, callAudioOutputOrDefault(""))
+        assertEquals(CALL_AUDIO_SPEAKER, callAudioOutputOrDefault(null))
     }
 
     @Test

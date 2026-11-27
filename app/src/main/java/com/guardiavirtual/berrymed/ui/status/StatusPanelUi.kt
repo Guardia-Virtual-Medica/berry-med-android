@@ -97,14 +97,13 @@ object StatusPanelUi {
     const val DISCONNECTED = "Desconectado"
     const val READY = "Listo"
     const val LIVE = "En vivo"
+    const val WAITING_IMAGE = "Esperando imagen"
     const val NO_HUB = "Sin hub"
     const val NO_PERMISSION = "Falta permiso"
     const val WIFI_CONNECTED = "Wi-Fi conectado"
 
     fun build(s: StatusSnapshot, mode: PanelMode): StatusPanelState {
-        // En Inicio, como en el Panel Local, el otoscopio y el estetoscopio están apagados en reposo:
-        // «Listo» y no el rojo del kiosco, donde tendrían que estar encendidos.
-        val rows = devices(s, localScreen = mode != PanelMode.REMOTE)
+        val rows = devices(s)
         val route = callRoute(s.callAudioChoice, s.jackPresent)
         return StatusPanelState(
             wifi = wifi(s.wifi, locationGranted = AppPermission.LOCATION !in s.appMissing),
@@ -116,7 +115,7 @@ object StatusPanelUi {
             countTone = countTone(rows),
             jackPresent = s.jackPresent,
             callRoute = route,
-            callHelp = callHelp(route, s.jackPresent),
+            callHelp = callHelp(route),
         )
     }
 
@@ -143,10 +142,9 @@ object StatusPanelUi {
 
     /**
      * Las siete filas: SpO2, ECG, Presión, Temperatura, Otoscopio, Estetoscopio
-     * y Hub USB. [localScreen] es estar en el Panel Local (también en su
-     * pantalla de espera, donde el modo local todavía no empezó) o en Inicio.
+     * y Hub USB. Iguales en todas las pantallas.
      */
-    fun devices(s: StatusSnapshot, localScreen: Boolean = s.localMode): List<DeviceRow> {
+    fun devices(s: StatusSnapshot): List<DeviceRow> {
         val local = s.local
         val berry = when {
             // Enchufada sin permiso no se abre: no es lo mismo que desenchufada.
@@ -170,8 +168,8 @@ object StatusPanelUi {
             row("ECG", ecg, StatusAction.USB_PERMISSION),
             row("Presión", berry, StatusAction.USB_PERMISSION),
             row("Temperatura", thermo, StatusAction.USB_PERMISSION),
-            otoscope(s, localScreen),
-            stethoscope(s, localScreen),
+            otoscope(s),
+            stethoscope(s),
             hub(s),
         )
     }
@@ -184,10 +182,13 @@ object StatusPanelUi {
         DeviceRow(name, state.first, state.second, action.takeIf { state.second == NO_PERMISSION })
 
     /**
-     * Sin el permiso USB del otoscopio, o sin el de la cámara de la app, no
-     * hay imagen: «Falta permiso», salvo que ya esté en vivo o encendiéndose.
+     * «En vivo» sólo con cuadros; abierto (en el Panel Local) o encendiéndose
+     * para la teleconsulta sin imagen todavía, «Esperando imagen», como el
+     * encabezado del Panel Local. Sin el permiso USB del otoscopio, o sin el
+     * de la cámara de la app, no hay imagen: «Falta permiso», salvo que ya
+     * esté en vivo o encendiéndose.
      */
-    private fun otoscope(s: StatusSnapshot, localScreen: Boolean): DeviceRow {
+    private fun otoscope(s: StatusSnapshot): DeviceRow {
         val state = s.local.otoscopeState
         val needs = when {
             UsbRole.OTOSCOPE in s.usbMissing -> StatusAction.OTOSCOPE_PERMISSION
@@ -195,38 +196,37 @@ object StatusPanelUi {
             else -> null
         }
         val pair = when {
-            state == OtoscopePower.State.ON -> Pair(StatusTone.OK, LIVE)
+            s.otoscopeImage -> Pair(StatusTone.OK, LIVE)
+            state == OtoscopePower.State.ON || s.otoscopeWaitingImage -> Pair(StatusTone.WARN, WAITING_IMAGE)
             state == OtoscopePower.State.POWERING_PORT || state == OtoscopePower.State.WAITING_CAMERA ->
                 Pair(StatusTone.WARN, CONNECTING)
             needs != null -> missing()
             s.local.otoscopePlugged -> Pair(StatusTone.OK, CONNECTED)
-            else -> unplugged(s, localScreen)
+            else -> unplugged(s)
         }
         return row("Otoscopio", pair, needs)
     }
 
     /** El estetoscopio es audio USB, sin permiso USB: lo que le puede faltar es el micrófono. */
-    private fun stethoscope(s: StatusSnapshot, localScreen: Boolean): DeviceRow {
+    private fun stethoscope(s: StatusSnapshot): DeviceRow {
         val pair = when {
             s.local.stethoRunning -> Pair(StatusTone.OK, LIVE)
             s.local.stethoStarting -> Pair(StatusTone.WARN, CONNECTING)
             AppPermission.MICROPHONE in s.appMissing -> missing()
             s.local.stethoPlugged -> Pair(StatusTone.OK, CONNECTED)
-            else -> unplugged(s, localScreen)
+            else -> unplugged(s)
         }
         return row("Estetoscopio", pair, StatusAction.MICROPHONE)
     }
 
     /**
-     * Otoscopio o estetoscopio sin enchufar: en Local con el YKUSH3 el puerto
-     * arranca apagado y se enciende al abrirlo, así que está «Listo», no en
-     * rojo. Sin YKUSH3, «Sin hub».
+     * Otoscopio o estetoscopio sin enchufar: en reposo su puerto está apagado
+     * (también con el kiosco) y se enciende al usarlo, así que con el YKUSH3
+     * está «Listo»: el hub está y el puerto se puede encender. Enchufado no se
+     * puede saber con el puerto apagado. Sin YKUSH3, «Sin hub».
      */
-    private fun unplugged(s: StatusSnapshot, localScreen: Boolean): Pair<StatusTone, String> = when {
-        !s.ykushPlugged -> Pair(StatusTone.BAD, NO_HUB)
-        localScreen || s.localMode -> Pair(StatusTone.OK, READY)
-        else -> Pair(StatusTone.BAD, DISCONNECTED)
-    }
+    private fun unplugged(s: StatusSnapshot): Pair<StatusTone, String> =
+        if (s.ykushPlugged) Pair(StatusTone.OK, READY) else Pair(StatusTone.BAD, NO_HUB)
 
     private fun hub(s: StatusSnapshot): DeviceRow = when {
         !s.ykushPlugged -> DeviceRow("Hub USB", StatusTone.BAD, DISCONNECTED)
@@ -248,15 +248,9 @@ object StatusPanelUi {
     fun callRoute(choice: String, jackPresent: Boolean): CallRoute =
         if (choice == CALL_AUDIO_SPEAKER || !jackPresent) CallRoute.SPEAKER else CallRoute.HEADSET
 
-    /**
-     * La ayuda debajo del segmentado de Sonido, igual en los dos modos.
-     * Altavoz mueve la llamada al parlante y al micrófono de la tablet, pero el
-     * estetoscopio sigue sólo en el auricular: por el parlante se acopla
-     * ([com.guardiavirtual.berrymed.audio.AudioPick.stethoOutput]).
-     */
-    fun callHelp(route: CallRoute, jackPresent: Boolean): String = when {
-        !jackPresent -> "Sin auricular en el jack: la llamada va por el altavoz y el estetoscopio no suena."
-        route == CallRoute.HEADSET -> "Todo suena por el auricular."
-        else -> "La llamada va por el altavoz y el micrófono de la tablet. El estetoscopio sigue en el auricular."
+    /** La ayuda debajo del segmentado de Sonido: una línea por opción, igual en todas las pantallas. */
+    fun callHelp(route: CallRoute): String = when (route) {
+        CallRoute.HEADSET -> "La videollamada suena por los auriculares."
+        CallRoute.SPEAKER -> "La videollamada suena por el parlante de la tablet."
     }
 }

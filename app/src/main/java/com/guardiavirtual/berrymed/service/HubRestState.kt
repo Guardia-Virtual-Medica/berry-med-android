@@ -5,26 +5,19 @@ import com.guardiavirtual.berrymed.config.BerryConfig
 import com.guardiavirtual.berrymed.config.YKUSH_PORTS
 
 /**
- * Cómo quedan los puertos del YKUSH3 cuando nadie los usa. Con el kiosco
- * adelante, otoscopio y estetoscopio encendidos, así Android los ve todo el
- * tiempo y el otoscopio no pierde su permiso USB: la teleconsulta los usa ya
- * encendidos. Encenderlos es sólo darles energía, no publica nada: la
- * transmisión sigue empezando con `start_oth`/`start_steth` y al cortar el
- * puerto queda encendido. Fuera del kiosco (configuración, Testing, Panel
- * Local, otra app) es el reposo: otoscopio y estetoscopio apagados, y el panel
- * los lee apagados, los enciende y los apaga al terminar. En los dos, el
- * termómetro siempre encendido, para que sus lecturas lleguen al Panel Local y
- * a la videollamada (plan 13). Sin Android, para probar la regla sola.
+ * Cómo quedan los puertos del YKUSH3 cuando nadie los usa, también con el
+ * kiosco adelante: otoscopio y estetoscopio apagados, termómetro encendido
+ * (sus lecturas llegan solas al Panel Local y a la videollamada). Quien usa el
+ * otoscopio o el estetoscopio (la teleconsulta, el Panel Local) enciende su
+ * puerto, apaga el del otro ([InstrumentPorts]) y lo apaga al terminar. Sin
+ * Android, para probar la regla sola.
  */
 object HubRestState {
-    /**
-     * El estado de cada puerto, desde el 1, con el kiosco adelante ([kiosk]) o
-     * no. Un puerto libre es null: no hay equipo, queda como está.
-     */
-    fun wanted(config: BerryConfig, kiosk: Boolean): List<Boolean?> = (1..YKUSH_PORTS).map { port ->
+    /** El estado de cada puerto, desde el 1. Un puerto libre es null: no hay equipo, queda como está. */
+    fun wanted(config: BerryConfig): List<Boolean?> = (1..YKUSH_PORTS).map { port ->
         when (port) {
             config.ykushThermometerPort -> true
-            config.ykushOtoscopePort, config.ykushStethoscopePort -> kiosk
+            config.ykushOtoscopePort, config.ykushStethoscopePort -> false
             else -> null
         }
     }
@@ -60,7 +53,7 @@ object HubRestState {
     /**
      * Si falta aplicar el estado: una vez por hub, porque cada conexión es un
      * `deviceId` nuevo y vuelve a arrancar como lo tenga guardado, y otra vez
-     * si se abrió o se dejó el kiosco o se apagó el termómetro desde Testing.
+     * si se cerró Testing o se apagó el termómetro desde ahí.
      * Mientras alguien usa un equipo se aplica sólo el encendido del
      * termómetro, también una vez por hub ([thermometerDue]); el resto queda
      * pendiente.
