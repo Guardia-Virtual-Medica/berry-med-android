@@ -3,6 +3,8 @@ package com.guardiavirtual.berrymed.ui.panel
 
 import com.guardiavirtual.berrymed.audio.StethoFilter
 import com.guardiavirtual.berrymed.audio.StethoRecording
+import com.guardiavirtual.berrymed.i18n.es
+import com.guardiavirtual.berrymed.i18n.panelFormatIn
 import com.guardiavirtual.berrymed.otoscope.OtoscopePower
 import com.guardiavirtual.berrymed.protocol.EcgInfo
 import com.guardiavirtual.berrymed.protocol.LiveFeed
@@ -19,6 +21,16 @@ import kotlin.test.assertTrue
 
 class PanelUiTest {
     private val zone = ZoneId.of("America/Argentina/Buenos_Aires")
+
+    /** Los formatos del español, leídos del diccionario como los arma la pantalla. */
+    private val format = panelFormatIn()
+
+    /** Un estado como se lee en español: el texto y su tono. */
+    private fun Status.read() = Pair(es(text), tone)
+    private fun shown(text: String, tone: Tone) = Pair(text, tone)
+
+    /** Un tile como se lee en español. */
+    private fun Tile.read() = Pair(enabled, status.read())
 
     private fun at(hour: Int, minute: Int): Long =
         LocalDateTime.of(2026, 10, 29, hour, minute).atZone(zone).toInstant().toEpochMilli()
@@ -73,24 +85,32 @@ class PanelUiTest {
         otoscopeState = otoscopeState,
     )
 
+    /** Una presión medida como se lee en español: valor, media y hora. */
+    private fun PressureCard.read(): Triple<String, String, String> {
+        this as PressureCard.Result
+        return Triple(value, mean, es(at))
+    }
+
     private fun build(s: LocalSnapshot, now: Long = at(10, 12), screen: ScreenState = ScreenState()) =
-        PanelUi().build(s, now, screen, zone)
+        PanelUi(format).build(s, now, screen, zone)
 
     @Test
     fun ecgSignal() {
-        assertEquals(Status("Señal buena", Tone.OK), PanelUi.signal(snapshot()))
-        assertEquals(Status("Señal débil", Tone.WARN), PanelUi.signal(snapshot(ecgInfo = EcgInfo(leadOff = false, weakSignal = true))))
+        assertEquals(shown("Señal buena", Tone.OK), PanelUi.signal(snapshot()).read())
+        assertEquals(shown("Señal débil", Tone.WARN), PanelUi.signal(snapshot(ecgInfo = EcgInfo(leadOff = false, weakSignal = true))).read())
         assertEquals(Tone.FAINT, PanelUi.signal(snapshot(ecgInfo = EcgInfo(leadOff = true))).tone)
-        assertEquals("Sin señal", PanelUi.signal(snapshot(ecgInfo = EcgInfo())).text)
-        assertEquals("Sin señal", PanelUi.signal(snapshot(lastDataAge = 7.0)).text)
-        assertEquals("Sin señal", PanelUi.signal(snapshot(berryUp = false)).text)
+        assertEquals("Sin señal", es(PanelUi.signal(snapshot(ecgInfo = EcgInfo())).text))
+        assertEquals("Sin señal", es(PanelUi.signal(snapshot(lastDataAge = 7.0)).text))
+        assertEquals("Sin señal", es(PanelUi.signal(snapshot(berryUp = false)).text))
     }
 
     @Test
     fun heartNoteTellsLooseElectrodesOrArrhythmia() {
-        assertEquals("", PanelUi.heartNote(snapshot()))
-        assertEquals("Electrodos sueltos", PanelUi.heartNote(snapshot(ecgInfo = EcgInfo(leadOff = true))))
-        assertEquals("taquicardia", PanelUi.heartNote(snapshot(ecgInfo = EcgInfo(leadOff = false, hrv = "taquicardia"))))
+        assertEquals("", es(PanelUi.heartNote(snapshot())))
+        assertEquals("Electrodos sueltos", es(PanelUi.heartNote(snapshot(ecgInfo = EcgInfo(leadOff = true)))))
+        assertEquals("taquicardia", es(PanelUi.heartNote(snapshot(ecgInfo = EcgInfo(leadOff = false, hrv = "taquicardia")))))
+        // Las reglas comparan el texto sin idioma: el panel lateral pregunta si son los electrodos sueltos.
+        assertEquals(PanelUi.LEADS_OFF, PanelUi.heartNote(snapshot(ecgInfo = EcgInfo(leadOff = true))))
     }
 
     @Test
@@ -100,10 +120,10 @@ class PanelUiTest {
             nibp = LiveFeed.NibpState(status = 0, cuffMmhg = 0),
             nibpAtMillis = at(10, 7),
         )
-        assertEquals(PressureCard.Result("120/80", "(93)", "10:07 · hace 5 min"), build(s).pressure)
-        assertEquals(PressureCard.Result("120/80", "(93)", "10:07 · recién"), build(s, now = at(10, 7)).pressure)
+        assertEquals(Triple("120/80", "(93)", "10:07 · hace 5 min"), build(s).pressure.read())
+        assertEquals(Triple("120/80", "(93)", "10:07 · recién"), build(s, now = at(10, 7)).pressure.read())
         // Una presión de antes de abrir el panel, sin hora conocida.
-        assertEquals(PressureCard.Result("120/80", "(93)", ""), build(s.copy(nibpAtMillis = null)).pressure)
+        assertEquals(Triple("120/80", "(93)", ""), build(s.copy(nibpAtMillis = null)).pressure.read())
     }
 
     @Test
@@ -132,7 +152,7 @@ class PanelUiTest {
         val looseCuff = LiveFeed.NibpState(status = 0x4 shl 2, cuffMmhg = 0)
         assertEquals(PressureCard.Empty, build(snapshot(nibp = looseCuff, nibpAsked = false)).pressure)
         // Con Medir, la de ahora se ve como siempre.
-        assertEquals(PressureCard.Result("120/80", "(93)", "10:07 · hace 5 min"), build(before.copy(nibpAsked = true)).pressure)
+        assertEquals(Triple("120/80", "(93)", "10:07 · hace 5 min"), build(before.copy(nibpAsked = true)).pressure.read())
     }
 
     @Test
@@ -157,6 +177,7 @@ class PanelUiTest {
         card as PressureCard.Measuring
         assertEquals("129", card.cuff)
         assertEquals(PanelUi.MEASURING, card.phase)
+        assertEquals("Midiendo…", es(card.phase))
         assertEquals(129f / 175f, card.progress, 0.001f)
         val over = build(snapshot(nibpRunning = true, nibp = LiveFeed.NibpState(status = 4, cuffMmhg = 200))).pressure
         assertEquals(1f, (over as PressureCard.Measuring).progress)
@@ -166,65 +187,72 @@ class PanelUiTest {
 
     @Test
     fun phaseInflatesWhileRisingAndMeasuresWhileFalling() {
-        val ui = PanelUi()
+        val ui = PanelUi(format)
         assertEquals(PanelUi.MEASURING, ui.phase(true, 0))
         assertEquals(PanelUi.MEASURING, ui.phase(true, 20))
         assertEquals(PanelUi.INFLATING, ui.phase(true, 60))
-        assertEquals(PanelUi.INFLATING, ui.phase(true, 60))
+        assertEquals("Inflando…", es(ui.phase(true, 60)))
         assertEquals(PanelUi.INFLATING, ui.phase(true, 170))
         assertEquals(PanelUi.MEASURING, ui.phase(true, 160))
         assertEquals(PanelUi.MEASURING, ui.phase(true, 160))
-        assertEquals("", ui.phase(false, 0))
+        assertEquals("", es(ui.phase(false, 0)))
         // La medición siguiente arranca sin el valor de la anterior.
         assertEquals(PanelUi.MEASURING, ui.phase(true, 150))
     }
 
     @Test
     fun temperatureCard() {
-        assertEquals(TempCard.Disconnected, PanelUi.temperature(snapshot(), zone))
+        assertEquals(TempCard.Disconnected, PanelUi.temperature(snapshot(), format, zone))
         // Desconectado manda aunque haya quedado una lectura.
-        assertEquals(TempCard.Disconnected, PanelUi.temperature(snapshot(thermoReading = "36.6"), zone))
-        assertEquals(TempCard.Waiting, PanelUi.temperature(snapshot(thermoConnected = true), zone))
-        assertEquals(TempCard.Waiting, PanelUi.temperature(snapshot(thermoConnected = true, thermoReading = "-"), zone))
-        assertEquals(
-            TempCard.Reading("36,6", "IR · 10:12"),
-            PanelUi.temperature(snapshot(thermoConnected = true, thermoReading = "36.6", thermoAtMillis = at(10, 12)), zone),
-        )
+        assertEquals(TempCard.Disconnected, PanelUi.temperature(snapshot(thermoReading = "36.6"), format, zone))
+        assertEquals(TempCard.Waiting, PanelUi.temperature(snapshot(thermoConnected = true), format, zone))
+        assertEquals(TempCard.Waiting, PanelUi.temperature(snapshot(thermoConnected = true, thermoReading = "-"), format, zone))
+        val reading = PanelUi.temperature(snapshot(thermoConnected = true, thermoReading = "36.6", thermoAtMillis = at(10, 12)), format, zone)
+        reading as TempCard.Reading
+        assertEquals(Pair("36,6", "IR · 10:12"), Pair(reading.value, es(reading.at)))
+        val noTime = PanelUi.temperature(snapshot(thermoConnected = true, thermoReading = "36.6"), format, zone) as TempCard.Reading
+        assertEquals("IR", es(noTime.at))
     }
 
     @Test
     fun dockTilesWithoutHardwareSayDisconnectedAndDoNotOpen() {
         val state = build(snapshot(), screen = ScreenState(camera = CameraState.LIVE))
-        assertEquals(Tile(false, Status("desconectado", Tone.FAINT)), state.otoscopeTile)
-        assertEquals(Tile(false, Status("desconectado", Tone.FAINT)), state.stethoscopeTile)
-        assertEquals(Tile(true, Status("Lista", Tone.MUTED)), state.cameraTile)
+        assertEquals(Pair(false, shown("desconectado", Tone.FAINT)), state.otoscopeTile.read())
+        assertEquals(Pair(false, shown("desconectado", Tone.FAINT)), state.stethoscopeTile.read())
+        assertEquals(Pair(true, shown("Lista", Tone.MUTED)), state.cameraTile.read())
         val noCamera = build(snapshot(), screen = ScreenState(camera = CameraState.MISSING))
-        assertEquals(Tile(false, Status("desconectado", Tone.FAINT)), noCamera.cameraTile)
+        assertEquals(Pair(false, shown("desconectado", Tone.FAINT)), noCamera.cameraTile.read())
     }
 
     @Test
     fun dockTilesWithHardware() {
         val off = build(snapshot(otoscopeAvailable = true, stethoAvailable = true))
         assertTrue(off.otoscopeTile.enabled)
-        assertEquals("Apagado", off.otoscopeTile.status.text)
-        assertEquals(Status("Conectado", Tone.MUTED), off.stethoscopeTile.status)
+        assertEquals("Apagado", es(off.otoscopeTile.status.text))
+        assertEquals(shown("Conectado", Tone.MUTED), off.stethoscopeTile.status.read())
         val on = build(
             snapshot(otoscopeAvailable = true, otoscopeState = OtoscopePower.State.ON, stethoAvailable = true, stethoRunning = true),
-            screen = ScreenState(otoscopeLabel = "por UVC", camera = CameraState.PAUSED),
+            screen = ScreenState(otoscopePath = OtoscopePower.Path.UVC, camera = CameraState.PAUSED),
         )
         // Abierto y sin cuadros todavía (falta elegir «Computer» en el otoscopio): no dice "En vivo".
-        assertEquals(Status("Esperando imagen", Tone.WARN), on.otoscopeTile.status)
-        assertEquals(Status("Esperando imagen", Tone.WARN), on.otoscopeStatus)
+        assertEquals(shown("Esperando imagen", Tone.WARN), on.otoscopeTile.status.read())
+        assertEquals(shown("Esperando imagen", Tone.WARN), on.otoscopeStatus.read())
         val measured = build(
             snapshot(otoscopeAvailable = true, otoscopeState = OtoscopePower.State.ON),
-            screen = ScreenState(otoscopeLabel = "por UVC", otoscopeFps = 29),
+            screen = ScreenState(otoscopePath = OtoscopePower.Path.UVC, otoscopeFps = 29),
         )
-        assertEquals(Status("En vivo · UVC · 29 cuadros/s", Tone.OK), measured.otoscopeStatus)
-        assertEquals(Status("En vivo", Tone.OK), measured.otoscopeTile.status)
-        assertEquals(Status("Escuchando", Tone.OK), on.stethoscopeTile.status)
-        assertEquals(Status("En pausa", Tone.WARN), on.cameraTile.status)
+        assertEquals(shown("En vivo · UVC · 29 cuadros/s", Tone.OK), measured.otoscopeStatus.read())
+        assertEquals(shown("En vivo", Tone.OK), measured.otoscopeTile.status.read())
+        assertEquals(shown("Escuchando", Tone.OK), on.stethoscopeTile.status.read())
+        assertEquals(shown("En pausa", Tone.WARN), on.cameraTile.status.read())
+        // Por Camera2, el mismo texto con su nombre.
+        val camera2 = build(
+            snapshot(otoscopeAvailable = true, otoscopeState = OtoscopePower.State.ON),
+            screen = ScreenState(otoscopePath = OtoscopePower.Path.CAMERA2, otoscopeFps = 30),
+        )
+        assertEquals(shown("En vivo · Camera2 · 30 cuadros/s", Tone.OK), camera2.otoscopeStatus.read())
         val waiting = build(snapshot(otoscopeAvailable = true, otoscopeState = OtoscopePower.State.WAITING_CAMERA))
-        assertEquals(Status("Conectando", Tone.WARN), waiting.otoscopeTile.status)
+        assertEquals(shown("Conectando", Tone.WARN), waiting.otoscopeTile.status.read())
     }
 
     @Test
@@ -236,8 +264,8 @@ class PanelUiTest {
 
     @Test
     fun cameraHeaderSaysWhichLens() {
-        assertEquals("En vivo · trasera", PanelUi.cameraStatus(ScreenState(camera = CameraState.LIVE)).text)
-        assertEquals("En vivo · frontal", PanelUi.cameraStatus(ScreenState(camera = CameraState.LIVE, cameraFront = true)).text)
+        assertEquals("En vivo · trasera", es(PanelUi.cameraStatus(ScreenState(camera = CameraState.LIVE)).text))
+        assertEquals("En vivo · frontal", es(PanelUi.cameraStatus(ScreenState(camera = CameraState.LIVE, cameraFront = true)).text))
     }
 
     @Test
@@ -261,7 +289,7 @@ class PanelUiTest {
         assertEquals(0.5f, PanelUi.gainFactor(5f))
         assertEquals(1f, PanelUi.gainFactor(EcgPaperView.MM_PER_MV))
         assertEquals(2f, PanelUi.gainFactor(20f))
-        assertEquals(listOf("12,5", "25", "50"), PanelUi.SPEEDS.map(PanelUi::speedLabel))
+        assertEquals(listOf("12,5", "25", "50"), PanelUi.SPEEDS.map { PanelUi.speedLabel(it, format) })
         // 100 mm de pantalla: 8 s a 12,5 mm/s, 4 s a 25 y 2 s a 50, a 250 muestras por segundo.
         val samples = PanelUi.SPEEDS.map { SweepTrace.samplesPerScreen(1000f, 10f, it, 250f) }
         assertEquals(listOf(2000, 1000, 500), samples)
@@ -305,8 +333,8 @@ class PanelUiTest {
         assertEquals(1, PanelUi.recordingRemaining(14.2))
         assertEquals(0, PanelUi.recordingRemaining(15.0))
         val state = build(s)
-        assertEquals(Status("Grabando", Tone.RECORDING), state.stethoscopeStatus)
-        assertEquals(Status("Grabando · 13 s", Tone.RECORDING), state.stethoscopeTile.status)
+        assertEquals(shown("Grabando", Tone.RECORDING), state.stethoscopeStatus.read())
+        assertEquals(shown("Grabando · 13 s", Tone.RECORDING), state.stethoscopeTile.status.read())
     }
 
     @Test
@@ -325,7 +353,7 @@ class PanelUiTest {
         )
         assertTrue(build(snapshot()).recordings.isEmpty())
         val replaying = build(snapshot(stethoAvailable = true, stethoRecordings = list, stethoReplaying = 2))
-        assertEquals(Status("Reproduciendo", Tone.OK), replaying.stethoscopeStatus)
+        assertEquals(shown("Reproduciendo", Tone.OK), replaying.stethoscopeStatus.read())
     }
 
     @Test

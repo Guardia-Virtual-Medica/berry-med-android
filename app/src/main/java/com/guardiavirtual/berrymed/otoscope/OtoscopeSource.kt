@@ -10,8 +10,11 @@ import livekit.org.webrtc.VideoFrame
  * si no, por UVC directo sobre USB ([UvcOtoscope]). La tarjeta es la misma.
  */
 interface OtoscopeSource {
-    /** Lo que dice la tarjeta: "por Camera2" o "por UVC". */
+    /** Para el log y la teleconsulta: "por Camera2" o "por UVC". */
     val label: String
+
+    /** El camino, como dato: lo que muestra el Panel Local («En vivo · UVC · 29 cuadros/s»). */
+    val path: OtoscopePower.Path
 
     /**
      * Abre la imagen en la tarjeta. [done] llega en el hilo de la pantalla:

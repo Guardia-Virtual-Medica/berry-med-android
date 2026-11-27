@@ -1,9 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package com.guardiavirtual.berrymed.ui.panel
 
+import com.guardiavirtual.berrymed.R
 import com.guardiavirtual.berrymed.audio.StethoDsp
 import com.guardiavirtual.berrymed.audio.StethoFilter
 import com.guardiavirtual.berrymed.audio.StethoRecorder
+import com.guardiavirtual.berrymed.i18n.Txt
+import com.guardiavirtual.berrymed.i18n.raw
+import com.guardiavirtual.berrymed.i18n.txt
 import com.guardiavirtual.berrymed.otoscope.OtoscopePower
 import com.guardiavirtual.berrymed.protocol.Pm6750Protocol
 import com.guardiavirtual.berrymed.service.LocalSnapshot
@@ -23,7 +27,7 @@ enum class Link { CONNECTED, CONNECTING, DISCONNECTED }
  */
 enum class Tone { OK, WARN, MUTED, FAINT, RECORDING }
 
-data class Status(val text: String, val tone: Tone)
+data class Status(val text: Txt, val tone: Tone)
 
 /** Las derivaciones a la vista: la II sola, las tres de los miembros o las siete. */
 enum class EcgLeads(val label: String, val leads: List<String>) {
@@ -38,10 +42,10 @@ sealed interface PressureCard {
     data object Empty : PressureCard
 
     /** "120/80", la media "(93)" y "10:07 · hace 4 min" (vacío si no se sabe la hora). */
-    data class Result(val value: String, val mean: String, val at: String) : PressureCard
+    data class Result(val value: String, val mean: String, val at: Txt) : PressureCard
 
     /** La presión del manguito en vivo, la fase y la barra, de 0 a 1. */
-    data class Measuring(val cuff: String, val phase: String, val progress: Float) : PressureCard
+    data class Measuring(val cuff: String, val phase: Txt, val progress: Float) : PressureCard
 
     /** Terminó sin presión: manguito flojo, demoró o se canceló. */
     data object NoResult : PressureCard
@@ -55,7 +59,7 @@ sealed interface TempCard {
     data object Waiting : TempCard
 
     /** "36,6" y "IR · 10:12". */
-    data class Reading(val value: String, val at: String) : TempCard
+    data class Reading(val value: String, val at: Txt) : TempCard
 }
 
 /** Un tile del dock: si se puede abrir y qué dice debajo del nombre. */
@@ -112,8 +116,8 @@ data class RecordingRow(val number: Int, val filter: StethoFilter, val at: Strin
 
 /** Lo que sabe la pantalla y no el runtime. */
 data class ScreenState(
-    /** La imagen del otoscopio abierta, con su camino ("por UVC"), o null si no hay. */
-    val otoscopeLabel: String? = null,
+    /** El camino de la imagen del otoscopio abierta (UVC o Camera2), o null si no hay. */
+    val otoscopePath: OtoscopePower.Path? = null,
     /** Los cuadros por segundo del otoscopio en el último segundo, redondeados; null mientras no se midieron. */
     val otoscopeFps: Int? = null,
     val camera: CameraState = CameraState.STARTING,
@@ -125,8 +129,8 @@ data class ScreenState(
 data class PanelState(
     val signal: Status,
     val heartRate: String,
-    /** Debajo de la FC: electrodos sueltos o el código de arritmia; vacío si no hay nada que decir. */
-    val heartNote: String,
+    /** Debajo de la FC: electrodos sueltos o la arritmia; vacío si no hay nada que decir. */
+    val heartNote: Txt,
     val saturation: String,
     val pulse: String,
     val respiration: String,
@@ -149,8 +153,9 @@ data class PanelState(
  * el runtime, la hora y lo que sabe la pantalla, dice qué mostrar. La
  * actividad sólo lo aplica a las vistas. Guarda una sola cosa entre
  * refrescos: la presión anterior del manguito, para saber si infla o mide.
+ * Los números salen con los formatos del idioma de los textos ([format]).
  */
-class PanelUi {
+class PanelUi(private val format: PanelFormat) {
     private var lastCuff: Int? = null
     private var inflating = false
 
@@ -160,19 +165,19 @@ class PanelUi {
         screen: ScreenState,
         zone: ZoneId = ZoneId.systemDefault(),
     ): PanelState {
-        val (saturation, pulse) = PanelFormat.pair(s.vitals.spo2Pulse)
-        val otoscopeStatus = otoscopeStatus(s, screen.otoscopeLabel, screen.otoscopeFps)
+        val (saturation, pulse) = format.pair(s.vitals.spo2Pulse)
+        val otoscopeStatus = otoscopeStatus(s, screen.otoscopePath, screen.otoscopeFps)
         val stethoscopeStatus = stethoscopeStatus(s)
         return PanelState(
             signal = signal(s),
-            heartRate = PanelFormat.value(s.vitals.heartRate),
+            heartRate = format.value(s.vitals.heartRate),
             heartNote = heartNote(s),
             saturation = PanelFormat.percent(saturation),
             pulse = pulse,
-            respiration = PanelFormat.value(s.vitals.respRate),
+            respiration = format.value(s.vitals.respRate),
             pressure = pressure(s, nowMillis, zone),
             canMeasure = s.berryUp && !s.nibpRunning,
-            temperature = temperature(s, zone),
+            temperature = temperature(s, format, zone),
             otoscopeTile = Tile(
                 enabled = s.otoscopeAvailable || screen.openDevice == PanelDevice.OTOSCOPE,
                 status = if (otoscopeStatus.tone == Tone.OK) LIVE else otoscopeStatus,
@@ -192,11 +197,11 @@ class PanelUi {
     }
 
     /** "Inflando…" mientras la presión sube y "Midiendo…" cuando baja; sin dato, "Midiendo…". */
-    fun phase(running: Boolean, cuff: Int): String {
+    fun phase(running: Boolean, cuff: Int): Txt {
         if (!running) {
             lastCuff = null
             inflating = false
-            return ""
+            return NOTHING
         }
         val previous = lastCuff
         if (cuff > 0) {
@@ -219,22 +224,25 @@ class PanelUi {
                 progress = (cuff / CUFF_FULL_MMHG).coerceIn(0f, 1f),
             )
         }
-        val value = PanelFormat.pressure(s.vitals.nibp)
+        val value = format.pressure(s.vitals.nibp)
         // nibp arranca en status -1 cada vez que se abre el panel. Si después llegó algún
         // status y no hay presión, la medición terminó sin resultado: con un final de error
         // de la plaqueta o cortada por Cancelar o por el tope de tiempo.
         if (value == PanelFormat.NONE) return if (s.nibp.status >= 0) PressureCard.NoResult else PressureCard.Empty
-        val mean = PanelFormat.meanPressure(s.vitals.nibp)?.let { "($it)" }.orEmpty()
-        val at = s.nibpAtMillis?.let { "${PanelFormat.clock(it, zone)} · ${PanelFormat.ago(nowMillis, it)}" }.orEmpty()
+        val mean = format.meanPressure(s.vitals.nibp)?.let { "($it)" }.orEmpty()
+        val at = s.nibpAtMillis?.let { txt(R.string.local_pa_at, PanelFormat.clock(it, zone), PanelFormat.ago(nowMillis, it)) } ?: NOTHING
         return PressureCard.Result(value, mean, at)
     }
 
     companion object {
-        const val INFLATING = "Inflando…"
+        val INFLATING = txt(R.string.local_pa_inflating)
 
-        /** La nota de la FC con los electrodos sueltos; el panel lateral la usa en la fila del ECG. */
-        const val LEADS_OFF = "Electrodos sueltos"
-        const val MEASURING = "Midiendo…"
+        /** La nota de la FC con los electrodos sueltos; el panel lateral la compara para la fila del ECG. */
+        val LEADS_OFF = txt(R.string.local_leads_off)
+        val MEASURING = txt(R.string.local_pa_deflating)
+
+        /** Nada que decir: la nota de la FC sin arritmia, la fase sin medición, la hora que no se sabe. */
+        val NOTHING = raw("")
 
         /** La barra de la presión se llena a 175 mmHg, más o menos donde para de inflar. */
         const val CUFF_FULL_MMHG = 175f
@@ -263,14 +271,14 @@ class PanelUi {
         fun lockMessage(sessionActive: Boolean, pinNotice: String, sessionNotice: String): String =
             if (sessionActive) sessionNotice else pinNotice
 
-        private val LIVE = Status("En vivo", Tone.OK)
-        private val CONNECTING = Status("Conectando", Tone.WARN)
-        private val CONNECTED = Status("Conectado", Tone.MUTED)
-        private val DISCONNECTED = Status("desconectado", Tone.FAINT)
+        private val LIVE = Status(txt(R.string.local_status_live), Tone.OK)
+        private val CONNECTING = Status(txt(R.string.local_status_connecting), Tone.WARN)
+        private val CONNECTED = Status(txt(R.string.local_status_connected), Tone.MUTED)
+        private val DISCONNECTED = Status(txt(R.string.local_status_disconnected), Tone.FAINT)
+        private val PAUSED = Status(txt(R.string.local_status_paused), Tone.WARN)
 
-        /** El segmento de la velocidad: "12,5", "25", "50". */
-        fun speedLabel(mmPerSecond: Float): String =
-            if (mmPerSecond % 1f == 0f) mmPerSecond.toInt().toString() else mmPerSecond.toString().replace('.', ',')
+        /** El segmento de la velocidad: "12,5", "25", "50", con el separador decimal del idioma. */
+        fun speedLabel(mmPerSecond: Float, format: PanelFormat): String = format.number(mmPerSecond)
 
         /** La ganancia en mm/mV como factor sobre la de 10 mm/mV: 5 es x0,5 y 20 es x2. */
         fun gainFactor(mmPerMv: Float): Float = mmPerMv / DEFAULT_GAIN
@@ -327,21 +335,21 @@ class PanelUi {
 
         /** La señal del ECG: sin datos o con los electrodos sueltos no hay señal. */
         fun signal(s: LocalSnapshot): Status = when {
-            !berryLive(s) || s.ecgInfo.leadOff != false -> Status("Sin señal", Tone.FAINT)
-            s.ecgInfo.weakSignal == true -> Status("Señal débil", Tone.WARN)
-            else -> Status("Señal buena", Tone.OK)
+            !berryLive(s) || s.ecgInfo.leadOff != false -> Status(txt(R.string.local_signal_none), Tone.FAINT)
+            s.ecgInfo.weakSignal == true -> Status(txt(R.string.local_signal_weak), Tone.WARN)
+            else -> Status(txt(R.string.local_signal_good), Tone.OK)
         }
 
-        fun heartNote(s: LocalSnapshot): String = when {
+        fun heartNote(s: LocalSnapshot): Txt = when {
             s.ecgInfo.leadOff == true -> LEADS_OFF
-            else -> PanelFormat.arrhythmia(s.ecgInfo.hrv).orEmpty()
+            else -> PanelFormat.arrhythmia(s.ecgInfo.hrv) ?: NOTHING
         }
 
-        fun temperature(s: LocalSnapshot, zone: ZoneId = ZoneId.systemDefault()): TempCard {
+        fun temperature(s: LocalSnapshot, format: PanelFormat, zone: ZoneId = ZoneId.systemDefault()): TempCard {
             if (!s.thermoConnected) return TempCard.Disconnected
-            val value = PanelFormat.value(s.thermoReading)
+            val value = format.value(s.thermoReading)
             if (value == PanelFormat.NONE) return TempCard.Waiting
-            val at = s.thermoAtMillis?.let { "IR · ${PanelFormat.clock(it, zone)}" } ?: "IR"
+            val at = s.thermoAtMillis?.let { txt(R.string.local_temp_at, PanelFormat.clock(it, zone)) } ?: txt(R.string.local_temp_source)
             return TempCard.Reading(value, at)
         }
 
@@ -351,24 +359,30 @@ class PanelUi {
          * pantalla), y "En vivo · UVC · 29 cuadros/s" desde que se midió el
          * primer segundo de imagen.
          */
-        fun otoscopeStatus(s: LocalSnapshot, label: String?, fps: Int? = null): Status = when (s.otoscopeState) {
+        fun otoscopeStatus(s: LocalSnapshot, path: OtoscopePower.Path?, fps: Int? = null): Status = when (s.otoscopeState) {
             OtoscopePower.State.POWERING_PORT, OtoscopePower.State.WAITING_CAMERA -> CONNECTING
-            OtoscopePower.State.POWERING_OFF -> Status("Apagando…", Tone.MUTED)
+            OtoscopePower.State.POWERING_OFF -> Status(txt(R.string.local_status_powering_off), Tone.MUTED)
             OtoscopePower.State.ON -> when {
-                label == null -> CONNECTING
+                path == null -> CONNECTING
                 fps == null -> WAITING_IMAGE
-                else -> Status("En vivo · ${label.removePrefix("por ")} · $fps cuadros/s", Tone.OK)
+                else -> Status(txt(R.string.local_status_otoscope_live, pathName(path), fps), Tone.OK)
             }
-            OtoscopePower.State.OFF -> if (s.otoscopeAvailable) Status("Apagado", Tone.MUTED) else DISCONNECTED
+            OtoscopePower.State.OFF -> if (s.otoscopeAvailable) Status(txt(R.string.local_status_off), Tone.MUTED) else DISCONNECTED
+        }
+
+        /** El nombre fijo del camino de la imagen: «UVC» o «Camera2». */
+        private fun pathName(path: OtoscopePower.Path): Txt = when (path) {
+            OtoscopePower.Path.UVC -> txt(R.string.local_otoscope_path_uvc)
+            OtoscopePower.Path.CAMERA2 -> txt(R.string.local_otoscope_path_camera2)
         }
 
         /** El otoscopio abrió pero todavía no llegó ningún cuadro. */
-        val WAITING_IMAGE = Status("Esperando imagen", Tone.WARN)
+        val WAITING_IMAGE = Status(txt(R.string.local_status_waiting_image), Tone.WARN)
 
         fun stethoscopeStatus(s: LocalSnapshot): Status = when {
-            s.stethoRecordingSeconds != null -> Status("Grabando", Tone.RECORDING)
-            s.stethoRunning -> Status("Escuchando", Tone.OK)
-            s.stethoReplaying != null -> Status("Reproduciendo", Tone.OK)
+            s.stethoRecordingSeconds != null -> Status(txt(R.string.local_status_recording), Tone.RECORDING)
+            s.stethoRunning -> Status(txt(R.string.local_status_listening), Tone.OK)
+            s.stethoReplaying != null -> Status(txt(R.string.local_status_playing), Tone.OK)
             s.stethoStarting -> CONNECTING
             s.stethoAvailable -> CONNECTED
             else -> DISCONNECTED
@@ -377,20 +391,20 @@ class PanelUi {
         /** El tile del dock: lo mismo que el encabezado, y mientras graba la cuenta regresiva. */
         fun stethoscopeTileStatus(s: LocalSnapshot): Status {
             val seconds = s.stethoRecordingSeconds ?: return stethoscopeStatus(s)
-            return Status("Grabando · ${recordingRemaining(seconds)} s", Tone.RECORDING)
+            return Status(txt(R.string.local_status_recording_left, recordingRemaining(seconds)), Tone.RECORDING)
         }
 
         fun cameraTile(screen: ScreenState): Tile = when (screen.camera) {
             CameraState.MISSING -> Tile(enabled = screen.openDevice == PanelDevice.CAMERA, status = DISCONNECTED)
-            CameraState.PAUSED -> Tile(enabled = true, status = Status("En pausa", Tone.WARN))
-            else -> Tile(enabled = true, status = Status("Lista", Tone.MUTED))
+            CameraState.PAUSED -> Tile(enabled = true, status = PAUSED)
+            else -> Tile(enabled = true, status = Status(txt(R.string.local_status_camera_ready), Tone.MUTED))
         }
 
         fun cameraStatus(screen: ScreenState): Status = when (screen.camera) {
-            CameraState.LIVE -> Status("En vivo · ${if (screen.cameraFront) "frontal" else "trasera"}", Tone.OK)
+            CameraState.LIVE -> Status(txt(if (screen.cameraFront) R.string.local_camera_live_front else R.string.local_camera_live_back), Tone.OK)
             CameraState.STARTING -> CONNECTING
-            CameraState.PAUSED -> Status("En pausa", Tone.WARN)
-            CameraState.UNAVAILABLE -> Status("Sin imagen", Tone.MUTED)
+            CameraState.PAUSED -> PAUSED
+            CameraState.UNAVAILABLE -> Status(txt(R.string.local_status_no_image), Tone.MUTED)
             CameraState.MISSING -> DISCONNECTED
         }
     }

@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package com.guardiavirtual.berrymed.service
 
+import com.guardiavirtual.berrymed.R
+import com.guardiavirtual.berrymed.i18n.Txt
+import com.guardiavirtual.berrymed.i18n.txt
 import com.guardiavirtual.berrymed.protocol.ParserStats
 import com.guardiavirtual.berrymed.tele.TeleView
 import com.guardiavirtual.berrymed.usb.DeviceInventory
@@ -14,15 +17,11 @@ import java.util.Locale
  * envía nada: mira los contadores del parser, que no se consumen.
  */
 class TestingSession(private val clock: () -> Long = System::nanoTime) {
-    enum class Measure(val label: String) {
-        Ecg("ECG"),
-        Spo2("SpO₂"),
-        Resp("Respiración"),
-        Temp("Temperatura"),
-    }
+    /** Las mediciones que se prueban; el título de cada tarjeta lo pone la pantalla. */
+    enum class Measure { Ecg, Spo2, Resp, Temp }
 
     /** `ok == null`: la prueba sigue corriendo. */
-    data class Verdict(val ok: Boolean?, val message: String)
+    data class Verdict(val ok: Boolean?, val text: Txt)
 
     data class Rates(
         val ecg: Int = 0,
@@ -41,7 +40,7 @@ class TestingSession(private val clock: () -> Long = System::nanoTime) {
 
     fun check(measure: Measure, stats: ParserStats) = synchronized(lock) {
         running[measure] = stats to clock()
-        verdicts[measure] = Verdict(null, "Probando…")
+        verdicts[measure] = Verdict(null, txt(R.string.testing_verdict_checking))
     }
 
     /** Cierra las pruebas que cumplieron los 5 s y recalcula las tasas una vez por segundo. */
@@ -58,8 +57,8 @@ class TestingSession(private val clock: () -> Long = System::nanoTime) {
         for ((measure, start) in running) {
             val elapsed = now - start.second
             verdicts[measure] = when {
-                !berryUp -> Verdict(false, "Plaqueta sin conectar")
-                elapsed < CHECK_NANOS -> Verdict(null, "Probando… ${(CHECK_NANOS - elapsed) / 1_000_000_000L + 1} s")
+                !berryUp -> Verdict(false, txt(R.string.testing_verdict_board_off))
+                elapsed < CHECK_NANOS -> Verdict(null, txt(R.string.testing_verdict_checking_left, (CHECK_NANOS - elapsed) / 1_000_000_000L + 1))
                 else -> verdict(measure, start.first, stats, elapsed / 1_000_000_000.0)
             }
             if (verdicts.getValue(measure).ok != null) done += measure
@@ -111,27 +110,27 @@ class TestingSession(private val clock: () -> Long = System::nanoTime) {
                 Measure.Ecg -> {
                     val perSecond = Math.round((b.ecg - a.ecg) / seconds).toInt()
                     when {
-                        perSecond == 0 -> Verdict(false, "No llega la onda de ECG")
-                        perSecond < MIN_ECG_PER_SECOND -> Verdict(false, "Llegan $perSecond muestras/s, se esperan unas 250")
-                        to.ecgInfo.leadOff == true -> Verdict(false, "Electrodos sueltos")
-                        to.ecgInfo.weakSignal == true -> Verdict(true, "OK, $perSecond muestras/s, señal débil")
-                        else -> Verdict(true, "OK, $perSecond muestras/s, FC ${vitals.heartRate}")
+                        perSecond == 0 -> Verdict(false, txt(R.string.testing_verdict_ecg_no_wave))
+                        perSecond < MIN_ECG_PER_SECOND -> Verdict(false, txt(R.string.testing_verdict_ecg_slow, perSecond))
+                        to.ecgInfo.leadOff == true -> Verdict(false, txt(R.string.testing_verdict_leads_off))
+                        to.ecgInfo.weakSignal == true -> Verdict(true, txt(R.string.testing_verdict_ecg_weak, perSecond))
+                        else -> Verdict(true, txt(R.string.testing_verdict_ecg_ok, perSecond, vitals.heartRate))
                     }
                 }
                 Measure.Spo2 -> when {
-                    b.spo2Wave == a.spo2Wave -> Verdict(false, "No llega la onda de SpO₂")
-                    b.spo2 == a.spo2 -> Verdict(false, "No llegan los valores de SpO₂")
-                    !vitals.spo2Pulse.first().isDigit() -> Verdict(false, "Sin dedo en el sensor")
-                    else -> Verdict(true, "OK, SpO₂/pulso ${vitals.spo2Pulse}")
+                    b.spo2Wave == a.spo2Wave -> Verdict(false, txt(R.string.testing_verdict_spo2_no_wave))
+                    b.spo2 == a.spo2 -> Verdict(false, txt(R.string.testing_verdict_spo2_no_values))
+                    !vitals.spo2Pulse.first().isDigit() -> Verdict(false, txt(R.string.testing_verdict_no_finger))
+                    else -> Verdict(true, txt(R.string.testing_verdict_spo2_ok, vitals.spo2Pulse))
                 }
                 Measure.Resp -> when {
-                    b.respWave == a.respWave -> Verdict(false, "No llega la onda de respiración")
-                    else -> Verdict(true, "OK, FR ${vitals.respRate}")
+                    b.respWave == a.respWave -> Verdict(false, txt(R.string.testing_verdict_resp_no_wave))
+                    else -> Verdict(true, txt(R.string.testing_verdict_resp_ok, vitals.respRate))
                 }
                 Measure.Temp -> when {
-                    b.temperature == a.temperature -> Verdict(false, "La plaqueta no manda temperatura")
-                    !vitals.temperature.first().isDigit() -> Verdict(false, "Sensor de temperatura sin conectar")
-                    else -> Verdict(true, "OK, ${vitals.temperature} °C")
+                    b.temperature == a.temperature -> Verdict(false, txt(R.string.testing_verdict_temp_none))
+                    !vitals.temperature.first().isDigit() -> Verdict(false, txt(R.string.testing_verdict_temp_unplugged))
+                    else -> Verdict(true, txt(R.string.testing_verdict_temp_ok, vitals.temperature))
                 }
             }
         }

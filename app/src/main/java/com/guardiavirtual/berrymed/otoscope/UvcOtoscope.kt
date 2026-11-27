@@ -48,6 +48,7 @@ class UvcOtoscope(
     private val log: (String) -> Unit,
 ) : OtoscopeSource {
     override val label = "por UVC"
+    override val path = OtoscopePower.Path.UVC
     private val appContext = context.applicationContext
     private val main = Handler(Looper.getMainLooper())
 

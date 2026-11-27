@@ -3,6 +3,7 @@ package com.guardiavirtual.berrymed.ui.status
 
 import com.guardiavirtual.berrymed.config.CALL_AUDIO_HEADSET
 import com.guardiavirtual.berrymed.config.CALL_AUDIO_SPEAKER
+import com.guardiavirtual.berrymed.i18n.es
 import com.guardiavirtual.berrymed.net.WifiState
 import com.guardiavirtual.berrymed.otoscope.OtoscopePower
 import com.guardiavirtual.berrymed.protocol.EcgInfo
@@ -70,18 +71,21 @@ class StatusPanelUiTest {
     )
 
     private fun row(s: StatusSnapshot, name: String, localScreen: Boolean = s.localMode): DeviceRow =
-        StatusPanelUi.devices(s, localScreen).single { it.name == name }
+        StatusPanelUi.devices(s, localScreen).single { es(it.name) == name }
 
     private fun ok(text: String) = Pair(StatusTone.OK, text)
     private fun warn(text: String) = Pair(StatusTone.WARN, text)
     private fun bad(text: String) = Pair(StatusTone.BAD, text)
-    private fun DeviceRow.pair() = Pair(tone, text)
+    private fun DeviceRow.pair() = Pair(tone, es(text))
+
+    /** La cabecera como se lee en español: nombre y estado. */
+    private fun WifiRow.read() = Pair(es(name), es(text))
 
     @Test
     fun rowsKeepTheirOrder() {
         assertEquals(
             listOf("SpO2", "ECG", "Presión", "Temperatura", "Otoscopio", "Estetoscopio", "Hub USB"),
-            StatusPanelUi.devices(status()).map { it.name },
+            StatusPanelUi.devices(status()).map { es(it.name) },
         )
     }
 
@@ -249,12 +253,14 @@ class StatusPanelUiTest {
     @Test
     fun wifiWithoutLocation() {
         val noName = WifiState(connected = true, validated = true, rssi = -55)
+        val row = StatusPanelUi.wifi(noName, locationGranted = false)
+        assertEquals(Pair("Wi-Fi conectado", "Falta permiso"), row.read())
         assertEquals(
-            WifiRow(WifiIcon.WIFI, "Wi-Fi conectado", "Falta permiso", StatusTone.WARN, 4, offline = false, action = StatusAction.LOCATION),
-            StatusPanelUi.wifi(noName, locationGranted = false),
+            WifiRow(WifiIcon.WIFI, row.name, row.text, StatusTone.WARN, 4, offline = false, action = StatusAction.LOCATION),
+            row,
         )
         // Sin internet importa más que el nombre.
-        assertEquals("Sin internet", StatusPanelUi.wifi(noName.copy(validated = false), locationGranted = false).text)
+        assertEquals("Sin internet", es(StatusPanelUi.wifi(noName.copy(validated = false), locationGranted = false).text))
         // Sin red, la ubicación no importa: se elige una red.
         assertEquals(StatusAction.OPEN_WIFI, StatusPanelUi.wifi(WifiState(), locationGranted = false).action)
         // Desde el snapshot.
@@ -279,19 +285,23 @@ class StatusPanelUiTest {
     @Test
     fun wifiState() {
         val good = StatusPanelUi.wifi(WifiState(connected = true, validated = true, ssid = "Consultorio-5G", rssi = -65))
-        assertEquals(WifiRow(WifiIcon.WIFI, "Consultorio-5G", "Señal buena", StatusTone.OK, 3, offline = false), good)
+        assertEquals(Pair("Consultorio-5G", "Señal buena"), good.read())
+        assertEquals(WifiRow(WifiIcon.WIFI, good.name, good.text, StatusTone.OK, 3, offline = false), good)
 
         val weak = StatusPanelUi.wifi(WifiState(connected = true, validated = true, ssid = "Consultorio-5G", rssi = -85))
-        assertEquals(WifiRow(WifiIcon.WEAK, "Consultorio-5G", "Señal débil", StatusTone.WARN, 1, offline = false), weak)
+        assertEquals(Pair("Consultorio-5G", "Señal débil"), weak.read())
+        assertEquals(WifiRow(WifiIcon.WEAK, weak.name, weak.text, StatusTone.WARN, 1, offline = false), weak)
 
         val noInternet = StatusPanelUi.wifi(WifiState(connected = true, validated = false, ssid = "Consultorio-5G", rssi = -75))
-        assertEquals(WifiRow(WifiIcon.WIFI, "Consultorio-5G", "Sin internet", StatusTone.WARN, 2, offline = false), noInternet)
+        assertEquals(Pair("Consultorio-5G", "Sin internet"), noInternet.read())
+        assertEquals(WifiRow(WifiIcon.WIFI, noInternet.name, noInternet.text, StatusTone.WARN, 2, offline = false), noInternet)
 
         val none = StatusPanelUi.wifi(WifiState())
-        assertEquals(WifiRow(WifiIcon.OFF, "Sin Wi-Fi", "Tocá para elegir una red", StatusTone.BAD, 0, offline = true), none)
+        assertEquals(Pair("Sin Wi-Fi", "Tocá para elegir una red"), none.read())
+        assertEquals(WifiRow(WifiIcon.OFF, none.name, none.text, StatusTone.BAD, 0, offline = true), none)
 
         // Sin el permiso de ubicación Android no da el nombre.
-        assertEquals("Wi-Fi conectado", StatusPanelUi.wifi(WifiState(connected = true, validated = true, rssi = -55)).name)
+        assertEquals("Wi-Fi conectado", es(StatusPanelUi.wifi(WifiState(connected = true, validated = true, rssi = -55)).name))
     }
 
     @Test
@@ -313,18 +323,18 @@ class StatusPanelUiTest {
 
     @Test
     fun callHelp() {
-        assertEquals("Todo suena por el auricular.", StatusPanelUi.callHelp(CallRoute.HEADSET, true))
+        assertEquals("Todo suena por el auricular.", es(StatusPanelUi.callHelp(CallRoute.HEADSET, true)))
         assertEquals(
             "La llamada va por el altavoz y el micrófono de la tablet. El estetoscopio sigue en el auricular.",
-            StatusPanelUi.callHelp(CallRoute.SPEAKER, true),
+            es(StatusPanelUi.callHelp(CallRoute.SPEAKER, true)),
         )
         val noJack = "Sin auricular en el jack: la llamada va por el altavoz y el estetoscopio no suena."
-        assertEquals(noJack, StatusPanelUi.callHelp(CallRoute.SPEAKER, false))
+        assertEquals(noJack, es(StatusPanelUi.callHelp(CallRoute.SPEAKER, false)))
         // Igual en los dos modos: el sonido es de toda la app, no sólo de la llamada.
         for (mode in listOf(PanelMode.REMOTE, PanelMode.LOCAL, PanelMode.LOCAL_LOCKED)) {
             val built = StatusPanelUi.build(status(jackPresent = false), mode)
             assertEquals(CallRoute.SPEAKER, built.callRoute)
-            assertEquals(noJack, built.callHelp)
+            assertEquals(noJack, es(built.callHelp))
         }
     }
 
@@ -332,9 +342,9 @@ class StatusPanelUiTest {
     fun modeSwitchBlock() {
         assertNull(StatusSnapshot.modeSwitchBlock(sessionActive = false, teleInRoom = false))
         val text = "Hay una consulta en curso. Terminala para cambiar."
-        assertEquals(text, StatusSnapshot.modeSwitchBlock(sessionActive = true, teleInRoom = false))
-        assertEquals(text, StatusSnapshot.modeSwitchBlock(sessionActive = false, teleInRoom = true))
-        assertEquals(text, StatusPanelUi.build(status(teleInRoom = true), PanelMode.REMOTE).modeBlocked)
+        assertEquals(text, StatusSnapshot.modeSwitchBlock(sessionActive = true, teleInRoom = false)?.let(::es))
+        assertEquals(text, StatusSnapshot.modeSwitchBlock(sessionActive = false, teleInRoom = true)?.let(::es))
+        assertEquals(text, StatusPanelUi.build(status(teleInRoom = true), PanelMode.REMOTE).modeBlocked?.let(::es))
         // Volver a ONDOCTOR365 desde el Panel Local no se bloquea.
         assertNull(StatusPanelUi.build(status(sessionActive = true), PanelMode.LOCAL_LOCKED).modeBlocked)
     }

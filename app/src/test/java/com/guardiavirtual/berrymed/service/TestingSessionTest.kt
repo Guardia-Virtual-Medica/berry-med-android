@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package com.guardiavirtual.berrymed.service
 
+import com.guardiavirtual.berrymed.i18n.es
 import com.guardiavirtual.berrymed.protocol.EcgInfo
 import com.guardiavirtual.berrymed.protocol.FrameCounts
 import com.guardiavirtual.berrymed.protocol.ParserStats
@@ -19,24 +20,24 @@ class TestingSessionTest {
     fun ecgPassesWithFullRateAndElectrodesOn() {
         val verdict = TestingSession.verdict(Measure.Ecg, stats(), stats(ecg = 1_250, leadOff = false, hr = "72"), 5.0)
         assertEquals(true, verdict.ok)
-        assertTrue("250 muestras/s" in verdict.message)
+        assertTrue("250 muestras/s" in es(verdict.text))
     }
 
     @Test
     fun ecgFailsWhenSamplesAreMissingOrElectrodesAreOff() {
-        assertEquals("No llega la onda de ECG", TestingSession.verdict(Measure.Ecg, stats(), stats(), 5.0).message)
+        assertEquals("No llega la onda de ECG", es(TestingSession.verdict(Measure.Ecg, stats(), stats(), 5.0).text))
         val slow = TestingSession.verdict(Measure.Ecg, stats(), stats(ecg = 500), 5.0)
         assertEquals(false, slow.ok)
-        assertTrue("100 muestras/s" in slow.message)
+        assertTrue("100 muestras/s" in es(slow.text))
         val loose = TestingSession.verdict(Measure.Ecg, stats(), stats(ecg = 1_250, leadOff = true), 5.0)
-        assertEquals("Electrodos sueltos", loose.message)
+        assertEquals("Electrodos sueltos", es(loose.text))
     }
 
     @Test
     fun spo2NeedsWaveValuesAndAFinger() {
         assertEquals(false, TestingSession.verdict(Measure.Spo2, stats(), stats(spo2 = 5), 5.0).ok)
         val noFinger = TestingSession.verdict(Measure.Spo2, stats(), stats(spo2Wave = 250, spo2 = 5), 5.0)
-        assertEquals("Sin dedo en el sensor", noFinger.message)
+        assertEquals("Sin dedo en el sensor", es(noFinger.text))
         val ok = TestingSession.verdict(Measure.Spo2, stats(), stats(spo2Wave = 250, spo2 = 5, spo2Pulse = "98/72"), 5.0)
         assertEquals(true, ok.ok)
     }
@@ -46,7 +47,7 @@ class TestingSessionTest {
         assertEquals(false, TestingSession.verdict(Measure.Resp, stats(), stats(), 5.0).ok)
         assertEquals(true, TestingSession.verdict(Measure.Resp, stats(), stats(respWave = 600), 5.0).ok)
         val noSensor = TestingSession.verdict(Measure.Temp, stats(), stats(temperature = 5, temp = "-"), 5.0)
-        assertEquals("Sensor de temperatura sin conectar", noSensor.message)
+        assertEquals("Sensor de temperatura sin conectar", es(noSensor.text))
         assertEquals(true, TestingSession.verdict(Measure.Temp, stats(), stats(temperature = 5, temp = "36.4"), 5.0).ok)
     }
 
@@ -68,7 +69,7 @@ class TestingSessionTest {
         val session = TestingSession { 0L }
         session.check(Measure.Ecg, stats())
         val verdict = session.poll(stats(), berryUp = false).getValue(Measure.Ecg)
-        assertEquals("Plaqueta sin conectar", verdict.message)
+        assertEquals("Plaqueta sin conectar", es(verdict.text))
     }
 
     @Test

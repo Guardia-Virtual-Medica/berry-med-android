@@ -16,6 +16,7 @@ import com.guardiavirtual.berrymed.audio.StethoFilter
 import com.guardiavirtual.berrymed.audio.StethoscopeLink
 import com.guardiavirtual.berrymed.config.BerryConfig
 import com.guardiavirtual.berrymed.config.ConfigStore
+import com.guardiavirtual.berrymed.i18n.Txt
 import com.guardiavirtual.berrymed.net.MetricsPoster
 import com.guardiavirtual.berrymed.otoscope.OtoscopePermission
 import com.guardiavirtual.berrymed.otoscope.OtoscopePower
@@ -1144,7 +1145,7 @@ class TotemRuntime(context: Context) {
     )
 
     /** El texto que bloquea el botón de cambiar de modo, o null si se puede cambiar. */
-    fun modeSwitchBlock(): String? =
+    fun modeSwitchBlock(): Txt? =
         StatusSnapshot.modeSwitchBlock(sessionActive, tele.status.room != RoomState.DISCONNECTED)
 
     /**

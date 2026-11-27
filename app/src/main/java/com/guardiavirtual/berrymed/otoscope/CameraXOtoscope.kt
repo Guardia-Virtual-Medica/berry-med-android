@@ -29,6 +29,7 @@ class CameraXOtoscope(
     private val previewView: PreviewView,
 ) : OtoscopeSource {
     override val label = "por Camera2"
+    override val path = OtoscopePower.Path.CAMERA2
     private var provider: ProcessCameraProvider? = null
     private val main = Handler(Looper.getMainLooper())
 
