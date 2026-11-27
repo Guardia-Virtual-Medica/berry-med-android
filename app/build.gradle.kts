@@ -23,6 +23,12 @@ android {
     }
 
     buildTypes {
+        debug {
+            // ./gradlew assembleDebug -Pseudo: suma los seudo-idiomas en-XA (acentos y textos un
+            // 30 % más largos) y ar-XB (derecha a izquierda), para ver en el emulador qué texto
+            // quedó sin pasar al diccionario. No va en el APK que se publica.
+            isPseudoLocalesEnabled = project.hasProperty("seudo")
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -40,6 +46,22 @@ android {
     }
     buildFeatures {
         viewBinding = true
+    }
+    lint {
+        // Un texto escrito en un layout o puesto a mano en un TextView no pasa el lint, y
+        // tampoco un diccionario que no coincide con el español (entradas, parámetros, plurales).
+        error += setOf(
+            "HardcodedText",
+            "SetTextI18n",
+            "MissingTranslation",
+            "ExtraTranslation",
+            "StringFormatMatches",
+            "StringFormatCount",
+            "MissingQuantity",
+        )
+        // Lo que ya estaba: se va achicando con el plan 19, no se agranda.
+        baseline = file("lint-baseline.xml")
+        abortOnError = true
     }
     testOptions {
         unitTests.isReturnDefaultValues = true

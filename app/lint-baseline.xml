@@ -1,0 +1,1716 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="6" by="lint 8.7.2" type="baseline" client="gradle" dependencies="false" name="AGP (8.7.2)" variant="all" version="8.7.2">
+
+    <issue
+        id="InlinedApi"
+        message="Field requires API level 29 (current min is 26): `android.content.pm.ServiceInfo#FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE`"
+        errorLine1="    const val CONNECTED_DEVICE = ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE"
+        errorLine2="                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/guardiavirtual/berrymed/service/ForegroundAccess.kt"
+            line="16"
+            column="34"/>
+    </issue>
+
+    <issue
+        id="InlinedApi"
+        message="Field requires API level 30 (current min is 26): `android.content.pm.ServiceInfo#FOREGROUND_SERVICE_TYPE_CAMERA`"
+        errorLine1="    const val CAMERA = ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/guardiavirtual/berrymed/service/ForegroundAccess.kt"
+            line="17"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="InlinedApi"
+        message="Field requires API level 30 (current min is 26): `android.content.pm.ServiceInfo#FOREGROUND_SERVICE_TYPE_MICROPHONE`"
+        errorLine1="    const val MICROPHONE = ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE"
+        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/guardiavirtual/berrymed/service/ForegroundAccess.kt"
+            line="18"
+            column="28"/>
+    </issue>
+
+    <issue
+        id="WrongConstant"
+        message="Must be one or more of: AudioManager.GET_DEVICES_INPUTS, AudioManager.GET_DEVICES_OUTPUTS"
+        errorLine1="            audio.getDevices(AudioManager.GET_DEVICES_ALL).toList()"
+        errorLine2="                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/guardiavirtual/berrymed/usb/DeviceInventory.kt"
+            line="41"
+            column="30"/>
+    </issue>
+
+    <issue
+        id="BatteryLife"
+        message="Use of `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` violates the Play Store Content Policy regarding acceptable use cases, as described in https://developer.android.com/training/monitoring-device-state/doze-standby.html"
+        errorLine1="            Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,"
+        errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/guardiavirtual/berrymed/ui/MainActivity.kt"
+            line="612"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.core:core-ktx than 1.15.0 is available: 1.19.1"
+        errorLine1="    implementation(&quot;androidx.core:core-ktx:1.15.0&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="89"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.appcompat:appcompat than 1.7.0 is available: 1.8.0"
+        errorLine1="    implementation(&quot;androidx.appcompat:appcompat:1.7.0&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="90"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of com.google.android.material:material than 1.12.0 is available: 1.14.0"
+        errorLine1="    implementation(&quot;com.google.android.material:material:1.12.0&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="91"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.constraintlayout:constraintlayout than 2.2.0 is available: 2.2.2"
+        errorLine1="    implementation(&quot;androidx.constraintlayout:constraintlayout:2.2.0&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="92"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.lifecycle:lifecycle-runtime-ktx than 2.8.7 is available: 2.11.1"
+        errorLine1="    implementation(&quot;androidx.lifecycle:lifecycle-runtime-ktx:2.8.7&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="93"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.datastore:datastore-preferences than 1.1.1 is available: 1.3.0"
+        errorLine1="    implementation(&quot;androidx.datastore:datastore-preferences:1.1.1&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="94"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.camera:camera-core than 1.4.1 is available: 1.7.0"
+        errorLine1="    implementation(&quot;androidx.camera:camera-core:1.4.1&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="100"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.camera:camera-camera2 than 1.4.1 is available: 1.7.0"
+        errorLine1="    implementation(&quot;androidx.camera:camera-camera2:1.4.1&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="101"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.camera:camera-lifecycle than 1.4.1 is available: 1.7.0"
+        errorLine1="    implementation(&quot;androidx.camera:camera-lifecycle:1.4.1&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="102"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.camera:camera-view than 1.4.1 is available: 1.7.0"
+        errorLine1="    implementation(&quot;androidx.camera:camera-view:1.4.1&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="103"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of com.google.code.gson:gson than 2.9.1 is available: 2.10.1"
+        errorLine1="    implementation(&quot;com.google.code.gson:gson:2.9.1&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="114"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="UnsafeOptInUsageError"
+        message="This declaration is opt-in and its usage should be marked with `@androidx.camera.camera2.interop.ExperimentalCamera2Interop` or `@OptIn(markerClass = androidx.camera.camera2.interop.ExperimentalCamera2Interop.class)`"
+        errorLine1="                ExternalCamera.aimFps(builder, info).setSessionCaptureCallback(rateCallback(onRate))"
+        errorLine2="                                                     ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/guardiavirtual/berrymed/otoscope/CameraXOtoscope.kt"
+            line="44"
+            column="54"/>
+    </issue>
+
+    <issue
+        id="DiscouragedApi"
+        message="Should not restrict activity to fixed orientation. This may not be suitable for different form factors, causing the app to be letterboxed."
+        errorLine1="            android:screenOrientation=&quot;landscape&quot;"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/AndroidManifest.xml"
+            line="86"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="DiscouragedApi"
+        message="Should not restrict activity to fixed orientation. This may not be suitable for different form factors, causing the app to be letterboxed."
+        errorLine1="            android:screenOrientation=&quot;landscape&quot;"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/AndroidManifest.xml"
+            line="122"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="DiscouragedApi"
+        message="Should not restrict activity to fixed orientation. This may not be suitable for different form factors, causing the app to be letterboxed."
+        errorLine1="            android:screenOrientation=&quot;landscape&quot;"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/AndroidManifest.xml"
+            line="162"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="Typos"
+        message="Did you mean &quot;sa!&quot; instead of &quot;sa1&quot;?"
+        errorLine1="        &lt;item>sa1&lt;/item>"
+        errorLine2="              ^">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="50"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="ChromeOsAbiSupport"
+        message="Missing x86_64 ABI support for ChromeOS"
+        errorLine1="            abiFilters += listOf(&quot;arm64-v8a&quot;, &quot;armeabi-v7a&quot;)"
+        errorLine2="                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="21"
+            column="27"/>
+    </issue>
+
+    <issue
+        id="UnsafeProtectedBroadcastReceiver"
+        message="This broadcast receiver declares an intent-filter for a protected broadcast action string, which can only be sent by the system, not third-party applications. However, the receiver&apos;s `onReceive` method does not appear to call `getAction` to ensure that the received Intent&apos;s action string matches the expected value, potentially making it possible for another actor to send a spoofed intent with no action string or a different action string and cause undesired behavior."
+        errorLine1="    override fun onReceive(context: Context, intent: Intent?) {"
+        errorLine2="                 ~~~~~~~~~">
+        <location
+            file="src/main/java/com/guardiavirtual/berrymed/usb/UsbAttachReceiver.kt"
+            line="13"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="DataExtractionRules"
+        message="The attribute `android:allowBackup` is deprecated from Android 12 and higher and may be removed in future versions. Consider adding the attribute `android:dataExtractionRules` specifying an `@xml` resource which configures cloud backups and device transfers on Android 12 and higher."
+        errorLine1="        android:allowBackup=&quot;false&quot;"
+        errorLine2="                             ~~~~~">
+        <location
+            file="src/main/AndroidManifest.xml"
+            line="55"
+            column="30"/>
+    </issue>
+
+    <issue
+        id="WakelockTimeout"
+        message="Provide a timeout when requesting a wakelock with `PowerManager.Wakelock.acquire(long timeout)`. This will ensure the OS will cleanup any wakelocks that last longer than you intend, and will save your user&apos;s battery."
+        errorLine1="        lock.acquire()"
+        errorLine2="        ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/guardiavirtual/berrymed/service/MonitorService.kt"
+            line="200"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; SDK_INT is never &lt; 26"
+        errorLine1="        if (Build.VERSION.SDK_INT &lt; 26) return"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/guardiavirtual/berrymed/service/MonitorService.kt"
+            line="190"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="This folder configuration (`v26`) is unnecessary; `minSdkVersion` is 26. Merge all the resources in this folder into `mipmap-anydpi`.">
+        <location
+            file="src/main/res/mipmap-anydpi-v26"/>
+    </issue>
+
+    <issue
+        id="UseCompoundDrawables"
+        message="This tag and its children can be replaced by one `&lt;TextView/>` and a compound drawable"
+        errorLine1="                &lt;LinearLayout"
+        errorLine2="                 ~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/view_status_panel.xml"
+            line="213"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="UseCompoundDrawables"
+        message="This tag and its children can be replaced by one `&lt;TextView/>` and a compound drawable"
+        errorLine1="            &lt;LinearLayout"
+        errorLine2="             ~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/view_status_panel.xml"
+            line="327"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="UseCompoundDrawables"
+        message="This tag and its children can be replaced by one `&lt;TextView/>` and a compound drawable"
+        errorLine1="            &lt;LinearLayout"
+        errorLine2="             ~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/view_status_panel.xml"
+            line="340"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="UseCompoundDrawables"
+        message="This tag and its children can be replaced by one `&lt;TextView/>` and a compound drawable"
+        errorLine1="        &lt;LinearLayout"
+        errorLine2="         ~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/view_status_rail.xml"
+            line="82"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="VectorPath"
+        message="Very long vector path (1122 characters), which is bad for performance. Considering reducing precision, removing minor details or rasterizing vector."
+        errorLine1="      android:pathData=&quot;M200,800Q167,800 143.5,776.5Q120,753 120,720L120,440Q120,366 148.5,300.5Q177,235 226,186Q275,137 340.5,108.5Q406,80 480,80Q554,80 619.5,108.5Q685,137 734,186Q783,235 811.5,300.5Q840,366 840,440L840,840Q840,873 816.5,896.5Q793,920 760,920L520,920Q503,920 491.5,908.5Q480,897 480,880Q480,863 491.5,851.5Q503,840 520,840L760,840Q760,840 760,840Q760,840 760,840L760,800L680,800Q647,800 623.5,776.5Q600,753 600,720L600,560Q600,527 623.5,503.5Q647,480 680,480L760,480L760,440Q760,324 678,242Q596,160 480,160Q364,160 282,242Q200,324 200,440L200,480L280,480Q313,480 336.5,503.5Q360,527 360,560L360,720Q360,753 336.5,776.5Q313,800 280,800L200,800ZM200,720L280,720Q280,720 280,720Q280,720 280,720L280,560Q280,560 280,560Q280,560 280,560L200,560L200,720Q200,720 200,720Q200,720 200,720ZM680,720L760,720L760,560L680,560Q680,560 680,560Q680,560 680,560L680,720Q680,720 680,720Q680,720 680,720ZM200,560Q200,560 200,560Q200,560 200,560L200,560L280,560Q280,560 280,560Q280,560 280,560L280,560Q280,560 280,560Q280,560 280,560L200,560ZM680,560Q680,560 680,560Q680,560 680,560L680,560Q680,560 680,560Q680,560 680,560L760,560L760,560L680,560Z&quot;/>"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/drawable/ic_headset_mic.xml"
+            line="10"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="VectorPath"
+        message="Very long vector path (871 characters), which is bad for performance. Considering reducing precision, removing minor details or rasterizing vector."
+        errorLine1="      android:pathData=&quot;M480,680Q497,680 508.5,668.5Q520,657 520,640L520,480Q520,463 508.5,451.5Q497,440 480,440Q463,440 451.5,451.5Q440,463 440,480L440,640Q440,657 451.5,668.5Q463,680 480,680ZM480,360Q497,360 508.5,348.5Q520,337 520,320Q520,303 508.5,291.5Q497,280 480,280Q463,280 451.5,291.5Q440,303 440,320Q440,337 451.5,348.5Q463,360 480,360ZM480,880Q397,880 324,848.5Q251,817 197,763Q143,709 111.5,636Q80,563 80,480Q80,397 111.5,324Q143,251 197,197Q251,143 324,111.5Q397,80 480,80Q563,80 636,111.5Q709,143 763,197Q817,251 848.5,324Q880,397 880,480Q880,563 848.5,636Q817,709 763,763Q709,817 636,848.5Q563,880 480,880ZM480,800Q614,800 707,707Q800,614 800,480Q800,346 707,253Q614,160 480,160Q346,160 253,253Q160,346 160,480Q160,614 253,707Q346,800 480,800ZM480,480Q480,480 480,480Q480,480 480,480Q480,480 480,480Q480,480 480,480Q480,480 480,480Q480,480 480,480Q480,480 480,480Q480,480 480,480Z&quot;/>"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/drawable/ic_info.xml"
+            line="10"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="VectorPath"
+        message="Very long vector path (864 characters), which is bad for performance. Considering reducing precision, removing minor details or rasterizing vector."
+        errorLine1="      android:pathData=&quot;M240,880Q207,880 183.5,856.5Q160,833 160,800L160,400Q160,367 183.5,343.5Q207,320 240,320L280,320L280,240Q280,157 338.5,98.5Q397,40 480,40Q563,40 621.5,98.5Q680,157 680,240L680,320L720,320Q753,320 776.5,343.5Q800,367 800,400L800,800Q800,833 776.5,856.5Q753,880 720,880L240,880ZM240,800L720,800Q720,800 720,800Q720,800 720,800L720,400Q720,400 720,400Q720,400 720,400L240,400Q240,400 240,400Q240,400 240,400L240,800Q240,800 240,800Q240,800 240,800ZM480,680Q513,680 536.5,656.5Q560,633 560,600Q560,567 536.5,543.5Q513,520 480,520Q447,520 423.5,543.5Q400,567 400,600Q400,633 423.5,656.5Q447,680 480,680ZM360,320L600,320L600,240Q600,190 565,155Q530,120 480,120Q430,120 395,155Q360,190 360,240L360,320ZM240,800Q240,800 240,800Q240,800 240,800L240,400Q240,400 240,400Q240,400 240,400L240,400Q240,400 240,400Q240,400 240,400L240,800Q240,800 240,800Q240,800 240,800L240,800Z&quot;/>"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/drawable/ic_lock.xml"
+            line="10"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="VectorPath"
+        message="Very long vector path (857 characters), which is bad for performance. Considering reducing precision, removing minor details or rasterizing vector."
+        errorLine1="            android:pathData=&quot;M433-80q-27 0-46.5-18T363-142l-9-66q-13-5-24.5-12T307-235l-62 26q-25 11-50 2t-39-32l-47-82q-14-23-8-49t27-43l53-40q-1-7-1-13.5v-27q0-6.5 1-13.5l-53-40q-21-17-27-43t8-49l47-82q14-23 39-32t50 2l62 26q11-8 23-15t24-12l9-66q4-26 23.5-44t46.5-18h94q27 0 46.5 18t23.5 44l9 66q13 5 24.5 12t22.5 15l62-26q25-11 50-2t39 32l47 82q14 23 8 49t-27 43l-53 40q1 7 1 13.5v27q0 6.5-2 13.5l53 40q21 17 27 43t-8 49l-48 82q-14 23-39 32t-50-2l-60-26q-11 8-23 15t-24 12l-9 66q-4 26-23.5 44T527-80h-94Zm7-80h79l14-106q31-8 57.5-23.5T639-327l99 41 39-68-86-65q5-14 7-29.5t2-31.5q0-16-2-31.5t-7-29.5l86-65-39-68-99 42q-22-23-48.5-38.5T533-694l-13-106h-79l-14 106q-31 8-57.5 23.5T321-633l-99-41-39 68 86 64q-5 15-7 30t-2 32q0 16 2 31t7 30l-86 65 39 68 99-42q22 23 48.5 38.5T427-266l13 106Zm42-180q58 0 99-41t41-99q0-58-41-99t-99-41q-59 0-99.5 41T342-480q0 58 40.5 99t99.5 41Zm-2-140Z&quot; />"
+        errorLine2="                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/drawable/ic_settings.xml"
+            line="11"
+            column="31"/>
+    </issue>
+
+    <issue
+        id="VectorPath"
+        message="Very long vector path (808 characters), which is bad for performance. Considering reducing precision, removing minor details or rasterizing vector."
+        errorLine1="      android:pathData=&quot;M480,880Q447,880 423.5,856.5Q400,833 400,800Q400,779 411,761Q422,743 440,732L440,640L320,640Q287,640 263.5,616.5Q240,593 240,560L240,468Q222,459 211,441Q200,423 200,400Q200,367 223.5,343.5Q247,320 280,320Q313,320 336.5,343.5Q360,367 360,400Q360,423 349,440Q338,457 320,468L320,560Q320,560 320,560Q320,560 320,560L440,560L440,240L400,240Q388,240 382,229Q376,218 384,208L464,101Q470,93 480,93Q490,93 496,101L576,208Q584,218 578,229Q572,240 560,240L520,240L520,560L640,560Q640,560 640,560Q640,560 640,560L640,480L620,480Q612,480 606,474Q600,468 600,460L600,340Q600,332 606,326Q612,320 620,320L740,320Q748,320 754,326Q760,332 760,340L760,460Q760,468 754,474Q748,480 740,480L720,480L720,560Q720,593 696.5,616.5Q673,640 640,640L520,640L520,732Q539,742 549.5,760Q560,778 560,800Q560,833 536.5,856.5Q513,880 480,880Z&quot;/>"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/drawable/ic_usb.xml"
+            line="10"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="VectorPath"
+        message="Very long vector path (976 characters), which is bad for performance. Considering reducing precision, removing minor details or rasterizing vector."
+        errorLine1="      android:pathData=&quot;M360,520L360,600Q360,617 371.5,628.5Q383,640 400,640Q417,640 428.5,628.5Q440,617 440,600L440,520L520,520Q537,520 548.5,508.5Q560,497 560,480Q560,463 548.5,451.5Q537,440 520,440L440,440L440,360Q440,343 428.5,331.5Q417,320 400,320Q383,320 371.5,331.5Q360,343 360,360L360,440L280,440Q263,440 251.5,451.5Q240,463 240,480Q240,497 251.5,508.5Q263,520 280,520L360,520ZM160,800Q127,800 103.5,776.5Q80,753 80,720L80,240Q80,207 103.5,183.5Q127,160 160,160L640,160Q673,160 696.5,183.5Q720,207 720,240L720,420L846,294Q856,284 868,289Q880,294 880,308L880,652Q880,666 868,671Q856,676 846,666L720,540L720,720Q720,753 696.5,776.5Q673,800 640,800L160,800ZM160,720L640,720Q640,720 640,720Q640,720 640,720L640,240Q640,240 640,240Q640,240 640,240L160,240Q160,240 160,240Q160,240 160,240L160,720Q160,720 160,720Q160,720 160,720ZM160,720Q160,720 160,720Q160,720 160,720L160,240Q160,240 160,240Q160,240 160,240L160,240Q160,240 160,240Q160,240 160,240L160,720Q160,720 160,720Q160,720 160,720L160,720Z&quot;/>"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/drawable/ic_video_call.xml"
+            line="10"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="VectorPath"
+        message="Very long vector path (1049 characters), which is bad for performance. Considering reducing precision, removing minor details or rasterizing vector."
+        errorLine1="      android:pathData=&quot;M762,876L414,526Q383,533 354.5,545Q326,557 301,574Q280,588 254.5,588.5Q229,589 212,571Q194,553 195.5,527.5Q197,502 217,487Q240,470 265.5,456Q291,442 318,430L228,340Q202,354 177.5,369.5Q153,385 130,403Q110,419 84.5,419Q59,419 42,401Q24,383 25,358Q26,333 46,317Q68,299 91,282.5Q114,266 140,252L84,196Q73,185 73,168Q73,151 84,140Q95,129 112,129Q129,129 140,140L819,819Q831,831 831,847.5Q831,864 819,876Q807,887 790.5,887.5Q774,888 762,876ZM480,840Q438,840 409,810.5Q380,781 380,740Q380,698 409,669Q438,640 480,640Q522,640 551,669Q580,698 580,740Q580,781 551,810.5Q522,840 480,840ZM753,565Q737,581 715.5,580.5Q694,580 678,564Q673,559 668,554Q663,549 658,544L562,448Q549,435 557,421Q565,407 585,412Q630,423 670.5,443Q711,463 746,490Q764,504 766.5,526.5Q769,549 753,565ZM918,401Q901,419 876,419.5Q851,420 831,404Q759,345 669.5,312.5Q580,280 480,280Q459,280 439.5,281.5Q420,283 400,286Q375,290 355,275.5Q335,261 331,236Q327,211 342,191Q357,171 382,167Q406,163 430.5,161.5Q455,160 480,160Q605,160 715.5,201.5Q826,243 914,316Q934,333 935,358Q936,383 918,401Z&quot;/>"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/drawable/ic_wifi_off.xml"
+            line="10"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="DisableBaselineAlignment"
+        message="Set `android:baselineAligned=&quot;false&quot;` on this element for better performance"
+        errorLine1="            &lt;LinearLayout"
+        errorLine2="             ~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="87"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="DisableBaselineAlignment"
+        message="Set `android:baselineAligned=&quot;false&quot;` on this element for better performance"
+        errorLine1="                            &lt;LinearLayout"
+        errorLine2="                             ~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="432"
+            column="30"/>
+    </issue>
+
+    <issue
+        id="DisableBaselineAlignment"
+        message="Set `android:baselineAligned=&quot;false&quot;` on this element for better performance"
+        errorLine1="                            &lt;LinearLayout"
+        errorLine2="                             ~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="671"
+            column="30"/>
+    </issue>
+
+    <issue
+        id="DisableBaselineAlignment"
+        message="Set `android:baselineAligned=&quot;false&quot;` on this element for better performance"
+        errorLine1="                            &lt;LinearLayout"
+        errorLine2="                             ~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="917"
+            column="30"/>
+    </issue>
+
+    <issue
+        id="DisableBaselineAlignment"
+        message="Set `android:baselineAligned=&quot;false&quot;` on this element for better performance"
+        errorLine1="                    &lt;LinearLayout"
+        errorLine2="                     ~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="1331"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="DisableBaselineAlignment"
+        message="Set `android:baselineAligned=&quot;false&quot;` on this element for better performance"
+        errorLine1="                    &lt;LinearLayout"
+        errorLine2="                     ~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="1423"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="DisableBaselineAlignment"
+        message="Set `android:baselineAligned=&quot;false&quot;` on this element for better performance"
+        errorLine1="                    &lt;LinearLayout"
+        errorLine2="                     ~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="1544"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="InefficientWeight"
+        message="Use a `layout_width` of `0dp` instead of `wrap_content` for better performance"
+        errorLine1="                        &lt;TextView"
+        errorLine2="                         ~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="1312"
+            column="26"/>
+    </issue>
+
+    <issue
+        id="InefficientWeight"
+        message="Use a `layout_width` of `0dp` instead of `match_parent` for better performance"
+        errorLine1="                            android:layout_width=&quot;match_parent&quot;"
+        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="1352"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="InefficientWeight"
+        message="Use a `layout_width` of `0dp` instead of `wrap_content` for better performance"
+        errorLine1="                        &lt;TextView"
+        errorLine2="                         ~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="1412"
+            column="26"/>
+    </issue>
+
+    <issue
+        id="InefficientWeight"
+        message="Use a `layout_width` of `0dp` instead of `match_parent` for better performance"
+        errorLine1="                            android:layout_width=&quot;match_parent&quot;"
+        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="1448"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="InefficientWeight"
+        message="Use a `layout_width` of `0dp` instead of `match_parent` for better performance"
+        errorLine1="                            android:layout_width=&quot;match_parent&quot;"
+        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="1568"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="NestedWeights"
+        message="Nested weights are bad for performance"
+        errorLine1="                    android:layout_weight=&quot;1&quot;"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="98"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="NestedWeights"
+        message="Nested weights are bad for performance"
+        errorLine1="                        android:layout_weight=&quot;1&quot;"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="106"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="NestedWeights"
+        message="Nested weights are bad for performance"
+        errorLine1="                                    android:layout_weight=&quot;1&quot;"
+        errorLine2="                                    ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="443"
+            column="37"/>
+    </issue>
+
+    <issue
+        id="NestedWeights"
+        message="Nested weights are bad for performance"
+        errorLine1="                                    android:layout_weight=&quot;1&quot;"
+        errorLine2="                                    ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="685"
+            column="37"/>
+    </issue>
+
+    <issue
+        id="NestedWeights"
+        message="Nested weights are bad for performance"
+        errorLine1="                                        android:layout_weight=&quot;1&quot;"
+        errorLine2="                                        ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="691"
+            column="41"/>
+    </issue>
+
+    <issue
+        id="NestedWeights"
+        message="Nested weights are bad for performance"
+        errorLine1="                                    android:layout_weight=&quot;1&quot;"
+        errorLine2="                                    ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="928"
+            column="37"/>
+    </issue>
+
+    <issue
+        id="NestedWeights"
+        message="Nested weights are bad for performance"
+        errorLine1="                            android:layout_weight=&quot;1&quot;"
+        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="1316"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="NestedWeights"
+        message="Nested weights are bad for performance"
+        errorLine1="                            android:layout_weight=&quot;1&quot;"
+        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="1354"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="NestedWeights"
+        message="Nested weights are bad for performance"
+        errorLine1="                                android:layout_weight=&quot;1&quot;"
+        errorLine2="                                ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="1362"
+            column="33"/>
+    </issue>
+
+    <issue
+        id="NestedWeights"
+        message="Nested weights are bad for performance"
+        errorLine1="                            android:layout_weight=&quot;1&quot;"
+        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="1416"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="NestedWeights"
+        message="Nested weights are bad for performance"
+        errorLine1="                            android:layout_weight=&quot;1&quot;"
+        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="1450"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="NestedWeights"
+        message="Nested weights are bad for performance"
+        errorLine1="                                android:layout_weight=&quot;1&quot;>"
+        errorLine2="                                ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="1457"
+            column="33"/>
+    </issue>
+
+    <issue
+        id="NestedWeights"
+        message="Nested weights are bad for performance"
+        errorLine1="                            android:layout_weight=&quot;1&quot;>"
+        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="1570"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="NestedWeights"
+        message="Nested weights are bad for performance"
+        errorLine1="                android:layout_weight=&quot;1&quot;"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/view_status_panel.xml"
+            line="45"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="Overdraw"
+        message="Possible overdraw: Root element paints background `@color/bg` with a theme that also paints a background (inferred theme is `@style/Theme.BerryMed`)"
+        errorLine1="    android:background=&quot;@color/bg&quot;"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_home.xml"
+            line="14"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="Overdraw"
+        message="Possible overdraw: Root element paints background `@color/bg` with a theme that also paints a background (inferred theme is `@style/Theme.BerryMed`)"
+        errorLine1="    android:background=&quot;@color/bg&quot;"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="22"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="Overdraw"
+        message="Possible overdraw: Root element paints background `@color/bg` with a theme that also paints a background (inferred theme is `@style/Theme.BerryMed`)"
+        errorLine1="    android:background=&quot;@color/bg&quot;"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="12"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="Overdraw"
+        message="Possible overdraw: Root element paints background `@color/bg` with a theme that also paints a background (inferred theme is `@style/Theme.BerryMed`)"
+        errorLine1="    android:background=&quot;@color/bg&quot;"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_testing.xml"
+            line="6"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="Overdraw"
+        message="Possible overdraw: Root element paints background `@color/scrim` with a theme that also paints a background (inferred theme is `@style/Theme.BerryMed`)"
+        errorLine1="    android:background=&quot;@color/scrim&quot;"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/dialog_mode_switch.xml"
+            line="11"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.config_close` appears to be unused"
+        errorLine1="    &lt;string name=&quot;config_close&quot;>Cerrar la configuración&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="10"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.label_hr` appears to be unused"
+        errorLine1="    &lt;string name=&quot;label_hr&quot;>Frecuencia&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="16"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.label_spo2` appears to be unused"
+        errorLine1="    &lt;string name=&quot;label_spo2&quot;>SpO₂ / pulso&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="17"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.label_resp` appears to be unused"
+        errorLine1="    &lt;string name=&quot;label_resp&quot;>Respiración&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="18"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.label_temp` appears to be unused"
+        errorLine1="    &lt;string name=&quot;label_temp&quot;>Temperatura&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="19"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.label_nibp` appears to be unused"
+        errorLine1="    &lt;string name=&quot;label_nibp&quot;>Presión&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="20"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.kiosk_enter` appears to be unused"
+        errorLine1="    &lt;string name=&quot;kiosk_enter&quot;>Entrar&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="107"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.style.MainButton_Primary` appears to be unused"
+        errorLine1="    &lt;style name=&quot;MainButton.Primary&quot;>"
+        errorLine2="           ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/themes.xml"
+            line="385"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UselessParent"
+        message="This `LinearLayout` layout or its `FrameLayout` parent is unnecessary; transfer the `background` attribute to the other view"
+        errorLine1="                                    &lt;LinearLayout"
+        errorLine2="                                     ~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="339"
+            column="38"/>
+    </issue>
+
+    <issue
+        id="TooDeepLayout"
+        message="`activity_local_panel.xml` has more than 10 levels, bad for performance"
+        errorLine1="                                &lt;TextView"
+        errorLine2="                                 ~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="140"
+            column="34"/>
+    </issue>
+
+    <issue
+        id="TooDeepLayout"
+        message="`activity_main.xml` has more than 10 levels, bad for performance"
+        errorLine1="                                    &lt;com.google.android.material.chip.Chip style=&quot;@style/Widget.Material3.Chip.Filter&quot; android:layout_width=&quot;wrap_content&quot; android:layout_height=&quot;wrap_content&quot; android:checked=&quot;true&quot; android:text=&quot;@string/environment_prod&quot; />"
+        errorLine2="                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="476"
+            column="37"/>
+    </issue>
+
+    <issue
+        id="TooManyViews"
+        message="`activity_local_panel.xml` has more than 80 views, bad for performance"
+        errorLine1="                                            &lt;include"
+        errorLine2="                                             ~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="613"
+            column="46"/>
+    </issue>
+
+    <issue
+        id="TooManyViews"
+        message="`activity_main.xml` has more than 80 views, bad for performance"
+        errorLine1="                                    &lt;com.google.android.material.chip.Chip style=&quot;@style/Widget.Material3.Chip.Filter&quot; android:layout_width=&quot;wrap_content&quot; android:layout_height=&quot;wrap_content&quot; android:text=&quot;@string/environment_dev&quot; />"
+        errorLine2="                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="477"
+            column="37"/>
+    </issue>
+
+    <issue
+        id="MonochromeLauncherIcon"
+        message="The application adaptive icon is missing a monochrome tag"
+        errorLine1="&lt;adaptive-icon xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;>"
+        errorLine2="^">
+        <location
+            file="src/main/res/mipmap-anydpi-v26/ic_launcher.xml"
+            line="2"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="MonochromeLauncherIcon"
+        message="The application adaptive roundIcon is missing a monochrome tag"
+        errorLine1="&lt;adaptive-icon xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;>"
+        errorLine2="^">
+        <location
+            file="src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml"
+            line="2"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="ContentDescription"
+        message="Missing `contentDescription` attribute on image"
+        errorLine1="                &lt;ImageView"
+        errorLine2="                 ~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_home.xml"
+            line="61"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="ContentDescription"
+        message="Missing `contentDescription` attribute on image"
+        errorLine1="                &lt;ImageView"
+        errorLine2="                 ~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_home.xml"
+            line="89"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="ContentDescription"
+        message="Missing `contentDescription` attribute on image"
+        errorLine1="                &lt;ImageView"
+        errorLine2="                 ~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_home.xml"
+            line="114"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="ContentDescription"
+        message="Missing `contentDescription` attribute on image"
+        errorLine1="                            &lt;ImageView"
+        errorLine2="                             ~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="1146"
+            column="30"/>
+    </issue>
+
+    <issue
+        id="ContentDescription"
+        message="Missing `contentDescription` attribute on image"
+        errorLine1="                            &lt;ImageView"
+        errorLine2="                             ~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="1192"
+            column="30"/>
+    </issue>
+
+    <issue
+        id="ContentDescription"
+        message="Missing `contentDescription` attribute on image"
+        errorLine1="                            &lt;ImageView"
+        errorLine2="                             ~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="1238"
+            column="30"/>
+    </issue>
+
+    <issue
+        id="ContentDescription"
+        message="Missing `contentDescription` attribute on image"
+        errorLine1="            &lt;ImageView"
+        errorLine2="             ~~~~~~~~~">
+        <location
+            file="src/main/res/layout/view_status_panel.xml"
+            line="34"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="ContentDescription"
+        message="Missing `contentDescription` attribute on image"
+        errorLine1="                    &lt;ImageView"
+        errorLine2="                     ~~~~~~~~~">
+        <location
+            file="src/main/res/layout/view_status_panel.xml"
+            line="153"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="ContentDescription"
+        message="Missing `contentDescription` attribute on image"
+        errorLine1="                &lt;ImageView"
+        errorLine2="                 ~~~~~~~~~">
+        <location
+            file="src/main/res/layout/view_status_panel.xml"
+            line="331"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="ContentDescription"
+        message="Missing `contentDescription` attribute on image"
+        errorLine1="                &lt;ImageView"
+        errorLine2="                 ~~~~~~~~~">
+        <location
+            file="src/main/res/layout/view_status_panel.xml"
+            line="345"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="ContentDescription"
+        message="Missing `contentDescription` attribute on image"
+        errorLine1="        &lt;ImageView"
+        errorLine2="         ~~~~~~~~~">
+        <location
+            file="src/main/res/layout/view_status_rail.xml"
+            line="51"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="ContentDescription"
+        message="Missing `contentDescription` attribute on image"
+        errorLine1="        &lt;ImageView"
+        errorLine2="         ~~~~~~~~~">
+        <location
+            file="src/main/res/layout/view_status_rail.xml"
+            line="124"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Number formatting does not take into account locale settings. Consider using `String.format` instead."
+        errorLine1="        binding.volumeValue.text = volume.toString()"
+        errorLine2="                                   ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/guardiavirtual/berrymed/ui/LocalPanelActivity.kt"
+            line="804"
+            column="36"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Number formatting does not take into account locale settings. Consider using `String.format` instead."
+        errorLine1="        binding.ykushOtoscope.setText(config.ykushOtoscopePort.toString())"
+        errorLine2="                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/guardiavirtual/berrymed/ui/MainActivity.kt"
+            line="371"
+            column="39"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Number formatting does not take into account locale settings. Consider using `String.format` instead."
+        errorLine1="        binding.ykushStethoscope.setText(config.ykushStethoscopePort.toString())"
+        errorLine2="                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/guardiavirtual/berrymed/ui/MainActivity.kt"
+            line="372"
+            column="42"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Number formatting does not take into account locale settings. Consider using `String.format` instead."
+        errorLine1="        binding.ykushThermometer.setText(config.ykushThermometerPort.toString())"
+        errorLine2="                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/guardiavirtual/berrymed/ui/MainActivity.kt"
+            line="373"
+            column="42"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            binding.ykushMessage.text = &quot;Leyendo…&quot;"
+        errorLine2="                                         ~~~~~~~~">
+        <location
+            file="src/main/java/com/guardiavirtual/berrymed/ui/TestingActivity.kt"
+            line="95"
+            column="42"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            binding.ykushMessage.text = &quot;Guardando…&quot;"
+        errorLine2="                                         ~~~~~~~~~~">
+        <location
+            file="src/main/java/com/guardiavirtual/berrymed/ui/TestingActivity.kt"
+            line="102"
+            column="42"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            binding.thermoCard.cardResult.text = &quot;Apretá el gatillo para medir&quot;"
+        errorLine2="                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/guardiavirtual/berrymed/ui/TestingActivity.kt"
+            line="269"
+            column="51"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="            row.portLabel.text = &quot;Puerto ${port.port} · ${port.role}&quot;"
+        errorLine2="                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/guardiavirtual/berrymed/ui/TestingActivity.kt"
+            line="278"
+            column="34"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            row.portLabel.text = &quot;Puerto ${port.port} · ${port.role}&quot;"
+        errorLine2="                                  ~~~~~~~">
+        <location
+            file="src/main/java/com/guardiavirtual/berrymed/ui/TestingActivity.kt"
+            line="278"
+            column="35"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="        binding.teleState.text = status.room.label + if (status.manual) &quot; · prueba manual&quot; else &quot;&quot;"
+        errorLine2="                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/guardiavirtual/berrymed/ui/TestingActivity.kt"
+            line="305"
+            column="34"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;II&quot;, should use `@string` resource"
+        errorLine1="                                            android:text=&quot;II&quot; />"
+        errorLine2="                                            ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="173"
+            column="45"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;3&quot;, should use `@string` resource"
+        errorLine1="                                            android:text=&quot;3&quot; />"
+        errorLine2="                                            ~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="179"
+            column="45"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;7&quot;, should use `@string` resource"
+        errorLine1="                                            android:text=&quot;7&quot; />"
+        errorLine2="                                            ~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="185"
+            column="45"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;12,5&quot;, should use `@string` resource"
+        errorLine1="                                            android:text=&quot;12,5&quot; />"
+        errorLine2="                                            ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="195"
+            column="45"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;25&quot;, should use `@string` resource"
+        errorLine1="                                            android:text=&quot;25&quot; />"
+        errorLine2="                                            ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="201"
+            column="45"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;50&quot;, should use `@string` resource"
+        errorLine1="                                            android:text=&quot;50&quot; />"
+        errorLine2="                                            ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="207"
+            column="45"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;5&quot;, should use `@string` resource"
+        errorLine1="                                            android:text=&quot;5&quot; />"
+        errorLine2="                                            ~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="222"
+            column="45"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;10&quot;, should use `@string` resource"
+        errorLine1="                                            android:text=&quot;10&quot; />"
+        errorLine2="                                            ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="228"
+            column="45"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;20&quot;, should use `@string` resource"
+        errorLine1="                                            android:text=&quot;20&quot; />"
+        errorLine2="                                            ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_local_panel.xml"
+            line="234"
+            column="45"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;FC&quot;, should use `@string` resource"
+        errorLine1="                        android:text=&quot;FC&quot;"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="166"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;lpm&quot;, should use `@string` resource"
+        errorLine1="                        android:text=&quot;lpm&quot; />"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="176"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;SpO₂&quot;, should use `@string` resource"
+        errorLine1="                        android:text=&quot;SpO₂&quot;"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="197"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;% / lpm&quot;, should use `@string` resource"
+        errorLine1="                        android:text=&quot;% / lpm&quot; />"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="207"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;Resp&quot;, should use `@string` resource"
+        errorLine1="                        android:text=&quot;Resp&quot;"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="228"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;rpm&quot;, should use `@string` resource"
+        errorLine1="                        android:text=&quot;rpm&quot; />"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="238"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;Temp&quot;, should use `@string` resource"
+        errorLine1="                        android:text=&quot;Temp&quot;"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="259"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;°C&quot;, should use `@string` resource"
+        errorLine1="                        android:text=&quot;°C&quot; />"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="269"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;PA&quot;, should use `@string` resource"
+        errorLine1="                        android:text=&quot;PA&quot;"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="290"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;mmHg&quot;, should use `@string` resource"
+        errorLine1="                        android:text=&quot;mmHg&quot; />"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="300"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;start-monitoring&quot;, should use `@string` resource"
+        errorLine1="                                        android:text=&quot;start-monitoring&quot; />"
+        errorLine2="                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="567"
+            column="41"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;stop-monitoring&quot;, should use `@string` resource"
+        errorLine1="                                        android:text=&quot;stop-monitoring&quot; />"
+        errorLine2="                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="577"
+            column="41"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;x0.25&quot;, should use `@string` resource"
+        errorLine1="                                    &lt;com.google.android.material.chip.Chip style=&quot;@style/Widget.Material3.Chip.Filter&quot; android:layout_width=&quot;wrap_content&quot; android:layout_height=&quot;wrap_content&quot; android:text=&quot;x0.25&quot; />"
+        errorLine2="                                                                                                                                                                                                ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="605"
+            column="193"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;x0.5&quot;, should use `@string` resource"
+        errorLine1="                                    &lt;com.google.android.material.chip.Chip style=&quot;@style/Widget.Material3.Chip.Filter&quot; android:layout_width=&quot;wrap_content&quot; android:layout_height=&quot;wrap_content&quot; android:text=&quot;x0.5&quot; />"
+        errorLine2="                                                                                                                                                                                                ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="606"
+            column="193"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;x1&quot;, should use `@string` resource"
+        errorLine1="                                    &lt;com.google.android.material.chip.Chip style=&quot;@style/Widget.Material3.Chip.Filter&quot; android:layout_width=&quot;wrap_content&quot; android:layout_height=&quot;wrap_content&quot; android:checked=&quot;true&quot; android:text=&quot;x1&quot; />"
+        errorLine2="                                                                                                                                                                                                                       ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="607"
+            column="216"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;x2&quot;, should use `@string` resource"
+        errorLine1="                                    &lt;com.google.android.material.chip.Chip style=&quot;@style/Widget.Material3.Chip.Filter&quot; android:layout_width=&quot;wrap_content&quot; android:layout_height=&quot;wrap_content&quot; android:text=&quot;x2&quot; />"
+        errorLine2="                                                                                                                                                                                                ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="608"
+            column="193"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;Operación&quot;, should use `@string` resource"
+        errorLine1="                                    &lt;com.google.android.material.chip.Chip style=&quot;@style/Widget.Material3.Chip.Filter&quot; android:layout_width=&quot;wrap_content&quot; android:layout_height=&quot;wrap_content&quot; android:text=&quot;Operación&quot; />"
+        errorLine2="                                                                                                                                                                                                ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="626"
+            column="193"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;Monitor&quot;, should use `@string` resource"
+        errorLine1="                                    &lt;com.google.android.material.chip.Chip style=&quot;@style/Widget.Material3.Chip.Filter&quot; android:layout_width=&quot;wrap_content&quot; android:layout_height=&quot;wrap_content&quot; android:checked=&quot;true&quot; android:text=&quot;Monitor&quot; />"
+        errorLine2="                                                                                                                                                                                                                       ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="627"
+            column="216"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;Diagnóstico&quot;, should use `@string` resource"
+        errorLine1="                                    &lt;com.google.android.material.chip.Chip style=&quot;@style/Widget.Material3.Chip.Filter&quot; android:layout_width=&quot;wrap_content&quot; android:layout_height=&quot;wrap_content&quot; android:text=&quot;Diagnóstico&quot; />"
+        errorLine2="                                                                                                                                                                                                ~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="628"
+            column="193"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;x0.25&quot;, should use `@string` resource"
+        errorLine1="                                    &lt;com.google.android.material.chip.Chip style=&quot;@style/Widget.Material3.Chip.Filter&quot; android:layout_width=&quot;wrap_content&quot; android:layout_height=&quot;wrap_content&quot; android:text=&quot;x0.25&quot; />"
+        errorLine2="                                                                                                                                                                                                ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="646"
+            column="193"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;x0.5&quot;, should use `@string` resource"
+        errorLine1="                                    &lt;com.google.android.material.chip.Chip style=&quot;@style/Widget.Material3.Chip.Filter&quot; android:layout_width=&quot;wrap_content&quot; android:layout_height=&quot;wrap_content&quot; android:text=&quot;x0.5&quot; />"
+        errorLine2="                                                                                                                                                                                                ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="647"
+            column="193"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;x1&quot;, should use `@string` resource"
+        errorLine1="                                    &lt;com.google.android.material.chip.Chip style=&quot;@style/Widget.Material3.Chip.Filter&quot; android:layout_width=&quot;wrap_content&quot; android:layout_height=&quot;wrap_content&quot; android:checked=&quot;true&quot; android:text=&quot;x1&quot; />"
+        errorLine2="                                                                                                                                                                                                                       ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="648"
+            column="216"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;x2&quot;, should use `@string` resource"
+        errorLine1="                                    &lt;com.google.android.material.chip.Chip style=&quot;@style/Widget.Material3.Chip.Filter&quot; android:layout_width=&quot;wrap_content&quot; android:layout_height=&quot;wrap_content&quot; android:text=&quot;x2&quot; />"
+        errorLine2="                                                                                                                                                                                                ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="649"
+            column="193"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;Adulto&quot;, should use `@string` resource"
+        errorLine1="                                    &lt;com.google.android.material.chip.Chip style=&quot;@style/Widget.Material3.Chip.Filter&quot; android:layout_width=&quot;wrap_content&quot; android:layout_height=&quot;wrap_content&quot; android:checked=&quot;true&quot; android:text=&quot;Adulto&quot; />"
+        errorLine2="                                                                                                                                                                                                                       ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="667"
+            column="216"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;Niño&quot;, should use `@string` resource"
+        errorLine1="                                    &lt;com.google.android.material.chip.Chip style=&quot;@style/Widget.Material3.Chip.Filter&quot; android:layout_width=&quot;wrap_content&quot; android:layout_height=&quot;wrap_content&quot; android:text=&quot;Niño&quot; />"
+        errorLine2="                                                                                                                                                                                                ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="668"
+            column="193"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;Neonato&quot;, should use `@string` resource"
+        errorLine1="                                    &lt;com.google.android.material.chip.Chip style=&quot;@style/Widget.Material3.Chip.Filter&quot; android:layout_width=&quot;wrap_content&quot; android:layout_height=&quot;wrap_content&quot; android:text=&quot;Neonato&quot; />"
+        errorLine2="                                                                                                                                                                                                ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="669"
+            column="193"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;1&quot;, should use `@string` resource"
+        errorLine1="                                        android:text=&quot;1&quot; />"
+        errorLine2="                                        ~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="696"
+            column="41"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;2&quot;, should use `@string` resource"
+        errorLine1="                                        android:text=&quot;2&quot; />"
+        errorLine2="                                        ~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="708"
+            column="41"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;3&quot;, should use `@string` resource"
+        errorLine1="                                        android:text=&quot;3&quot; />"
+        errorLine2="                                        ~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="720"
+            column="41"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;USB Audio&quot;, should use `@string` resource"
+        errorLine1="                                        android:text=&quot;USB Audio&quot; />"
+        errorLine2="                                        ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="735"
+            column="41"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;H390&quot;, should use `@string` resource"
+        errorLine1="                                        android:text=&quot;H390&quot; />"
+        errorLine2="                                        ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="747"
+            column="41"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;1515&quot;, should use `@string` resource"
+        errorLine1="                                        android:text=&quot;1515&quot; />"
+        errorLine2="                                        ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="762"
+            column="41"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;sin leer&quot;, should use `@string` resource"
+        errorLine1="        android:text=&quot;sin leer&quot;"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/item_ykush_port.xml"
+            line="26"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="RtlSymmetry"
+        message="When you define `paddingStart` you should probably also define `paddingEnd` for right-to-left symmetry"
+        errorLine1="            android:paddingStart=&quot;6dp&quot;"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_testing.xml"
+            line="53"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="RtlSymmetry"
+        message="When you define `paddingStart` you should probably also define `paddingEnd` for right-to-left symmetry"
+        errorLine1="            android:paddingStart=&quot;6dp&quot;>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_testing.xml"
+            line="64"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="RtlSymmetry"
+        message="When you define `paddingStart` you should probably also define `paddingEnd` for right-to-left symmetry"
+        errorLine1="            android:paddingStart=&quot;6dp&quot;"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_testing.xml"
+            line="105"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="RtlSymmetry"
+        message="When you define `paddingStart` you should probably also define `paddingEnd` for right-to-left symmetry"
+        errorLine1="            android:paddingStart=&quot;6dp&quot;>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_testing.xml"
+            line="115"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="RtlSymmetry"
+        message="When you define `paddingStart` you should probably also define `paddingEnd` for right-to-left symmetry"
+        errorLine1="    android:paddingStart=&quot;1dp&quot;>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/view_status_panel.xml"
+            line="15"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="RtlSymmetry"
+        message="When you define `paddingEnd` you should probably also define `paddingStart` for right-to-left symmetry"
+        errorLine1="        android:paddingEnd=&quot;12dp&quot;>"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/view_status_panel.xml"
+            line="23"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="RtlSymmetry"
+        message="When you define `paddingStart` you should probably also define `paddingEnd` for right-to-left symmetry"
+        errorLine1="            android:paddingStart=&quot;15dp&quot;>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/view_status_panel.xml"
+            line="32"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="RtlSymmetry"
+        message="When you define `paddingStart` you should probably also define `paddingEnd` for right-to-left symmetry"
+        errorLine1="    android:paddingStart=&quot;1dp&quot;>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/view_status_rail.xml"
+            line="17"
+            column="5"/>
+    </issue>
+
+</issues>
