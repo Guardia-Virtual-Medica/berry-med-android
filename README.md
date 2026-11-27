@@ -423,6 +423,8 @@ La pantalla de inicio de la tablet (`HomeActivity`, con `HOME` en el manifiesto)
 - **Panel Local** (azul) abre el [Panel Local](#panel-local), sin PIN.
 - **Configuración** ("Ajustes y parámetros del sistema") pide el PIN (el único de la app, `1515` por defecto) y abre la pantalla de configuración y estado, con USB-config y Testing.
 
+Arriba a la derecha, el **idioma** de la app: un botón con el globo y el nombre del idioma en uso («Español», «English», «Português»). Abre un diálogo con los tres, cada uno con su propio nombre, el actual marcado y **Cancelar**; elegir otro cambia toda la app al momento (ver [Idiomas](#idiomas)). **Con una consulta en curso** (signos enviando o la videollamada en la sala) el botón queda deshabilitado y a su izquierda dice «Hay una consulta en curso. Terminala para cambiar el idioma.»: cambiar el idioma recarga el kiosco y cortaría la llamada.
+
 Todo vuelve a Inicio: **Finalizar**, **Volver** de la pantalla de espera y atrás con el ECG a la vista en el Panel Local; atrás en la configuración (Testing vuelve a la configuración). La **casita** del panel lateral también: en el Panel Local pide confirmar (como volver a ONDOCTOR365) y en el kiosco también pide confirmar, sin PIN, con **Recargar** a mano. Atrás en Inicio no hace nada.
 
 ## Kiosco
@@ -508,7 +510,7 @@ Los tests no necesitan la plaqueta. `local.properties` (la ruta del SDK) es de c
 Cada versión publicada tiene su APK en [Releases](https://github.com/Guardia-Virtual-Medica/berry-med-android/releases), con el SHA-256 en las notas. No hay CI: el APK de la release se compila a mano (`assembleDebug`) y se sube con `gh release create v<versionName> <apk>`. Para instalarlo en la tablet conectada por USB:
 
 ```bash
-adb install -r -g berry-med-1.4.0.apk
+adb install -r -g berry-med-1.5.0.apk
 ```
 
 O, recién compilado:
@@ -525,15 +527,25 @@ Para probar sin tablet está el emulador `berry_tablet`: Android 15, 2560×1600 
 
 ## Idiomas
 
-Por ahora la app está sólo en español. Lo que hay es la red para pasarla a varios idiomas (el plan está en [`docs/planes/plan-19-multilingue.md`](docs/planes/plan-19-multilingue.md)): unos tests y el lint que no dejan entrar textos nuevos escritos en el código, mientras se migran los que ya están.
+La app está en **español** (el de origen, rioplatense), **inglés** (de Estados Unidos) y **portugués** (de Brasil). Se elige con el botón de idioma de [Inicio](#inicio); en Android 13 o más también desde **Ajustes → Apps → Berry Med → Idioma**. Android recuerda la elección, también después de reiniciar o de instalar una versión nueva, y la aplica a toda la app: pantallas, diálogos, panel lateral y la notificación del servicio (que cambia en el momento, sin reabrir nada). La web del kiosco es aparte: recibe el idioma de la app en `navigator.language`, pero hoy no lo usa.
 
-**Cómo se agrega un texto.** Va a `app/src/main/res/values/strings.xml`, nunca escrito en el código ni en el layout. Una frase entera por entrada: no se arma pegando pedazos ni metiendo una palabra con su artículo, porque en otro idioma cambian el orden y el género. Los valores van como parámetros numerados (`%1$s`, `%2$d`), así cada idioma los ubica donde quiere. Lo que es igual en todos los idiomas (nombres propios, marcas, unidades) va a `values/donottranslate.xml` con `translatable="false"`. Las líneas de log (`[USB] …`) se quedan en español y en el código.
+**Español hasta que alguien elija.** La app no sigue el idioma de la tablet: sin idioma elegido queda en español, así una tablet con el sistema en inglés no pasa a inglés al actualizar. En Android 13 o más lo fija `BerryMedApp` al arrancar, con el `LocaleManager` del sistema (y el log dice `[IDIOMA] Nadie eligió idioma: la app queda en español`); en los anteriores, la primera pantalla. Lo hace `i18n/AppLocale.kt`; los idiomas que hay están en `i18n/AppLanguage.kt`.
 
-**Fechas y números.** Siguen al idioma de los textos, no al de la tablet: la entrada `fmt_locale` del diccionario dice con qué idioma y país se escriben (`es-AR`; en inglés sería `en-US`), y `fmt_long_date` y `fmt_short_date_time` son los patrones de fecha. `PanelFormat` los recibe (la pantalla lo arma con `panelFormat()`); el decimal sale del idioma y la hora va siempre en 24 h.
+**Bloqueado en consulta.** Con una consulta enviando o la teleconsulta en la sala no se cambia el idioma (`LanguageSwitch.blocked`, la misma regla que el cambio de modo): Android recrea las pantallas, el kiosco recargaría la web y se cortaría la videollamada.
 
-**Textos que arma el código.** Lo que no es una pantalla (los modelos, el runtime, el servicio) devuelve un `Txt` (`i18n/Txt.kt`): la clave y sus parámetros, y la pantalla lo resuelve con `resolve(context)`. `Txt.Plural` es una entrada `<plurals>` (en español y portugués con `one`, `many` y `other`, `many` igual a `other`); `Txt.Join` pone frases enteras una al lado de la otra («Termómetro sin conectar. Hub YKUSH3 sin conectar.», «a, b, c»). Un número con decimales entra como número y la entrada dice cómo escribirlo (`%1$.1f`): `resolve` lo escribe con `fmt_locale` del mismo diccionario, así «hace 1,5 s» sale con coma aunque la tablet esté en inglés.
+**El log, siempre en español**, sea cual sea el idioma de la pantalla: soporte lee un solo idioma y este README cita líneas textuales. Vale para logcat, la consola de Testing y las líneas que llevan un mensaje que también se ve en pantalla (ver `LogText` más abajo).
 
-**El log, siempre en español.** Cuando una línea de log lleva un mensaje que también se ve en pantalla, se resuelve con `LogText` (`i18n/LogText.kt`), un contexto fijo en español que arma una vez el runtime (`TotemRuntime.logText`). A las reglas sin Android se les pasa como función (`HubRestState.logLine(…, ::logText)`), y en los tests se les pasa `::es`.
+**El glosario.** [`docs/glosario-idiomas.md`](docs/glosario-idiomas.md) tiene el vocabulario del producto, los términos clínicos y las abreviaturas, y los nombres de las arritmias en los tres idiomas. Las traducciones las redactó un modelo: los términos clínicos los tiene que aprobar una persona antes de usar la app con pacientes en inglés o en portugués.
+
+**Cómo se agrega un texto.** Va a `app/src/main/res/values/strings.xml`, nunca escrito en el código ni en el layout, y en la misma entrada de `values-en/strings.xml` y `values-pt/strings.xml` (`StringsCatalogTest` falla si falta en alguno). Una frase entera por entrada: no se arma pegando pedazos ni metiendo una palabra con su artículo, porque en otro idioma cambian el orden y el género. Los valores van como parámetros numerados (`%1$s`, `%2$d`), así cada idioma los ubica donde quiere. Lo que es igual en todos los idiomas (nombres propios, marcas, unidades, los nombres de los idiomas en el selector) va a `values/donottranslate.xml` con `translatable="false"`. Las líneas de log (`[USB] …`) se quedan en español y en el código.
+
+**Cómo se agrega un idioma.** Una carpeta `values-xx/strings.xml` con todas las entradas, una línea en `AppLanguage` (la etiqueta y el nombre del idioma en su idioma, en `donottranslate.xml`), otra en `res/xml/locales_config.xml` y otra en `resourceConfigurations` de `app/build.gradle.kts`: `AppLanguageTest` comprueba que los cuatro digan lo mismo. `fmt_locale` y los patrones de fecha van traducidos. Un idioma que no use letras latinas necesita además otra tipografía: Barlow no las trae.
+
+**Fechas y números.** Siguen al idioma de los textos, no al de la tablet: la entrada `fmt_locale` del diccionario dice con qué idioma y país se escriben (`es-AR`, `en-US`, `pt-BR`), y `fmt_long_date` y `fmt_short_date_time` son los patrones de fecha («Jueves 29 de octubre de 2026», «Thursday, October 29, 2026», «Quinta-feira, 29 de outubro de 2026»). `PanelFormat` los recibe (la pantalla lo arma con `panelFormat()`; si un patrón no se puede leer, usa los del español); el decimal sale del idioma (12,5 / 12.5) y la hora va siempre en 24 h. El porcentaje también es una entrada: «98 %» en español, «98%» en inglés y portugués. Lo que va a la API sigue con `Locale.US`: el cuerpo del `POST` es el mismo en los tres idiomas.
+
+**Textos que arma el código.** Lo que no es una pantalla (los modelos, el runtime, el servicio) devuelve un `Txt` (`i18n/Txt.kt`): la clave y sus parámetros, y la pantalla lo resuelve con `resolve(context)`. `Txt.Plural` es una entrada `<plurals>` (en español y portugués con `one`, `many` y `other`, `many` igual a `other`; en inglés `one` y `other`); `Txt.Join` pone frases enteras una al lado de la otra («Termómetro sin conectar. Hub YKUSH3 sin conectar.», «a, b, c»). Un número con decimales entra como número y la entrada dice cómo escribirlo (`%1$.1f`): `resolve` lo escribe con `fmt_locale` del mismo diccionario. El servicio resuelve con `AppLocale.localized(context)`.
+
+**`LogText`.** Cuando una línea de log lleva un mensaje que también se ve en pantalla, se resuelve con `LogText` (`i18n/LogText.kt`), un contexto fijo en español que arma una vez el runtime (`TotemRuntime.logText`). A las reglas sin Android se les pasa como función (`HubRestState.logLine(…, ::logText)`), y en los tests se les pasa `::es`. Los números del log van con `Locale.US`.
 
 **Qué controla cada test** (corren con `./gradlew test`):
 
@@ -541,23 +553,29 @@ Por ahora la app está sólo en español. Lo que hay es la red para pasarla a va
 |---|---|
 | `HardcodedTextTest.noNewHardcodedTextInKotlin` | Ninguna frase nueva escrita en un `.kt` de `src/main`. Lo que ya no está en el código tiene que salir de la lista: la lista sólo se achica. |
 | `HardcodedTextTest.layoutsHaveNoHardcodedText` | Ningún texto con letras, ni número con decimal, escrito en un layout (`tools:text` no cuenta). |
-| `LintBaselineTest` | `app/lint-baseline.xml` no esconde ningún `HardcodedText` ni `SetTextI18n`: un texto nuevo en una pantalla se pasa al diccionario, no al baseline. |
-| `StringsCatalogTest` | Las traducciones contra el español: las mismas entradas, nada de más, nada traducido que sea `translatable="false"`, los mismos parámetros, ningún `%s` sin número y ninguna entrada vacía. Lo que todavía no se tradujo está en `sin-traducir.txt`. |
+| `LintBaselineTest` | `app/lint-baseline.xml` no esconde ningún `HardcodedText`, `SetTextI18n`, `MissingTranslation` ni `ExtraTranslation`. |
+| `StringsCatalogTest` | Las traducciones contra el español: las mismas entradas, nada de más, nada traducido que sea `translatable="false"`, los mismos parámetros, ningún `%s` sin número y ninguna entrada vacía. `sin-traducir.txt` está vacía: todo está en los tres idiomas. |
+| `AppLanguageTest` | El selector, las carpetas `values-xx`, `locales_config.xml` y `resourceConfigurations` dicen los mismos idiomas; `pt-BR` es portugués; el español es el de por defecto. |
+| `LanguageSwitchTest` | El idioma no se cambia con una consulta enviando ni con la teleconsulta en sala. |
+| `ArrhythmiaAndPluralsTest` | Las 12 arritmias del protocolo tienen nombre en los tres idiomas; cada `<plurals>` tiene sus formas en cada idioma. |
+| `…InOtherLanguages` (`StatusPanelUiTest`, `PanelUiTest`, `TestingSessionTest`, `TotemStatusTest`, `PanelFormatTest`) y `TeleStreamerTest.theScreenInEnglishTheLogInSpanish` | Las mismas reglas leídas en inglés y en portugués, con su decimal, su fecha y su plural; el log, en español con la pantalla en inglés. |
 
-**Las listas.** Están en `app/src/test/resources/i18n/`. `textos-en-codigo.txt` tiene tres partes: `## PENDIENTE` era lo que faltaba pasar al diccionario y desde el paso 4b del plan 19 está vacía (una frase nueva en el código es un error: va al diccionario), `## LAYOUTS` lo mismo en los layouts, y `## PERMITIDO` lo que se queda en el código a propósito, revisado uno por uno: lo que no es texto para una persona (cabeceras HTTP, `<unknown ssid>`, el nombre que se busca de un equipo) y los motivos que sólo terminan en una línea de log. Algo pasa a `## PERMITIDO` sólo si se siguió el valor y de verdad no llega a ninguna pantalla. Las listas se regeneran contra el código con:
+**Las listas.** Están en `app/src/test/resources/i18n/`. `textos-en-codigo.txt` tiene tres partes: `## PENDIENTE` (vacía: una frase nueva en el código es un error, va al diccionario), `## LAYOUTS` lo mismo en los layouts, y `## PERMITIDO` lo que se queda en el código a propósito, revisado uno por uno: lo que no es texto para una persona (cabeceras HTTP, `<unknown ssid>`, el nombre que se busca de un equipo) y los motivos que sólo terminan en una línea de log. `sin-traducir.txt` está vacía. Se regeneran contra el código con:
 
 ```bash
 I18N_REGENERAR=1 JAVA_HOME=/opt/homebrew/opt/openjdk@17 ./gradlew testDebugUnitTest --tests '*HardcodedTextTest*' --tests '*StringsCatalogTest*'
 ```
 
-Regenerar conserva lo que ya está en `## PERMITIDO` (si sigue en el código) y manda todo lo demás a `## PENDIENTE`. Después se mira el diff: una línea nueva en `## PENDIENTE` es un texto que tendría que haber ido al diccionario. El test cuenta como frase dos palabras seguidas, una letra con tilde o una sola palabra con mayúscula, con o sin signo al final («Escuchando.»); una palabra suelta en minúscula («ninguno», «salida») no la ve, así que eso se revisa a mano.
+Después se mira el diff: una línea nueva en `## PENDIENTE` o en `sin-traducir.txt` es un texto que falta pasar al diccionario o traducir. El test cuenta como frase dos palabras seguidas, una letra con tilde o una sola palabra con mayúscula, con o sin signo al final («Escuchando.»); una palabra suelta en minúscula («ninguno», «salida») no la ve: para eso está el seudo-idioma.
 
-**El lint.** `./gradlew lintDebug` da error con `HardcodedText`, `SetTextI18n`, `MissingTranslation`, `ExtraTranslation`, `StringFormatMatches`, `StringFormatCount` y `MissingQuantity`. Lo que ya estaba antes está en `app/lint-baseline.xml` y se va sacando con la migración; el baseline no se agranda.
+**El lint.** `./gradlew lintDebug` da error con `HardcodedText`, `SetTextI18n`, `MissingTranslation`, `ExtraTranslation`, `StringFormatMatches`, `StringFormatCount` y `MissingQuantity`. El baseline (`app/lint-baseline.xml`) no tiene ninguno de los cuatro primeros.
 
 **Seudo-idiomas.** `./gradlew assembleDebug -Pseudo` compila con los seudo-idiomas de Android: `en-XA` (acentos y textos un 30 % más largos) y `ar-XB` (de derecha a izquierda). En el emulador, con el idioma en `en-XA`, lo que pasa por el diccionario sale `[Çöñ åçéñţöš]` y lo que sigue escrito en el código sale normal; además se ve qué se corta o se desborda con un texto más largo. No va en el APK que se publica.
 
 ```bash
 adb -s emulator-5554 shell cmd locale set-app-locales com.guardiavirtual.berrymed --locales en-XA
+# Sin idioma elegido (la app vuelve al español al abrir):
+adb -s emulator-5554 shell cmd locale set-app-locales com.guardiavirtual.berrymed --locales ""
 ```
 
 ## Licencia

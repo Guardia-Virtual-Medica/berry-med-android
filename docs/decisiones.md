@@ -258,6 +258,22 @@ Visto en la tablet de pruebas y confirmado con el código del proveedor Koplak, 
 - Enchufar o desenchufar un equipo con todo prendido también lo dejó colgado una vez; ahí hizo falta cortarle la corriente.
 - La app no puede forzar esa búsqueda sin root. Pendiente: un ajuste de sistema en la tablet que la repita si el hub no apareció al arrancar.
 
+## 27 de noviembre de 2026
+
+### Berry Med en español, inglés y portugués (plan 19, 1.5.0)
+
+- La app está en **español** (el de origen, rioplatense, sin cambios), **inglés** de Estados Unidos y **portugués** de Brasil. Se eligió el **diccionario de Android** (`values/`, `values-en/`, `values-pt/`) y no uno propio: ya había 300 entradas, los layouts usan `@string`, y se ganan el chequeo al compilar, los plurales, el lint y el seudo-idioma. El idioma lo cambia AppCompat (`setApplicationLocales`), que en Android 13 o más se lo pasa al sistema.
+- Lo que arma texto fuera de una pantalla (modelos, runtime, servicio, enlaces con los equipos) devuelve un **`Txt`** (clave y parámetros) en vez de una frase: las reglas siguen sin Android y con test, y las que comparaban frases comparan claves.
+- **Sin idioma elegido, español**, no el idioma de la tablet: una tablet con el sistema en inglés no pasa a inglés al actualizar. En Android 13 o más lo fija `BerryMedApp` con el `LocaleManager`. En el emulador se vieron dos trampas y se resolvieron: la primera pantalla la arma Android antes de que arranque el proceso (salía en inglés; ahora cada pantalla pasa por `AppLocale.wrap`), y AppCompat, la primera vez, copiaba al sistema su idioma guardado (ninguno) encima del español.
+- **El log, siempre en español** (`LogText`), con los números en `Locale.US`: soporte lee un solo idioma y el README cita líneas textuales. La consola de Testing queda en español.
+- **El selector**, a la vista en Inicio, y **bloqueado con una consulta en curso** (signos enviando o la teleconsulta en sala), con la misma regla que el cambio de modo: cambiar el idioma recrea las pantallas, el kiosco recarga la web y se cortaría la videollamada.
+- **Fechas y números** salen de `fmt_locale` y de los patrones del mismo diccionario (`es-AR`, `en-US`, `pt-BR`), no de la configuración de la tablet: nunca una fecha en otro idioma que el texto que la rodea. La hora va en 24 h en los tres. Lo que va a la API no cambia (`Locale.US`).
+- Las traducciones las redactó un modelo. El vocabulario del producto (maletín → care kit / maleta, tótem → totem, kiosco → kiosk / quiosque, plaqueta → board / placa, Panel Local → Local Panel / Painel Local, teleconsulta → telehealth / teleconsulta) y los términos clínicos están en `docs/glosario-idiomas.md`.
+- **Queda por confirmar en la tablet y por una persona:**
+  - Las pruebas T1 a T5 del plan 19 en la tablet: actualizar de 1.4.0 a 1.5.0 y que siga en español con la configuración intacta; elegir inglés y reiniciar (Inicio y la notificación en inglés al encender); una teleconsulta de prueba en inglés con el selector bloqueado y la llamada sin cortarse; el Panel Local en portugués con los equipos (otoscopio y estetoscopio); y el log de esas pruebas en español.
+  - La revisión clínica del glosario por un médico en inglés y en portugués, sobre todo lo marcado «a confirmar» (las arritmias, `brpm` / `irpm`, los modos del ECG y de la presión).
+  - Android 12 o menos (el español por defecto lo fija la primera pantalla): no hay imagen de sistema para probarlo.
+
 ## Pendiente
 
 - El otoscopio en la teleconsulta (`UvcOtoscopeFrames`) no reabre al reconectarse: si el médico lo pide antes de que alguien elija «Computer», falla. El panel lateral dice «En vivo» apenas abre, sin esperar la imagen. La cadencia del otoscopio (5 a 9 cuadros por segundo), a confirmar con buena luz.
@@ -277,4 +293,5 @@ Visto en la tablet de pruebas y confirmado con el código del proveedor Koplak, 
 - **Cero carteles USB después de reiniciar** (plan 17): Android no da una forma a una app común. Hace falta algo a nivel sistema: una ROM con `config_disableUsbPermissionDialogs`, o Berry Med instalada como app privilegiada con `MANAGE_USB`. Se decide aparte.
 - Plan 17 en la tablet real: los pedidos USB de a uno al reiniciar (plaqueta, hub y termómetro, cada uno después de contestar el anterior), las filas con «Falta permiso» y su toque, el permiso del otoscopio desde su fila, y que **Pedir permiso USB** (que también cicla el otoscopio) no deje dos diálogos a la vez.
 - Plan 17 en el emulador: no estaba prendido al implementarlo. Falta ver el aviso «Sin conexión» en modo avión y que se cierra al volver la red, la fila del Wi-Fi con y sin red, los permisos juntos al abrir, una fila con permiso rechazado, y Berry Med como inicio tras `set-home-activity` y un reinicio.
+- Plan 19 en la tablet (T1 a T5) y la revisión clínica de `docs/glosario-idiomas.md` antes de usar la app con pacientes en inglés o en portugués.
 - v2 con guardado y PDF local.
