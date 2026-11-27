@@ -274,6 +274,15 @@ Visto en la tablet de pruebas y confirmado con el código del proveedor Koplak, 
   - La revisión clínica del glosario por un médico en inglés y en portugués, sobre todo lo marcado «a confirmar» (las arritmias, `brpm` / `irpm`, los modos del ECG y de la presión).
   - Android 12 o menos (el español por defecto lo fija la primera pantalla): no hay imagen de sistema para probarlo.
 
+### Nombre visible: ONDOCTOR365 Suitcase (1.5.1)
+
+- La app se llama **ONDOCTOR365 Suitcase**, el mismo texto en español, inglés y portugués, sin traducir: es lo que dicen el launcher, Ajustes → Apps, el cartel de Android para elegir la app de inicio y las frases que la nombran (la puesta en marcha del paso Kiosco, los permisos, la ayuda de Testing, la notificación). Lo eligió Nico. Antes, Berry Med.
+- El canal de la notificación pasa a «Tótem ONDOCTOR365» / «ONDOCTOR365 totem» / «Totem ONDOCTOR365».
+- El APK de las releases se llama `ondoctor365-suitcase-android-<versionName>.apk` desde la 1.5.1 (antes `berry-med-<versionName>.apk`).
+- **No cambia**: el paquete `com.guardiavirtual.berrymed` (cambiarlo es otra app para Android: habría que desinstalar en cada tablet y se perdería la configuración), el namespace, las clases (`BerryMedApp`, `BerryConfig`…), los ids de recursos, `window.BerryMed` (el contrato con la web del kiosco), el nombre del repo, el log (ninguna línea nombraba a la app) y lo que dice «Berry» por la plaqueta PM6750, que es un producto de Berry. La card ONDOCTOR365 de Inicio, que abre el kiosco, sigue igual.
+- Un test (`StringsCatalogTest`) falla si una entrada de cualquier diccionario vuelve a decir «Berry Med».
+- Queda por ver en la tablet: el nombre bajo el ícono en su launcher y en el cartel «Select a Home app», y que al actualizar de 1.5.0 a 1.5.1 siga elegida como app de inicio (el paquete y la actividad son los mismos, así que no debería preguntar).
+
 ## Pendiente
 
 - El otoscopio en la teleconsulta (`UvcOtoscopeFrames`) no reabre al reconectarse: si el médico lo pide antes de que alguien elija «Computer», falla. El panel lateral dice «En vivo» apenas abre, sin esperar la imagen. La cadencia del otoscopio (5 a 9 cuadros por segundo), a confirmar con buena luz.

@@ -1,4 +1,6 @@
-# Berry Med para Android
+# ONDOCTOR365 Suitcase para Android
+
+> Desde la 1.5.1 la app se llama **ONDOCTOR365 Suitcase** (antes Berry Med): es lo que dicen el launcher, Ajustes → Apps y las pantallas, en los tres idiomas. El repo, el paquete (`com.guardiavirtual.berrymed`) y el código conservan `berry-med` / `berrymed`.
 
 App de tótem que reemplaza a `berry-monitor.exe`. Lee el monitor PM6750 (la plaqueta Berry) y el termómetro por USB y, mientras dura una consulta, manda las mediciones a la API una vez por segundo, con el mismo JSON que el monitor de Windows.
 
@@ -79,7 +81,7 @@ Prepará estos equipos:
 - El otoscopio.
 - El adaptador de audio USB y el estetoscopio.
 - Auriculares con cable para el jack de la tablet.
-- El APK de Berry Med.
+- El APK de ONDOCTOR365 Suitcase.
 - Una computadora con `adb`.
 
 Pedí estos datos:
@@ -89,7 +91,7 @@ Pedí estos datos:
 - La URL del kiosco.
 - La contraseña del tótem en el kiosco.
 
-### Tarea 1: instalar Berry Med
+### Tarea 1: instalar ONDOCTOR365 Suitcase
 
 **PRECAUCIÓN**: Instalá siempre un APK firmado con la misma clave. Con otra clave tenés que desinstalar la app, y eso borra la configuración.
 
@@ -98,7 +100,7 @@ Pedí estos datos:
 3. Ejecutá este comando en la computadora:
 
    ```bash
-   adb install -r -g berry-med-<versión>.apk
+   adb install -r -g ondoctor365-suitcase-android-<versión>.apk
    ```
 
    `-g` da de entrada todos los permisos de la app (cámara, micrófono, ubicación y notificaciones), así no aparece ningún cartel al abrirla. Los permisos USB no: ésos se aceptan en la tarea 3.
@@ -128,7 +130,7 @@ Pedí estos datos:
 
 **NOTA**: Android muestra un pedido por equipo, de a uno: plaqueta, hub YKUSH3 y termómetro. El siguiente aparece cuando contestás el anterior.
 
-1. Tocá el ícono de Berry Med.
+1. Tocá el ícono de ONDOCTOR365 Suitcase.
 2. Marcá "Usar de forma predeterminada" en el pedido.
 3. Aceptá el pedido.
 4. Hacé los pasos 2 y 3 en cada pedido que aparezca.
@@ -232,16 +234,16 @@ Estos pasos están en la lista **Puesta en marcha** del paso Kiosco. El punto ve
 1. Abrí los ajustes de Android.
 2. Elegí un bloqueo de pantalla sin PIN, sin patrón y sin contraseña.
 3. Sacá la app o el ajuste que abra Chrome al encender la tablet.
-4. Si la marca tiene una lista propia de apps que se duermen, sacá Berry Med de esa lista.
+4. Si la marca tiene una lista propia de apps que se duermen, sacá ONDOCTOR365 Suitcase de esa lista.
 5. En OnDoctor, habilitá el otoscopio o el estetoscopio para el tótem.
-6. Volvé a Berry Med.
+6. Volvé a ONDOCTOR365 Suitcase.
 
-### Tarea 10: elegir Berry Med como app de inicio
+### Tarea 10: elegir ONDOCTOR365 Suitcase como app de inicio
 
 **NOTA**: Después de esta tarea, Android abre **Inicio**, con las cards ONDOCTOR365, Panel Local y Configuración. Desde el kiosco se vuelve a Inicio con la casita del panel lateral (o cinco toques en la esquina de arriba a la izquierda), confirmando. El único PIN es el de **Configuración**.
 
-1. En **Berry Med como app de inicio**, tocá **Elegir app de inicio**.
-2. Elegí Berry Med.
+1. En **ONDOCTOR365 Suitcase como app de inicio**, tocá **Elegir app de inicio**.
+2. Elegí ONDOCTOR365 Suitcase.
 3. Si Android pregunta, tocá **Siempre**.
 4. Tocá el botón de inicio de la tablet.
 5. Controlá que aparezca Inicio.
@@ -252,9 +254,9 @@ Estos pasos están en la lista **Puesta en marcha** del paso Kiosco. El punto ve
 adb shell cmd package set-home-activity com.guardiavirtual.berrymed/.ui.HomeActivity
 ```
 
-Para volver atrás, en la tablet: **Ajustes → Apps → Apps predeterminadas → App de inicio** y elegí el inicio de Android. Para llegar a los Ajustes con Berry Med como inicio: **Configuración** en Inicio, el PIN, y en la ruedita **Ajustes de Android**.
+Para volver atrás, en la tablet: **Ajustes → Apps → Apps predeterminadas → App de inicio** y elegí el inicio de Android. Para llegar a los Ajustes con ONDOCTOR365 Suitcase como inicio: **Configuración** en Inicio, el PIN, y en la ruedita **Ajustes de Android**.
 
-**NOTA**: Hasta la versión con Inicio, la app de inicio era el kiosco (`.ui.KioskActivity`). Al instalar esta versión en una tablet que ya la tenía elegida, Android vuelve a preguntar qué app de inicio usar: elegí Berry Med y **Siempre**, o corré el comando de arriba.
+**NOTA**: Hasta la versión con Inicio, la app de inicio era el kiosco (`.ui.KioskActivity`). Al instalar esta versión en una tablet que ya la tenía elegida, Android vuelve a preguntar qué app de inicio usar: elegí ONDOCTOR365 Suitcase y **Siempre**, o corré el comando de arriba.
 
 ### Tarea 11: configurar el tótem en el kiosco
 
@@ -316,7 +318,7 @@ Se abre con **USB-config**, como una capa sobre la pantalla principal; la flecha
 - **Plaqueta**: la ganancia y el modo de ECG, la ganancia de respiración, el modo de presión y la presión de inflado. La ganancia y el modo se aplican apenas se guardan, sin reconectar. Abajo, en qué puerto del hub YKUSH3 va el otoscopio, el estetoscopio y el termómetro (uno distinto para cada uno; el del termómetro, **Puerto del termómetro**, queda siempre encendido); bajo **Estetoscopio**, cómo se llaman para Android el adaptador y, de respaldo, un auricular USB (se leen en Testing → Dispositivos que ve Android; por defecto `USB Audio` y `H390`); y el PIN de la configuración, el que pide Inicio (`1515` si se deja vacío).
 - **Kiosco**: la **URL del kiosco** (la misma que abría Chrome, con el slug de la organización; vacía o `http(s)://` con dominio), el **audio de la videollamada** (Auriculares, el de fábrica, o Parlante de la tablet; con Auriculares la llamada sale por el jack de la tablet si hay algo enchufado, si no por un auricular USB de respaldo si hubiera y, si tampoco, por el parlante; con Parlante sólo la llamada va al parlante y el estetoscopio del Panel Local sigue por los auriculares) y la **puesta en marcha**, una lista con un punto verde (hecho), ámbar (falta) o gris (Berry Med no lo puede ver ahora) que se recalcula al volver a la pantalla:
   - **Cámara y micrófono**: los dos permisos otorgados. **Dar permisos** pide los que faltan; si Android ya no muestra el diálogo, abre los ajustes de la app.
-  - **Berry Med como app de inicio**: el botón de inicio abre Berry Med. **Elegir app de inicio** abre la lista de apps de inicio de Android.
+  - **ONDOCTOR365 Suitcase como app de inicio**: el botón de inicio abre ONDOCTOR365 Suitcase. **Elegir app de inicio** abre la lista de apps de inicio de Android.
   - **Servicio con cámara y micrófono para la teleconsulta**: el servicio ya los sumó (en Android 10 o menos no hace falta). Se resuelve solo con esta pantalla adelante y los permisos dados.
   - **Sin optimización de batería**: lo mismo que **Evitar que se duerma**, en el menú de la ruedita de arriba a la derecha de la pantalla principal.
   - **Permiso USB del otoscopio**: verde si el otoscopio está enchufado y Berry Med tiene su permiso USB, ámbar si está enchufado sin permiso, gris si no está (su puerto apagado), y el texto dice cuál de los tres es. Si quedó marcada la casilla "Usar de forma predeterminada" Berry Med no lo puede saber. Con el kiosco adelante su puerto queda encendido, así que alcanza con aceptarlo una vez marcando "Usar de forma predeterminada": se enciende en Testing, se acepta y se apaga; **Abrir Testing** lleva ahí. El pedido es uno solo, el de Android con la casilla; si se cerró sin aceptar, **Pedir permiso USB** lo hace aparecer de nuevo.
@@ -330,7 +332,7 @@ Todo queda guardado en la tablet. La pantalla también muestra los signos vitale
 
 Para preparar una tablet nueva, seguí [Configuración paso a paso](#configuración-paso-a-paso). Esta sección explica el motivo de cada requisito.
 
-1. **Abrir Berry Med una vez después de instalarla.** Android no le avisa el encendido a una app que nunca se abrió.
+1. **Abrir ONDOCTOR365 Suitcase una vez después de instalarla.** Android no le avisa el encendido a una app que nunca se abrió.
 2. **Aceptar el permiso USB de la plaqueta, el termómetro, el hub YKUSH3 y el otoscopio marcando "Usar de forma predeterminada".** Android da el permiso por cada conexión: después de un reinicio, cada equipo vuelve como un dispositivo nuevo. Con la casilla marcada lo da solo. Para eso abre una pantalla de Berry Med que no muestra nada y se cierra enseguida, así que el kiosco queda adelante. Sin la casilla, cada reinicio muestra un pedido de permiso arriba del kiosco. El adaptador del estetoscopio y el auricular no piden permiso: Android los maneja como audio. El otoscopio sí, por si la tablet no lo lista como cámara (ver [Panel Local](#panel-local)); con el kiosco adelante su puerto queda encendido y el pedido aparece arriba del kiosco, así que conviene provocarlo una vez al instalar, encendiendo el puerto en Testing → Hub YKUSH3 (el paso Kiosco lo recuerda y tiene el botón). Aceptar el permiso, marcar la casilla y apagar el puerto; si no se apaga, queda encendido hasta el próximo reposo. Para el otoscopio el pedido es uno solo, el de Android con la casilla: Berry Med no lo pide por su cuenta. Si se cerró sin aceptar, **Pedir permiso USB** lo hace aparecer de nuevo: apaga y enciende el puerto del otoscopio unos 2 s y Android lo ve como recién conectado (sin YKUSH3, Berry Med lo pide con un pedido sin casilla, que vale hasta que se desenchufa).
 
    Conviene abrir el Panel Local una vez y aceptar el permiso de la cámara **antes** de aceptar el permiso USB del otoscopio: en Android 10 o más, Android puede negar sin diálogo el permiso USB de un dispositivo de video si la app todavía no tiene el de cámara.
@@ -339,7 +341,7 @@ Para preparar una tablet nueva, seguí [Configuración paso a paso](#configuraci
 
    Android no conserva estos permisos al reiniciar si no quedó marcada la casilla, y una app común no puede evitar el diálogo: eso necesitaría algo a nivel sistema (ver `docs/decisiones.md`).
 3. **Completar el paso Kiosco de la configuración** (ver [Configuración](#configuración)): cargar la URL del kiosco, guardar y dejar en verde la lista de puesta en marcha (permisos de cámara y micrófono, Berry Med como app de inicio, el servicio con cámara y micrófono y sin optimización de batería), abrir el kiosco para configurar el tótem y resolver lo que va fuera de la tablet. La optimización de batería es imprescindible: si Android cierra el servicio, sólo puede volver a levantarlo si la app está excluida.
-4. **Sacar a Berry Med de las listas propias de la marca.** Algunas marcas tienen, además de la optimización de batería de Android, su propia lista de apps que se duermen.
+4. **Sacar a ONDOCTOR365 Suitcase de las listas propias de la marca.** Algunas marcas tienen, además de la optimización de batería de Android, su propia lista de apps que se duermen.
 5. **Sin bloqueo con PIN, patrón ni contraseña.** Con bloqueo seguro Android no avisa el encendido hasta que alguien desbloquea, y la app no arranca.
 6. **Instalar siempre un APK firmado con la misma clave.** Si cambia la clave hay que desinstalar, y eso borra la configuración.
 7. **Probarlo con el kiosco adelante**: reiniciar la tablet con todo enchufado (tiene que abrir el kiosco solo) y, con una consulta andando, desenchufar y volver a enchufar la plaqueta. En los dos casos la plaqueta tiene que volver sola, sin tocar la pantalla y sin que el kiosco quede tapado.
@@ -379,7 +381,7 @@ El botón **Testing** de la pantalla principal abre un panel para comprobar, en 
 
 Para atención **presencial, sin teleconsulta**: el médico o el enfermero que está al lado del paciente ve en la tablet todos los instrumentos en vivo, sin el kiosco adelante. Es una cosa o la otra: con el panel abierto la tablet no hace teleconsulta.
 
-- **Cómo se entra.** Berry Med pone tres íconos en la tablet, con el mismo dibujo sobre fondos distintos: **Berry Med** (verde) abre [Inicio](#inicio), **Panel Local** (azul) abre directo el panel para la atención presencial y **ONDOCTOR365** (violeta) abre el kiosco del paciente. Al panel también se entra con la card **Panel Local** de Inicio. Al salir (Finalizar, Volver, atrás o la casita del panel lateral) vuelve a Inicio. Si la tablet arrancó sin pasar por Berry Med, el panel levanta el servicio.
+- **Cómo se entra.** ONDOCTOR365 Suitcase pone tres íconos en la tablet, con el mismo dibujo sobre fondos distintos: **ONDOCTOR365 Suitcase** (verde) abre [Inicio](#inicio), **Panel Local** (azul) abre directo el panel para la atención presencial y **ONDOCTOR365** (violeta) abre el kiosco del paciente. Al panel también se entra con la card **Panel Local** de Inicio. Al salir (Finalizar, Volver, atrás o la casita del panel lateral) vuelve a Inicio. Si la tablet arrancó sin pasar por ONDOCTOR365 Suitcase, el panel levanta el servicio.
 - **Sin PIN.** Entra directo, cada vez que vuelve al frente arranca de cero (el PIN es sólo para [Configuración](#inicio)). Con una consulta enviando no entra: muestra una pantalla de espera con "Hay una consulta enviando: el Panel Local espera a que termine." y **Volver**, y entra sola apenas la consulta termina.
 - **Qué muestra.** Pantalla apaisada, a pantalla completa, siempre oscura y sin apagarse, pensada para 1280×800 dp (en otras tablets se estira la parte izquierda y los vitales quedan en 312 dp). A la derecha va el [panel lateral](#panel-lateral): con él abierto el Panel Local mide 984 dp y con el riel 1216 dp. La pantalla de espera y el diálogo de Finalizar tapan sólo el Panel Local, no el panel lateral. Nada scrollea. Cada vez que se desbloquea arranca en blanco, sin nada de la persona anterior: sin ondas de antes, sin temperatura, sin presión (se ve sólo la que se pida con **Medir** desde que se abrió), con el estetoscopio en **Corazón** y el volumen en 6, el ECG en 25 mm/s, 10 mm/mV y las siete derivaciones, y el ECG a la vista. La cámara de la tablet (frontal o trasera) queda como estaba: no es un dato del paciente.
   - **Cabecera**: la hora y la fecha y, a la derecha, **Finalizar**. Los chips de los equipos ya no están: el estado de cada uno se ve en el panel lateral.
@@ -417,7 +419,7 @@ El panel sólo muestra: lee lo que ya sabe la app (`TotemRuntime.statusSnapshot`
 
 ## Inicio
 
-La pantalla de inicio de la tablet (`HomeActivity`, con `HOME` en el manifiesto) y la del ícono de **Berry Med**: Android la abre al encender y el botón de inicio vuelve a ella. Va a pantalla completa, como el kiosco y el Panel Local, con el [panel lateral](#panel-lateral) a la derecha: Wi-Fi, Dispositivos y Sonido, sin Modo ni casita (todavía no se eligió y ya se está en Inicio). Como en el Panel Local, el otoscopio y el estetoscopio apagados por el hub dicen «Listo». Tiene tres cards grandes:
+La pantalla de inicio de la tablet (`HomeActivity`, con `HOME` en el manifiesto) y la del ícono de **ONDOCTOR365 Suitcase**: Android la abre al encender y el botón de inicio vuelve a ella. Va a pantalla completa, como el kiosco y el Panel Local, con el [panel lateral](#panel-lateral) a la derecha: Wi-Fi, Dispositivos y Sonido, sin Modo ni casita (todavía no se eligió y ya se está en Inicio). Como en el Panel Local, el otoscopio y el estetoscopio apagados por el hub dicen «Listo». Tiene tres cards grandes:
 
 - **ONDOCTOR365** (con el corazón-estetoscopio del logo, sobre su turquesa) abre el [kiosco](#kiosco), sin PIN. Sin URL del kiosco guardada, la card lo dice en ámbar y tocarla pide el PIN y abre la configuración.
 - **Panel Local** (azul) abre el [Panel Local](#panel-local), sin PIN.
@@ -432,7 +434,7 @@ Todo vuelve a Inicio: **Finalizar**, **Volver** de la pantalla de espera y atrá
 El kiosco de OnDoctor corre dentro de Berry Med, como lo hacía la app del proveedor, y no en Chrome: la pantalla **Kiosco** es un `WebView` a pantalla completa, horizontal y sin barras, con la **URL del kiosco** de la configuración.
 
 - **Se abre desde [Inicio](#inicio)**, con la card **ONDOCTOR365**. Sin URL del kiosco guardada pasa sola a la configuración (`HomeTarget`); mientras no leyó la configuración guardada espera, no decide con los valores de fábrica. Si no hay Wi-Fi, a los 5 s aparece **Sin conexión** con **Elegir red**.
-- **También se abre** con el ícono **ONDOCTOR365** de la tablet (violeta), sin PIN. Todos vuelven al mismo kiosco, sin recargar la página ni cortar la llamada. El kiosco tiene su propia tarea: el ícono de **Berry Med** muestra siempre Inicio.
+- **También se abre** con el ícono **ONDOCTOR365** de la tablet (violeta), sin PIN. Todos vuelven al mismo kiosco, sin recargar la página ni cortar la llamada. El kiosco tiene su propia tarea: el ícono de **ONDOCTOR365 Suitcase** muestra siempre Inicio.
 - **Panel lateral.** A la derecha del `WebView` va el [panel lateral](#panel-lateral); la página se achica a su lado (984 dp abierto, 1216 dp con el riel) y se acomoda sola, sin recargar. Desde ahí se pasa al Panel Local, sin PIN. La pantalla de sin conexión tapa sólo la página.
 - **Atrás no sale.** Para volver a Inicio: la **casita** del panel lateral (o **cinco toques en la esquina de arriba a la izquierda** en menos de 3 s) y confirmar en "¿Volver al inicio?" con **Ir al inicio**, sin PIN. El mismo diálogo tiene **Recargar**, que abre el kiosco de nuevo desde cero; **Cancelar** y tocar afuera lo cierran. **Con una consulta en curso** (signos enviando o la videollamada en la sala) la casita no deja salir ni recargar: dice "No se puede salir del kiosco" con "Hay una consulta en curso. Terminala para cambiar.", igual que el cambio de modo. Los **cinco toques** sí dejan, aun con la consulta: son la salida del técnico si una consulta quedó trabada. Al volver, el kiosco sigue donde estaba.
 - **Si la página no carga** (la tablet todavía no se conectó al wifi, el servidor no contesta), el kiosco lo dice en su propia pantalla y vuelve a intentar solo: apenas hay red, cada 10 s y al volver al kiosco. La pantalla tiene un botón **Reintentar**. En el diálogo del PIN está además **Recargar**, que vuelve a abrir la URL del kiosco desde cero (también pide el PIN).
@@ -507,10 +509,10 @@ JAVA_HOME=/opt/homebrew/opt/openjdk@17 ./gradlew test assembleDebug
 
 Los tests no necesitan la plaqueta. `local.properties` (la ruta del SDK) es de cada máquina y no se commitea.
 
-Cada versión publicada tiene su APK en [Releases](https://github.com/Guardia-Virtual-Medica/berry-med-android/releases), con el SHA-256 en las notas. No hay CI: el APK de la release se compila a mano (`assembleDebug`) y se sube con `gh release create v<versionName> <apk>`. Para instalarlo en la tablet conectada por USB:
+Cada versión publicada tiene su APK en [Releases](https://github.com/Guardia-Virtual-Medica/berry-med-android/releases), con el SHA-256 en las notas. No hay CI: el APK de la release se compila a mano (`assembleDebug`), se copia como `ondoctor365-suitcase-android-<versionName>.apk` (hasta la 1.5.0 se llamaba `berry-med-<versionName>.apk`) y se sube con `gh release create v<versionName> ondoctor365-suitcase-android-<versionName>.apk`. Para instalarlo en la tablet conectada por USB:
 
 ```bash
-adb install -r -g berry-med-1.5.0.apk
+adb install -r -g ondoctor365-suitcase-android-1.5.1.apk
 ```
 
 O, recién compilado:
@@ -519,7 +521,7 @@ O, recién compilado:
 adb install -r -g app/build/outputs/apk/debug/app-debug.apk
 ```
 
-`-g` da de entrada los permisos de la app, sin carteles (ver [Tarea 1](#tarea-1-instalar-berry-med)).
+`-g` da de entrada los permisos de la app, sin carteles (ver [Tarea 1](#tarea-1-instalar-ondoctor365-suitcase)).
 
 El APK es debug y lleva la clave debug de la máquina que lo compiló. Siempre firmado con la misma clave: si cambia, hay que desinstalar y eso borra la configuración (ver [Instalar y dejarla sola](#instalar-y-dejarla-sola)).
 
@@ -527,7 +529,7 @@ Para probar sin tablet está el emulador `berry_tablet`: Android 15, 2560×1600 
 
 ## Idiomas
 
-La app está en **español** (el de origen, rioplatense), **inglés** (de Estados Unidos) y **portugués** (de Brasil). Se elige con el botón de idioma de [Inicio](#inicio); en Android 13 o más también desde **Ajustes → Apps → Berry Med → Idioma**. Android recuerda la elección, también después de reiniciar o de instalar una versión nueva, y la aplica a toda la app: pantallas, diálogos, panel lateral y la notificación del servicio (que cambia en el momento, sin reabrir nada). La web del kiosco es aparte: recibe el idioma de la app en `navigator.language`, pero hoy no lo usa.
+La app está en **español** (el de origen, rioplatense), **inglés** (de Estados Unidos) y **portugués** (de Brasil). Se elige con el botón de idioma de [Inicio](#inicio); en Android 13 o más también desde **Ajustes → Apps → ONDOCTOR365 Suitcase → Idioma**. Android recuerda la elección, también después de reiniciar o de instalar una versión nueva, y la aplica a toda la app: pantallas, diálogos, panel lateral y la notificación del servicio (que cambia en el momento, sin reabrir nada). La web del kiosco es aparte: recibe el idioma de la app en `navigator.language`, pero hoy no lo usa.
 
 **Español hasta que alguien elija.** La app no sigue el idioma de la tablet: sin idioma elegido queda en español, así una tablet con el sistema en inglés no pasa a inglés al actualizar. En Android 13 o más lo fija `BerryMedApp` al arrancar, con el `LocaleManager` del sistema (y el log dice `[IDIOMA] Nadie eligió idioma: la app queda en español`); en los anteriores, la primera pantalla. Lo hace `i18n/AppLocale.kt`; los idiomas que hay están en `i18n/AppLanguage.kt`.
 
