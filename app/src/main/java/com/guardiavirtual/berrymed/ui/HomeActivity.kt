@@ -66,7 +66,7 @@ class HomeActivity : AppCompatActivity() {
 
     /** Toda la pantalla a la escala de diseño: ver [UiScale]. */
     override fun attachBaseContext(newBase: Context) {
-        super.attachBaseContext(UiScale.scaled(newBase))
+        super.attachBaseContext(UiScale.scaled(AppLocale.wrap(newBase)))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

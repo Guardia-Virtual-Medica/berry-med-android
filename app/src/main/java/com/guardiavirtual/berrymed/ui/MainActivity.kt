@@ -30,6 +30,7 @@ import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.guardiavirtual.berrymed.i18n.AppLocale
 import com.guardiavirtual.berrymed.BerryMedApp
 import com.guardiavirtual.berrymed.R
 import com.guardiavirtual.berrymed.config.BerryConfig
@@ -84,7 +85,7 @@ class MainActivity : AppCompatActivity() {
 
     /** Toda la pantalla a la escala de diseño: ver [UiScale]. */
     override fun attachBaseContext(newBase: Context) {
-        super.attachBaseContext(UiScale.scaled(newBase))
+        super.attachBaseContext(UiScale.scaled(AppLocale.wrap(newBase)))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
