@@ -544,13 +544,13 @@ Por ahora la app está sólo en español. Lo que hay es la red para pasarla a va
 | `LintBaselineTest` | `app/lint-baseline.xml` no esconde ningún `HardcodedText` ni `SetTextI18n`: un texto nuevo en una pantalla se pasa al diccionario, no al baseline. |
 | `StringsCatalogTest` | Las traducciones contra el español: las mismas entradas, nada de más, nada traducido que sea `translatable="false"`, los mismos parámetros, ningún `%s` sin número y ninguna entrada vacía. Lo que todavía no se tradujo está en `sin-traducir.txt`. |
 
-**Las listas.** Están en `app/src/test/resources/i18n/`. `textos-en-codigo.txt` tiene tres partes: `## PENDIENTE` es lo que falta pasar al diccionario, `## LAYOUTS` lo mismo en los layouts, y `## PERMITIDO` lo que se queda en el código a propósito, revisado uno por uno: lo que no es texto para una persona (cabeceras HTTP, `<unknown ssid>`, el nombre que se busca de un equipo) y los motivos que sólo terminan en una línea de log. Algo pasa a `## PERMITIDO` sólo si se siguió el valor y de verdad no llega a ninguna pantalla. Las listas se regeneran contra el código con:
+**Las listas.** Están en `app/src/test/resources/i18n/`. `textos-en-codigo.txt` tiene tres partes: `## PENDIENTE` era lo que faltaba pasar al diccionario y desde el paso 4b del plan 19 está vacía (una frase nueva en el código es un error: va al diccionario), `## LAYOUTS` lo mismo en los layouts, y `## PERMITIDO` lo que se queda en el código a propósito, revisado uno por uno: lo que no es texto para una persona (cabeceras HTTP, `<unknown ssid>`, el nombre que se busca de un equipo) y los motivos que sólo terminan en una línea de log. Algo pasa a `## PERMITIDO` sólo si se siguió el valor y de verdad no llega a ninguna pantalla. Las listas se regeneran contra el código con:
 
 ```bash
 I18N_REGENERAR=1 JAVA_HOME=/opt/homebrew/opt/openjdk@17 ./gradlew testDebugUnitTest --tests '*HardcodedTextTest*' --tests '*StringsCatalogTest*'
 ```
 
-Regenerar conserva lo que ya está en `## PERMITIDO` (si sigue en el código) y manda todo lo demás a `## PENDIENTE`. Después se mira el diff: una línea nueva en `## PENDIENTE` es un texto que tendría que haber ido al diccionario.
+Regenerar conserva lo que ya está en `## PERMITIDO` (si sigue en el código) y manda todo lo demás a `## PENDIENTE`. Después se mira el diff: una línea nueva en `## PENDIENTE` es un texto que tendría que haber ido al diccionario. El test cuenta como frase dos palabras seguidas, una letra con tilde o una sola palabra con mayúscula, con o sin signo al final («Escuchando.»); una palabra suelta en minúscula («ninguno», «salida») no la ve, así que eso se revisa a mano.
 
 **El lint.** `./gradlew lintDebug` da error con `HardcodedText`, `SetTextI18n`, `MissingTranslation`, `ExtraTranslation`, `StringFormatMatches`, `StringFormatCount` y `MissingQuantity`. Lo que ya estaba antes está en `app/lint-baseline.xml` y se va sacando con la migración; el baseline no se agranda.
 

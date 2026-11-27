@@ -265,7 +265,8 @@ El paso más grande y el de más riesgo: toca el servicio. Dos PR.
 - Los motivos de `LiveKitBackend`, `StethoscopeLink`, `UvcHandle`, `ExternalCamera`, `FirstFrame` como `Txt`; el log los resuelve en español.
 - `Instrument.label` y `RoomState.label` (hoy texto en el enum): fuera; quien los muestra arma su entrada.
 - `CallAudioRouter.describe` y `DeviceInventory`: listas de `Txt`.
-- Números del log con `Locale.US` (`StethoscopeLink.kt:319` y `:323`).
+- Números del log con `Locale.US` (`StethoscopeLink.kt:319` y `:323`). **No se hizo en 4b**: el log no podía cambiar; hoy usan el idioma por defecto de la tablet y quedan para el paso 5.
+- Hecho en 4b: `## PENDIENTE` quedó vacía y `HardcodedTextTest` reconoce también una palabra con mayúscula seguida de un signo. `Instrument`, `OtoscopeSource` y `OtoscopeFrames` tienen `logName` (sólo el log); `RoomState` no tiene texto; las tareas de `TeleStreamer` son `TeleTask` (nombre para el log, frase entera para Testing).
 
 Hecho cuando: `## PENDIENTE` está **vacía**, y el log de una sesión de prueba en el emulador (`adb -s emulator-5554 logcat -s BerryMed`, o la consola de Testing) es igual al de antes: mismas líneas, mismo español.
 
