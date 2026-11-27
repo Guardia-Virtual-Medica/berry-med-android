@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package com.guardiavirtual.berrymed.usb
 
+import com.guardiavirtual.berrymed.R
+import com.guardiavirtual.berrymed.i18n.Txt
+import com.guardiavirtual.berrymed.i18n.txt
+
 /**
  * Los equipos del tótem que se reconocen por fabricante y producto USB. Los
  * identificadores salen de los dumps que se tomaron en Windows con cada uno.
@@ -27,12 +31,12 @@ object KnownDevices {
         vendorId == STETHO_ADAPTER_VENDOR && productId == STETHO_ADAPTER_PRODUCT
 
     /** Cómo se llama el equipo en el tótem, o null si no es uno conocido. */
-    fun name(vendorId: Int, productId: Int): String? = when {
-        isYkush3(vendorId, productId) -> "hub YKUSH3"
-        vendorId == UsbHub.STM32_VENDOR -> "plaqueta PM6750"
-        isOtoscope(vendorId, productId) -> "otoscopio"
-        isStethoAdapter(vendorId, productId) -> "adaptador del estetoscopio"
-        vendorId == LOGITECH_VENDOR -> "auricular Logitech"
+    fun name(vendorId: Int, productId: Int): Txt? = when {
+        isYkush3(vendorId, productId) -> txt(R.string.device_name_ykush3)
+        vendorId == UsbHub.STM32_VENDOR -> txt(R.string.device_name_board)
+        isOtoscope(vendorId, productId) -> txt(R.string.device_name_otoscope)
+        isStethoAdapter(vendorId, productId) -> txt(R.string.device_name_stetho_adapter)
+        vendorId == LOGITECH_VENDOR -> txt(R.string.device_name_logitech)
         else -> null
     }
 }

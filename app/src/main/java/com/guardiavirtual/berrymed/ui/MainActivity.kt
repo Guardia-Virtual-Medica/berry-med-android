@@ -46,6 +46,7 @@ import com.guardiavirtual.berrymed.config.kioskUrlAccepted
 import com.guardiavirtual.berrymed.config.ykushPortOrDefault
 import com.guardiavirtual.berrymed.databinding.ActivityMainBinding
 import com.guardiavirtual.berrymed.databinding.ItemKioskCheckBinding
+import com.guardiavirtual.berrymed.i18n.resolve
 import com.guardiavirtual.berrymed.service.ForegroundAccess
 import com.guardiavirtual.berrymed.service.MonitorService
 import com.guardiavirtual.berrymed.service.TotemRuntime
@@ -545,10 +546,10 @@ class MainActivity : AppCompatActivity() {
         binding.berryDot.backgroundTintList = ColorStateList.valueOf(
             getColor(if (state.berryUp) R.color.ok else R.color.line3),
         )
-        binding.lastData.text = state.lastData
+        binding.lastData.text = state.lastData.resolve(this)
         binding.pusherStatus.setText(if (state.pusherUp) R.string.main_pusher_ok else R.string.main_pusher_down)
-        binding.otherStatus.text = state.others
-        binding.lastPost.text = state.lastPost
+        binding.otherStatus.text = state.others.resolve(this)
+        binding.lastPost.text = state.lastPost.resolve(this)
         chip(binding.chipBerry, if (state.berryUp) Link.CONNECTED else Link.DISCONNECTED)
         chip(binding.chipPusher, if (state.pusherUp) Link.CONNECTED else Link.DISCONNECTED)
         chip(

@@ -35,11 +35,12 @@ import androidx.core.widget.TextViewCompat
 import com.google.android.material.button.MaterialButton
 import com.guardiavirtual.berrymed.BerryMedApp
 import com.guardiavirtual.berrymed.R
-import com.guardiavirtual.berrymed.i18n.resolve
 import com.guardiavirtual.berrymed.audio.StethoDsp
 import com.guardiavirtual.berrymed.audio.StethoFilter
 import com.guardiavirtual.berrymed.databinding.ActivityLocalPanelBinding
 import com.guardiavirtual.berrymed.databinding.PanelRecordingRowBinding
+import com.guardiavirtual.berrymed.i18n.Txt
+import com.guardiavirtual.berrymed.i18n.resolve
 import com.guardiavirtual.berrymed.otoscope.CameraXOtoscope
 import com.guardiavirtual.berrymed.otoscope.OtoscopeFps
 import com.guardiavirtual.berrymed.otoscope.OtoscopePower
@@ -698,7 +699,7 @@ class LocalPanelActivity : AppCompatActivity() {
         val runtime = runtime()
         val blocked = runtime.startLocal()
         if (blocked != null) {
-            pinNotice = blocked
+            pinNotice = blocked.resolve(this)
             showLockMessage()
             return
         }
@@ -727,7 +728,7 @@ class LocalPanelActivity : AppCompatActivity() {
             val reply = action()
             // Lo que sale bien ya se ve en la tarjeta; sólo se avisa lo que no.
             if (!reply.ok) {
-                runOnUiThread { Toast.makeText(this, reply.message, Toast.LENGTH_LONG).show() }
+                runOnUiThread { Toast.makeText(this, reply.message.resolve(this), Toast.LENGTH_LONG).show() }
             }
         }
     }
@@ -736,7 +737,7 @@ class LocalPanelActivity : AppCompatActivity() {
         val stetho = runtime().stetho
         binding.stethoListenButton.setOnClickListener { stethoPrimary() }
         binding.stethoStopButton.setOnClickListener {
-            runtime().localStethoStop { text -> runOnUiThread { stethoMessage(text) } }
+            runtime().localStethoStop { text -> runOnUiThread { stethoMessage(text.resolve(this)) } }
         }
         // El filtro se aplica en el hilo de audio desde el próximo bloque, sin cortar la escucha.
         filterSegments = Segments(
@@ -764,8 +765,8 @@ class LocalPanelActivity : AppCompatActivity() {
                 } else {
                     micPermission.launch(Manifest.permission.RECORD_AUDIO)
                 }
-            StethoPrimary.RECORD -> stethoMessage(runtime.localStethoRecord())
-            StethoPrimary.RECORDING -> stethoMessage(runtime.localStethoStopRecording())
+            StethoPrimary.RECORD -> stethoMessage(runtime.localStethoRecord().resolve(this))
+            StethoPrimary.RECORDING -> stethoMessage(runtime.localStethoStopRecording().resolve(this))
         }
         render(runtime.localSnapshot())
     }
@@ -778,9 +779,9 @@ class LocalPanelActivity : AppCompatActivity() {
         val row = shownRecordings.getOrNull(slot) ?: return
         val runtime = runtime()
         if (row.playing) {
-            runtime.localStethoStopPlayback { runOnUiThread { stethoMessage("") } }
+            runtime.localStethoStopPlayback { text -> runOnUiThread { stethoMessage(text.resolve(this)) } }
         } else {
-            runtime.localStethoPlay(row.number) { text -> runOnUiThread { stethoMessage(text) } }
+            runtime.localStethoPlay(row.number) { text -> runOnUiThread { stethoMessage(text.resolve(this)) } }
         }
     }
 
@@ -834,7 +835,7 @@ class LocalPanelActivity : AppCompatActivity() {
     /** El YKUSH3 y la espera de las placas de audio van en el hilo del estetoscopio, nunca acá. */
     private fun listen() {
         binding.stethoMessage.setText(R.string.local_stetho_starting)
-        runtime().localStethoStart { text -> runOnUiThread { if (unlocked) binding.stethoMessage.text = text } }
+        runtime().localStethoStart { text -> runOnUiThread { if (unlocked) binding.stethoMessage.text = text.resolve(this) } }
     }
 
     private fun startCamera() {
@@ -903,15 +904,15 @@ class LocalPanelActivity : AppCompatActivity() {
         setOtoscopeMessage(getString(R.string.local_otoscope_starting))
         val runtime = runtime()
         runtime.localOtoscopeOn(
-            progress = { text -> runOnUiThread { if (unlocked) setOtoscopeMessage(text) } },
+            progress = { text -> runOnUiThread { if (unlocked) setOtoscopeMessage(text.resolve(this)) } },
             done = { path, text -> runOnUiThread { onOtoscopeFound(path, text) } },
         )
     }
 
-    private fun onOtoscopeFound(path: OtoscopePower.Path?, text: String) {
+    private fun onOtoscopeFound(path: OtoscopePower.Path?, text: Txt) {
         // Si el panel se bloqueó mientras esperaba, el servicio ya apagó el puerto.
         if (!unlocked) return
-        setOtoscopeMessage(text)
+        setOtoscopeMessage(text.resolve(this))
         if (path == null) {
             resumeTabletCamera()
             return

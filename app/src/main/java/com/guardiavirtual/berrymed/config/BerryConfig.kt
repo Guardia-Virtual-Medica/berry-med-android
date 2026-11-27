@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package com.guardiavirtual.berrymed.config
 
+import com.guardiavirtual.berrymed.R
+import com.guardiavirtual.berrymed.i18n.Txt
+import com.guardiavirtual.berrymed.i18n.txt
 import com.guardiavirtual.berrymed.protocol.DeviceTuning
 import java.net.URI
 
@@ -55,12 +58,18 @@ data class BerryConfig(
     val savedAt: Long = 0L,
 ) {
     /** Qué equipo va en cada puerto del YKUSH3, para la pantalla. Un puerto sin equipo queda "libre". */
-    fun ykushPortRoles(): List<String> = (1..YKUSH_PORTS).map { port ->
-        listOfNotNull(
-            "otoscopio".takeIf { ykushOtoscopePort == port },
-            "estetoscopio".takeIf { ykushStethoscopePort == port },
-            "termómetro".takeIf { ykushThermometerPort == port },
-        ).joinToString(" y ").ifBlank { "libre" }
+    fun ykushPortRoles(): List<Txt> = (1..YKUSH_PORTS).map { port ->
+        val roles = listOfNotNull(
+            txt(R.string.device_role_otoscope).takeIf { ykushOtoscopePort == port },
+            txt(R.string.device_role_stethoscope).takeIf { ykushStethoscopePort == port },
+            txt(R.string.device_role_thermometer).takeIf { ykushThermometerPort == port },
+        )
+        when (roles.size) {
+            0 -> txt(R.string.rt_port_free)
+            1 -> roles[0]
+            2 -> txt(R.string.rt_port_roles_two, roles[0], roles[1])
+            else -> txt(R.string.rt_port_roles_three, roles[0], roles[1], roles[2])
+        }
     }
 
     /**
@@ -94,15 +103,16 @@ data class BerryConfig(
     /** OnDoctor no pide usuario ni contraseña: si están vacíos, el POST va sin autenticación. */
     fun postReady(): Boolean = metricsUrl() != null
 
-    fun missingFields(): List<String> {
-        val missing = ArrayList<String>()
-        if (apiBaseUrl.isBlank()) missing += "URL de la API"
-        if (apiBaseUrl.isNotBlank() && !hasWebScheme(apiBaseUrl)) missing += "URL de la API que empiece con https://"
-        if (totemId.isBlank()) missing += "tótem"
-        if (pusherKey.isBlank()) missing += "clave de Pusher"
-        if (publicChannel.isBlank()) missing += "canal"
-        if (!channelIsPublic()) missing += "un canal público (sin private- ni presence-)"
-        if (ykushPortsShared()) missing += "un puerto distinto del YKUSH3 para cada equipo"
+    /** Lo que falta para enviar, para «Falta configurar: a, b, c.» de la pantalla principal. */
+    fun missingFields(): List<Txt> {
+        val missing = ArrayList<Txt>()
+        if (apiBaseUrl.isBlank()) missing += txt(R.string.rt_missing_api_url)
+        if (apiBaseUrl.isNotBlank() && !hasWebScheme(apiBaseUrl)) missing += txt(R.string.rt_missing_api_scheme)
+        if (totemId.isBlank()) missing += txt(R.string.rt_missing_totem)
+        if (pusherKey.isBlank()) missing += txt(R.string.rt_missing_pusher_key)
+        if (publicChannel.isBlank()) missing += txt(R.string.rt_missing_channel)
+        if (!channelIsPublic()) missing += txt(R.string.rt_missing_public_channel)
+        if (ykushPortsShared()) missing += txt(R.string.rt_missing_distinct_ports)
         return missing
     }
 }

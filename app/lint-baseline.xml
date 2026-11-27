@@ -41,7 +41,7 @@
         errorLine2="                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/guardiavirtual/berrymed/usb/DeviceInventory.kt"
-            line="41"
+            line="45"
             column="30"/>
     </issue>
 
@@ -52,7 +52,7 @@
         errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/guardiavirtual/berrymed/ui/MainActivity.kt"
-            line="609"
+            line="610"
             column="22"/>
     </issue>
 
@@ -272,7 +272,7 @@
         errorLine2="        ~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/guardiavirtual/berrymed/service/MonitorService.kt"
-            line="200"
+            line="226"
             column="9"/>
     </issue>
 
@@ -283,7 +283,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/guardiavirtual/berrymed/service/MonitorService.kt"
-            line="190"
+            line="216"
             column="13"/>
     </issue>
 

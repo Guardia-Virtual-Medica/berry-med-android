@@ -12,6 +12,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
 import android.os.Build
@@ -23,6 +24,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.IntentCompat
 import com.guardiavirtual.berrymed.BerryMedApp
 import com.guardiavirtual.berrymed.R
+import com.guardiavirtual.berrymed.i18n.Txt
+import com.guardiavirtual.berrymed.i18n.resolve
 import com.guardiavirtual.berrymed.ui.MainActivity
 import com.guardiavirtual.berrymed.usb.UsbHub
 
@@ -38,7 +41,11 @@ import com.guardiavirtual.berrymed.usb.UsbHub
  */
 class MonitorService : Service() {
     private var wakeLock: PowerManager.WakeLock? = null
-    private var lastNotification = ""
+    /**
+     * El último texto de la notificación, sin idioma: se resuelve al
+     * mostrarlo, y otra vez si cambia la configuración (ver [onConfigurationChanged]).
+     */
+    private var lastNotification: Txt? = null
 
     /** Los tipos con los que está en primer plano; sólo suben. */
     private var types = ForegroundAccess.CONNECTED_DEVICE
@@ -57,7 +64,7 @@ class MonitorService : Service() {
     override fun onCreate() {
         super.onCreate()
         createChannel()
-        showNotification("Esperando la plaqueta")
+        showNotification(TotemStatus.WAITING_BOARD)
         acquireWakeLock()
         val filter = IntentFilter(UsbHub.ACTION_USB_PERMISSION)
         ContextCompat.registerReceiver(this, permissionReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
@@ -69,7 +76,7 @@ class MonitorService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_PROMOTE) promote()
         // Cada startForegroundService() espera su startForeground(), aunque el servicio ya estuviera.
-        showNotification(lastNotification.ifBlank { "Esperando la plaqueta" }, force = true)
+        showNotification(lastNotification ?: TotemStatus.WAITING_BOARD, force = true)
         runtime().start()
         return START_STICKY
     }
@@ -104,6 +111,23 @@ class MonitorService : Service() {
     private fun granted(permission: String): Boolean =
         ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
 
+    /**
+     * Cambió el idioma (u otra parte de la configuración) con el servicio
+     * andando: el canal y la notificación se vuelven a escribir con los
+     * recursos nuevos. No se loguea nada.
+     */
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        createChannel()
+        refreshNotification()
+    }
+
+    @Synchronized
+    private fun refreshNotification() {
+        val text = lastNotification ?: return
+        showNotification(text, refresh = true)
+    }
+
     override fun onDestroy() {
         try {
             unregisterReceiver(permissionReceiver)
@@ -120,11 +144,12 @@ class MonitorService : Service() {
     /**
      * El texto de la notificación. Cambiar el texto no vuelve a llamar a
      * `startForeground` (sólo lo hacen el arranque y cada `startForegroundService`):
-     * se actualiza la notificación y listo.
+     * se actualiza la notificación y listo. [refresh] la vuelve a escribir
+     * aunque el texto sea el mismo (cambió el idioma).
      */
     @Synchronized
-    private fun showNotification(text: String, force: Boolean = false) {
-        if (text == lastNotification && !force) return
+    private fun showNotification(text: Txt, force: Boolean = false, refresh: Boolean = false) {
+        if (text == lastNotification && !force && !refresh) return
         val notification = buildNotification(text)
         if (foreground && !force) {
             try {
@@ -165,7 +190,8 @@ class MonitorService : Service() {
         false
     }
 
-    private fun buildNotification(text: String): android.app.Notification {
+    private fun buildNotification(txt: Txt): android.app.Notification {
+        val text = txt.resolve(this)
         val builder = NotificationCompat.Builder(this, CHANNEL)
             .setSmallIcon(R.drawable.ic_stat)
             .setContentTitle(getString(R.string.app_name))
@@ -181,14 +207,14 @@ class MonitorService : Service() {
                 ),
             )
         if (Build.VERSION.SDK_INT >= 30 && !(ForegroundAccess.hasCamera(types) && ForegroundAccess.hasMicrophone(types))) {
-            builder.setStyle(NotificationCompat.BigTextStyle().bigText("$text\n$TELE_HINT"))
+            builder.setStyle(NotificationCompat.BigTextStyle().bigText("$text\n${getString(R.string.notif_tele_hint)}"))
         }
         return builder.build()
     }
 
     private fun createChannel() {
         if (Build.VERSION.SDK_INT < 26) return
-        val channel = NotificationChannel(CHANNEL, "Tótem Berry", NotificationManager.IMPORTANCE_LOW)
+        val channel = NotificationChannel(CHANNEL, getString(R.string.notif_channel), NotificationManager.IMPORTANCE_LOW)
         channel.setShowBadge(false)
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
@@ -205,7 +231,6 @@ class MonitorService : Service() {
         private const val CHANNEL = "berrymed"
         private const val NOTIFICATION_ID = 1
         const val ACTION_PROMOTE = "com.guardiavirtual.berrymed.PROMOTE"
-        const val TELE_HINT = "Abrí el kiosco de Berry Med para habilitar otoscopio y estetoscopio en la teleconsulta."
 
         /**
          * Lo llaman las pantallas de Berry Med en onResume: con la app visible,

@@ -26,13 +26,6 @@ audio/StethoscopeLink.kt	Sin auriculares: las grabaciones no salen por el parlan
 audio/StethoscopeLink.kt	Sin permiso para el micrófono.
 audio/StethoscopeLink.kt	auricular USB
 audio/StethoscopeLink.kt	jack de la tablet
-config/BerryConfig.kt	URL de la API
-config/BerryConfig.kt	URL de la API que empiece con https://
-config/BerryConfig.kt	clave de Pusher
-config/BerryConfig.kt	termómetro
-config/BerryConfig.kt	tótem
-config/BerryConfig.kt	un canal público (sin private- ni presence-)
-config/BerryConfig.kt	un puerto distinto del YKUSH3 para cada equipo
 net/MetricsPoster.kt	sin intento
 otoscope/CameraXOtoscope.kt	por Camera2
 otoscope/CameraXOtoscopeFrames.kt	Se apagó mientras abría.
@@ -47,88 +40,6 @@ otoscope/UvcOtoscope.kt	por UVC
 otoscope/UvcOtoscopeFrames.kt	No se pudo abrir el otoscopio por UVC: {}
 otoscope/UvcOtoscopeFrames.kt	Se apagó mientras abría.
 otoscope/UvcOtoscopeFrames.kt	por UVC
-service/MonitorService.kt	Abrí el kiosco de Berry Med para habilitar otoscopio y estetoscopio en la teleconsulta.
-service/MonitorService.kt	Esperando la plaqueta
-service/MonitorService.kt	Tótem Berry
-service/TotemRuntime.kt	 Falta aceptar el permiso USB: tocá la ruedita y «Pedir permiso USB».
-service/TotemRuntime.kt	 Falta configurar: {}.
-service/TotemRuntime.kt	Abriendo la imagen…
-service/TotemRuntime.kt	El Panel Local está abierto: la presión la maneja el panel.
-service/TotemRuntime.kt	El Panel Local está abierto: la prueba espera a que se cierre.
-service/TotemRuntime.kt	El Panel Local está abierto: no se cambia ningún puerto.
-service/TotemRuntime.kt	El YKUSH3 no encendió el puerto {}.
-service/TotemRuntime.kt	El hub guardó el arranque, el estado del kiosco: {}
-service/TotemRuntime.kt	El hub no aceptó el puerto {}. Mirá la consola.
-service/TotemRuntime.kt	El hub no aceptó la orden. Mirá la consola.
-service/TotemRuntime.kt	El hub no contesta. Si recién lo enchufaste, aceptá el permiso USB.
-service/TotemRuntime.kt	El otoscopio no aparece como cámara.
-service/TotemRuntime.kt	El otoscopio se está encendiendo o apagando: esperá un momento.
-service/TotemRuntime.kt	El panel no está activo.
-service/TotemRuntime.kt	Encendiendo…
-service/TotemRuntime.kt	Error al enviar: {}
-service/TotemRuntime.kt	Esperando la cámara…
-service/TotemRuntime.kt	Esperando la plaqueta
-service/TotemRuntime.kt	Esperando que se abra una toma de signos
-service/TotemRuntime.kt	Estado leído
-service/TotemRuntime.kt	Falta aceptar el permiso USB del otoscopio: aceptá el pedido que aparece 
-service/TotemRuntime.kt	Falta el permiso USB
-service/TotemRuntime.kt	Grabación guardada.
-service/TotemRuntime.kt	Grabación muy corta: se descartó.
-service/TotemRuntime.kt	Hay una consulta enviando.
-service/TotemRuntime.kt	Hay una consulta enviando: el Panel Local espera a que termine.
-service/TotemRuntime.kt	Hay una consulta enviando: la prueba espera a que termine.
-service/TotemRuntime.kt	Hay una consulta enviando: no se cambia ningún puerto.
-service/TotemRuntime.kt	Hub YKUSH3 presente. 
-service/TotemRuntime.kt	Hub YKUSH3 sin conectar. 
-service/TotemRuntime.kt	Iniciá la prueba primero.
-service/TotemRuntime.kt	La API respondió {}
-service/TotemRuntime.kt	La plataforma no tiene la toma abierta (404)
-service/TotemRuntime.kt	La red está lenta: se llenó la cola de envío
-service/TotemRuntime.kt	La sesión está detenida.
-service/TotemRuntime.kt	La sesión está enviando.
-service/TotemRuntime.kt	Medición detenida
-service/TotemRuntime.kt	Midiendo…
-service/TotemRuntime.kt	No hay hub YKUSH3 conectado.
-service/TotemRuntime.kt	No se pudo empezar: {}
-service/TotemRuntime.kt	No se pudo encender: {}
-service/TotemRuntime.kt	No se pudo enviar
-service/TotemRuntime.kt	No se pudo enviar: {}
-service/TotemRuntime.kt	No se pudo iniciar: plaqueta sin conectar o ya está midiendo.
-service/TotemRuntime.kt	Panel Local abierto
-service/TotemRuntime.kt	Para grabar hay que estar escuchando.
-service/TotemRuntime.kt	Plaqueta conectada, enviando mediciones
-service/TotemRuntime.kt	Plaqueta conectada, sesión detenida
-service/TotemRuntime.kt	Puerto {} apagado: el termómetro se vuelve a encender solo
-service/TotemRuntime.kt	Puerto {} {}
-service/TotemRuntime.kt	Reproduciendo la grabación {}.
-service/TotemRuntime.kt	STOP enviado
-service/TotemRuntime.kt	Sin YKUSH3: se intenta directo.
-service/TotemRuntime.kt	Sin YKUSH3: se intenta directo. Esperando la cámara…
-service/TotemRuntime.kt	Sin auriculares: nada en el jack de la tablet ni el auricular USB. Sólo se ve la onda.
-service/TotemRuntime.kt	Termómetro conectado, sin mediciones todavía. 
-service/TotemRuntime.kt	Termómetro conectado. 
-service/TotemRuntime.kt	Termómetro sin conectar. 
-service/TotemRuntime.kt	Todavía no se envió
-service/TotemRuntime.kt	Ya está escuchando.
-service/TotemRuntime.kt	el Panel Local está abierto
-service/TotemRuntime.kt	el micrófono
-service/TotemRuntime.kt	el servicio no tiene {} en segundo plano. {}
-service/TotemRuntime.kt	falta el permiso de {}: abrí Berry Med y aceptalo
-service/TotemRuntime.kt	la cámara
-service/TotemRuntime.kt	o, si no aparece, tocá «Pedir permiso USB» en Berry Med. Después, Encender otra vez.
-service/TotemRuntime.kt	paquete descartado
-service/TotemRuntime.kt	paquetes descartados
-service/TotemRuntime.kt	por Camera2
-service/TotemRuntime.kt	por UVC
-service/TotemRuntime.kt	{} · se vuelve a encender solo
-service/TotemRuntime.kt	{} · {} {} por cola llena
-service/TotemRuntime.kt	Último dato: hace {} s
-service/TotemRuntime.kt	Último dato: sin datos
-service/TotemRuntime.kt	Último envío correcto
-service/TotemState.kt	Esperando la plaqueta
-service/TotemState.kt	Termómetro sin conectar. Hub YKUSH3 sin conectar. La sesión está detenida.
-service/TotemState.kt	Todavía no se envió
-service/TotemState.kt	Último dato: sin datos
 tele/FirstFrame.kt	El otoscopio abrió pero no manda imagen
 tele/LiveKitBackend.kt	El otoscopio no abrió en {} s
 tele/LiveKitBackend.kt	El otoscopio no aparece ni como cámara ni por USB con permiso
@@ -167,10 +78,6 @@ usb/DeviceInventory.kt	parlante de la tablet
 usb/DeviceInventory.kt	sin interfaces
 usb/DeviceInventory.kt	sin nombre
 usb/DeviceInventory.kt	telefonía
-usb/KnownDevices.kt	adaptador del estetoscopio
-usb/KnownDevices.kt	auricular Logitech
-usb/KnownDevices.kt	hub YKUSH3
-usb/KnownDevices.kt	plaqueta PM6750
 
 ## PERMITIDO
 audio/AudioPick.kt	Logitech
@@ -179,8 +86,6 @@ net/MetricsPoster.kt	Authorization
 net/WifiState.kt	<unknown ssid>
 otoscope/UvcHandle.kt	cadencia a elección de la cámara
 protocol/Pm6750Protocol.kt	rango {}-{} para modo {}; se ignora.
-service/TotemRuntime.kt	Puertos con el kiosco
-service/TotemRuntime.kt	Puertos en reposo
 service/TotemRuntime.kt	Pusher
 service/TotemRuntime.kt	evento stop
 service/TotemRuntime.kt	fin de la toma de signos

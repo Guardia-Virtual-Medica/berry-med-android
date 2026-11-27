@@ -3,6 +3,7 @@ package com.guardiavirtual.berrymed.usb
 
 import com.guardiavirtual.berrymed.config.BerryConfig
 import com.guardiavirtual.berrymed.config.ykushPortOrDefault
+import com.guardiavirtual.berrymed.i18n.es
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -66,9 +67,28 @@ class YkushHubTest {
 
     @Test
     fun eachPortNamesItsDeviceAndASharedPortNamesBoth() {
-        assertEquals(listOf("otoscopio", "estetoscopio", "termómetro"), BerryConfig().ykushPortRoles())
+        assertEquals(listOf("otoscopio", "estetoscopio", "termómetro"), BerryConfig().ykushPortRoles().map(::es))
         val shared = BerryConfig(ykushOtoscopePort = 1, ykushStethoscopePort = 1, ykushThermometerPort = 3)
-        assertEquals(listOf("otoscopio y estetoscopio", "libre", "termómetro"), shared.ykushPortRoles())
+        assertEquals(listOf("otoscopio y estetoscopio", "libre", "termómetro"), shared.ykushPortRoles().map(::es))
+    }
+
+    @Test
+    fun threeDevicesOnOnePortAreAllNamed() {
+        val all = BerryConfig(ykushOtoscopePort = 2, ykushStethoscopePort = 2, ykushThermometerPort = 2)
+        assertEquals(listOf("libre", "otoscopio y estetoscopio y termómetro", "libre"), all.ykushPortRoles().map(::es))
+    }
+
+    @Test
+    fun theKnownDevicesHaveTheirTotemName() {
+        assertEquals("hub YKUSH3", KnownDevices.name(KnownDevices.YKUSH_VENDOR, KnownDevices.YKUSH3_PRODUCT)?.let(::es))
+        assertEquals("plaqueta PM6750", KnownDevices.name(UsbHub.STM32_VENDOR, 0x5740)?.let(::es))
+        assertEquals("otoscopio", KnownDevices.name(KnownDevices.OTOSCOPE_VENDOR, KnownDevices.OTOSCOPE_PRODUCT)?.let(::es))
+        assertEquals(
+            "adaptador del estetoscopio",
+            KnownDevices.name(KnownDevices.STETHO_ADAPTER_VENDOR, KnownDevices.STETHO_ADAPTER_PRODUCT)?.let(::es),
+        )
+        assertEquals("auricular Logitech", KnownDevices.name(KnownDevices.LOGITECH_VENDOR, 0x0A8F)?.let(::es))
+        assertNull(KnownDevices.name(0x1234, 0x5678))
     }
 
     @Test
