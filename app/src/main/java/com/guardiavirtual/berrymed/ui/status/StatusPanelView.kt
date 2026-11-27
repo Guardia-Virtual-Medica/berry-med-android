@@ -186,7 +186,15 @@ class StatusPanelView @JvmOverloads constructor(
             // Sólo se tocan las que dicen «Falta permiso».
             row.root.isClickable = device.action != null
             row.root.contentDescription =
-                if (device.action != null) "${device.name}: ${context.getString(R.string.status_ask_permission)}" else null
+                if (device.action != null) {
+                    context.getString(
+                        R.string.status_device_action,
+                        device.name,
+                        context.getString(R.string.status_ask_permission),
+                    )
+                } else {
+                    null
+                }
         }
         val count = context.getString(R.string.status_count, s.okCount, s.devices.size)
         val bad = s.countTone == StatusTone.BAD

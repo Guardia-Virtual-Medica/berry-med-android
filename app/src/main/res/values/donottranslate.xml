@@ -3,4 +3,25 @@
 <resources>
     <string name="app_name" translatable="false">Berry Med</string>
     <string name="ondoctor" translatable="false">ONDOCTOR365</string>
+
+    <!-- Unidades y nombres de parámetros. -->
+    <string name="local_spo2" translatable="false">SpO₂</string>
+    <string name="local_unit_celsius" translatable="false">°C</string>
+    <string name="local_unit_mmhg" translatable="false">mmHg</string>
+    <!-- La derivación II del ECG. -->
+    <string name="local_lead_ii" translatable="false">II</string>
+    <!-- Las ganancias del ECG y de la respiración. -->
+    <string name="main_gain_x0_25" translatable="false">x0.25</string>
+    <string name="main_gain_x0_5" translatable="false">x0.5</string>
+    <string name="main_gain_x1" translatable="false">x1</string>
+    <string name="main_gain_x2" translatable="false">x2</string>
+
+    <!-- Valores de arranque de la configuración: nombres de equipos y de eventos de Pusher. -->
+    <string name="main_stetho_input_default" translatable="false">USB Audio</string>
+    <string name="main_headset_default" translatable="false">H390</string>
+    <string name="main_start_event_default" translatable="false">start-monitoring</string>
+    <string name="main_stop_event_default" translatable="false">stop-monitoring</string>
+
+    <!-- El pedido HTTP de la transmisión, en Testing. -->
+    <string name="testing_preview_url" translatable="false">POST %1$s</string>
 </resources>

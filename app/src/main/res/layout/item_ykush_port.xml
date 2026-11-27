@@ -23,7 +23,7 @@
         android:layout_height="wrap_content"
         android:layout_marginEnd="12dp"
         android:fontFamily="monospace"
-        android:text="sin leer"
+        android:text="@string/testing_ykush_port_unknown"
         android:textColor="@color/muted"
         android:textSize="13sp" />
 

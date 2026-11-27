@@ -535,6 +535,7 @@ Por ahora la app está sólo en español. Lo que hay es la red para pasarla a va
 |---|---|
 | `HardcodedTextTest.noNewHardcodedTextInKotlin` | Ninguna frase nueva escrita en un `.kt` de `src/main`. Lo que ya no está en el código tiene que salir de la lista: la lista sólo se achica. |
 | `HardcodedTextTest.layoutsHaveNoHardcodedText` | Ningún texto con letras, ni número con decimal, escrito en un layout (`tools:text` no cuenta). |
+| `LintBaselineTest` | `app/lint-baseline.xml` no esconde ningún `HardcodedText` ni `SetTextI18n`: un texto nuevo en una pantalla se pasa al diccionario, no al baseline. |
 | `StringsCatalogTest` | Las traducciones contra el español: las mismas entradas, nada de más, nada traducido que sea `translatable="false"`, los mismos parámetros, ningún `%s` sin número y ninguna entrada vacía. Lo que todavía no se tradujo está en `sin-traducir.txt`. |
 
 **Las listas.** Están en `app/src/test/resources/i18n/`. `textos-en-codigo.txt` tiene tres partes: `## PENDIENTE` es lo que falta pasar al diccionario, `## LAYOUTS` lo mismo en los layouts, y `## PERMITIDO` lo que se queda en el código a propósito, revisado uno por uno: lo que no es texto para una persona (cabeceras HTTP, `<unknown ssid>`, el nombre que se busca de un equipo) y los motivos que sólo terminan en una línea de log. Algo pasa a `## PERMITIDO` sólo si se siguió el valor y de verdad no llega a ninguna pantalla. Las listas se regeneran contra el código con:

@@ -64,12 +64,12 @@ class TestingActivity : AppCompatActivity() {
         setContentView(binding.root)
         binding.root.padForSystemBars()
 
-        binding.ecgCard.setup("ECG", R.color.ecg, "Probar ECG")
-        binding.spo2Card.setup("SpO₂ / pulso", R.color.spo2, "Probar SpO₂")
-        binding.respCard.setup("Respiración", R.color.resp, "Probar respiración")
-        binding.tempCard.setup("Temperatura (plaqueta)", R.color.temp, "Probar temperatura")
-        binding.nibpCard.setup("Presión", R.color.pa, "Medir", "Parar")
-        binding.thermoCard.setup("Termómetro IR", R.color.temp, null)
+        binding.ecgCard.setup(R.string.testing_card_ecg, R.color.ecg, R.string.testing_card_ecg_check)
+        binding.spo2Card.setup(R.string.testing_card_spo2, R.color.spo2, R.string.testing_card_spo2_check)
+        binding.respCard.setup(R.string.testing_card_resp, R.color.resp, R.string.testing_card_resp_check)
+        binding.tempCard.setup(R.string.testing_card_temp, R.color.temp, R.string.testing_card_temp_check)
+        binding.nibpCard.setup(R.string.testing_card_nibp, R.color.pa, R.string.testing_card_nibp_measure, R.string.testing_card_nibp_stop)
+        binding.thermoCard.setup(R.string.testing_card_thermo, R.color.temp, null)
 
         // Volver corta la prueba en onStop, igual que el gesto de atrás.
         binding.backButton.setOnClickListener { finish() }
@@ -86,20 +86,20 @@ class TestingActivity : AppCompatActivity() {
         measureCards.forEach { (measure, card) -> card.cardButton.setOnClickListener { check(measure) } }
 
         binding.nibpCard.cardButton.setOnClickListener {
-            binding.nibpCard.cardResult.text = runtime().testNibpStart()
+            binding.nibpCard.cardResult.text = runtime().testNibpStart().message
         }
         binding.nibpCard.cardButton2.setOnClickListener {
-            binding.nibpCard.cardResult.text = runtime().testNibpStop()
+            binding.nibpCard.cardResult.text = runtime().testNibpStop().message
         }
         binding.ykushReadButton.setOnClickListener {
-            binding.ykushMessage.text = "Leyendo…"
+            binding.ykushMessage.setText(R.string.testing_ykush_reading)
             thread(name = "berry-test-ykush") {
                 val text = runtime().testYkushRead()
                 handler.post { binding.ykushMessage.text = text }
             }
         }
         binding.ykushSaveBootButton.setOnClickListener {
-            binding.ykushMessage.text = "Guardando…"
+            binding.ykushMessage.setText(R.string.testing_ykush_saving)
             thread(name = "berry-test-ykush") {
                 val text = runtime().testYkushSaveBoot()
                 handler.post { binding.ykushMessage.text = text }
@@ -183,7 +183,8 @@ class TestingActivity : AppCompatActivity() {
 
     /** Enciende o apaga un puerto del YKUSH3. Tarda hasta cuatro segundos, así que va en otro hilo. */
     private fun switchPort(port: Int, on: Boolean) {
-        binding.ykushMessage.text = if (on) "Encendiendo el puerto $port…" else "Apagando el puerto $port…"
+        binding.ykushMessage.text =
+            getString(if (on) R.string.testing_ykush_turning_on else R.string.testing_ykush_turning_off, port)
         thread(name = "berry-test-ykush") {
             val text = runtime().testYkushSet(port, on)
             handler.post { binding.ykushMessage.text = text }
@@ -191,11 +192,13 @@ class TestingActivity : AppCompatActivity() {
     }
 
     private fun render(s: TestingSnapshot) {
-        binding.testStatus.text = when {
-            s.testing -> "Probando · sin envío a la API"
-            s.sessionActive -> "Hay una consulta enviando"
-            else -> "Detenida"
-        }
+        binding.testStatus.setText(
+            when {
+                s.testing -> R.string.testing_status_running
+                s.sessionActive -> R.string.testing_status_session
+                else -> R.string.testing_status_stopped
+            },
+        )
         // El punto del estado: verde probando, ámbar con una consulta enviando, gris detenida.
         val statusColor = getColor(
             when {
@@ -210,11 +213,11 @@ class TestingActivity : AppCompatActivity() {
         val age = s.lastDataAge
         val berryLive = s.berryUp && age != null && age <= LIVE_SECONDS
         dot(binding.berryDot, berryLive)
-        binding.berryLine.text = if (!s.berryUp) {
-            "Plaqueta PM6750 sin conectar"
-        } else {
-            val ageText = if (age == null) "sin datos" else "hace ${"%.1f".format(Locale("es"), age)} s"
-            "Plaqueta PM6750 · ${s.berryPort ?: "?"} · último dato $ageText · tramas rotas ${s.rates.badChecksum}/s"
+        val berryPort = s.berryPort ?: "?"
+        binding.berryLine.text = when {
+            !s.berryUp -> getString(R.string.testing_berry_disconnected)
+            age == null -> getString(R.string.testing_berry_line_no_data, berryPort, s.rates.badChecksum)
+            else -> getString(R.string.testing_berry_line, berryPort, "%.1f".format(Locale("es"), age), s.rates.badChecksum)
         }
 
         val vitals = s.stats.vitals
@@ -222,23 +225,32 @@ class TestingActivity : AppCompatActivity() {
         val rates = s.rates
         binding.ecgCard.show(
             vitals.heartRate,
-            "${rates.ecg} muestras/s × 7 deriv.\nlatidos ${rates.peaks}/s · electrodos: " +
+            getString(
                 when (info.leadOff) {
-                    true -> "sueltos"
-                    false -> "conectados"
-                    null -> "—"
+                    true -> R.string.testing_ecg_detail_leads_off
+                    false -> R.string.testing_ecg_detail_leads_on
+                    null -> R.string.testing_ecg_detail_leads_unknown
                 },
+                rates.ecg,
+                rates.peaks,
+            ),
             rates.ecg > 0,
         )
         binding.spo2Card.show(
             vitals.spo2Pulse,
-            "onda ${rates.spo2Wave} muestras/s\ndedo: " + if (vitals.spo2Pulse.first().isDigit()) "detectado" else "no detectado",
+            getString(
+                if (vitals.spo2Pulse.first().isDigit()) R.string.testing_spo2_detail_finger else R.string.testing_spo2_detail_no_finger,
+                rates.spo2Wave,
+            ),
             rates.spo2Wave > 0,
         )
-        binding.respCard.show(vitals.respRate, "onda ${rates.respWave} muestras/s", rates.respWave > 0)
+        binding.respCard.show(vitals.respRate, getString(R.string.testing_resp_detail, rates.respWave), rates.respWave > 0)
         binding.tempCard.show(
             vitals.temperature,
-            "tramas ${rates.temperature}/s\nsensor: " + if (vitals.temperature.first().isDigit()) "conectado" else "sin conectar",
+            getString(
+                if (vitals.temperature.first().isDigit()) R.string.testing_temp_detail_connected else R.string.testing_temp_detail_disconnected,
+                rates.temperature,
+            ),
             rates.temperature > 0,
         )
         measureCards.forEach { (measure, card) -> s.verdicts[measure]?.let { card.verdict(it) } }
@@ -246,10 +258,10 @@ class TestingActivity : AppCompatActivity() {
         val frames = s.stats.frames
         binding.nibpCard.show(
             vitals.nibp,
-            "manguito ${frames.cuffMmhg} mmHg\nestado: " + when {
-                s.nibpRunning -> "midiendo"
-                frames.nibpStatus < 0 -> "en espera"
-                else -> "en espera (último 0x%02X)".format(frames.nibpStatus)
+            when {
+                s.nibpRunning -> getString(R.string.testing_nibp_detail_measuring, frames.cuffMmhg)
+                frames.nibpStatus < 0 -> getString(R.string.testing_nibp_detail_idle, frames.cuffMmhg)
+                else -> getString(R.string.testing_nibp_detail_idle_last, frames.cuffMmhg, frames.nibpStatus)
             },
             s.nibpRunning,
         )
@@ -258,43 +270,47 @@ class TestingActivity : AppCompatActivity() {
         binding.thermoCard.show(
             s.thermoReading ?: "—",
             if (!s.thermoConnected) {
-                "Termómetro sin conectar"
+                getString(R.string.testing_thermo_disconnected)
             } else {
-                val since = s.thermoAge?.let { "hace $it s" } ?: "sin mediciones"
-                "${s.thermoPort ?: "?"} · $since\núltima línea: ${s.thermoLine.ifBlank { "—" }}"
+                val port = s.thermoPort ?: "?"
+                val line = s.thermoLine.ifBlank { "—" }
+                s.thermoAge?.let { getString(R.string.testing_thermo_detail, port, it, line) }
+                    ?: getString(R.string.testing_thermo_detail_never, port, line)
             },
             thermoLive,
         )
         if (s.thermoConnected && s.thermoReading == null) {
-            binding.thermoCard.cardResult.text = "Apretá el gatillo para medir"
+            binding.thermoCard.cardResult.setText(R.string.testing_thermo_trigger)
         } else if (!s.thermoConnected) {
             binding.thermoCard.cardResult.text = ""
         }
 
         dot(binding.ykushDot, s.ykushPlugged)
-        binding.ykushStatus.text = if (s.ykushPlugged) "Conectado · 04D8:F11B" else "Sin conectar"
+        binding.ykushStatus.setText(if (s.ykushPlugged) R.string.testing_ykush_connected else R.string.testing_ykush_disconnected)
         s.ykushPorts.forEachIndexed { index, port ->
             val row = ykushPorts[index]
-            row.portLabel.text = "Puerto ${port.port} · ${port.role}"
-            row.portState.text = when (port.on) {
-                true -> "encendido"
-                false -> "apagado"
-                null -> "sin leer"
-            }
+            row.portLabel.text = getString(R.string.testing_ykush_port, port.port, port.role)
+            row.portState.setText(
+                when (port.on) {
+                    true -> R.string.testing_ykush_port_on
+                    false -> R.string.testing_ykush_port_off
+                    null -> R.string.testing_ykush_port_unknown
+                },
+            )
             row.portState.setTextColor(getColor(if (port.on == true) R.color.ok else R.color.muted))
         }
 
-        binding.usbList.text = s.inventory.usb.ifEmpty { listOf("Android no ve ningún dispositivo USB") }.joinToString("\n")
+        binding.usbList.text = s.inventory.usb.ifEmpty { listOf(getString(R.string.testing_usb_none)) }.joinToString("\n")
         binding.audioList.text = s.inventory.audio.joinToString("\n")
         binding.cameraList.text = s.inventory.cameras.joinToString("\n")
 
         renderTele(s.tele)
 
-        binding.previewUrl.text = s.url?.let { "POST $it" } ?: "Falta configurar la URL o el tótem"
+        binding.previewUrl.text = s.url?.let { getString(R.string.testing_preview_url, it) } ?: getString(R.string.testing_preview_url_missing)
         lastPreview = s.preview
         binding.previewBody.text = s.preview?.let { body ->
-            "${body.take(PREVIEW_CHARS)}… · ${"%.1f".format(Locale("es"), body.length / 1024.0)} KB"
-        } ?: "Sin datos para enviar"
+            getString(R.string.testing_preview_body, body.take(PREVIEW_CHARS), "%.1f".format(Locale("es"), body.length / 1024.0))
+        } ?: getString(R.string.testing_preview_empty)
 
         if (!consolePaused) binding.consoleText.text = s.console.take(CONSOLE_LINES).joinToString("\n")
     }
@@ -302,52 +318,66 @@ class TestingActivity : AppCompatActivity() {
     private fun renderTele(t: TeleView) {
         val status = t.status
         dot(binding.teleDot, status.room == RoomState.CONNECTED && status.instrument != null)
-        binding.teleState.text = status.room.label + if (status.manual) " · prueba manual" else ""
-        binding.teleDetail.text = buildString {
-            append("Servicio: ${t.serviceTypes} · cámara ${yesNo(t.serviceCamera)} · micrófono ${yesNo(t.serviceMicrophone)}\n")
-            append("${t.callAudio}\n")
-            append("Sala: ${status.room.label}")
-            status.roomName?.let { append(" · $it") }
-            if (status.tokenSeenAtMillis != 0L) {
-                // Nunca el token: sólo cuándo se vio y cuándo vence para entrar.
-                append(" · token visto a las ${clock(status.tokenSeenAtMillis)}")
-                status.tokenExpiresAtMillis?.let { append(", vence a las ${clock(it)}") }
-            }
-            append("\nPublica: ")
-            append(
-                when (status.instrument) {
-                    null -> "nada"
-                    Instrument.OTOSCOPE ->
-                        "otoscopio ${t.videoPath.orEmpty()} ${t.videoSize.orEmpty()} · " +
-                            "${"%.1f".format(Locale("es"), t.framesPerSecond)} cuadros/s"
-                    Instrument.STETHOSCOPE -> "estetoscopio · nivel ${t.levelPercent} %"
+        binding.teleState.text =
+            if (status.manual) getString(R.string.testing_tele_state_manual, status.room.label) else status.room.label
+        val service = when {
+            t.serviceCamera && t.serviceMicrophone -> R.string.testing_tele_service_camera_mic
+            t.serviceCamera -> R.string.testing_tele_service_camera
+            t.serviceMicrophone -> R.string.testing_tele_service_mic
+            else -> R.string.testing_tele_service_none
+        }
+        // Nunca el token: sólo cuándo se vio y cuándo vence para entrar.
+        val token = when {
+            status.tokenSeenAtMillis == 0L -> null
+            status.tokenExpiresAtMillis == null -> getString(R.string.testing_tele_token_seen, clock(status.tokenSeenAtMillis))
+            else -> getString(
+                R.string.testing_tele_token_seen_expires,
+                clock(status.tokenSeenAtMillis),
+                clock(status.tokenExpiresAtMillis),
+            )
+        }
+        val publishes = when (status.instrument) {
+            null -> getString(R.string.testing_tele_publishes_nothing)
+            Instrument.OTOSCOPE -> getString(
+                R.string.testing_tele_publishes_otoscope,
+                t.videoPath.orEmpty(),
+                t.videoSize.orEmpty(),
+                "%.1f".format(Locale("es"), t.framesPerSecond),
+            )
+            Instrument.STETHOSCOPE -> getString(R.string.testing_tele_publishes_stetho, t.levelPercent)
+        }
+        val android = if (status.instrument != Instrument.STETHOSCOPE) {
+            null
+        } else {
+            getString(
+                when (t.silenced) {
+                    true -> R.string.testing_tele_android_silenced
+                    false -> R.string.testing_tele_android_not_silenced
+                    null -> R.string.testing_tele_android_unknown
                 },
             )
-            if (status.instrument == Instrument.STETHOSCOPE) {
-                append(
-                    "\nAndroid: " + when (t.silenced) {
-                        true -> "SILENCIA la captura (otra app tiene el micrófono)"
-                        false -> "la captura no está silenciada"
-                        null -> "sin datos de la captura"
-                    },
-                )
-            }
-            if (status.message.isNotBlank()) append("\nÚltimo error: ${status.message}")
         }
+        binding.teleDetail.text = listOfNotNull(
+            getString(service, t.serviceTypes),
+            t.callAudio,
+            // La sala, su nombre y el token, cada uno una frase entera, juntos en un renglón.
+            listOfNotNull(getString(R.string.testing_tele_room, status.room.label), status.roomName, token).joinToString(" · "),
+            publishes,
+            android,
+            status.message.takeIf { it.isNotBlank() }?.let { getString(R.string.testing_tele_last_error, it) },
+        ).joinToString("\n")
     }
 
     private fun clock(millis: Long): String =
         java.text.SimpleDateFormat("HH:mm", Locale("es")).format(java.util.Date(millis))
 
-    private fun yesNo(value: Boolean) = if (value) "sí" else "no"
-
     /** El título en el color fijo del parámetro, como en el Panel Local. */
-    private fun ItemTestCardBinding.setup(title: String, color: Int, button: String?, button2: String? = null) {
-        cardTitle.text = title
+    private fun ItemTestCardBinding.setup(title: Int, color: Int, button: Int?, button2: Int? = null) {
+        cardTitle.setText(title)
         cardTitle.setTextColor(getColor(color))
-        if (button == null) cardButton.visibility = View.GONE else cardButton.text = button
+        if (button == null) cardButton.visibility = View.GONE else cardButton.setText(button)
         if (button2 != null) {
-            cardButton2.text = button2
+            cardButton2.setText(button2)
             cardButton2.visibility = View.VISIBLE
         }
     }

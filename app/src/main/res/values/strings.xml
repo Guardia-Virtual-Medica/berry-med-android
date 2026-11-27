@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="screen_title">Configuración del Maletín de atención</string>
     <string name="crumb_home">Inicio</string>
     <string name="last_update">Última actualización de USB-config: %1$s</string>
@@ -209,7 +209,6 @@
     <!-- Panel Local: los vitales. -->
     <string name="local_hr">FC</string>
     <string name="local_hr_source">desde ECG</string>
-    <string name="local_spo2">SpO₂</string>
     <string name="local_pulse">Pulso</string>
     <string name="local_resp">Resp</string>
     <string name="local_pa">PA</string>
@@ -218,12 +217,10 @@
     <string name="local_measure">Medir</string>
     <string name="local_cancel">Cancelar</string>
     <string name="local_temp">Temperatura</string>
-    <string name="local_unit_celsius">°C</string>
     <string name="local_thermo_off">Termómetro IR desconectado</string>
     <string name="local_thermo_wait">Apretá el botón para medir</string>
     <string name="local_unit_bpm">lpm</string>
     <string name="local_unit_rpm">rpm</string>
-    <string name="local_unit_mmhg">mmHg</string>
 
     <!-- Panel Local: el dock y los dispositivos. -->
     <string name="local_otoscope">Otoscopio</string>
@@ -317,4 +314,118 @@
     <string name="home_from_local_title">¿Volver al inicio?</string>
     <string name="home_from_local_body">Se finaliza el Panel Local: se detiene el ECG y se apagan el otoscopio y la cámara. Nada de lo medido sale a ONDOCTOR365.</string>
     <string name="home_from_local_action">Ir al inicio</string>
+
+    <!-- Configuración: los vitales de la pantalla de estado. -->
+    <!-- FC: frecuencia cardíaca. -->
+    <string name="main_vital_hr">FC</string>
+    <!-- lpm: latidos por minuto. -->
+    <string name="main_unit_bpm">lpm</string>
+    <!-- La saturación en % y el pulso en lpm (latidos por minuto). -->
+    <string name="main_unit_spo2" formatted="false">% / lpm</string>
+    <!-- Resp: respiración (frecuencia respiratoria). -->
+    <string name="main_vital_resp">Resp</string>
+    <!-- rpm: respiraciones por minuto. -->
+    <string name="main_unit_rpm">rpm</string>
+    <!-- Temp: temperatura. -->
+    <string name="main_vital_temp">Temp</string>
+    <!-- PA: presión arterial. -->
+    <string name="main_vital_pa">PA</string>
+    <string name="main_berry_ok">Plaqueta funcional</string>
+    <string name="main_berry_down">Plaqueta sin conectar</string>
+    <string name="main_pusher_ok">Comunicación con Pusher: OK</string>
+    <string name="main_pusher_down">Comunicación con Pusher: sin conexión</string>
+
+    <!-- Configuración: el paso de la plaqueta. El modo del ECG y el de la presión (por la edad de la persona). -->
+    <string name="main_ecg_mode_operation">Operación</string>
+    <string name="main_ecg_mode_monitor">Monitor</string>
+    <string name="main_ecg_mode_diagnostic">Diagnóstico</string>
+    <string name="main_nibp_mode_adult">Adulto</string>
+    <string name="main_nibp_mode_child">Niño</string>
+    <string name="main_nibp_mode_neonate">Neonato</string>
+
+    <!-- Panel Local: la velocidad del ECG, en mm/s. Es un número: lleva el separador decimal del idioma (12,5 o 12.5). -->
+    <string name="local_speed_12_5">12,5</string>
+
+    <!-- Testing: las tarjetas (título y botones). -->
+    <string name="testing_card_ecg">ECG</string>
+    <string name="testing_card_ecg_check">Probar ECG</string>
+    <string name="testing_card_spo2">SpO₂ / pulso</string>
+    <string name="testing_card_spo2_check">Probar SpO₂</string>
+    <string name="testing_card_resp">Respiración</string>
+    <string name="testing_card_resp_check">Probar respiración</string>
+    <string name="testing_card_temp">Temperatura (plaqueta)</string>
+    <string name="testing_card_temp_check">Probar temperatura</string>
+    <string name="testing_card_nibp">Presión</string>
+    <string name="testing_card_nibp_measure">Medir</string>
+    <string name="testing_card_nibp_stop">Parar</string>
+    <string name="testing_card_thermo">Termómetro IR</string>
+
+    <!-- Testing: el estado de la prueba. -->
+    <string name="testing_status_running">Probando · sin envío a la API</string>
+    <string name="testing_status_session">Hay una consulta enviando</string>
+    <string name="testing_status_stopped">Detenida</string>
+
+    <!-- Testing: la plaqueta. %1$s es el puerto USB; «hace %2$s s», los segundos desde el último dato, con un decimal; el último número, las tramas con error por segundo. -->
+    <string name="testing_berry_disconnected">Plaqueta PM6750 sin conectar</string>
+    <string name="testing_berry_line">Plaqueta PM6750 · %1$s · último dato hace %2$s s · tramas rotas %3$d/s</string>
+    <string name="testing_berry_line_no_data">Plaqueta PM6750 · %1$s · último dato sin datos · tramas rotas %2$d/s</string>
+
+    <!-- Testing: el detalle de cada tarjeta, en dos renglones. «deriv.»: derivaciones del ECG; muestras/s y tramas/s, por segundo. Es una tasa, no una cantidad: va en plural siempre (por eso no es un plurals). -->
+    <string name="testing_ecg_detail_leads_off" tools:ignore="PluralsCandidate">%1$d muestras/s × 7 deriv.\nlatidos %2$d/s · electrodos: sueltos</string>
+    <string name="testing_ecg_detail_leads_on" tools:ignore="PluralsCandidate">%1$d muestras/s × 7 deriv.\nlatidos %2$d/s · electrodos: conectados</string>
+    <string name="testing_ecg_detail_leads_unknown" tools:ignore="PluralsCandidate">%1$d muestras/s × 7 deriv.\nlatidos %2$d/s · electrodos: —</string>
+    <string name="testing_spo2_detail_finger" tools:ignore="PluralsCandidate">onda %1$d muestras/s\ndedo: detectado</string>
+    <string name="testing_spo2_detail_no_finger" tools:ignore="PluralsCandidate">onda %1$d muestras/s\ndedo: no detectado</string>
+    <string name="testing_resp_detail" tools:ignore="PluralsCandidate">onda %1$d muestras/s</string>
+    <string name="testing_temp_detail_connected">tramas %1$d/s\nsensor: conectado</string>
+    <string name="testing_temp_detail_disconnected">tramas %1$d/s\nsensor: sin conectar</string>
+    <!-- Presión: %1$d es la presión del manguito; %2$02X, el último código de estado de la plaqueta, en hexadecimal. -->
+    <string name="testing_nibp_detail_measuring">manguito %1$d mmHg\nestado: midiendo</string>
+    <string name="testing_nibp_detail_idle">manguito %1$d mmHg\nestado: en espera</string>
+    <string name="testing_nibp_detail_idle_last">manguito %1$d mmHg\nestado: en espera (último 0x%2$02X)</string>
+    <!-- Termómetro: el primer valor es el puerto USB; «última línea» es lo que mandó el termómetro, tal cual. -->
+    <string name="testing_thermo_disconnected">Termómetro sin conectar</string>
+    <string name="testing_thermo_detail">%1$s · hace %2$d s\núltima línea: %3$s</string>
+    <string name="testing_thermo_detail_never">%1$s · sin mediciones\núltima línea: %2$s</string>
+    <string name="testing_thermo_trigger">Apretá el gatillo para medir</string>
+
+    <!-- Testing: el hub YKUSH3. En «Puerto %1$d · %2$s», %2$s es el equipo que va en ese puerto. -->
+    <string name="testing_ykush_connected">Conectado · 04D8:F11B</string>
+    <string name="testing_ykush_disconnected">Sin conectar</string>
+    <string name="testing_ykush_reading">Leyendo…</string>
+    <string name="testing_ykush_saving">Guardando…</string>
+    <string name="testing_ykush_turning_on">Encendiendo el puerto %1$d…</string>
+    <string name="testing_ykush_turning_off">Apagando el puerto %1$d…</string>
+    <string name="testing_ykush_port">Puerto %1$d · %2$s</string>
+    <string name="testing_ykush_port_on">encendido</string>
+    <string name="testing_ykush_port_off">apagado</string>
+    <string name="testing_ykush_port_unknown">sin leer</string>
+
+    <!-- Testing: los dispositivos y la transmisión. En el cuerpo, %2$s son los KB con un decimal. -->
+    <string name="testing_usb_none">Android no ve ningún dispositivo USB</string>
+    <string name="testing_preview_url_missing">Falta configurar la URL o el tótem</string>
+    <string name="testing_preview_body">%1$s… · %2$s KB</string>
+    <string name="testing_preview_empty">Sin datos para enviar</string>
+
+    <!-- Testing: la teleconsulta. %1$s es el estado de la sala, o los tipos del servicio (vienen de Android). -->
+    <string name="testing_tele_state_manual">%1$s · prueba manual</string>
+    <string name="testing_tele_service_camera_mic">Servicio: %1$s · cámara sí · micrófono sí</string>
+    <string name="testing_tele_service_camera">Servicio: %1$s · cámara sí · micrófono no</string>
+    <string name="testing_tele_service_mic">Servicio: %1$s · cámara no · micrófono sí</string>
+    <string name="testing_tele_service_none">Servicio: %1$s · cámara no · micrófono no</string>
+    <!-- El renglón de la sala junta con « · » la sala, su nombre y cuándo se vio el token (las horas van como HH:mm). -->
+    <string name="testing_tele_room">Sala: %1$s</string>
+    <string name="testing_tele_token_seen">token visto a las %1$s</string>
+    <string name="testing_tele_token_seen_expires">token visto a las %1$s, vence a las %2$s</string>
+    <!-- Lo que publica: la ruta y el tamaño de la imagen, y los cuadros por segundo con un decimal. -->
+    <string name="testing_tele_publishes_nothing">Publica: nada</string>
+    <string name="testing_tele_publishes_otoscope">Publica: otoscopio %1$s %2$s · %3$s cuadros/s</string>
+    <string name="testing_tele_publishes_stetho">Publica: estetoscopio · nivel %1$d %%</string>
+    <string name="testing_tele_android_silenced">Android: SILENCIA la captura (otra app tiene el micrófono)</string>
+    <string name="testing_tele_android_not_silenced">Android: la captura no está silenciada</string>
+    <string name="testing_tele_android_unknown">Android: sin datos de la captura</string>
+    <string name="testing_tele_last_error">Último error: %1$s</string>
+
+    <!-- El panel lateral: la descripción de una fila para el lector de pantalla. %1$s es el equipo; %2$s, lo que pasa al tocarla. -->
+    <string name="status_device_action">%1$s: %2$s</string>
 </resources>

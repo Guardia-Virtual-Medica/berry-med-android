@@ -770,20 +770,20 @@ class TotemRuntime(context: Context) {
         testingSession.check(measure, parser.stats())
     }
 
-    fun testNibpStart(): String {
-        if (!testing) return "Iniciá la prueba primero."
-        if (sessionActive) return "Hay una consulta enviando."
-        if (!berry.startNibp()) return "No se pudo iniciar: plaqueta sin conectar o ya está midiendo."
+    fun testNibpStart(): NibpReply {
+        if (!testing) return NibpReply(ok = false, "Iniciá la prueba primero.")
+        if (sessionActive) return NibpReply(ok = false, "Hay una consulta enviando.")
+        if (!berry.startNibp()) return NibpReply(ok = false, "No se pudo iniciar: plaqueta sin conectar o ya está midiendo.")
         resetNibp()
-        return "Midiendo…"
+        return NibpReply(ok = true, "Midiendo…")
     }
 
-    fun testNibpStop(): String {
+    fun testNibpStop(): NibpReply {
         // Una presión pedida por el médico, o por quien atiende en el Panel Local, no se para desde Testing.
-        if (sessionActive) return "Hay una consulta enviando."
-        if (localMode) return "El Panel Local está abierto: la presión la maneja el panel."
+        if (sessionActive) return NibpReply(ok = false, "Hay una consulta enviando.")
+        if (localMode) return NibpReply(ok = false, "El Panel Local está abierto: la presión la maneja el panel.")
         berry.stopNibp()
-        return "STOP enviado"
+        return NibpReply(ok = true, "STOP enviado")
     }
 
     /** Devuelve el motivo si el Panel Local no puede abrirse ahora. */
@@ -828,12 +828,12 @@ class TotemRuntime(context: Context) {
         publish()
     }
 
-    fun localNibpStart(): String {
-        if (!localMode) return "El panel no está activo."
-        if (!berry.startNibp()) return "No se pudo iniciar: plaqueta sin conectar o ya está midiendo."
+    fun localNibpStart(): NibpReply {
+        if (!localMode) return NibpReply(ok = false, "El panel no está activo.")
+        if (!berry.startNibp()) return NibpReply(ok = false, "No se pudo iniciar: plaqueta sin conectar o ya está midiendo.")
         resetNibp()
         localNibpAsked = true
-        return "Midiendo…"
+        return NibpReply(ok = true, "Midiendo…")
     }
 
     /** Una medición nueva: la presión anterior se borra y su hora también. */
@@ -852,10 +852,10 @@ class TotemRuntime(context: Context) {
         nibpResultAtMillis = System.currentTimeMillis()
     }
 
-    fun localNibpStop(): String {
-        if (!localMode) return "El panel no está activo."
+    fun localNibpStop(): NibpReply {
+        if (!localMode) return NibpReply(ok = false, "El panel no está activo.")
         berry.stopNibp()
-        return "Medición detenida"
+        return NibpReply(ok = true, "Medición detenida")
     }
 
     /**

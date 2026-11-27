@@ -368,9 +368,10 @@ class MainActivity : AppCompatActivity() {
         binding.startEvent.setText(config.startEventName)
         binding.stopEvent.setText(config.stopEventName)
         binding.nibpTarget.setText(config.nibpTargetPressureMmhg)
-        binding.ykushOtoscope.setText(config.ykushOtoscopePort.toString())
-        binding.ykushStethoscope.setText(config.ykushStethoscopePort.toString())
-        binding.ykushThermometer.setText(config.ykushThermometerPort.toString())
+        // Con dígitos de 0 a 9 en cualquier idioma: el campo se vuelve a leer como número al guardar.
+        binding.ykushOtoscope.setText(String.format(java.util.Locale.ROOT, "%d", config.ykushOtoscopePort))
+        binding.ykushStethoscope.setText(String.format(java.util.Locale.ROOT, "%d", config.ykushStethoscopePort))
+        binding.ykushThermometer.setText(String.format(java.util.Locale.ROOT, "%d", config.ykushThermometerPort))
         binding.localPin.setText(config.localPanelPin)
         binding.stethoInputName.setText(config.stethoInputName)
         binding.headsetName.setText(config.headsetName)
@@ -540,16 +541,12 @@ class MainActivity : AppCompatActivity() {
         paint(binding.respRate, state.respRate, R.color.resp)
         paint(binding.temperature, state.temperature, R.color.temp)
         paint(binding.nibp, state.nibp, R.color.pa)
-        binding.berryStatus.text = if (state.berryUp) "Plaqueta funcional" else "Plaqueta sin conectar"
+        binding.berryStatus.setText(if (state.berryUp) R.string.main_berry_ok else R.string.main_berry_down)
         binding.berryDot.backgroundTintList = ColorStateList.valueOf(
             getColor(if (state.berryUp) R.color.ok else R.color.line3),
         )
         binding.lastData.text = state.lastData
-        binding.pusherStatus.text = if (state.pusherUp) {
-            "Comunicación con Pusher: OK"
-        } else {
-            "Comunicación con Pusher: sin conexión"
-        }
+        binding.pusherStatus.setText(if (state.pusherUp) R.string.main_pusher_ok else R.string.main_pusher_down)
         binding.otherStatus.text = state.others
         binding.lastPost.text = state.lastPost
         chip(binding.chipBerry, if (state.berryUp) Link.CONNECTED else Link.DISCONNECTED)

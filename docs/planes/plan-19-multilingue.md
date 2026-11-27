@@ -231,7 +231,7 @@ Hecho cuando: los tests nuevos pasan y fallan a propósito (agregar un `"Hola mu
 #### Paso 2 — Layouts y pantallas (rama `feat/i18n-2-pantallas`)
 
 1. Los 27 literales de layouts: a `@string/…` o a `donottranslate.xml`. La lista `## LAYOUTS` queda vacía.
-2. `MainActivity` (4): los chips «Plaqueta funcional», «Comunicación con Pusher: OK». Sacar `value == "—"`: que el runtime diga si hay dato.
+2. `MainActivity` (4): los chips «Plaqueta funcional», «Comunicación con Pusher: OK». La comparación `value == "—"` se queda: son guiones, no dependen del idioma.
 3. `TestingActivity` (47): cada tarjeta, con entradas enteras y parámetros. Es la pantalla con más pedazos concatenados; se reescribe `describe` por tarjeta.
 4. `LocalPanelActivity`: `nibp()` deja de mirar el comienzo de la frase. Las funciones del runtime que hoy devuelven un `String` pasan a devolver un resultado con tipo (`ok` o no, más el mensaje); el mensaje sigue siendo `String` hasta el paso 4.
 5. `StatusPanelView`: la descripción de la fila (está en el parche). El `"$percent %"` del volumen es del plan 18: sólo si ya está en `main`.

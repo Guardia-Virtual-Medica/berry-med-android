@@ -52,7 +52,7 @@
         errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/guardiavirtual/berrymed/ui/MainActivity.kt"
-            line="612"
+            line="609"
             column="22"/>
     </issue>
 
@@ -433,7 +433,7 @@
         errorLine2="                             ~~~~~~~~~~~~">
         <location
             file="src/main/res/layout/activity_local_panel.xml"
-            line="432"
+            line="439"
             column="30"/>
     </issue>
 
@@ -444,7 +444,7 @@
         errorLine2="                             ~~~~~~~~~~~~">
         <location
             file="src/main/res/layout/activity_local_panel.xml"
-            line="671"
+            line="678"
             column="30"/>
     </issue>
 
@@ -455,7 +455,7 @@
         errorLine2="                             ~~~~~~~~~~~~">
         <location
             file="src/main/res/layout/activity_local_panel.xml"
-            line="917"
+            line="924"
             column="30"/>
     </issue>
 
@@ -466,7 +466,7 @@
         errorLine2="                     ~~~~~~~~~~~~">
         <location
             file="src/main/res/layout/activity_local_panel.xml"
-            line="1331"
+            line="1338"
             column="22"/>
     </issue>
 
@@ -477,7 +477,7 @@
         errorLine2="                     ~~~~~~~~~~~~">
         <location
             file="src/main/res/layout/activity_local_panel.xml"
-            line="1423"
+            line="1430"
             column="22"/>
     </issue>
 
@@ -488,7 +488,7 @@
         errorLine2="                     ~~~~~~~~~~~~">
         <location
             file="src/main/res/layout/activity_local_panel.xml"
-            line="1544"
+            line="1551"
             column="22"/>
     </issue>
 
@@ -499,7 +499,7 @@
         errorLine2="                         ~~~~~~~~">
         <location
             file="src/main/res/layout/activity_local_panel.xml"
-            line="1312"
+            line="1319"
             column="26"/>
     </issue>
 
@@ -510,7 +510,7 @@
         errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/layout/activity_local_panel.xml"
-            line="1352"
+            line="1359"
             column="29"/>
     </issue>
 
@@ -521,7 +521,7 @@
         errorLine2="                         ~~~~~~~~">
         <location
             file="src/main/res/layout/activity_local_panel.xml"
-            line="1412"
+            line="1419"
             column="26"/>
     </issue>
 
@@ -532,7 +532,7 @@
         errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/layout/activity_local_panel.xml"
-            line="1448"
+            line="1455"
             column="29"/>
     </issue>
 
@@ -543,7 +543,7 @@
         errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/layout/activity_local_panel.xml"
-            line="1568"
+            line="1575"
             column="29"/>
     </issue>
 
@@ -576,7 +576,7 @@
         errorLine2="                                    ~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/layout/activity_local_panel.xml"
-            line="443"
+            line="450"
             column="37"/>
     </issue>
 
@@ -587,7 +587,7 @@
         errorLine2="                                    ~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/layout/activity_local_panel.xml"
-            line="685"
+            line="692"
             column="37"/>
     </issue>
 
@@ -598,7 +598,7 @@
         errorLine2="                                        ~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/layout/activity_local_panel.xml"
-            line="691"
+            line="698"
             column="41"/>
     </issue>
 
@@ -609,7 +609,7 @@
         errorLine2="                                    ~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/layout/activity_local_panel.xml"
-            line="928"
+            line="935"
             column="37"/>
     </issue>
 
@@ -620,7 +620,7 @@
         errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/layout/activity_local_panel.xml"
-            line="1316"
+            line="1323"
             column="29"/>
     </issue>
 
@@ -631,7 +631,7 @@
         errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/layout/activity_local_panel.xml"
-            line="1354"
+            line="1361"
             column="29"/>
     </issue>
 
@@ -642,7 +642,7 @@
         errorLine2="                                ~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/layout/activity_local_panel.xml"
-            line="1362"
+            line="1369"
             column="33"/>
     </issue>
 
@@ -653,7 +653,7 @@
         errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/layout/activity_local_panel.xml"
-            line="1416"
+            line="1423"
             column="29"/>
     </issue>
 
@@ -664,7 +664,7 @@
         errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/layout/activity_local_panel.xml"
-            line="1450"
+            line="1457"
             column="29"/>
     </issue>
 
@@ -675,7 +675,7 @@
         errorLine2="                                ~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/layout/activity_local_panel.xml"
-            line="1457"
+            line="1464"
             column="33"/>
     </issue>
 
@@ -686,7 +686,7 @@
         errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/layout/activity_local_panel.xml"
-            line="1570"
+            line="1577"
             column="29"/>
     </issue>
 
@@ -730,7 +730,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/layout/activity_main.xml"
-            line="12"
+            line="13"
             column="5"/>
     </issue>
 
@@ -851,7 +851,7 @@
         errorLine2="                                     ~~~~~~~~~~~~">
         <location
             file="src/main/res/layout/activity_local_panel.xml"
-            line="339"
+            line="346"
             column="38"/>
     </issue>
 
@@ -873,7 +873,7 @@
         errorLine2="                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/layout/activity_main.xml"
-            line="476"
+            line="477"
             column="37"/>
     </issue>
 
@@ -884,7 +884,7 @@
         errorLine2="                                             ~~~~~~~">
         <location
             file="src/main/res/layout/activity_local_panel.xml"
-            line="613"
+            line="620"
             column="46"/>
     </issue>
 
@@ -895,7 +895,7 @@
         errorLine2="                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/layout/activity_main.xml"
-            line="477"
+            line="478"
             column="37"/>
     </issue>
 
@@ -961,7 +961,7 @@
         errorLine2="                             ~~~~~~~~~">
         <location
             file="src/main/res/layout/activity_local_panel.xml"
-            line="1146"
+            line="1153"
             column="30"/>
     </issue>
 
@@ -972,7 +972,7 @@
         errorLine2="                             ~~~~~~~~~">
         <location
             file="src/main/res/layout/activity_local_panel.xml"
-            line="1192"
+            line="1199"
             column="30"/>
     </issue>
 
@@ -983,7 +983,7 @@
         errorLine2="                             ~~~~~~~~~">
         <location
             file="src/main/res/layout/activity_local_panel.xml"
-            line="1238"
+            line="1245"
             column="30"/>
     </issue>
 
@@ -1051,578 +1051,6 @@
             file="src/main/res/layout/view_status_rail.xml"
             line="124"
             column="10"/>
-    </issue>
-
-    <issue
-        id="SetTextI18n"
-        message="Number formatting does not take into account locale settings. Consider using `String.format` instead."
-        errorLine1="        binding.volumeValue.text = volume.toString()"
-        errorLine2="                                   ~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/guardiavirtual/berrymed/ui/LocalPanelActivity.kt"
-            line="804"
-            column="36"/>
-    </issue>
-
-    <issue
-        id="SetTextI18n"
-        message="Number formatting does not take into account locale settings. Consider using `String.format` instead."
-        errorLine1="        binding.ykushOtoscope.setText(config.ykushOtoscopePort.toString())"
-        errorLine2="                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/guardiavirtual/berrymed/ui/MainActivity.kt"
-            line="371"
-            column="39"/>
-    </issue>
-
-    <issue
-        id="SetTextI18n"
-        message="Number formatting does not take into account locale settings. Consider using `String.format` instead."
-        errorLine1="        binding.ykushStethoscope.setText(config.ykushStethoscopePort.toString())"
-        errorLine2="                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/guardiavirtual/berrymed/ui/MainActivity.kt"
-            line="372"
-            column="42"/>
-    </issue>
-
-    <issue
-        id="SetTextI18n"
-        message="Number formatting does not take into account locale settings. Consider using `String.format` instead."
-        errorLine1="        binding.ykushThermometer.setText(config.ykushThermometerPort.toString())"
-        errorLine2="                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/guardiavirtual/berrymed/ui/MainActivity.kt"
-            line="373"
-            column="42"/>
-    </issue>
-
-    <issue
-        id="SetTextI18n"
-        message="String literal in `setText` can not be translated. Use Android resources instead."
-        errorLine1="            binding.ykushMessage.text = &quot;Leyendo…&quot;"
-        errorLine2="                                         ~~~~~~~~">
-        <location
-            file="src/main/java/com/guardiavirtual/berrymed/ui/TestingActivity.kt"
-            line="95"
-            column="42"/>
-    </issue>
-
-    <issue
-        id="SetTextI18n"
-        message="String literal in `setText` can not be translated. Use Android resources instead."
-        errorLine1="            binding.ykushMessage.text = &quot;Guardando…&quot;"
-        errorLine2="                                         ~~~~~~~~~~">
-        <location
-            file="src/main/java/com/guardiavirtual/berrymed/ui/TestingActivity.kt"
-            line="102"
-            column="42"/>
-    </issue>
-
-    <issue
-        id="SetTextI18n"
-        message="String literal in `setText` can not be translated. Use Android resources instead."
-        errorLine1="            binding.thermoCard.cardResult.text = &quot;Apretá el gatillo para medir&quot;"
-        errorLine2="                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/guardiavirtual/berrymed/ui/TestingActivity.kt"
-            line="269"
-            column="51"/>
-    </issue>
-
-    <issue
-        id="SetTextI18n"
-        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
-        errorLine1="            row.portLabel.text = &quot;Puerto ${port.port} · ${port.role}&quot;"
-        errorLine2="                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/guardiavirtual/berrymed/ui/TestingActivity.kt"
-            line="278"
-            column="34"/>
-    </issue>
-
-    <issue
-        id="SetTextI18n"
-        message="String literal in `setText` can not be translated. Use Android resources instead."
-        errorLine1="            row.portLabel.text = &quot;Puerto ${port.port} · ${port.role}&quot;"
-        errorLine2="                                  ~~~~~~~">
-        <location
-            file="src/main/java/com/guardiavirtual/berrymed/ui/TestingActivity.kt"
-            line="278"
-            column="35"/>
-    </issue>
-
-    <issue
-        id="SetTextI18n"
-        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
-        errorLine1="        binding.teleState.text = status.room.label + if (status.manual) &quot; · prueba manual&quot; else &quot;&quot;"
-        errorLine2="                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/guardiavirtual/berrymed/ui/TestingActivity.kt"
-            line="305"
-            column="34"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;II&quot;, should use `@string` resource"
-        errorLine1="                                            android:text=&quot;II&quot; />"
-        errorLine2="                                            ~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_local_panel.xml"
-            line="173"
-            column="45"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;3&quot;, should use `@string` resource"
-        errorLine1="                                            android:text=&quot;3&quot; />"
-        errorLine2="                                            ~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_local_panel.xml"
-            line="179"
-            column="45"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;7&quot;, should use `@string` resource"
-        errorLine1="                                            android:text=&quot;7&quot; />"
-        errorLine2="                                            ~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_local_panel.xml"
-            line="185"
-            column="45"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;12,5&quot;, should use `@string` resource"
-        errorLine1="                                            android:text=&quot;12,5&quot; />"
-        errorLine2="                                            ~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_local_panel.xml"
-            line="195"
-            column="45"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;25&quot;, should use `@string` resource"
-        errorLine1="                                            android:text=&quot;25&quot; />"
-        errorLine2="                                            ~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_local_panel.xml"
-            line="201"
-            column="45"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;50&quot;, should use `@string` resource"
-        errorLine1="                                            android:text=&quot;50&quot; />"
-        errorLine2="                                            ~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_local_panel.xml"
-            line="207"
-            column="45"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;5&quot;, should use `@string` resource"
-        errorLine1="                                            android:text=&quot;5&quot; />"
-        errorLine2="                                            ~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_local_panel.xml"
-            line="222"
-            column="45"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;10&quot;, should use `@string` resource"
-        errorLine1="                                            android:text=&quot;10&quot; />"
-        errorLine2="                                            ~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_local_panel.xml"
-            line="228"
-            column="45"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;20&quot;, should use `@string` resource"
-        errorLine1="                                            android:text=&quot;20&quot; />"
-        errorLine2="                                            ~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_local_panel.xml"
-            line="234"
-            column="45"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;FC&quot;, should use `@string` resource"
-        errorLine1="                        android:text=&quot;FC&quot;"
-        errorLine2="                        ~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="166"
-            column="25"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;lpm&quot;, should use `@string` resource"
-        errorLine1="                        android:text=&quot;lpm&quot; />"
-        errorLine2="                        ~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="176"
-            column="25"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;SpO₂&quot;, should use `@string` resource"
-        errorLine1="                        android:text=&quot;SpO₂&quot;"
-        errorLine2="                        ~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="197"
-            column="25"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;% / lpm&quot;, should use `@string` resource"
-        errorLine1="                        android:text=&quot;% / lpm&quot; />"
-        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="207"
-            column="25"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;Resp&quot;, should use `@string` resource"
-        errorLine1="                        android:text=&quot;Resp&quot;"
-        errorLine2="                        ~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="228"
-            column="25"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;rpm&quot;, should use `@string` resource"
-        errorLine1="                        android:text=&quot;rpm&quot; />"
-        errorLine2="                        ~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="238"
-            column="25"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;Temp&quot;, should use `@string` resource"
-        errorLine1="                        android:text=&quot;Temp&quot;"
-        errorLine2="                        ~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="259"
-            column="25"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;°C&quot;, should use `@string` resource"
-        errorLine1="                        android:text=&quot;°C&quot; />"
-        errorLine2="                        ~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="269"
-            column="25"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;PA&quot;, should use `@string` resource"
-        errorLine1="                        android:text=&quot;PA&quot;"
-        errorLine2="                        ~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="290"
-            column="25"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;mmHg&quot;, should use `@string` resource"
-        errorLine1="                        android:text=&quot;mmHg&quot; />"
-        errorLine2="                        ~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="300"
-            column="25"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;start-monitoring&quot;, should use `@string` resource"
-        errorLine1="                                        android:text=&quot;start-monitoring&quot; />"
-        errorLine2="                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="567"
-            column="41"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;stop-monitoring&quot;, should use `@string` resource"
-        errorLine1="                                        android:text=&quot;stop-monitoring&quot; />"
-        errorLine2="                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="577"
-            column="41"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;x0.25&quot;, should use `@string` resource"
-        errorLine1="                                    &lt;com.google.android.material.chip.Chip style=&quot;@style/Widget.Material3.Chip.Filter&quot; android:layout_width=&quot;wrap_content&quot; android:layout_height=&quot;wrap_content&quot; android:text=&quot;x0.25&quot; />"
-        errorLine2="                                                                                                                                                                                                ~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="605"
-            column="193"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;x0.5&quot;, should use `@string` resource"
-        errorLine1="                                    &lt;com.google.android.material.chip.Chip style=&quot;@style/Widget.Material3.Chip.Filter&quot; android:layout_width=&quot;wrap_content&quot; android:layout_height=&quot;wrap_content&quot; android:text=&quot;x0.5&quot; />"
-        errorLine2="                                                                                                                                                                                                ~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="606"
-            column="193"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;x1&quot;, should use `@string` resource"
-        errorLine1="                                    &lt;com.google.android.material.chip.Chip style=&quot;@style/Widget.Material3.Chip.Filter&quot; android:layout_width=&quot;wrap_content&quot; android:layout_height=&quot;wrap_content&quot; android:checked=&quot;true&quot; android:text=&quot;x1&quot; />"
-        errorLine2="                                                                                                                                                                                                                       ~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="607"
-            column="216"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;x2&quot;, should use `@string` resource"
-        errorLine1="                                    &lt;com.google.android.material.chip.Chip style=&quot;@style/Widget.Material3.Chip.Filter&quot; android:layout_width=&quot;wrap_content&quot; android:layout_height=&quot;wrap_content&quot; android:text=&quot;x2&quot; />"
-        errorLine2="                                                                                                                                                                                                ~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="608"
-            column="193"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;Operación&quot;, should use `@string` resource"
-        errorLine1="                                    &lt;com.google.android.material.chip.Chip style=&quot;@style/Widget.Material3.Chip.Filter&quot; android:layout_width=&quot;wrap_content&quot; android:layout_height=&quot;wrap_content&quot; android:text=&quot;Operación&quot; />"
-        errorLine2="                                                                                                                                                                                                ~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="626"
-            column="193"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;Monitor&quot;, should use `@string` resource"
-        errorLine1="                                    &lt;com.google.android.material.chip.Chip style=&quot;@style/Widget.Material3.Chip.Filter&quot; android:layout_width=&quot;wrap_content&quot; android:layout_height=&quot;wrap_content&quot; android:checked=&quot;true&quot; android:text=&quot;Monitor&quot; />"
-        errorLine2="                                                                                                                                                                                                                       ~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="627"
-            column="216"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;Diagnóstico&quot;, should use `@string` resource"
-        errorLine1="                                    &lt;com.google.android.material.chip.Chip style=&quot;@style/Widget.Material3.Chip.Filter&quot; android:layout_width=&quot;wrap_content&quot; android:layout_height=&quot;wrap_content&quot; android:text=&quot;Diagnóstico&quot; />"
-        errorLine2="                                                                                                                                                                                                ~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="628"
-            column="193"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;x0.25&quot;, should use `@string` resource"
-        errorLine1="                                    &lt;com.google.android.material.chip.Chip style=&quot;@style/Widget.Material3.Chip.Filter&quot; android:layout_width=&quot;wrap_content&quot; android:layout_height=&quot;wrap_content&quot; android:text=&quot;x0.25&quot; />"
-        errorLine2="                                                                                                                                                                                                ~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="646"
-            column="193"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;x0.5&quot;, should use `@string` resource"
-        errorLine1="                                    &lt;com.google.android.material.chip.Chip style=&quot;@style/Widget.Material3.Chip.Filter&quot; android:layout_width=&quot;wrap_content&quot; android:layout_height=&quot;wrap_content&quot; android:text=&quot;x0.5&quot; />"
-        errorLine2="                                                                                                                                                                                                ~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="647"
-            column="193"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;x1&quot;, should use `@string` resource"
-        errorLine1="                                    &lt;com.google.android.material.chip.Chip style=&quot;@style/Widget.Material3.Chip.Filter&quot; android:layout_width=&quot;wrap_content&quot; android:layout_height=&quot;wrap_content&quot; android:checked=&quot;true&quot; android:text=&quot;x1&quot; />"
-        errorLine2="                                                                                                                                                                                                                       ~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="648"
-            column="216"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;x2&quot;, should use `@string` resource"
-        errorLine1="                                    &lt;com.google.android.material.chip.Chip style=&quot;@style/Widget.Material3.Chip.Filter&quot; android:layout_width=&quot;wrap_content&quot; android:layout_height=&quot;wrap_content&quot; android:text=&quot;x2&quot; />"
-        errorLine2="                                                                                                                                                                                                ~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="649"
-            column="193"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;Adulto&quot;, should use `@string` resource"
-        errorLine1="                                    &lt;com.google.android.material.chip.Chip style=&quot;@style/Widget.Material3.Chip.Filter&quot; android:layout_width=&quot;wrap_content&quot; android:layout_height=&quot;wrap_content&quot; android:checked=&quot;true&quot; android:text=&quot;Adulto&quot; />"
-        errorLine2="                                                                                                                                                                                                                       ~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="667"
-            column="216"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;Niño&quot;, should use `@string` resource"
-        errorLine1="                                    &lt;com.google.android.material.chip.Chip style=&quot;@style/Widget.Material3.Chip.Filter&quot; android:layout_width=&quot;wrap_content&quot; android:layout_height=&quot;wrap_content&quot; android:text=&quot;Niño&quot; />"
-        errorLine2="                                                                                                                                                                                                ~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="668"
-            column="193"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;Neonato&quot;, should use `@string` resource"
-        errorLine1="                                    &lt;com.google.android.material.chip.Chip style=&quot;@style/Widget.Material3.Chip.Filter&quot; android:layout_width=&quot;wrap_content&quot; android:layout_height=&quot;wrap_content&quot; android:text=&quot;Neonato&quot; />"
-        errorLine2="                                                                                                                                                                                                ~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="669"
-            column="193"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;1&quot;, should use `@string` resource"
-        errorLine1="                                        android:text=&quot;1&quot; />"
-        errorLine2="                                        ~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="696"
-            column="41"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;2&quot;, should use `@string` resource"
-        errorLine1="                                        android:text=&quot;2&quot; />"
-        errorLine2="                                        ~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="708"
-            column="41"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;3&quot;, should use `@string` resource"
-        errorLine1="                                        android:text=&quot;3&quot; />"
-        errorLine2="                                        ~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="720"
-            column="41"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;USB Audio&quot;, should use `@string` resource"
-        errorLine1="                                        android:text=&quot;USB Audio&quot; />"
-        errorLine2="                                        ~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="735"
-            column="41"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;H390&quot;, should use `@string` resource"
-        errorLine1="                                        android:text=&quot;H390&quot; />"
-        errorLine2="                                        ~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="747"
-            column="41"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;1515&quot;, should use `@string` resource"
-        errorLine1="                                        android:text=&quot;1515&quot; />"
-        errorLine2="                                        ~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="762"
-            column="41"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;sin leer&quot;, should use `@string` resource"
-        errorLine1="        android:text=&quot;sin leer&quot;"
-        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/item_ykush_port.xml"
-            line="26"
-            column="9"/>
     </issue>
 
     <issue

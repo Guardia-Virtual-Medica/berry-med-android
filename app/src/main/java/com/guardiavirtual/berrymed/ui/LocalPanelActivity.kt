@@ -46,6 +46,7 @@ import com.guardiavirtual.berrymed.otoscope.OtoscopeSource
 import com.guardiavirtual.berrymed.otoscope.UvcOtoscope
 import com.guardiavirtual.berrymed.service.LocalSnapshot
 import com.guardiavirtual.berrymed.service.MonitorService
+import com.guardiavirtual.berrymed.service.NibpReply
 import com.guardiavirtual.berrymed.ui.panel.CameraState
 import com.guardiavirtual.berrymed.ui.panel.EcgLeads
 import com.guardiavirtual.berrymed.ui.panel.FreezeFrame
@@ -715,12 +716,12 @@ class LocalPanelActivity : AppCompatActivity() {
     }
 
     /** Medir y Cancelar escriben en el puerto serie: fuera del hilo de la pantalla. */
-    private fun nibp(action: () -> String) {
+    private fun nibp(action: () -> NibpReply) {
         thread(name = "berry-local-nibp") {
-            val text = action()
+            val reply = action()
             // Lo que sale bien ya se ve en la tarjeta; sólo se avisa lo que no.
-            if (text.startsWith("No se pudo") || text.startsWith("El panel")) {
-                runOnUiThread { Toast.makeText(this, text, Toast.LENGTH_LONG).show() }
+            if (!reply.ok) {
+                runOnUiThread { Toast.makeText(this, reply.message, Toast.LENGTH_LONG).show() }
             }
         }
     }
@@ -801,7 +802,7 @@ class LocalPanelActivity : AppCompatActivity() {
 
     private fun showVolume() {
         val volume = runtime().stetho.volume
-        binding.volumeValue.text = volume.toString()
+        binding.volumeValue.text = String.format(java.util.Locale.ROOT, "%d", volume)
         binding.volumeDown.isEnabled = volume > StethoDsp.VOLUME_MIN
         binding.volumeUp.isEnabled = volume < StethoDsp.VOLUME_MAX
     }
