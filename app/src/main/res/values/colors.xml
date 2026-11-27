@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Fondo del ícono de Berry Med. -->
+    <!-- Fondo del ícono de ONDOCTOR365 Suitcase. -->
     <color name="signal">#1F6F62</color>
     <!-- Los errores sobre fondo oscuro: Testing y la configuración. -->
     <color name="test_fail">#F2A38F</color>
-    <!-- Fondo del ícono del Panel Local: distinto del verde de Berry Med para no confundirlos. -->
+    <!-- Fondo del ícono del Panel Local: distinto del verde de ONDOCTOR365 Suitcase para no confundirlos. -->
     <color name="local_icon">#1E4E8C</color>
     <!-- Fondo del ícono ONDOCTOR365 y de su botón en la pantalla principal: violeta, distinto de los otros dos. -->
     <color name="ondoctor_icon">#5B3FA8</color>

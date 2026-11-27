@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Los idiomas de la app, para Android 13 o más: con esto el idioma de Berry Med
-    también aparece en Ajustes → Apps → Berry Med → Idioma. Tiene que decir lo
+    Los idiomas de la app, para Android 13 o más: con esto el idioma de ONDOCTOR365 Suitcase
+    también aparece en Ajustes → Apps → ONDOCTOR365 Suitcase → Idioma. Tiene que decir lo
     mismo que AppLanguage y que las carpetas values-xx (lo comprueba AppLanguageTest).
 -->
 <locale-config xmlns:android="http://schemas.android.com/apk/res/android">

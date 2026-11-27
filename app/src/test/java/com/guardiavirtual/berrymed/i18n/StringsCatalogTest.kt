@@ -92,6 +92,21 @@ class StringsCatalogTest {
         }
     }
 
+    /**
+     * Desde la 1.5.1 la app se llama ONDOCTOR365 Suitcase en los tres idiomas, sin traducir.
+     * «Berry» sigue valiendo para la plaqueta (PM6750); «Berry Med» como nombre, no.
+     */
+    @Test
+    fun theAppIsCalledOndoctor365Suitcase() {
+        assertEquals("ONDOCTOR365 Suitcase", source.getValue("app_name").value)
+        for (language in listOf("") + TestStrings.translations()) {
+            val texts = TestStrings.catalog(language).values.map { it.name to it.value } +
+                TestStrings.plurals(language).flatMap { (name, forms) -> forms.values.map { name to it } }
+            val old = texts.filter { (_, value) -> value.contains("Berry Med", ignoreCase = true) }.map { it.first }
+            assertEquals(emptyList(), old, "Entradas de ${language.ifEmpty { "es" }} que todavía nombran a la app como Berry Med")
+        }
+    }
+
     private fun parameters(value: String): List<String> =
         Regex("""%(\d+)\$[-#+ 0,(]*\d*(?:\.\d+)?([a-zA-Z])""").findAll(value.replace("%%", ""))
             .map { "${it.groupValues[1]}${it.groupValues[2]}" }
