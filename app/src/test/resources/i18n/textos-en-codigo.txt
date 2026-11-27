@@ -1,0 +1,345 @@
+# Textos escritos en el código (ver HardcodedTextTest). Una línea: archivo<TAB>texto.
+# Regenerar: I18N_REGENERAR=1 ./gradlew testDebugUnitTest --tests '*HardcodedTextTest*'
+
+## PENDIENTE
+audio/CallAudioRouter.kt	 · modo comunicación
+audio/CallAudioRouter.kt	 · modo normal (Android no ve una llamada)
+audio/CallAudioRouter.kt	Entradas grabando: 
+audio/CallAudioRouter.kt	Entradas grabando: ninguna
+audio/CallAudioRouter.kt	Entradas grabando: no se pudo leer
+audio/CallAudioRouter.kt	Llamada: sale por {} · Android no deja fijarla
+audio/CallAudioRouter.kt	Llamada: sale por {} · dispositivo de comunicación: 
+audio/CallAudioRouter.kt	Nada en el jack ni el auricular USB: la llamada sale por el parlante
+audio/CallAudioRouter.kt	VOICE_COMMUNICATION (la llamada)
+audio/CallAudioRouter.kt	el jack de la tablet
+audio/CallAudioRouter.kt	el parlante
+audio/CallAudioRouter.kt	entrada desconocida
+audio/CallAudioRouter.kt	parlante de la tablet
+audio/StethoscopeLink.kt	, sin auriculares
+audio/StethoscopeLink.kt	, suena por {} ({})
+audio/StethoscopeLink.kt	Esa grabación ya no está.
+audio/StethoscopeLink.kt	No aparece el adaptador del estetoscopio (\"{}\").
+audio/StethoscopeLink.kt	No se pudo abrir el adaptador del estetoscopio.
+audio/StethoscopeLink.kt	No se pudo abrir el auricular.
+audio/StethoscopeLink.kt	Primero hay que parar la escucha.
+audio/StethoscopeLink.kt	Sin auriculares: las grabaciones no salen por el parlante de la tablet.
+audio/StethoscopeLink.kt	Sin permiso para el micrófono.
+audio/StethoscopeLink.kt	auricular USB
+audio/StethoscopeLink.kt	jack de la tablet
+config/BerryConfig.kt	URL de la API
+config/BerryConfig.kt	URL de la API que empiece con https://
+config/BerryConfig.kt	clave de Pusher
+config/BerryConfig.kt	termómetro
+config/BerryConfig.kt	tótem
+config/BerryConfig.kt	un canal público (sin private- ni presence-)
+config/BerryConfig.kt	un puerto distinto del YKUSH3 para cada equipo
+net/MetricsPoster.kt	sin intento
+otoscope/CameraXOtoscope.kt	por Camera2
+otoscope/CameraXOtoscopeFrames.kt	Se apagó mientras abría.
+otoscope/CameraXOtoscopeFrames.kt	por Camera2
+otoscope/ExternalCamera.kt	Android lista el otoscopio como cámara pero CameraX no lo ve.
+otoscope/ExternalCamera.kt	No se pudo abrir el otoscopio: {}
+otoscope/ExternalCamera.kt	No se pudo iniciar la cámara: {}
+otoscope/UvcHandle.kt	El otoscopio no aparece por USB.
+otoscope/UvcHandle.kt	Falta el permiso USB del otoscopio: tocá «Pedir permiso USB» en Berry Med.
+otoscope/UvcOtoscope.kt	No se pudo abrir el otoscopio por UVC: {}
+otoscope/UvcOtoscope.kt	por UVC
+otoscope/UvcOtoscopeFrames.kt	No se pudo abrir el otoscopio por UVC: {}
+otoscope/UvcOtoscopeFrames.kt	Se apagó mientras abría.
+otoscope/UvcOtoscopeFrames.kt	por UVC
+service/MonitorService.kt	Abrí el kiosco de Berry Med para habilitar otoscopio y estetoscopio en la teleconsulta.
+service/MonitorService.kt	Esperando la plaqueta
+service/MonitorService.kt	Tótem Berry
+service/StatusSnapshot.kt	Hay una consulta en curso. Terminala para cambiar.
+service/TestingSession.kt	Electrodos sueltos
+service/TestingSession.kt	La plaqueta no manda temperatura
+service/TestingSession.kt	Llegan {} muestras/s, se esperan unas 250
+service/TestingSession.kt	No llega la onda de ECG
+service/TestingSession.kt	No llega la onda de SpO₂
+service/TestingSession.kt	No llega la onda de respiración
+service/TestingSession.kt	No llegan los valores de SpO₂
+service/TestingSession.kt	OK, {} muestras/s, señal débil
+service/TestingSession.kt	Plaqueta sin conectar
+service/TestingSession.kt	Probando…
+service/TestingSession.kt	Probando… {} s
+service/TestingSession.kt	Respiración
+service/TestingSession.kt	Sensor de temperatura sin conectar
+service/TestingSession.kt	Sin dedo en el sensor
+service/TestingSession.kt	Temperatura
+service/TotemRuntime.kt	 Falta aceptar el permiso USB: tocá la ruedita y «Pedir permiso USB».
+service/TotemRuntime.kt	 Falta configurar: {}.
+service/TotemRuntime.kt	Abriendo la imagen…
+service/TotemRuntime.kt	El Panel Local está abierto: la presión la maneja el panel.
+service/TotemRuntime.kt	El Panel Local está abierto: la prueba espera a que se cierre.
+service/TotemRuntime.kt	El Panel Local está abierto: no se cambia ningún puerto.
+service/TotemRuntime.kt	El YKUSH3 no encendió el puerto {}.
+service/TotemRuntime.kt	El hub guardó el arranque, el estado del kiosco: {}
+service/TotemRuntime.kt	El hub no aceptó el puerto {}. Mirá la consola.
+service/TotemRuntime.kt	El hub no aceptó la orden. Mirá la consola.
+service/TotemRuntime.kt	El hub no contesta. Si recién lo enchufaste, aceptá el permiso USB.
+service/TotemRuntime.kt	El otoscopio no aparece como cámara.
+service/TotemRuntime.kt	El otoscopio se está encendiendo o apagando: esperá un momento.
+service/TotemRuntime.kt	El panel no está activo.
+service/TotemRuntime.kt	Encendiendo…
+service/TotemRuntime.kt	Error al enviar: {}
+service/TotemRuntime.kt	Esperando la cámara…
+service/TotemRuntime.kt	Esperando la plaqueta
+service/TotemRuntime.kt	Esperando que se abra una toma de signos
+service/TotemRuntime.kt	Estado leído
+service/TotemRuntime.kt	Falta aceptar el permiso USB del otoscopio: aceptá el pedido que aparece 
+service/TotemRuntime.kt	Falta el permiso USB
+service/TotemRuntime.kt	Grabación guardada.
+service/TotemRuntime.kt	Grabación muy corta: se descartó.
+service/TotemRuntime.kt	Hay una consulta enviando.
+service/TotemRuntime.kt	Hay una consulta enviando: el Panel Local espera a que termine.
+service/TotemRuntime.kt	Hay una consulta enviando: la prueba espera a que termine.
+service/TotemRuntime.kt	Hay una consulta enviando: no se cambia ningún puerto.
+service/TotemRuntime.kt	Hub YKUSH3 presente. 
+service/TotemRuntime.kt	Hub YKUSH3 sin conectar. 
+service/TotemRuntime.kt	Iniciá la prueba primero.
+service/TotemRuntime.kt	La API respondió {}
+service/TotemRuntime.kt	La plataforma no tiene la toma abierta (404)
+service/TotemRuntime.kt	La red está lenta: se llenó la cola de envío
+service/TotemRuntime.kt	La sesión está detenida.
+service/TotemRuntime.kt	La sesión está enviando.
+service/TotemRuntime.kt	Medición detenida
+service/TotemRuntime.kt	Midiendo…
+service/TotemRuntime.kt	No hay hub YKUSH3 conectado.
+service/TotemRuntime.kt	No se pudo empezar: {}
+service/TotemRuntime.kt	No se pudo encender: {}
+service/TotemRuntime.kt	No se pudo enviar
+service/TotemRuntime.kt	No se pudo enviar: {}
+service/TotemRuntime.kt	No se pudo iniciar: plaqueta sin conectar o ya está midiendo.
+service/TotemRuntime.kt	Panel Local abierto
+service/TotemRuntime.kt	Para grabar hay que estar escuchando.
+service/TotemRuntime.kt	Plaqueta conectada, enviando mediciones
+service/TotemRuntime.kt	Plaqueta conectada, sesión detenida
+service/TotemRuntime.kt	Puerto {} apagado: el termómetro se vuelve a encender solo
+service/TotemRuntime.kt	Puerto {} {}
+service/TotemRuntime.kt	Reproduciendo la grabación {}.
+service/TotemRuntime.kt	STOP enviado
+service/TotemRuntime.kt	Sin YKUSH3: se intenta directo.
+service/TotemRuntime.kt	Sin YKUSH3: se intenta directo. Esperando la cámara…
+service/TotemRuntime.kt	Sin auriculares: nada en el jack de la tablet ni el auricular USB. Sólo se ve la onda.
+service/TotemRuntime.kt	Termómetro conectado, sin mediciones todavía. 
+service/TotemRuntime.kt	Termómetro conectado. 
+service/TotemRuntime.kt	Termómetro sin conectar. 
+service/TotemRuntime.kt	Todavía no se envió
+service/TotemRuntime.kt	Ya está escuchando.
+service/TotemRuntime.kt	el Panel Local está abierto
+service/TotemRuntime.kt	el micrófono
+service/TotemRuntime.kt	el servicio no tiene {} en segundo plano. {}
+service/TotemRuntime.kt	falta el permiso de {}: abrí Berry Med y aceptalo
+service/TotemRuntime.kt	la cámara
+service/TotemRuntime.kt	o, si no aparece, tocá «Pedir permiso USB» en Berry Med. Después, Encender otra vez.
+service/TotemRuntime.kt	paquete descartado
+service/TotemRuntime.kt	paquetes descartados
+service/TotemRuntime.kt	por Camera2
+service/TotemRuntime.kt	por UVC
+service/TotemRuntime.kt	{} · se vuelve a encender solo
+service/TotemRuntime.kt	{} · {} {} por cola llena
+service/TotemRuntime.kt	Último dato: hace {} s
+service/TotemRuntime.kt	Último dato: sin datos
+service/TotemRuntime.kt	Último envío correcto
+service/TotemState.kt	Esperando la plaqueta
+service/TotemState.kt	Termómetro sin conectar. Hub YKUSH3 sin conectar. La sesión está detenida.
+service/TotemState.kt	Todavía no se envió
+service/TotemState.kt	Último dato: sin datos
+tele/FirstFrame.kt	El otoscopio abrió pero no manda imagen
+tele/LiveKitBackend.kt	El otoscopio no abrió en {} s
+tele/LiveKitBackend.kt	El otoscopio no aparece ni como cámara ni por USB con permiso
+tele/LiveKitBackend.kt	Falta aceptar el permiso USB del otoscopio en la tablet
+tele/LiveKitBackend.kt	LiveKit no aceptó la pista del estetoscopio
+tele/LiveKitBackend.kt	LiveKit no aceptó la pista del otoscopio
+tele/LiveKitBackend.kt	No aparece el adaptador del estetoscopio (\"{}\")
+tele/LiveKitBackend.kt	No hay módulo de audio
+tele/LiveKitBackend.kt	No hay sala
+tele/LiveKitBackend.kt	No se pudo entrar a la sala: {}
+tele/TeleStreamer.kt	Falló {}
+tele/TeleStreamer.kt	Faltan el servidor o el token
+tele/TeleStreamer.kt	Se cortó la sala: {}
+tele/TeleStreamer.kt	cortar la prueba
+tele/TeleStreamer.kt	kiosco al inicio
+tele/TeleStreamer.kt	prueba manual
+tele/TeleStreamer.kt	sala perdida
+tele/TeleStreamer.kt	token del kiosco
+tele/TeleStreamer.kt	tope de la sala
+ui/LocalPanelActivity.kt	El panel
+ui/LocalPanelActivity.kt	No se pudo
+ui/MainActivity.kt	Comunicación con Pusher: OK
+ui/MainActivity.kt	Comunicación con Pusher: sin conexión
+ui/MainActivity.kt	Plaqueta funcional
+ui/MainActivity.kt	Plaqueta sin conectar
+ui/TestingActivity.kt	 · prueba manual
+ui/TestingActivity.kt	 · token visto a las {}
+ui/TestingActivity.kt	Android no ve ningún dispositivo USB
+ui/TestingActivity.kt	Apagando el puerto {}…
+ui/TestingActivity.kt	Apretá el gatillo para medir
+ui/TestingActivity.kt	Conectado · 04D8:F11B
+ui/TestingActivity.kt	Detenida
+ui/TestingActivity.kt	Encendiendo el puerto {}…
+ui/TestingActivity.kt	Falta configurar la URL o el tótem
+ui/TestingActivity.kt	Guardando…
+ui/TestingActivity.kt	Hay una consulta enviando
+ui/TestingActivity.kt	Leyendo…
+ui/TestingActivity.kt	Medir
+ui/TestingActivity.kt	Parar
+ui/TestingActivity.kt	Plaqueta PM6750 sin conectar
+ui/TestingActivity.kt	Plaqueta PM6750 · {} · último dato {} · tramas rotas {}/s
+ui/TestingActivity.kt	Presión
+ui/TestingActivity.kt	Probando · sin envío a la API
+ui/TestingActivity.kt	Probar ECG
+ui/TestingActivity.kt	Probar SpO₂
+ui/TestingActivity.kt	Probar respiración
+ui/TestingActivity.kt	Probar temperatura
+ui/TestingActivity.kt	Puerto {} · {}
+ui/TestingActivity.kt	Respiración
+ui/TestingActivity.kt	SILENCIA la captura (otra app tiene el micrófono)
+ui/TestingActivity.kt	Servicio: {} · cámara {} · micrófono {}\n
+ui/TestingActivity.kt	Sin conectar
+ui/TestingActivity.kt	Sin datos para enviar
+ui/TestingActivity.kt	Termómetro IR
+ui/TestingActivity.kt	Termómetro sin conectar
+ui/TestingActivity.kt	\nÚltimo error: {}
+ui/TestingActivity.kt	en espera
+ui/TestingActivity.kt	en espera (último 0x%02X)
+ui/TestingActivity.kt	estetoscopio · nivel {} %
+ui/TestingActivity.kt	la captura no está silenciada
+ui/TestingActivity.kt	manguito {} mmHg\nestado: 
+ui/TestingActivity.kt	no detectado
+ui/TestingActivity.kt	onda {} muestras/s
+ui/TestingActivity.kt	onda {} muestras/s\ndedo: 
+ui/TestingActivity.kt	otoscopio {} {} · 
+ui/TestingActivity.kt	sin conectar
+ui/TestingActivity.kt	sin datos
+ui/TestingActivity.kt	sin datos de la captura
+ui/TestingActivity.kt	sin leer
+ui/TestingActivity.kt	sin mediciones
+ui/TestingActivity.kt	{} muestras/s × 7 deriv.\nlatidos {}/s · electrodos: 
+ui/TestingActivity.kt	{} · {}\núltima línea: {}
+ui/panel/PanelFormat.kt	dd/MM/yyyy HH:mm
+ui/panel/PanelFormat.kt	hace {} min
+ui/panel/PanelFormat.kt	recién
+ui/panel/PanelUi.kt	Apagado
+ui/panel/PanelUi.kt	Apagando…
+ui/panel/PanelUi.kt	Conectado
+ui/panel/PanelUi.kt	Conectando
+ui/panel/PanelUi.kt	Electrodos sueltos
+ui/panel/PanelUi.kt	En pausa
+ui/panel/PanelUi.kt	En vivo
+ui/panel/PanelUi.kt	En vivo · {}
+ui/panel/PanelUi.kt	En vivo · {} · {} cuadros/s
+ui/panel/PanelUi.kt	Escuchando
+ui/panel/PanelUi.kt	Esperando imagen
+ui/panel/PanelUi.kt	Grabando
+ui/panel/PanelUi.kt	Grabando · {} s
+ui/panel/PanelUi.kt	Inflando…
+ui/panel/PanelUi.kt	Lista
+ui/panel/PanelUi.kt	Midiendo…
+ui/panel/PanelUi.kt	Reproduciendo
+ui/panel/PanelUi.kt	Señal buena
+ui/panel/PanelUi.kt	Señal débil
+ui/panel/PanelUi.kt	Sin imagen
+ui/panel/PanelUi.kt	Sin señal
+ui/status/StatusPanelUi.kt	Conectado
+ui/status/StatusPanelUi.kt	Conectando
+ui/status/StatusPanelUi.kt	Desconectado
+ui/status/StatusPanelUi.kt	En vivo
+ui/status/StatusPanelUi.kt	Estetoscopio
+ui/status/StatusPanelUi.kt	Falta permiso
+ui/status/StatusPanelUi.kt	Hub USB
+ui/status/StatusPanelUi.kt	La llamada va por el altavoz y el micrófono de la tablet. El estetoscopio sigue en el auricular.
+ui/status/StatusPanelUi.kt	Listo
+ui/status/StatusPanelUi.kt	Otoscopio
+ui/status/StatusPanelUi.kt	Presión
+ui/status/StatusPanelUi.kt	Señal buena
+ui/status/StatusPanelUi.kt	Señal débil
+ui/status/StatusPanelUi.kt	Sin Wi-Fi
+ui/status/StatusPanelUi.kt	Sin auricular en el jack: la llamada va por el altavoz y el estetoscopio no suena.
+ui/status/StatusPanelUi.kt	Sin hub
+ui/status/StatusPanelUi.kt	Sin internet
+ui/status/StatusPanelUi.kt	Temperatura
+ui/status/StatusPanelUi.kt	Tocá para elegir una red
+ui/status/StatusPanelUi.kt	Todo suena por el auricular.
+ui/status/StatusPanelUi.kt	Wi-Fi conectado
+usb/DeviceInventory.kt	 · permiso 
+usb/DeviceInventory.kt	 · {} can.
+usb/DeviceInventory.kt	Android no lista ninguna cámara
+usb/DeviceInventory.kt	Bluetooth
+usb/DeviceInventory.kt	No se pudo listar el audio: {}
+usb/DeviceInventory.kt	No se pudo listar las cámaras: {}
+usb/DeviceInventory.kt	accesorio USB
+usb/DeviceInventory.kt	audio USB
+usb/DeviceInventory.kt	auricular USB
+usb/DeviceInventory.kt	auricular con cable (jack)
+usb/DeviceInventory.kt	auricular interno
+usb/DeviceInventory.kt	auriculares con cable (jack)
+usb/DeviceInventory.kt	cámara {} · {}
+usb/DeviceInventory.kt	mezcla interna
+usb/DeviceInventory.kt	micrófono de la tablet
+usb/DeviceInventory.kt	parlante de la tablet
+usb/DeviceInventory.kt	sin interfaces
+usb/DeviceInventory.kt	sin nombre
+usb/DeviceInventory.kt	telefonía
+usb/KnownDevices.kt	adaptador del estetoscopio
+usb/KnownDevices.kt	auricular Logitech
+usb/KnownDevices.kt	hub YKUSH3
+usb/KnownDevices.kt	plaqueta PM6750
+
+## PERMITIDO
+audio/AudioPick.kt	Logitech
+config/BerryConfig.kt	USB Audio
+net/MetricsPoster.kt	Authorization
+net/WifiState.kt	<unknown ssid>
+otoscope/UvcHandle.kt	cadencia a elección de la cámara
+protocol/Pm6750Protocol.kt	rango {}-{} para modo {}; se ignora.
+service/TotemRuntime.kt	Puertos con el kiosco
+service/TotemRuntime.kt	Puertos en reposo
+service/TotemRuntime.kt	Pusher
+service/TotemRuntime.kt	evento stop
+service/TotemRuntime.kt	fin de la toma de signos
+service/TotemRuntime.kt	la plataforma no tiene la toma abierta
+service/TotemRuntime.kt	permisos USB
+service/TotemRuntime.kt	puertos en reposo
+service/TotemRuntime.kt	se abrió el Panel Local
+tele/KioskUrls.kt	TeleCredentials(serverUrl={}, token=…)
+tele/LiveKitBackend.kt	access_token=…
+tele/TeleStreamer.kt	(sin nombre)
+tele/TeleStreamer.kt	el kiosco volvió al inicio
+tele/TeleStreamer.kt	llegó un token nuevo
+tele/TeleStreamer.kt	pasaron {} h en la sala
+tele/TeleStreamer.kt	se abrió la prueba manual de Testing
+tele/TeleStreamer.kt	se apagó el {}
+tele/TeleStreamer.kt	se cortó la prueba de Testing
+tele/TeleStreamer.kt	se enciende el {}
+ui/KioskActivity.kt	un origen desconocido
+usb/BerryLink.kt	(%04X:%04X); queda para el termómetro
+
+## LAYOUTS
+activity_local_panel.xml	12,5
+activity_local_panel.xml	II
+activity_main.xml	% / lpm
+activity_main.xml	Adulto
+activity_main.xml	Diagnóstico
+activity_main.xml	FC
+activity_main.xml	H390
+activity_main.xml	Monitor
+activity_main.xml	Neonato
+activity_main.xml	Niño
+activity_main.xml	Operación
+activity_main.xml	PA
+activity_main.xml	Resp
+activity_main.xml	SpO₂
+activity_main.xml	Temp
+activity_main.xml	USB Audio
+activity_main.xml	lpm
+activity_main.xml	mmHg
+activity_main.xml	rpm
+activity_main.xml	start-monitoring
+activity_main.xml	stop-monitoring
+activity_main.xml	x0.25
+activity_main.xml	x0.5
+activity_main.xml	x1
+activity_main.xml	x2
+activity_main.xml	°C
+item_ykush_port.xml	sin leer

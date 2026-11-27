@@ -1,0 +1,2425 @@
+diff --git a/app/build.gradle.kts b/app/build.gradle.kts
+index 74baaf0..1055e5b 100644
+--- a/app/build.gradle.kts
++++ b/app/build.gradle.kts
+@@ -20,9 +20,19 @@ android {
+         ndk {
+             abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+         }
++        // Sólo los idiomas de la app: Material, AppCompat y LiveKit traen textos en más de
++        // 80 idiomas y, sin esto, un diálogo del sistema podría salir en uno que la app no tiene.
++        resourceConfigurations += listOf("es", "en", "pt")
++        // ./gradlew assembleDebug -Pseudo: suma los seudo-idiomas (ver buildTypes.debug). No va en el APK que se publica.
++        if (project.hasProperty("seudo")) resourceConfigurations += listOf("en-rXA", "ar-rXB")
+     }
+ 
+     buildTypes {
++        debug {
++            // Los seudo-idiomas en-XA (acentos y textos un 30 % más largos) y ar-XB (derecha a
++            // izquierda): para ver en el emulador qué texto quedó sin pasar al diccionario.
++            isPseudoLocalesEnabled = project.hasProperty("seudo")
++        }
+         release {
+             isMinifyEnabled = false
+             proguardFiles(
+@@ -41,6 +51,13 @@ android {
+     buildFeatures {
+         viewBinding = true
+     }
++    lint {
++        // Un texto escrito en un layout o puesto a mano en un TextView no compila el lint.
++        error += setOf("HardcodedText", "SetTextI18n", "MissingTranslation", "ExtraTranslation")
++        // Lo que ya estaba: se va achicando con el plan, no se agranda.
++        baseline = file("lint-baseline.xml")
++        abortOnError = true
++    }
+     testOptions {
+         unitTests.isReturnDefaultValues = true
+     }
+diff --git a/app/src/main/AndroidManifest.xml b/app/src/main/AndroidManifest.xml
+index e1fec37..ed69668 100644
+--- a/app/src/main/AndroidManifest.xml
++++ b/app/src/main/AndroidManifest.xml
+@@ -57,6 +57,7 @@
+         android:icon="@mipmap/ic_launcher"
+         android:roundIcon="@mipmap/ic_launcher_round"
+         android:label="@string/app_name"
++        android:localeConfig="@xml/locales_config"
+         android:supportsRtl="true"
+         android:theme="@style/Theme.BerryMed"
+         android:usesCleartextTraffic="true">
+@@ -188,6 +189,19 @@
+                 android:resource="@xml/usb_device_filter" />
+         </activity>
+ 
++        <!--
++            El idioma elegido para la app en Android 12 o menos: AppCompat lo guarda
++            y lo repone al abrir. En Android 13 o más lo recuerda el sistema.
++        -->
++        <service
++            android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
++            android:enabled="false"
++            android:exported="false">
++            <meta-data
++                android:name="autoStoreLocales"
++                android:value="true" />
++        </service>
++
+         <service
+             android:name=".service.MonitorService"
+             android:exported="false"
+diff --git a/app/src/main/java/com/guardiavirtual/berrymed/i18n/AppLanguage.kt b/app/src/main/java/com/guardiavirtual/berrymed/i18n/AppLanguage.kt
+new file mode 100644
+index 0000000..cb78a63
+--- /dev/null
++++ b/app/src/main/java/com/guardiavirtual/berrymed/i18n/AppLanguage.kt
+@@ -0,0 +1,32 @@
++// SPDX-License-Identifier: GPL-3.0-or-later
++package com.guardiavirtual.berrymed.i18n
++
++/**
++ * Los idiomas en los que está la app. [tag] es la etiqueta BCP 47 y el sufijo
++ * de la carpeta de recursos (`values-en`); el español es el idioma de origen y
++ * vive en `values/`. [nativeName] es como se llama el idioma a sí mismo: en el
++ * selector no se traduce, para que lo encuentre quien no lee el idioma actual.
++ *
++ * Sin Android: lo usan el selector, [AppLocale] y los tests.
++ */
++enum class AppLanguage(val tag: String, val nativeName: String) {
++    SPANISH("es", "Español"),
++    ENGLISH("en", "English"),
++    PORTUGUESE("pt", "Português"),
++    ;
++
++    companion object {
++        /** El idioma de origen: el de `values/` y el que queda cuando el de la tablet no está. */
++        val DEFAULT = SPANISH
++
++        /**
++         * El primero de [tags] (una lista como «pt-BR,en-US») que la app tiene,
++         * mirando sólo el idioma y no la región; null si no hay ninguno.
++         */
++        fun match(tags: String?): AppLanguage? =
++            tags.orEmpty().split(',').firstNotNullOfOrNull { tag ->
++                val language = tag.trim().substringBefore('-').substringBefore('_').lowercase()
++                entries.firstOrNull { it.tag == language }
++            }
++    }
++}
+diff --git a/app/src/main/java/com/guardiavirtual/berrymed/i18n/AppLocale.kt b/app/src/main/java/com/guardiavirtual/berrymed/i18n/AppLocale.kt
+new file mode 100644
+index 0000000..522c909
+--- /dev/null
++++ b/app/src/main/java/com/guardiavirtual/berrymed/i18n/AppLocale.kt
+@@ -0,0 +1,45 @@
++// SPDX-License-Identifier: GPL-3.0-or-later
++package com.guardiavirtual.berrymed.i18n
++
++import android.content.Context
++import android.content.res.Configuration
++import android.os.LocaleList
++import androidx.appcompat.app.AppCompatDelegate
++import androidx.core.os.LocaleListCompat
++import java.util.Locale
++
++/**
++ * El idioma elegido para Berry Med, aparte del de la tablet.
++ *
++ * Lo guarda y lo aplica AppCompat (`setApplicationLocales`): en Android 13 o
++ * más se lo pasa al sistema, que lo recuerda y lo aplica a todo el proceso
++ * (pantallas, servicio y contexto de la aplicación); en los anteriores lo
++ * guarda AppCompat (`autoStoreLocales` en el manifest) y lo aplica sólo a las
++ * pantallas, por eso lo que no es pantalla pasa por [localized].
++ */
++object AppLocale {
++    /** El idioma en uso: el elegido o, sin elegir, el de la tablet si la app lo tiene. */
++    fun current(): AppLanguage =
++        AppLanguage.match(AppCompatDelegate.getApplicationLocales().toLanguageTags())
++            ?: AppLanguage.match(LocaleList.getDefault().toLanguageTags())
++            ?: AppLanguage.DEFAULT
++
++    /** Cambia el idioma: Android recrea las pantallas abiertas con los textos nuevos. */
++    fun set(language: AppLanguage) {
++        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(language.tag))
++    }
++
++    /**
++     * [context] con el idioma en uso, para lo que no es una pantalla (el
++     * servicio, la notificación, el runtime). En Android 13 o más devuelve
++     * textos iguales a los del contexto: el sistema ya lo aplicó.
++     */
++    fun localized(context: Context): Context = withLanguage(context, current())
++
++    /** [context] en un idioma fijo, sin importar el elegido: los logs van siempre en español. */
++    fun withLanguage(context: Context, language: AppLanguage): Context {
++        val config = Configuration(context.resources.configuration)
++        config.setLocale(Locale.forLanguageTag(language.tag))
++        return context.createConfigurationContext(config)
++    }
++}
+diff --git a/app/src/main/java/com/guardiavirtual/berrymed/i18n/Txt.kt b/app/src/main/java/com/guardiavirtual/berrymed/i18n/Txt.kt
+new file mode 100644
+index 0000000..a3ce7e8
+--- /dev/null
++++ b/app/src/main/java/com/guardiavirtual/berrymed/i18n/Txt.kt
+@@ -0,0 +1,25 @@
++// SPDX-License-Identifier: GPL-3.0-or-later
++package com.guardiavirtual.berrymed.i18n
++
++import androidx.annotation.StringRes
++
++/**
++ * Un texto para mostrar, todavía sin idioma. Lo arman las reglas que no
++ * conocen Android (los modelos de las pantallas, el runtime) y lo resuelve
++ * quien lo muestra, con los recursos del idioma en uso (`resolve`).
++ *
++ * Así la regla sigue siendo pura y con test, y el texto cambia con el idioma
++ * sin volver a calcularla. Dos [Txt] iguales son el mismo texto: las reglas
++ * que comparaban cadenas («si dice Falta permiso…») comparan la clave.
++ */
++sealed interface Txt {
++    /** Una entrada del diccionario, con sus parámetros (`%1$s`); un parámetro puede ser otro [Txt]. */
++    data class Res(@StringRes val id: Int, val args: List<Any> = emptyList()) : Txt
++
++    /** Lo que no se traduce: el nombre de una red Wi-Fi, un número ya formateado, un modelo. */
++    data class Raw(val value: String) : Txt
++}
++
++fun txt(@StringRes id: Int, vararg args: Any): Txt = Txt.Res(id, args.toList())
++
++fun raw(value: String): Txt = Txt.Raw(value)
+diff --git a/app/src/main/java/com/guardiavirtual/berrymed/i18n/TxtResolve.kt b/app/src/main/java/com/guardiavirtual/berrymed/i18n/TxtResolve.kt
+new file mode 100644
+index 0000000..12698d4
+--- /dev/null
++++ b/app/src/main/java/com/guardiavirtual/berrymed/i18n/TxtResolve.kt
+@@ -0,0 +1,13 @@
++// SPDX-License-Identifier: GPL-3.0-or-later
++package com.guardiavirtual.berrymed.i18n
++
++import android.content.Context
++import android.content.res.Resources
++
++/** El texto en el idioma de [resources]. */
++fun Txt.resolve(resources: Resources): String = when (this) {
++    is Txt.Raw -> value
++    is Txt.Res -> resources.getString(id, *args.map { if (it is Txt) it.resolve(resources) else it }.toTypedArray())
++}
++
++fun Txt.resolve(context: Context): String = resolve(context.resources)
+diff --git a/app/src/main/java/com/guardiavirtual/berrymed/service/MonitorService.kt b/app/src/main/java/com/guardiavirtual/berrymed/service/MonitorService.kt
+index c7c983a..5dc03cb 100644
+--- a/app/src/main/java/com/guardiavirtual/berrymed/service/MonitorService.kt
++++ b/app/src/main/java/com/guardiavirtual/berrymed/service/MonitorService.kt
+@@ -23,6 +23,10 @@ import androidx.core.content.ContextCompat
+ import androidx.core.content.IntentCompat
+ import com.guardiavirtual.berrymed.BerryMedApp
+ import com.guardiavirtual.berrymed.R
++import com.guardiavirtual.berrymed.i18n.AppLocale
++import com.guardiavirtual.berrymed.i18n.Txt
++import com.guardiavirtual.berrymed.i18n.resolve
++import com.guardiavirtual.berrymed.i18n.txt
+ import com.guardiavirtual.berrymed.ui.MainActivity
+ import com.guardiavirtual.berrymed.usb.UsbHub
+ 
+@@ -38,7 +42,8 @@ import com.guardiavirtual.berrymed.usb.UsbHub
+  */
+ class MonitorService : Service() {
+     private var wakeLock: PowerManager.WakeLock? = null
+-    private var lastNotification = ""
++    /** Lo último que se mostró, sin idioma: al cambiar el idioma se vuelve a mostrar traducido. */
++    private var lastNotification: Txt? = null
+ 
+     /** Los tipos con los que está en primer plano; sólo suben. */
+     private var types = ForegroundAccess.CONNECTED_DEVICE
+@@ -57,7 +62,7 @@ class MonitorService : Service() {
+     override fun onCreate() {
+         super.onCreate()
+         createChannel()
+-        showNotification("Esperando la plaqueta")
++        showNotification(txt(R.string.notif_waiting_board))
+         acquireWakeLock()
+         val filter = IntentFilter(UsbHub.ACTION_USB_PERMISSION)
+         ContextCompat.registerReceiver(this, permissionReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
+@@ -69,7 +74,7 @@ class MonitorService : Service() {
+     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+         if (intent?.action == ACTION_PROMOTE) promote()
+         // Cada startForegroundService() espera su startForeground(), aunque el servicio ya estuviera.
+-        showNotification(lastNotification.ifBlank { "Esperando la plaqueta" }, force = true)
++        showNotification(lastNotification ?: txt(R.string.notif_waiting_board), force = true)
+         runtime().start()
+         return START_STICKY
+     }
+@@ -123,9 +128,9 @@ class MonitorService : Service() {
+      * se actualiza la notificación y listo.
+      */
+     @Synchronized
+-    private fun showNotification(text: String, force: Boolean = false) {
++    private fun showNotification(text: Txt, force: Boolean = false) {
+         if (text == lastNotification && !force) return
+-        val notification = buildNotification(text)
++        val notification = buildNotification(text.resolve(AppLocale.localized(this)))
+         if (foreground && !force) {
+             try {
+                 getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification)
+@@ -147,7 +152,7 @@ class MonitorService : Service() {
+         val previous = pendingUpgradeFrom ?: return
+         pendingUpgradeFrom = null
+         types = previous
+-        if (startForegroundWith(buildNotification(text), types)) lastNotification = text
++        if (startForegroundWith(buildNotification(text.resolve(AppLocale.localized(this))), types)) lastNotification = text
+     }
+ 
+     private fun startForegroundWith(notification: android.app.Notification, wanted: Int): Boolean = try {
+@@ -186,9 +191,23 @@ class MonitorService : Service() {
+         return builder.build()
+     }
+ 
++    /** El texto en el idioma elegido para la app: el servicio no es una pantalla (ver [AppLocale]). */
++    private fun text(@androidx.annotation.StringRes id: Int): String = AppLocale.localized(this).getString(id)
++
++    /**
++     * Cambió el idioma (o algo de la tablet) con el servicio andando: el canal
++     * y la notificación se vuelven a armar con los textos nuevos.
++     */
++    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
++        super.onConfigurationChanged(newConfig)
++        createChannel()
++        runtime().log("[SERVICIO] Cambió la configuración: idioma ${AppLocale.current().tag}")
++        showNotification(lastNotification ?: txt(R.string.notif_waiting_board), force = true)
++    }
++
+     private fun createChannel() {
+         if (Build.VERSION.SDK_INT < 26) return
+-        val channel = NotificationChannel(CHANNEL, "Tótem Berry", NotificationManager.IMPORTANCE_LOW)
++        val channel = NotificationChannel(CHANNEL, text(R.string.notif_channel), NotificationManager.IMPORTANCE_LOW)
+         channel.setShowBadge(false)
+         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+     }
+diff --git a/app/src/main/java/com/guardiavirtual/berrymed/service/TotemRuntime.kt b/app/src/main/java/com/guardiavirtual/berrymed/service/TotemRuntime.kt
+index 1d0c4cc..6cdf90e 100644
+--- a/app/src/main/java/com/guardiavirtual/berrymed/service/TotemRuntime.kt
++++ b/app/src/main/java/com/guardiavirtual/berrymed/service/TotemRuntime.kt
+@@ -9,6 +9,9 @@ import android.hardware.usb.UsbDevice
+ import android.media.AudioManager
+ import android.util.Log
+ import androidx.core.content.ContextCompat
++import com.guardiavirtual.berrymed.R
++import com.guardiavirtual.berrymed.i18n.Txt
++import com.guardiavirtual.berrymed.i18n.txt
+ import com.guardiavirtual.berrymed.audio.AudioPick
+ import com.guardiavirtual.berrymed.audio.CallAudioRouter
+ import com.guardiavirtual.berrymed.audio.StethoDsp
+@@ -224,7 +227,7 @@ class TotemRuntime(context: Context) {
+     val console = ConsoleLog()
+     private val testingSession = TestingSession()
+ 
+-    var onNotification: (text: String) -> Unit = {}
++    var onNotification: (text: Txt) -> Unit = {}
+ 
+     /**
+      * Los tipos con los que el servicio está en primer plano (los pone
+@@ -658,11 +661,11 @@ class TotemRuntime(context: Context) {
+         val berryUp = berry.connected
+         val active = sessionActive
+         val notification = when {
+-            hub.permissionMissing() -> "Falta el permiso USB"
+-            !berryUp -> "Esperando la plaqueta"
+-            localMode -> "Panel Local abierto"
+-            active -> "Plaqueta conectada, enviando mediciones"
+-            else -> "Plaqueta conectada, sesión detenida"
++            hub.permissionMissing() -> txt(R.string.notif_usb_permission)
++            !berryUp -> txt(R.string.notif_waiting_board)
++            localMode -> txt(R.string.notif_local_open)
++            active -> txt(R.string.notif_sending)
++            else -> txt(R.string.notif_stopped)
+         }
+         val age = berry.lastDataAgeSeconds()
+         val lastData = if (age == null) {
+diff --git a/app/src/main/java/com/guardiavirtual/berrymed/service/TotemState.kt b/app/src/main/java/com/guardiavirtual/berrymed/service/TotemState.kt
+index 883fcb7..dfbbe18 100644
+--- a/app/src/main/java/com/guardiavirtual/berrymed/service/TotemState.kt
++++ b/app/src/main/java/com/guardiavirtual/berrymed/service/TotemState.kt
+@@ -1,6 +1,10 @@
+ // SPDX-License-Identifier: GPL-3.0-or-later
+ package com.guardiavirtual.berrymed.service
+ 
++import com.guardiavirtual.berrymed.R
++import com.guardiavirtual.berrymed.i18n.Txt
++import com.guardiavirtual.berrymed.i18n.txt
++
+ data class TotemState(
+     val heartRate: String = "—",
+     val respRate: String = "—",
+@@ -15,5 +19,5 @@ data class TotemState(
+     val thermoMeasured: Boolean = false,
+     val others: String = "Termómetro sin conectar. Hub YKUSH3 sin conectar. La sesión está detenida.",
+     val lastPost: String = "Todavía no se envió",
+-    val notification: String = "Esperando la plaqueta",
++    val notification: Txt = txt(R.string.notif_waiting_board),
+ )
+diff --git a/app/src/main/java/com/guardiavirtual/berrymed/ui/HomeActivity.kt b/app/src/main/java/com/guardiavirtual/berrymed/ui/HomeActivity.kt
+index 0ae2287..4aacdca 100644
+--- a/app/src/main/java/com/guardiavirtual/berrymed/ui/HomeActivity.kt
++++ b/app/src/main/java/com/guardiavirtual/berrymed/ui/HomeActivity.kt
+@@ -19,6 +19,10 @@ import com.guardiavirtual.berrymed.R
+ import com.guardiavirtual.berrymed.config.PinCheck
+ import com.guardiavirtual.berrymed.config.checkPin
+ import com.guardiavirtual.berrymed.databinding.ActivityHomeBinding
++import com.guardiavirtual.berrymed.i18n.AppLanguage
++import com.guardiavirtual.berrymed.i18n.AppLocale
++import com.guardiavirtual.berrymed.service.StatusSnapshot
++import com.google.android.material.dialog.MaterialAlertDialogBuilder
+ import com.guardiavirtual.berrymed.service.MonitorService
+ import com.guardiavirtual.berrymed.ui.status.PanelMode
+ import com.guardiavirtual.berrymed.ui.status.StatusPanelActions
+@@ -77,6 +81,9 @@ class HomeActivity : AppCompatActivity() {
+         binding.homeOndoctor.setOnClickListener { openOndoctor() }
+         binding.homeLocal.setOnClickListener { startActivity(Intent(this, LocalPanelActivity::class.java)) }
+         binding.homeConfig.setOnClickListener { showPin(Intent(this, MainActivity::class.java)) }
++        binding.languageButton.text = AppLocale.current().nativeName
++        binding.languageButton.contentDescription = getString(R.string.language_button, AppLocale.current().nativeName)
++        binding.languageButton.setOnClickListener { pickLanguage() }
+ 
+         binding.pinLayer.setOnClickListener { showPin(null) }
+         binding.pinBackButton.setOnClickListener { showPin(null) }
+@@ -157,6 +164,29 @@ class HomeActivity : AppCompatActivity() {
+         }
+     }
+ 
++    /**
++     * El idioma de la app. Con una consulta en curso no se cambia: Android
++     * recrea las pantallas abiertas y el kiosco volvería a cargar la web.
++     */
++    private fun pickLanguage() {
++        val snapshot = runtime().statusSnapshot()
++        val blocked = StatusSnapshot.modeSwitchBlock(snapshot.sessionActive, snapshot.teleInRoom)
++        if (blocked != null) {
++            binding.languageButton.announceForAccessibility(blocked)
++            return
++        }
++        val languages = AppLanguage.entries
++        val current = AppLocale.current()
++        MaterialAlertDialogBuilder(this)
++            .setTitle(R.string.language_title)
++            .setSingleChoiceItems(languages.map { it.nativeName }.toTypedArray(), languages.indexOf(current)) { dialog, which ->
++                dialog.dismiss()
++                if (languages[which] != current) AppLocale.set(languages[which])
++            }
++            .setNegativeButton(R.string.kiosk_cancel, null)
++            .show()
++    }
++
+     /** Abre el PIN para abrir [then] después, o lo cierra con null. */
+     private fun showPin(then: Intent?) {
+         afterPin = then
+diff --git a/app/src/main/java/com/guardiavirtual/berrymed/ui/KioskActivity.kt b/app/src/main/java/com/guardiavirtual/berrymed/ui/KioskActivity.kt
+index 77bae9a..eb04994 100644
+--- a/app/src/main/java/com/guardiavirtual/berrymed/ui/KioskActivity.kt
++++ b/app/src/main/java/com/guardiavirtual/berrymed/ui/KioskActivity.kt
+@@ -389,6 +389,10 @@ class KioskActivity : AppCompatActivity() {
+ 
+         /** Llega después de los errores, también para la página de error de Android, que queda tapada. */
+         override fun onPageFinished(view: WebView, url: String) {
++            // Spike multilingüe: qué idioma ve la web con el idioma elegido para la app.
++            view.evaluateJavascript("navigator.language + ' | ' + navigator.languages.join(',') + ' | html lang=' + document.documentElement.lang") { seen ->
++                runtime().log("[KIOSCO] Spike idioma: app ${com.guardiavirtual.berrymed.i18n.AppLocale.current().tag}, la web ve $seen")
++            }
+             if (failed) {
+                 offline.visibility = View.VISIBLE
+                 handler.removeCallbacks(retryLater)
+diff --git a/app/src/main/java/com/guardiavirtual/berrymed/ui/status/StatusPanelUi.kt b/app/src/main/java/com/guardiavirtual/berrymed/ui/status/StatusPanelUi.kt
+index 3b9423b..c0a60e2 100644
+--- a/app/src/main/java/com/guardiavirtual/berrymed/ui/status/StatusPanelUi.kt
++++ b/app/src/main/java/com/guardiavirtual/berrymed/ui/status/StatusPanelUi.kt
+@@ -1,7 +1,12 @@
+ // SPDX-License-Identifier: GPL-3.0-or-later
+ package com.guardiavirtual.berrymed.ui.status
+ 
++import androidx.annotation.StringRes
++import com.guardiavirtual.berrymed.R
+ import com.guardiavirtual.berrymed.config.CALL_AUDIO_SPEAKER
++import com.guardiavirtual.berrymed.i18n.Txt
++import com.guardiavirtual.berrymed.i18n.raw
++import com.guardiavirtual.berrymed.i18n.txt
+ import com.guardiavirtual.berrymed.net.WifiState
+ import com.guardiavirtual.berrymed.otoscope.OtoscopePower
+ import com.guardiavirtual.berrymed.service.AppPermission
+@@ -37,7 +42,7 @@ enum class StatusAction {
+ }
+ 
+ /** Una fila de Dispositivos: "Otoscopio", su tono, "Listo" y qué hace tocarla (null: nada). */
+-data class DeviceRow(val name: String, val tone: StatusTone, val text: String, val action: StatusAction? = null)
++data class DeviceRow(val name: Txt, val tone: StatusTone, val text: Txt, val action: StatusAction? = null)
+ 
+ /** El ícono del Wi-Fi: con señal, con una barra o sin red. */
+ enum class WifiIcon { WIFI, WEAK, OFF }
+@@ -50,8 +55,8 @@ enum class WifiIcon { WIFI, WEAK, OFF }
+  */
+ data class WifiRow(
+     val icon: WifiIcon,
+-    val name: String,
+-    val text: String,
++    val name: Txt,
++    val text: Txt,
+     val tone: StatusTone,
+     val bars: Int,
+     val offline: Boolean,
+@@ -84,7 +89,7 @@ data class StatusPanelState(
+     val countTone: StatusTone,
+     val jackPresent: Boolean,
+     val callRoute: CallRoute,
+-    val callHelp: String,
++    val callHelp: Txt,
+ )
+ 
+ /**
+@@ -92,15 +97,16 @@ data class StatusPanelState(
+  * Muestra, no decide: no enciende ni cambia nada.
+  */
+ object StatusPanelUi {
+-    const val CONNECTED = "Conectado"
+-    const val CONNECTING = "Conectando"
+-    const val DISCONNECTED = "Desconectado"
+-    const val READY = "Listo"
+-    const val LIVE = "En vivo"
+-    const val WAITING_IMAGE = "Esperando imagen"
+-    const val NO_HUB = "Sin hub"
+-    const val NO_PERMISSION = "Falta permiso"
+-    const val WIFI_CONNECTED = "Wi-Fi conectado"
++    val CONNECTED = txt(R.string.status_connected)
++    val CONNECTING = txt(R.string.status_connecting)
++    val DISCONNECTED = txt(R.string.status_disconnected)
++    val READY = txt(R.string.status_ready)
++    val LIVE = txt(R.string.status_live)
++    val WAITING_IMAGE = txt(R.string.status_waiting_image)
++    val NO_HUB = txt(R.string.status_no_hub)
++    val NO_PERMISSION = txt(R.string.status_no_permission)
++    val WIFI_CONNECTED = txt(R.string.status_wifi_connected)
++    val LEADS_OFF = txt(R.string.status_leads_off)
+ 
+     fun build(s: StatusSnapshot, mode: PanelMode): StatusPanelState {
+         val rows = devices(s)
+@@ -126,17 +132,25 @@ object StatusPanelUi {
+      */
+     fun wifi(w: WifiState, locationGranted: Boolean = true): WifiRow {
+         if (!w.connected) {
+-            return WifiRow(WifiIcon.OFF, "Sin Wi-Fi", "Tocá para elegir una red", StatusTone.BAD, bars = 0, offline = true)
++            return WifiRow(
++                WifiIcon.OFF,
++                txt(R.string.status_wifi_off),
++                txt(R.string.status_wifi_pick),
++                StatusTone.BAD,
++                bars = 0,
++                offline = true,
++            )
+         }
+-        val name = w.ssid ?: WIFI_CONNECTED
++        // El nombre de la red no se traduce.
++        val name = w.ssid?.let { raw(it) } ?: WIFI_CONNECTED
+         val bars = w.level
+         val icon = if (bars == 1) WifiIcon.WEAK else WifiIcon.WIFI
+         return when {
+-            !w.validated -> WifiRow(WifiIcon.WIFI, name, "Sin internet", StatusTone.WARN, bars, offline = false)
++            !w.validated -> WifiRow(WifiIcon.WIFI, name, txt(R.string.status_wifi_no_internet), StatusTone.WARN, bars, offline = false)
+             !locationGranted ->
+                 WifiRow(icon, name, NO_PERMISSION, StatusTone.WARN, bars, offline = false, action = StatusAction.LOCATION)
+-            bars == 1 -> WifiRow(WifiIcon.WEAK, name, "Señal débil", StatusTone.WARN, bars, offline = false)
+-            else -> WifiRow(WifiIcon.WIFI, name, "Señal buena", StatusTone.OK, bars, offline = false)
++            bars == 1 -> WifiRow(WifiIcon.WEAK, name, txt(R.string.status_signal_weak), StatusTone.WARN, bars, offline = false)
++            else -> WifiRow(WifiIcon.WIFI, name, txt(R.string.status_signal_good), StatusTone.OK, bars, offline = false)
+         }
+     }
+ 
+@@ -154,7 +168,7 @@ object StatusPanelUi {
+             else -> Pair(StatusTone.BAD, DISCONNECTED)
+         }
+         val ecg = if (berry.first == StatusTone.OK && PanelUi.heartNote(local) == PanelUi.LEADS_OFF) {
+-            Pair(StatusTone.WARN, PanelUi.LEADS_OFF)
++            Pair(StatusTone.WARN, LEADS_OFF)
+         } else {
+             berry
+         }
+@@ -164,10 +178,10 @@ object StatusPanelUi {
+             else -> Pair(StatusTone.BAD, DISCONNECTED)
+         }
+         return listOf(
+-            row("SpO2", berry, StatusAction.USB_PERMISSION),
+-            row("ECG", ecg, StatusAction.USB_PERMISSION),
+-            row("Presión", berry, StatusAction.USB_PERMISSION),
+-            row("Temperatura", thermo, StatusAction.USB_PERMISSION),
++            row(R.string.device_spo2, berry, StatusAction.USB_PERMISSION),
++            row(R.string.device_ecg, ecg, StatusAction.USB_PERMISSION),
++            row(R.string.device_pressure, berry, StatusAction.USB_PERMISSION),
++            row(R.string.device_temperature, thermo, StatusAction.USB_PERMISSION),
+             otoscope(s),
+             stethoscope(s),
+             hub(s),
+@@ -175,11 +189,11 @@ object StatusPanelUi {
+     }
+ 
+     /** Un permiso faltante: ámbar (no el rojo de desconectado) y «Falta permiso». */
+-    private fun missing(): Pair<StatusTone, String> = Pair(StatusTone.WARN, NO_PERMISSION)
++    private fun missing(): Pair<StatusTone, Txt> = Pair(StatusTone.WARN, NO_PERMISSION)
+ 
+     /** Arma la fila; si dice «Falta permiso», con la acción que lo pide. */
+-    private fun row(name: String, state: Pair<StatusTone, String>, action: StatusAction? = null): DeviceRow =
+-        DeviceRow(name, state.first, state.second, action.takeIf { state.second == NO_PERMISSION })
++    private fun row(@StringRes name: Int, state: Pair<StatusTone, Txt>, action: StatusAction? = null): DeviceRow =
++        DeviceRow(txt(name), state.first, state.second, action.takeIf { state.second == NO_PERMISSION })
+ 
+     /**
+      * «En vivo» sólo con cuadros; abierto (en el Panel Local) o encendiéndose
+@@ -204,7 +218,7 @@ object StatusPanelUi {
+             s.local.otoscopePlugged -> Pair(StatusTone.OK, CONNECTED)
+             else -> unplugged(s)
+         }
+-        return row("Otoscopio", pair, needs)
++        return row(R.string.device_otoscope, pair, needs)
+     }
+ 
+     /** El estetoscopio es audio USB, sin permiso USB: lo que le puede faltar es el micrófono. */
+@@ -216,7 +230,7 @@ object StatusPanelUi {
+             s.local.stethoPlugged -> Pair(StatusTone.OK, CONNECTED)
+             else -> unplugged(s)
+         }
+-        return row("Estetoscopio", pair, StatusAction.MICROPHONE)
++        return row(R.string.device_stethoscope, pair, StatusAction.MICROPHONE)
+     }
+ 
+     /**
+@@ -225,13 +239,13 @@ object StatusPanelUi {
+      * está «Listo»: el hub está y el puerto se puede encender. Enchufado no se
+      * puede saber con el puerto apagado. Sin YKUSH3, «Sin hub».
+      */
+-    private fun unplugged(s: StatusSnapshot): Pair<StatusTone, String> =
++    private fun unplugged(s: StatusSnapshot): Pair<StatusTone, Txt> =
+         if (s.ykushPlugged) Pair(StatusTone.OK, READY) else Pair(StatusTone.BAD, NO_HUB)
+ 
+     private fun hub(s: StatusSnapshot): DeviceRow = when {
+-        !s.ykushPlugged -> DeviceRow("Hub USB", StatusTone.BAD, DISCONNECTED)
+-        UsbRole.HUB in s.usbMissing -> row("Hub USB", missing(), StatusAction.USB_PERMISSION)
+-        else -> DeviceRow("Hub USB", StatusTone.OK, CONNECTED)
++        !s.ykushPlugged -> DeviceRow(txt(R.string.device_hub), StatusTone.BAD, DISCONNECTED)
++        UsbRole.HUB in s.usbMissing -> row(R.string.device_hub, missing(), StatusAction.USB_PERMISSION)
++        else -> DeviceRow(txt(R.string.device_hub), StatusTone.OK, CONNECTED)
+     }
+ 
+     /** El conteo: verde con todo verde, rojo con algún rojo y ámbar si sólo hay ámbar. */
+@@ -249,8 +263,8 @@ object StatusPanelUi {
+         if (choice == CALL_AUDIO_SPEAKER || !jackPresent) CallRoute.SPEAKER else CallRoute.HEADSET
+ 
+     /** La ayuda debajo del segmentado de Sonido: una línea por opción, igual en todas las pantallas. */
+-    fun callHelp(route: CallRoute): String = when (route) {
+-        CallRoute.HEADSET -> "La videollamada suena por los auriculares."
+-        CallRoute.SPEAKER -> "La videollamada suena por el parlante de la tablet."
++    fun callHelp(route: CallRoute): Txt = when (route) {
++        CallRoute.HEADSET -> txt(R.string.status_call_help_headset)
++        CallRoute.SPEAKER -> txt(R.string.status_call_help_speaker)
+     }
+ }
+diff --git a/app/src/main/java/com/guardiavirtual/berrymed/ui/status/StatusPanelView.kt b/app/src/main/java/com/guardiavirtual/berrymed/ui/status/StatusPanelView.kt
+index 363f627..d2ef778 100644
+--- a/app/src/main/java/com/guardiavirtual/berrymed/ui/status/StatusPanelView.kt
++++ b/app/src/main/java/com/guardiavirtual/berrymed/ui/status/StatusPanelView.kt
+@@ -13,6 +13,7 @@ import android.widget.SeekBar
+ import androidx.core.content.ContextCompat
+ import androidx.core.widget.ImageViewCompat
+ import com.guardiavirtual.berrymed.R
++import com.guardiavirtual.berrymed.i18n.resolve
+ import com.guardiavirtual.berrymed.config.CALL_AUDIO_HEADSET
+ import com.guardiavirtual.berrymed.config.CALL_AUDIO_SPEAKER
+ import com.guardiavirtual.berrymed.databinding.ItemStatusDeviceBinding
+@@ -129,8 +130,8 @@ class StatusPanelView @JvmOverloads constructor(
+         panel.wifiIcon.setImageResource(icon)
+         panel.wifiIcon.setBackgroundResource(if (w.offline) R.drawable.status_icon_box_alarm else R.drawable.panel_icon_box)
+         tint(panel.wifiIcon, if (w.offline) R.color.alarmText else R.color.text2)
+-        panel.wifiName.text = w.name
+-        panel.wifiStatus.text = w.text
++        panel.wifiName.text = w.name.resolve(context)
++        panel.wifiStatus.text = w.text.resolve(context)
+         panel.wifiStatus.setTextColor(color(statusColor(w.tone)))
+         panel.wifiBars.visibility = if (w.offline) View.GONE else View.VISIBLE
+         // El chevron siempre: la fila siempre se toca. Con red, al lado de las barras.
+@@ -203,15 +204,23 @@ class StatusPanelView @JvmOverloads constructor(
+             row.root.visibility = View.VISIBLE
+             val bad = device.tone == StatusTone.BAD
+             row.root.background = if (bad) drawable(R.drawable.status_row_bad) else null
+-            row.deviceName.text = device.name
++            row.deviceName.text = device.name.resolve(context)
+             row.deviceName.setTextColor(color(if (bad) R.color.text else R.color.text2))
+-            row.deviceStatus.text = device.text
++            row.deviceStatus.text = device.text.resolve(context)
+             row.deviceStatus.setTextColor(color(statusColor(device.tone)))
+             dot(row.deviceDot, device.tone)
+             // Sólo se tocan las que dicen «Falta permiso».
+             row.root.isClickable = device.action != null
+             row.root.contentDescription =
+-                if (device.action != null) "${device.name}: ${context.getString(R.string.status_ask_permission)}" else null
++                if (device.action != null) {
++                    context.getString(
++                        R.string.status_device_action,
++                        device.name.resolve(context),
++                        context.getString(R.string.status_ask_permission),
++                    )
++                } else {
++                    null
++                }
+         }
+         val count = context.getString(R.string.status_count, s.okCount, s.devices.size)
+         val bad = s.countTone == StatusTone.BAD
+@@ -232,7 +241,7 @@ class StatusPanelView @JvmOverloads constructor(
+         panel.headsetSegment.isEnabled = s.jackPresent
+         panel.headsetSegment.isSelected = headset
+         panel.tabletSegment.isSelected = !headset
+-        panel.callHelp.text = s.callHelp
++        panel.callHelp.text = s.callHelp.resolve(context)
+         renderVolume()
+     }
+ 
+@@ -249,7 +258,7 @@ class StatusPanelView @JvmOverloads constructor(
+         val percent = VolumeBar.percent(index, max)
+         val icon = VolumeBar.icon(index, max)
+         if (!dragging) panel.volumeBar.progress = percent
+-        panel.volumeText.text = "$percent %"
++        panel.volumeText.text = context.getString(R.string.percent_value, percent)
+         panel.volumeIcon.setImageResource(
+             when (icon) {
+                 VolumeIcon.UP -> R.drawable.ic_volume_up
+diff --git a/app/src/main/res/drawable/ic_language.xml b/app/src/main/res/drawable/ic_language.xml
+new file mode 100644
+index 0000000..5b6519a
+--- /dev/null
++++ b/app/src/main/res/drawable/ic_language.xml
+@@ -0,0 +1,10 @@
++<vector xmlns:android="http://schemas.android.com/apk/res/android"
++    android:width="24dp"
++    android:height="24dp"
++    android:viewportWidth="24"
++    android:viewportHeight="24"
++    android:tint="?attr/colorControlNormal">
++    <path
++        android:fillColor="@android:color/white"
++        android:pathData="M11.99,2C6.47,2 2,6.48 2,12s4.47,10 9.99,10C17.52,22 22,17.52 22,12S17.52,2 11.99,2zM18.92,8h-2.95c-0.32,-1.25 -0.78,-2.45 -1.38,-3.56 1.84,0.63 3.37,1.91 4.33,3.56zM12,4.04c0.83,1.2 1.48,2.53 1.91,3.96h-3.82c0.43,-1.43 1.08,-2.76 1.91,-3.96zM4.26,14C4.1,13.36 4,12.69 4,12s0.1,-1.36 0.26,-2h3.38c-0.08,0.66 -0.14,1.32 -0.14,2 0,0.68 0.06,1.34 0.14,2L4.26,14zM5.08,16h2.95c0.32,1.25 0.78,2.45 1.38,3.56 -1.84,-0.63 -3.37,-1.9 -4.33,-3.56zM8.03,8L5.08,8c0.96,-1.66 2.49,-2.93 4.33,-3.56C8.81,5.55 8.35,6.75 8.03,8zM12,19.96c-0.83,-1.2 -1.48,-2.53 -1.91,-3.96h3.82c-0.43,1.43 -1.08,2.76 -1.91,3.96zM14.34,14L9.66,14c-0.09,-0.66 -0.16,-1.32 -0.16,-2 0,-0.68 0.07,-1.35 0.16,-2h4.68c0.09,0.65 0.16,1.32 0.16,2 0,0.68 -0.07,1.34 -0.16,2zM14.59,19.56c0.6,-1.11 1.06,-2.31 1.38,-3.56h2.95c-0.96,1.65 -2.49,2.93 -4.33,3.56zM16.36,14c0.08,-0.66 0.14,-1.32 0.14,-2 0,-0.68 -0.06,-1.34 -0.14,-2h3.38c0.16,0.64 0.26,1.31 0.26,2s-0.1,1.36 -0.26,2h-3.38z" />
++</vector>
+diff --git a/app/src/main/res/layout/activity_home.xml b/app/src/main/res/layout/activity_home.xml
+index 52c2821..c893849 100644
+--- a/app/src/main/res/layout/activity_home.xml
++++ b/app/src/main/res/layout/activity_home.xml
+@@ -30,11 +30,30 @@
+         android:paddingEnd="48dp"
+         android:paddingBottom="40dp">
+ 
+-        <TextView
+-            style="@style/Panel.Text"
+-            android:fontFamily="@font/barlow_semibold"
+-            android:text="@string/home_title"
+-            android:textSize="34sp" />
++        <LinearLayout
++            android:layout_width="match_parent"
++            android:layout_height="wrap_content"
++            android:gravity="center_vertical"
++            android:orientation="horizontal">
++
++            <TextView
++                style="@style/Panel.Text"
++                android:layout_width="0dp"
++                android:layout_weight="1"
++                android:fontFamily="@font/barlow_semibold"
++                android:text="@string/home_title"
++                android:textSize="34sp" />
++
++            <!-- Spike multilingüe: el idioma de la app. Cuadrado: se toca. -->
++            <com.google.android.material.button.MaterialButton
++                android:id="@+id/languageButton"
++                style="@style/Panel.Button.Outline"
++                android:layout_width="wrap_content"
++                android:layout_height="48dp"
++                android:textSize="16sp"
++                app:icon="@drawable/ic_language"
++                app:iconPadding="8dp" />
++        </LinearLayout>
+ 
+         <TextView
+             style="@style/Panel.Text"
+diff --git a/app/src/main/res/values-en/strings.xml b/app/src/main/res/values-en/strings.xml
+new file mode 100644
+index 0000000..edc6941
+--- /dev/null
++++ b/app/src/main/res/values-en/strings.xml
+@@ -0,0 +1,70 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- Spike multilingüe: sólo Inicio, el panel lateral y la notificación. El resto cae al español de values/. -->
++<resources>
++    <string name="language_title">Language</string>
++    <string name="language_button">Language: %1$s</string>
++    <string name="status_connected">Connected</string>
++    <string name="status_connecting">Connecting</string>
++    <string name="status_disconnected">Disconnected</string>
++    <string name="status_ready">Ready</string>
++    <string name="status_live">Live</string>
++    <string name="status_waiting_image">Waiting for image</string>
++    <string name="status_no_hub">No hub</string>
++    <string name="status_no_permission">Permission needed</string>
++    <string name="status_leads_off">Leads off</string>
++    <string name="status_wifi_connected">Wi-Fi connected</string>
++    <string name="status_wifi_off">No Wi-Fi</string>
++    <string name="status_wifi_pick">Tap to choose a network</string>
++    <string name="status_wifi_no_internet">No internet</string>
++    <string name="status_signal_weak">Weak signal</string>
++    <string name="status_signal_good">Good signal</string>
++    <string name="device_spo2">SpO2</string>
++    <string name="device_ecg">ECG</string>
++    <string name="device_pressure">Blood pressure</string>
++    <string name="device_temperature">Temperature</string>
++    <string name="device_otoscope">Otoscope</string>
++    <string name="device_stethoscope">Stethoscope</string>
++    <string name="device_hub">USB hub</string>
++    <string name="status_call_help_headset">The video call plays through the headphones.</string>
++    <string name="status_call_help_speaker">The video call plays through the tablet speaker.</string>
++    <string name="status_device_action">%1$s: %2$s</string>
++    <string name="percent_value">%1$d%%</string>
++    <string name="notif_channel">Berry kiosk</string>
++    <string name="notif_waiting_board">Waiting for the board</string>
++    <string name="home_title">Care kit</string>
++    <string name="home_subtitle">Choose how you will see the patient</string>
++    <string name="home_ondoctor_body">The patient kiosk: teleconsultation with a remote doctor.</string>
++    <string name="home_ondoctor_missing">Not set up: the kiosk URL is missing.</string>
++    <string name="home_local_body">In-person care with every instrument on screen.</string>
++    <string name="local_panel">Local Panel</string>
++    <string name="home_config">Settings</string>
++    <string name="home_config_body">System settings and parameters</string>
++    <string name="home_pin_title">Settings</string>
++    <string name="home_pin_help">For the technician: kiosk setup and device tests.</string>
++    <string name="local_pin_hint">PIN</string>
++    <string name="local_enter">Enter</string>
++    <string name="local_back">Back</string>
++    <string name="local_pin_wrong">Wrong PIN</string>
++    <string name="local_pin_loading">Loading settings…</string>
++    <string name="status_volume">Volume</string>
++    <string name="status_close">Close the status panel</string>
++    <string name="status_open">Open the status panel</string>
++    <string name="status_mode">Mode</string>
++    <string name="status_remote">Remote</string>
++    <string name="status_local">Local</string>
++    <string name="status_devices">Devices</string>
++    <string name="status_count">%1$d/%2$d</string>
++    <string name="status_call_audio">Sound</string>
++    <string name="status_headset">Headset</string>
++    <string name="status_speaker">Speaker</string>
++    <string name="status_wifi_settings">Open Android Wi-Fi</string>
++    <string name="status_ask_permission">Ask for the missing permission</string>
++    <string name="no_wifi_title">No connection</string>
++    <string name="no_wifi_body">Choose a Wi-Fi network to use the kit.</string>
++    <string name="no_wifi_action">Choose network</string>
++    <string name="no_wifi_later">Not now</string>
++    <string name="notif_usb_permission">USB permission needed</string>
++    <string name="notif_local_open">Local Panel open</string>
++    <string name="notif_sending">Board connected, sending measurements</string>
++    <string name="notif_stopped">Board connected, session stopped</string>
++</resources>
+diff --git a/app/src/main/res/values-pt/strings.xml b/app/src/main/res/values-pt/strings.xml
+new file mode 100644
+index 0000000..0e0deff
+--- /dev/null
++++ b/app/src/main/res/values-pt/strings.xml
+@@ -0,0 +1,70 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- Spike multilingüe: sólo Inicio, el panel lateral y la notificación. El resto cae al español de values/. -->
++<resources>
++    <string name="language_title">Idioma</string>
++    <string name="language_button">Idioma: %1$s</string>
++    <string name="status_connected">Conectado</string>
++    <string name="status_connecting">Conectando</string>
++    <string name="status_disconnected">Desconectado</string>
++    <string name="status_ready">Pronto</string>
++    <string name="status_live">Ao vivo</string>
++    <string name="status_waiting_image">Aguardando imagem</string>
++    <string name="status_no_hub">Sem hub</string>
++    <string name="status_no_permission">Falta permissão</string>
++    <string name="status_leads_off">Eletrodos soltos</string>
++    <string name="status_wifi_connected">Wi-Fi conectado</string>
++    <string name="status_wifi_off">Sem Wi-Fi</string>
++    <string name="status_wifi_pick">Toque para escolher uma rede</string>
++    <string name="status_wifi_no_internet">Sem internet</string>
++    <string name="status_signal_weak">Sinal fraco</string>
++    <string name="status_signal_good">Sinal bom</string>
++    <string name="device_spo2">SpO2</string>
++    <string name="device_ecg">ECG</string>
++    <string name="device_pressure">Pressão</string>
++    <string name="device_temperature">Temperatura</string>
++    <string name="device_otoscope">Otoscópio</string>
++    <string name="device_stethoscope">Estetoscópio</string>
++    <string name="device_hub">Hub USB</string>
++    <string name="status_call_help_headset">A videochamada toca pelos fones de ouvido.</string>
++    <string name="status_call_help_speaker">A videochamada toca pelo alto-falante do tablet.</string>
++    <string name="status_device_action">%1$s: %2$s</string>
++    <string name="percent_value">%1$d%%</string>
++    <string name="notif_channel">Totem Berry</string>
++    <string name="notif_waiting_board">Aguardando a placa</string>
++    <string name="home_title">Maleta de atendimento</string>
++    <string name="home_subtitle">Escolha como você vai atender</string>
++    <string name="home_ondoctor_body">O quiosque do paciente: teleconsulta com o médico a distância.</string>
++    <string name="home_ondoctor_missing">Sem configurar: falta a URL do quiosque.</string>
++    <string name="home_local_body">Atendimento presencial com todos os instrumentos na tela.</string>
++    <string name="local_panel">Painel Local</string>
++    <string name="home_config">Configuração</string>
++    <string name="home_config_body">Ajustes e parâmetros do sistema</string>
++    <string name="home_pin_title">Configuração</string>
++    <string name="home_pin_help">Para o técnico: a configuração do totem e os testes dos dispositivos.</string>
++    <string name="local_pin_hint">PIN</string>
++    <string name="local_enter">Entrar</string>
++    <string name="local_back">Voltar</string>
++    <string name="local_pin_wrong">PIN incorreto</string>
++    <string name="local_pin_loading">Carregando a configuração…</string>
++    <string name="status_volume">Volume</string>
++    <string name="status_close">Fechar o painel de status</string>
++    <string name="status_open">Abrir o painel de status</string>
++    <string name="status_mode">Modo</string>
++    <string name="status_remote">Remoto</string>
++    <string name="status_local">Local</string>
++    <string name="status_devices">Dispositivos</string>
++    <string name="status_count">%1$d/%2$d</string>
++    <string name="status_call_audio">Som</string>
++    <string name="status_headset">Fone</string>
++    <string name="status_speaker">Alto-falante</string>
++    <string name="status_wifi_settings">Abrir o Wi-Fi do Android</string>
++    <string name="status_ask_permission">Pedir a permissão que falta</string>
++    <string name="no_wifi_title">Sem conexão</string>
++    <string name="no_wifi_body">Escolha uma rede Wi-Fi para usar a maleta.</string>
++    <string name="no_wifi_action">Escolher rede</string>
++    <string name="no_wifi_later">Agora não</string>
++    <string name="notif_usb_permission">Falta a permissão USB</string>
++    <string name="notif_local_open">Painel Local aberto</string>
++    <string name="notif_sending">Placa conectada, enviando medições</string>
++    <string name="notif_stopped">Placa conectada, sessão parada</string>
++</resources>
+diff --git a/app/src/main/res/values/strings.xml b/app/src/main/res/values/strings.xml
+index 5e87713..6502de2 100644
+--- a/app/src/main/res/values/strings.xml
++++ b/app/src/main/res/values/strings.xml
+@@ -1,6 +1,6 @@
+ <?xml version="1.0" encoding="utf-8"?>
+ <resources>
+-    <string name="app_name">Berry Med</string>
++    <string name="app_name" translatable="false">Berry Med</string>
+     <string name="screen_title">Configuración del Maletín de atención</string>
+     <string name="crumb_home">Inicio</string>
+     <string name="last_update">Última actualización de USB-config: %1$s</string>
+@@ -13,7 +13,7 @@
+     <string name="main_chip_pusher">Pusher</string>
+     <string name="main_chip_thermo">Termómetro</string>
+     <string name="main_status">Estado</string>
+-    <string name="ondoctor">ONDOCTOR365</string>
++    <string name="ondoctor" translatable="false">ONDOCTOR365</string>
+     <string name="help_ondoctor">USB-config abre la configuración del tótem y Testing prueba los dispositivos. ONDOCTOR365 y el Panel Local se abren desde Inicio: la flecha de arriba vuelve ahí.</string>
+     <string name="label_hr">Frecuencia</string>
+     <string name="label_spo2">SpO₂ / pulso</string>
+@@ -322,4 +322,45 @@
+     <string name="home_from_local_title">¿Volver al inicio?</string>
+     <string name="home_from_local_body">Se finaliza el Panel Local: se detiene el ECG y se apagan el otoscopio y la cámara. Nada de lo medido sale a ONDOCTOR365.</string>
+     <string name="home_from_local_action">Ir al inicio</string>
++
++    <!-- Spike multilingüe: el selector de idioma de Inicio. -->
++    <string name="language_title">Idioma</string>
++    <string name="language_button">Idioma: %1$s</string>
++
++    <!-- Spike multilingüe: lo que antes estaba escrito en StatusPanelUi. -->
++    <string name="status_connected">Conectado</string>
++    <string name="status_connecting">Conectando</string>
++    <string name="status_disconnected">Desconectado</string>
++    <string name="status_ready">Listo</string>
++    <string name="status_live">En vivo</string>
++    <string name="status_waiting_image">Esperando imagen</string>
++    <string name="status_no_hub">Sin hub</string>
++    <string name="status_no_permission">Falta permiso</string>
++    <string name="status_leads_off">Electrodos sueltos</string>
++    <string name="status_wifi_connected">Wi-Fi conectado</string>
++    <string name="status_wifi_off">Sin Wi-Fi</string>
++    <string name="status_wifi_pick">Tocá para elegir una red</string>
++    <string name="status_wifi_no_internet">Sin internet</string>
++    <string name="status_signal_weak">Señal débil</string>
++    <string name="status_signal_good">Señal buena</string>
++    <string name="device_spo2">SpO2</string>
++    <string name="device_ecg">ECG</string>
++    <string name="device_pressure">Presión</string>
++    <string name="device_temperature">Temperatura</string>
++    <string name="device_otoscope">Otoscopio</string>
++    <string name="device_stethoscope">Estetoscopio</string>
++    <string name="device_hub">Hub USB</string>
++    <string name="status_call_help_headset">La videollamada suena por los auriculares.</string>
++    <string name="status_call_help_speaker">La videollamada suena por el parlante de la tablet.</string>
++    <!-- Lo que lee el lector de pantalla en una fila que pide un permiso: «Otoscopio: Pedir el permiso que falta». -->
++    <string name="status_device_action">%1$s: %2$s</string>
++    <string name="percent_value">%1$d %%</string>
++
++    <!-- Spike multilingüe: la notificación del servicio. -->
++    <string name="notif_channel">Tótem Berry</string>
++    <string name="notif_waiting_board">Esperando la plaqueta</string>
++    <string name="notif_usb_permission">Falta el permiso USB</string>
++    <string name="notif_local_open">Panel Local abierto</string>
++    <string name="notif_sending">Plaqueta conectada, enviando mediciones</string>
++    <string name="notif_stopped">Plaqueta conectada, sesión detenida</string>
+ </resources>
+diff --git a/app/src/main/res/xml/locales_config.xml b/app/src/main/res/xml/locales_config.xml
+new file mode 100644
+index 0000000..0b31cfe
+--- /dev/null
++++ b/app/src/main/res/xml/locales_config.xml
+@@ -0,0 +1,11 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!--
++    Los idiomas de la app, para Android 13 o más: con esto el idioma de Berry Med
++    también aparece en Ajustes → Apps → Berry Med → Idioma. Tiene que decir lo
++    mismo que AppLanguage y que las carpetas values-xx (lo comprueba AppLanguageTest).
++-->
++<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
++    <locale android:name="es" />
++    <locale android:name="en" />
++    <locale android:name="pt" />
++</locale-config>
+diff --git a/app/src/test/java/com/guardiavirtual/berrymed/i18n/AppLanguageTest.kt b/app/src/test/java/com/guardiavirtual/berrymed/i18n/AppLanguageTest.kt
+new file mode 100644
+index 0000000..e9a920c
+--- /dev/null
++++ b/app/src/test/java/com/guardiavirtual/berrymed/i18n/AppLanguageTest.kt
+@@ -0,0 +1,48 @@
++// SPDX-License-Identifier: GPL-3.0-or-later
++package com.guardiavirtual.berrymed.i18n
++
++import java.io.File
++import kotlin.test.Test
++import kotlin.test.assertEquals
++import kotlin.test.assertNull
++
++class AppLanguageTest {
++    @Test
++    fun matchesByLanguageNotRegion() {
++        assertEquals(AppLanguage.PORTUGUESE, AppLanguage.match("pt-BR"))
++        assertEquals(AppLanguage.ENGLISH, AppLanguage.match("en-US,es-AR"))
++        assertEquals(AppLanguage.SPANISH, AppLanguage.match("es_AR"))
++        // El primero que la app tiene, en el orden de la tablet.
++        assertEquals(AppLanguage.SPANISH, AppLanguage.match("fr-FR,es-419,en-US"))
++        assertNull(AppLanguage.match("fr-FR,de"))
++        assertNull(AppLanguage.match(""))
++        assertNull(AppLanguage.match(null))
++    }
++
++    /** El selector, las carpetas de recursos y lo que se le declara a Android dicen lo mismo. */
++    @Test
++    fun theSelectorTheFoldersAndTheManifestAgree() {
++        val selector = AppLanguage.entries.map { it.tag }.sorted()
++
++        val folders = (TestStrings.translations() + AppLanguage.DEFAULT.tag).sorted()
++        assertEquals(selector, folders, "AppLanguage y las carpetas values-xx")
++
++        val declared = Regex("""<locale\s+android:name="([^"]+)"""")
++            .findAll(File(TestStrings.resDir, "xml/locales_config.xml").readText())
++            .map { it.groupValues[1] }
++            .toList()
++            .sorted()
++        assertEquals(selector, declared, "AppLanguage y res/xml/locales_config.xml")
++
++        val gradle = File("build.gradle.kts").readText()
++        val bundled = Regex("""resourceConfigurations \+= listOf\(([^)]*)\)""").find(gradle)
++            ?.groupValues?.get(1)?.split(',')?.map { it.trim().trim('"') }?.sorted()
++        assertEquals(selector, bundled, "AppLanguage y resourceConfigurations de build.gradle.kts")
++    }
++
++    @Test
++    fun nativeNamesAreNotTranslated() {
++        // Cada idioma se llama igual en todos los diccionarios: no hay entradas language_es / language_en.
++        assertEquals(listOf("Español", "English", "Português"), AppLanguage.entries.map { it.nativeName })
++    }
++}
+diff --git a/app/src/test/java/com/guardiavirtual/berrymed/i18n/HardcodedTextTest.kt b/app/src/test/java/com/guardiavirtual/berrymed/i18n/HardcodedTextTest.kt
+new file mode 100644
+index 0000000..2a22d24
+--- /dev/null
++++ b/app/src/test/java/com/guardiavirtual/berrymed/i18n/HardcodedTextTest.kt
+@@ -0,0 +1,206 @@
++// SPDX-License-Identifier: GPL-3.0-or-later
++package com.guardiavirtual.berrymed.i18n
++
++import java.io.File
++import kotlin.test.Test
++import kotlin.test.assertEquals
++
++/**
++ * Que no vuelva a entrar un texto escrito en el código.
++ *
++ * Lee los fuentes de `src/main` y junta todo literal que parece una frase
++ * para una persona. Cada uno tiene que estar en `src/test/resources/i18n/textos-en-codigo.txt`,
++ * en una de dos listas:
++ *
++ * - **PENDIENTE**: falta pasarlo al diccionario. La migración la lleva a cero.
++ * - **PERMITIDO**: se queda en el código a propósito (motivos de los logs,
++ *   nombres de protocolo), revisado uno por uno.
++ *
++ * Las líneas de log, que empiezan con su etiqueta (`[USB] …`), no cuentan: el
++ * log va siempre en español. Un texto nuevo que no está en ninguna lista falla
++ * el test; uno que ya se sacó del código y sigue anotado, también: la lista
++ * sólo se achica.
++ */
++class HardcodedTextTest {
++    private val sources = File("src/main/java")
++    private val layouts = File("src/main/res/layout")
++    private val listFile = File("src/test/resources/i18n/textos-en-codigo.txt")
++
++    /** Un literal de Kotlin: dónde está y qué dice, con `${…}` reducido a «{}». */
++    data class Found(val file: String, val text: String) {
++        override fun toString() = "$file\t$text"
++    }
++
++    @Test
++    fun noNewHardcodedTextInKotlin() {
++        val found = kotlinFiles().flatMap { file -> literals(file.readText()).filter(::looksLikeProse).map { Found(relative(file), it) } }.toSet()
++        if (System.getenv("I18N_REGENERAR") == "1") {
++            regenerate(found)
++            return
++        }
++        val (pending, allowed) = readLists()
++        val known = pending + allowed
++        val now = found.map { it.toString() }.toSet()
++        assertEquals(emptyList(), (now - known).sorted(), "Textos nuevos escritos en el código: van al diccionario (strings.xml)")
++        assertEquals(emptyList(), (known - now).sorted(), "Ya no están en el código: sacalos de textos-en-codigo.txt")
++    }
++
++    /** En los layouts no hay listas: un texto con letras va a `@string/…` (o a `tools:text` si es de muestra). */
++    @Test
++    fun layoutsHaveNoHardcodedText() {
++        val attribute = Regex("""android:(text|hint|contentDescription|title|label|tooltipText)="([^"@?][^"]*)"""")
++        val found = layouts.listFiles { file -> file.extension == "xml" }.orEmpty().sortedBy { it.name }.flatMap { file ->
++            attribute.findAll(file.readText())
++                .map { it.groupValues[2] }
++                // Un número solo no se traduce, pero con coma o punto decimal sí cambia con el idioma.
++                .filter { value -> value.any { it.isLetter() } || Regex("""\d[.,]\d""").containsMatchIn(value) }
++                .map { "${file.name}\t$it" }
++                .toList()
++        }
++        val allowed = readSection("LAYOUTS")
++        assertEquals(emptyList(), (found.toSet() - allowed).sorted(), "Textos escritos en un layout")
++        assertEquals(emptyList(), (allowed - found.toSet()).sorted(), "Ya no están en los layouts: sacalos de textos-en-codigo.txt")
++    }
++
++    private fun kotlinFiles(): List<File> = sources.walkTopDown().filter { it.isFile && it.extension == "kt" }.sortedBy { it.path }.toList()
++
++    private fun relative(file: File): String = file.relativeTo(sources).path.substringAfter("com/guardiavirtual/berrymed/")
++
++    private fun readSection(section: String): Set<String> {
++        if (!listFile.exists()) return emptySet()
++        val lines = HashSet<String>()
++        var current = ""
++        for (line in listFile.readLines()) {
++            when {
++                line.startsWith("## ") -> current = line.removePrefix("## ").trim()
++                line.isBlank() || line.startsWith("#") -> Unit
++                current == section -> lines += line
++            }
++        }
++        return lines
++    }
++
++    private fun readLists(): Pair<Set<String>, Set<String>> = Pair(readSection("PENDIENTE"), readSection("PERMITIDO"))
++
++    /** Todo lo encontrado va a PENDIENTE, salvo lo que ya estaba en PERMITIDO; los layouts, a su lista. */
++    private fun regenerate(found: Set<Found>) {
++        val allowed = readSection("PERMITIDO")
++        val now = found.map { it.toString() }.toSet()
++        val attribute = Regex("""android:(text|hint|contentDescription|title|label|tooltipText)="([^"@?][^"]*)"""")
++        val inLayouts = layouts.listFiles { file -> file.extension == "xml" }.orEmpty().sortedBy { it.name }.flatMap { file ->
++            attribute.findAll(file.readText()).map { it.groupValues[2] }
++                .filter { value -> value.any { it.isLetter() } || Regex("""\d[.,]\d""").containsMatchIn(value) }
++                .map { "${file.name}\t$it" }.toList()
++        }.toSortedSet()
++        listFile.parentFile.mkdirs()
++        listFile.writeText(
++            buildString {
++                appendLine("# Textos escritos en el código (ver HardcodedTextTest). Una línea: archivo<TAB>texto.")
++                appendLine("# Regenerar: I18N_REGENERAR=1 ./gradlew testDebugUnitTest --tests '*HardcodedTextTest*'")
++                appendLine()
++                appendLine("## PENDIENTE")
++                (now - allowed).sorted().forEach(::appendLine)
++                appendLine()
++                appendLine("## PERMITIDO")
++                (allowed intersect now).sorted().forEach(::appendLine)
++                appendLine()
++                appendLine("## LAYOUTS")
++                inLayouts.forEach(::appendLine)
++            },
++        )
++    }
++
++    companion object {
++        private val logTag = Regex("""^\[[A-ZÁÉÍÓÚÑ0-9 ]+]""")
++        private val word = Regex("""\p{L}{3,}""")
++        private val twoWords = Regex("""\p{L}{2,}\s+\p{L}{2,}""")
++        private val capitalized = Regex("""^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]{3,}…?$""")
++
++        /**
++         * ¿Es una frase para una persona? Tiene una palabra y, además, dos
++         * palabras seguidas, una letra que no es ASCII (á, ñ, «, …) o es una
++         * sola palabra con mayúscula inicial («Conectado»). Quedan afuera los
++         * identificadores («berry-usb», «start-monitoring», «HH:mm») y las
++         * líneas de log por su etiqueta.
++         */
++        fun looksLikeProse(literal: String): Boolean {
++            if (logTag.containsMatchIn(literal)) return false
++            val text = literal.replace("{}", " ").trim()
++            if (!word.containsMatchIn(text)) return false
++            return twoWords.containsMatchIn(text) || text.any { it.isLetter() && it.code > 127 } || text.any { it in "«»…·¿¡" } ||
++                capitalized.matches(text)
++        }
++
++        /** Los literales de un fuente Kotlin, sin los comentarios; cada `${…}` o `$nombre` queda como «{}». */
++        fun literals(source: String): List<String> {
++            val out = ArrayList<String>()
++            var i = 0
++            val n = source.length
++            while (i < n) {
++                val c = source[i]
++                when {
++                    source.startsWith("//", i) -> i = source.indexOf('\n', i).let { if (it < 0) n else it }
++                    source.startsWith("/*", i) -> i = source.indexOf("*/", i).let { if (it < 0) n else it + 2 }
++                    source.startsWith("\"\"\"", i) -> {
++                        var end = source.indexOf("\"\"\"", i + 3).let { if (it < 0) n else it }
++                        // Un literal crudo termina en las últimas tres comillas: `"""…""""` trae una adentro.
++                        while (end + 3 < n && source[end + 3] == '"') end++
++                        out += source.substring(i + 3, end).replace('\n', ' ')
++                        i = end + 3
++                    }
++                    c == '\'' -> {
++                        var j = i + 1
++                        while (j < n && source[j] != '\'') j += if (source[j] == '\\') 2 else 1
++                        i = j + 1
++                    }
++                    c == '"' -> {
++                        val text = StringBuilder()
++                        var j = i + 1
++                        while (j < n && source[j] != '"') {
++                            when {
++                                source[j] == '\\' -> {
++                                    text.append(source, j, minOf(j + 2, n))
++                                    j += 2
++                                }
++                                source.startsWith("\${", j) -> {
++                                    // Una plantilla puede traer literales adentro: se leen aparte.
++                                    var depth = 1
++                                    var k = j + 2
++                                    while (k < n && depth > 0) {
++                                        when (source[k]) {
++                                            '{' -> depth++
++                                            '}' -> depth--
++                                            '"' -> {
++                                                var m = k + 1
++                                                while (m < n && source[m] != '"') m += if (source[m] == '\\') 2 else 1
++                                                k = m
++                                            }
++                                        }
++                                        k++
++                                    }
++                                    out += literals(source.substring(j + 2, k - 1))
++                                    text.append("{}")
++                                    j = k
++                                }
++                                source[j] == '$' && j + 1 < n && (source[j + 1].isLetter() || source[j + 1] == '_') -> {
++                                    var k = j + 1
++                                    while (k < n && (source[k].isLetterOrDigit() || source[k] == '_')) k++
++                                    text.append("{}")
++                                    j = k
++                                }
++                                else -> {
++                                    text.append(source[j])
++                                    j++
++                                }
++                            }
++                        }
++                        out += text.toString()
++                        i = j + 1
++                    }
++                    else -> i++
++                }
++            }
++            return out
++        }
++    }
++}
+diff --git a/app/src/test/java/com/guardiavirtual/berrymed/i18n/StringsCatalogTest.kt b/app/src/test/java/com/guardiavirtual/berrymed/i18n/StringsCatalogTest.kt
+new file mode 100644
+index 0000000..a30a05d
+--- /dev/null
++++ b/app/src/test/java/com/guardiavirtual/berrymed/i18n/StringsCatalogTest.kt
+@@ -0,0 +1,100 @@
++// SPDX-License-Identifier: GPL-3.0-or-later
++package com.guardiavirtual.berrymed.i18n
++
++import java.io.File
++import kotlin.test.Test
++import kotlin.test.assertEquals
++import kotlin.test.assertTrue
++
++/**
++ * Los diccionarios entre sí: cada traducción tiene las mismas entradas que el
++ * español, con los mismos parámetros, y nada de más.
++ *
++ * Mientras dura la migración, lo que todavía no se tradujo está anotado en
++ * `src/test/resources/i18n/sin-traducir.txt` (una línea «idioma<TAB>entrada»).
++ * La lista sólo puede achicarse: una entrada nueva sin traducir falla, y una
++ * que ya se tradujo y sigue anotada también. Con la lista vacía, es paridad total.
++ */
++class StringsCatalogTest {
++    private val source = TestStrings.catalog()
++    private val pendingFile = File("src/test/resources/i18n/sin-traducir.txt")
++
++    private fun pending(): Set<String> =
++        if (!pendingFile.exists()) emptySet()
++        else pendingFile.readLines().map { it.trim() }.filter { it.isNotEmpty() && !it.startsWith("#") }.toSet()
++
++    private fun missingNow(): Set<String> = TestStrings.translations().flatMap { language ->
++        val translated = TestStrings.catalog(language).keys
++        source.values.filter { it.translatable && it.name !in translated }.map { "$language\t${it.name}" }
++    }.toSet()
++
++    @Test
++    fun everyEntryIsTranslatedOrListedAsPending() {
++        val missing = missingNow()
++        if (System.getenv("I18N_REGENERAR") == "1") {
++            pendingFile.parentFile.mkdirs()
++            pendingFile.writeText(
++                "# Entradas de values/strings.xml que todavía no están en cada traducción.\n" +
++                    "# Sólo se achica. Regenerar: I18N_REGENERAR=1 ./gradlew testDebugUnitTest --tests '*StringsCatalogTest*'\n" +
++                    missing.sorted().joinToString("\n", postfix = "\n"),
++            )
++            return
++        }
++        val listed = pending()
++        assertEquals(emptyList(), (missing - listed).sorted(), "Entradas nuevas sin traducir (traducilas o, si es a propósito, anotalas)")
++        assertEquals(emptyList(), (listed - missing).sorted(), "Ya están traducidas: sacalas de sin-traducir.txt")
++    }
++
++    @Test
++    fun translationsHaveNoEntriesOfTheirOwn() {
++        for (language in TestStrings.translations()) {
++            val extra = TestStrings.catalog(language).keys - source.keys
++            assertEquals(emptySet(), extra, "values-$language tiene entradas que el español no tiene")
++        }
++    }
++
++    @Test
++    fun whatIsNotTranslatableIsNotTranslated() {
++        val fixed = source.values.filterNot { it.translatable }.map { it.name }.toSet()
++        for (language in TestStrings.translations()) {
++            assertEquals(emptySet(), TestStrings.catalog(language).keys intersect fixed, "values-$language traduce algo marcado translatable=false")
++        }
++    }
++
++    /** `%1$s`, `%2$d`…: los mismos en todos los idiomas, aunque cambien de orden. */
++    @Test
++    fun translationsKeepTheParameters() {
++        for (language in TestStrings.translations()) {
++            for ((name, entry) in TestStrings.catalog(language)) {
++                val original = source[name] ?: continue
++                assertEquals(parameters(original.value), parameters(entry.value), "Parámetros de $name en values-$language")
++            }
++        }
++    }
++
++    /** Con más de un parámetro van numerados (`%1$s`): sin número, un idioma no puede cambiarles el orden. */
++    @Test
++    fun parametersArePositional() {
++        val all = listOf("") + TestStrings.translations()
++        for (language in all) {
++            for ((name, entry) in TestStrings.catalog(language)) {
++                val loose = Regex("""%(?!\d+\$)[sdf.\d]""").findAll(entry.value.replace("%%", "")).count()
++                assertEquals(0, loose, "$name (${language.ifEmpty { "es" }}) usa un parámetro sin número: ${entry.value}")
++            }
++        }
++    }
++
++    @Test
++    fun nothingIsEmpty() {
++        for (language in listOf("") + TestStrings.translations()) {
++            val empty = TestStrings.catalog(language).values.filter { it.value.isBlank() }.map { it.name }
++            assertTrue(empty.isEmpty(), "Entradas vacías en ${language.ifEmpty { "es" }}: $empty")
++        }
++    }
++
++    private fun parameters(value: String): List<String> =
++        Regex("""%(\d+)\$[-#+ 0,(]*\d*(?:\.\d+)?([a-zA-Z])""").findAll(value.replace("%%", ""))
++            .map { "${it.groupValues[1]}${it.groupValues[2]}" }
++            .sorted()
++            .toList()
++}
+diff --git a/app/src/test/java/com/guardiavirtual/berrymed/i18n/TestStrings.kt b/app/src/test/java/com/guardiavirtual/berrymed/i18n/TestStrings.kt
+new file mode 100644
+index 0000000..e18b706
+--- /dev/null
++++ b/app/src/test/java/com/guardiavirtual/berrymed/i18n/TestStrings.kt
+@@ -0,0 +1,70 @@
++// SPDX-License-Identifier: GPL-3.0-or-later
++package com.guardiavirtual.berrymed.i18n
++
++import com.guardiavirtual.berrymed.R
++import java.io.File
++import javax.xml.parsers.DocumentBuilderFactory
++import org.w3c.dom.Element
++
++/**
++ * Los diccionarios de la app leídos del disco, para los tests de la JVM (sin
++ * Android ni Robolectric): `res/values/strings.xml` es el español de origen y
++ * `res/values-xx/strings.xml`, cada traducción.
++ *
++ * Gradle corre los tests con el módulo `app` como carpeta de trabajo.
++ */
++object TestStrings {
++    val resDir = File("src/main/res")
++
++    /** Una entrada del diccionario tal como está escrita en el XML. */
++    data class Entry(val name: String, val value: String, val translatable: Boolean)
++
++    private val cache = HashMap<String, Map<String, Entry>>()
++
++    /** id de `R.string` → nombre de la entrada. */
++    private val names: Map<Int, String> by lazy {
++        R.string::class.java.fields.associate { it.getInt(null) to it.name }
++    }
++
++    /** Las carpetas de traducción que existen: «en», «pt»… (sin la de origen). */
++    fun translations(): List<String> =
++        resDir.listFiles { file -> file.isDirectory && file.name.startsWith("values-") && File(file, "strings.xml").exists() }
++            .orEmpty()
++            .map { it.name.removePrefix("values-") }
++            .sorted()
++
++    /** El diccionario de [language]; "" es el de origen. */
++    fun catalog(language: String = ""): Map<String, Entry> = cache.getOrPut(language) {
++        val file = File(resDir, if (language.isEmpty()) "values/strings.xml" else "values-$language/strings.xml")
++        val root = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file).documentElement
++        val entries = LinkedHashMap<String, Entry>()
++        val nodes = root.getElementsByTagName("string")
++        for (i in 0 until nodes.length) {
++            val node = nodes.item(i) as Element
++            val name = node.getAttribute("name")
++            entries[name] = Entry(name, unescape(node.textContent), node.getAttribute("translatable") != "false")
++        }
++        entries
++    }
++
++    /** Lo que Android hace al leer el XML: saca las barras de escape. */
++    private fun unescape(raw: String): String =
++        raw.trim().replace("\\'", "'").replace("\\\"", "\"").replace("\\n", "\n").replace("\\@", "@").replace("\\?", "?")
++
++    /** [text] como lo vería alguien en [language]; lo que falta traducir cae al español, como en Android. */
++    fun resolve(text: Txt, language: String = ""): String = when (text) {
++        is Txt.Raw -> text.value
++        is Txt.Res -> {
++            val name = names[text.id] ?: error("No hay R.string con id ${text.id}")
++            val pattern = (catalog(language)[name] ?: catalog()[name] ?: error("Falta $name en values/strings.xml")).value
++            val args = text.args.map { if (it is Txt) resolve(it, language) else it }
++            if (args.isEmpty()) pattern else String.format(pattern, *args.toTypedArray())
++        }
++    }
++}
++
++/** El texto en español, el idioma de origen: para los tests que afirman lo que se lee en pantalla. */
++fun es(text: Txt): String = TestStrings.resolve(text)
++
++/** El texto en [language] («en», «pt»). */
++fun Txt.inLanguage(language: String): String = TestStrings.resolve(this, language)
+diff --git a/app/src/test/java/com/guardiavirtual/berrymed/ui/status/StatusPanelUiTest.kt b/app/src/test/java/com/guardiavirtual/berrymed/ui/status/StatusPanelUiTest.kt
+index 8d02e1f..4eb45f7 100644
+--- a/app/src/test/java/com/guardiavirtual/berrymed/ui/status/StatusPanelUiTest.kt
++++ b/app/src/test/java/com/guardiavirtual/berrymed/ui/status/StatusPanelUiTest.kt
+@@ -3,6 +3,8 @@ package com.guardiavirtual.berrymed.ui.status
+ 
+ import com.guardiavirtual.berrymed.config.CALL_AUDIO_HEADSET
+ import com.guardiavirtual.berrymed.config.CALL_AUDIO_SPEAKER
++import com.guardiavirtual.berrymed.i18n.es
++import com.guardiavirtual.berrymed.i18n.inLanguage
+ import com.guardiavirtual.berrymed.net.WifiState
+ import com.guardiavirtual.berrymed.otoscope.OtoscopePower
+ import com.guardiavirtual.berrymed.protocol.EcgInfo
+@@ -74,18 +76,21 @@ class StatusPanelUiTest {
+     )
+ 
+     private fun row(s: StatusSnapshot, name: String): DeviceRow =
+-        StatusPanelUi.devices(s).single { it.name == name }
++        StatusPanelUi.devices(s).single { es(it.name) == name }
+ 
+     private fun ok(text: String) = Pair(StatusTone.OK, text)
+     private fun warn(text: String) = Pair(StatusTone.WARN, text)
+     private fun bad(text: String) = Pair(StatusTone.BAD, text)
+-    private fun DeviceRow.pair() = Pair(tone, text)
++    private fun DeviceRow.pair() = Pair(tone, es(text))
++
++    /** La cabecera como se lee en español: nombre y estado. */
++    private fun WifiRow.read() = Pair(es(name), es(text))
+ 
+     @Test
+     fun rowsKeepTheirOrder() {
+         assertEquals(
+             listOf("SpO2", "ECG", "Presión", "Temperatura", "Otoscopio", "Estetoscopio", "Hub USB"),
+-            StatusPanelUi.devices(status()).map { it.name },
++            StatusPanelUi.devices(status()).map { es(it.name) },
+         )
+     }
+ 
+@@ -260,12 +265,14 @@ class StatusPanelUiTest {
+     @Test
+     fun wifiWithoutLocation() {
+         val noName = WifiState(connected = true, validated = true, rssi = -55)
++        val row = StatusPanelUi.wifi(noName, locationGranted = false)
++        assertEquals(Pair("Wi-Fi conectado", "Falta permiso"), row.read())
+         assertEquals(
+-            WifiRow(WifiIcon.WIFI, "Wi-Fi conectado", "Falta permiso", StatusTone.WARN, 4, offline = false, action = StatusAction.LOCATION),
+-            StatusPanelUi.wifi(noName, locationGranted = false),
++            WifiRow(WifiIcon.WIFI, row.name, row.text, StatusTone.WARN, 4, offline = false, action = StatusAction.LOCATION),
++            row,
+         )
+         // Sin internet importa más que el nombre.
+-        assertEquals("Sin internet", StatusPanelUi.wifi(noName.copy(validated = false), locationGranted = false).text)
++        assertEquals("Sin internet", es(StatusPanelUi.wifi(noName.copy(validated = false), locationGranted = false).text))
+         // Sin red, la ubicación no importa: se elige una red.
+         assertEquals(StatusAction.OPEN_WIFI, StatusPanelUi.wifi(WifiState(), locationGranted = false).action)
+         // Desde el snapshot.
+@@ -290,19 +297,23 @@ class StatusPanelUiTest {
+     @Test
+     fun wifiState() {
+         val good = StatusPanelUi.wifi(WifiState(connected = true, validated = true, ssid = "Consultorio-5G", rssi = -65))
+-        assertEquals(WifiRow(WifiIcon.WIFI, "Consultorio-5G", "Señal buena", StatusTone.OK, 3, offline = false), good)
++        assertEquals(Pair("Consultorio-5G", "Señal buena"), good.read())
++        assertEquals(WifiRow(WifiIcon.WIFI, good.name, good.text, StatusTone.OK, 3, offline = false), good)
+ 
+         val weak = StatusPanelUi.wifi(WifiState(connected = true, validated = true, ssid = "Consultorio-5G", rssi = -85))
+-        assertEquals(WifiRow(WifiIcon.WEAK, "Consultorio-5G", "Señal débil", StatusTone.WARN, 1, offline = false), weak)
++        assertEquals(Pair("Consultorio-5G", "Señal débil"), weak.read())
++        assertEquals(WifiRow(WifiIcon.WEAK, weak.name, weak.text, StatusTone.WARN, 1, offline = false), weak)
+ 
+         val noInternet = StatusPanelUi.wifi(WifiState(connected = true, validated = false, ssid = "Consultorio-5G", rssi = -75))
+-        assertEquals(WifiRow(WifiIcon.WIFI, "Consultorio-5G", "Sin internet", StatusTone.WARN, 2, offline = false), noInternet)
++        assertEquals(Pair("Consultorio-5G", "Sin internet"), noInternet.read())
++        assertEquals(WifiRow(WifiIcon.WIFI, noInternet.name, noInternet.text, StatusTone.WARN, 2, offline = false), noInternet)
+ 
+         val none = StatusPanelUi.wifi(WifiState())
+-        assertEquals(WifiRow(WifiIcon.OFF, "Sin Wi-Fi", "Tocá para elegir una red", StatusTone.BAD, 0, offline = true), none)
++        assertEquals(Pair("Sin Wi-Fi", "Tocá para elegir una red"), none.read())
++        assertEquals(WifiRow(WifiIcon.OFF, none.name, none.text, StatusTone.BAD, 0, offline = true), none)
+ 
+         // Sin el permiso de ubicación Android no da el nombre.
+-        assertEquals("Wi-Fi conectado", StatusPanelUi.wifi(WifiState(connected = true, validated = true, rssi = -55)).name)
++        assertEquals("Wi-Fi conectado", es(StatusPanelUi.wifi(WifiState(connected = true, validated = true, rssi = -55)).name))
+     }
+ 
+     @Test
+@@ -324,17 +335,33 @@ class StatusPanelUiTest {
+ 
+     @Test
+     fun callHelp() {
+-        assertEquals("La videollamada suena por los auriculares.", StatusPanelUi.callHelp(CallRoute.HEADSET))
++        assertEquals("La videollamada suena por los auriculares.", es(StatusPanelUi.callHelp(CallRoute.HEADSET)))
+         val speaker = "La videollamada suena por el parlante de la tablet."
+-        assertEquals(speaker, StatusPanelUi.callHelp(CallRoute.SPEAKER))
++        assertEquals(speaker, es(StatusPanelUi.callHelp(CallRoute.SPEAKER)))
+         // Igual en los dos modos: el sonido es de toda la app, no sólo de la llamada.
+         for (mode in listOf(PanelMode.REMOTE, PanelMode.LOCAL, PanelMode.LOCAL_LOCKED)) {
+             val built = StatusPanelUi.build(status(jackPresent = false), mode)
+             assertEquals(CallRoute.SPEAKER, built.callRoute)
+-            assertEquals(speaker, built.callHelp)
++            assertEquals(speaker, es(built.callHelp))
+         }
+     }
+ 
++    /** Spike multilingüe: la misma regla, leída en otro idioma; lo que no se traduce queda igual. */
++    @Test
++    fun theSameRowsInOtherLanguages() {
++        val rows = StatusPanelUi.devices(status(berryUp = false, otoscopeImage = true))
++        assertEquals(listOf("SpO2", "ECG", "Blood pressure", "Temperature", "Otoscope", "Stethoscope", "USB hub"), rows.map { it.name.inLanguage("en") })
++        assertEquals("Disconnected", rows[0].text.inLanguage("en"))
++        assertEquals("Desconectado", rows[0].text.inLanguage("pt"))
++        assertEquals("Live", rows[4].text.inLanguage("en"))
++        assertEquals("Ao vivo", rows[4].text.inLanguage("pt"))
++        // El nombre de la red es de la red: igual en todos.
++        val wifi = StatusPanelUi.wifi(WifiState(connected = true, validated = true, ssid = "Consultorio-5G", rssi = -65))
++        assertEquals("Consultorio-5G", wifi.name.inLanguage("en"))
++        assertEquals("Good signal", wifi.text.inLanguage("en"))
++        assertEquals("Sinal bom", wifi.text.inLanguage("pt"))
++    }
++
+     @Test
+     fun modeSwitchBlock() {
+         assertNull(StatusSnapshot.modeSwitchBlock(sessionActive = false, teleInRoom = false))
+diff --git a/app/src/test/resources/i18n/sin-traducir.txt b/app/src/test/resources/i18n/sin-traducir.txt
+new file mode 100644
+index 0000000..fbbff5b
+--- /dev/null
++++ b/app/src/test/resources/i18n/sin-traducir.txt
+@@ -0,0 +1,536 @@
++# Entradas de values/strings.xml que todavía no están en cada traducción.
++# Sólo se achica. Regenerar: I18N_REGENERAR=1 ./gradlew testDebugUnitTest --tests '*StringsCatalogTest*'
++en	android_settings
++en	back
++en	battery
++en	battery_unavailable
++en	call_audio_headset
++en	call_audio_speaker
++en	check_battery
++en	check_battery_done
++en	check_battery_missing
++en	check_home
++en	check_home_action
++en	check_home_done
++en	check_home_missing
++en	check_otoscope
++en	check_otoscope_absent
++en	check_otoscope_action
++en	check_otoscope_detail
++en	check_otoscope_granted
++en	check_otoscope_missing
++en	check_permissions
++en	check_permissions_action
++en	check_permissions_done
++en	check_permissions_missing
++en	check_service
++en	check_service_done
++en	check_service_missing
++en	check_totem
++en	check_totem_action
++en	check_totem_detail
++en	check_totem_needs_url
++en	config_close
++en	config_title
++en	crumb_home
++en	environment_dev
++en	environment_prod
++en	help_call_audio
++en	help_channel
++en	help_cluster
++en	help_destination
++en	help_device
++en	help_from_environment
++en	help_kiosk
++en	help_kiosk_checklist
++en	help_kiosk_url
++en	help_known_values
++en	help_local
++en	help_nibp_target
++en	help_ondoctor
++en	help_orders
++en	help_stetho
++en	help_usb_default
++en	help_ykush
++en	hint_api
++en	hint_channel
++en	hint_cluster
++en	hint_headset_name
++en	hint_kiosk_url
++en	hint_local_pin
++en	hint_nibp_target
++en	hint_pusher
++en	hint_start
++en	hint_stetho_input
++en	hint_stop
++en	hint_totem
++en	hint_ykush_otoscope
++en	hint_ykush_stethoscope
++en	hint_ykush_thermometer
++en	home_from_local_action
++en	home_from_local_body
++en	home_from_local_title
++en	kiosk_cancel
++en	kiosk_enter
++en	kiosk_home_blocked_title
++en	kiosk_home_body
++en	kiosk_home_ok
++en	kiosk_home_title
++en	kiosk_missing_url
++en	kiosk_offline
++en	kiosk_open_settings
++en	kiosk_otoscope_waiting
++en	kiosk_outside_chrome
++en	kiosk_outside_exit
++en	kiosk_outside_ondoctor
++en	kiosk_reload
++en	kiosk_retry
++en	label_call_audio
++en	label_ecg_gain
++en	label_ecg_mode
++en	label_environment
++en	label_hr
++en	label_nibp
++en	label_nibp_mode
++en	label_resp
++en	label_resp_gain
++en	label_spo2
++en	label_temp
++en	last_update
++en	last_update_never
++en	load_failed
++en	local_camera
++en	local_camera_denied
++en	local_camera_failed
++en	local_camera_frozen
++en	local_camera_missing
++en	local_camera_paused
++en	local_camera_switch
++en	local_cancel
++en	local_capture_at
++en	local_capture_back_live
++en	local_capture_discard
++en	local_capture_save
++en	local_capture_saved
++en	local_capture_thumb
++en	local_capture_unsaved
++en	local_captures_count
++en	local_captures_empty
++en	local_ecg
++en	local_ecg_idle_body
++en	local_ecg_idle_title
++en	local_ecg_no_signal
++en	local_ecg_start
++en	local_ecg_stop
++en	local_finish
++en	local_finish_body
++en	local_finish_cancel
++en	local_finish_confirm
++en	local_finish_title
++en	local_freeze
++en	local_freeze_help
++en	local_frozen_at
++en	local_hr
++en	local_hr_source
++en	local_leads
++en	local_lock_help
++en	local_measure
++en	local_otoscope
++en	local_otoscope_denied
++en	local_otoscope_done
++en	local_otoscope_idle
++en	local_otoscope_missing
++en	local_otoscope_off
++en	local_otoscope_on
++en	local_otoscope_pick_computer
++en	local_otoscope_starting
++en	local_pa
++en	local_pa_measuring
++en	local_pa_no_result
++en	local_phono_label
++en	local_pulse
++en	local_recording_pause
++en	local_recording_play
++en	local_recording_row
++en	local_recordings_empty
++en	local_resp
++en	local_resume
++en	local_session_waiting
++en	local_spo2
++en	local_stetho
++en	local_stetho_denied
++en	local_stetho_filter
++en	local_stetho_heart
++en	local_stetho_listen
++en	local_stetho_lung
++en	local_stetho_record
++en	local_stetho_recording
++en	local_stetho_starting
++en	local_stetho_stop
++en	local_stetho_volume
++en	local_stetho_volume_down
++en	local_stetho_volume_up
++en	local_stetho_wide
++en	local_strip_hr
++en	local_strip_label
++en	local_temp
++en	local_thermo_off
++en	local_thermo_wait
++en	local_title
++en	local_unit_bpm
++en	local_unit_celsius
++en	local_unit_mm_mv
++en	local_unit_mm_s
++en	local_unit_mmhg
++en	local_unit_rpm
++en	local_view_ecg
++en	main_chip_berry
++en	main_chip_pusher
++en	main_chip_thermo
++en	main_status
++en	missing_api
++en	missing_channel
++en	missing_kiosk_url
++en	missing_pusher
++en	missing_scheme
++en	missing_totem
++en	mode_cancel
++en	mode_to_local_action
++en	mode_to_local_body
++en	mode_to_local_title
++en	mode_to_remote_action
++en	mode_to_remote_body
++en	mode_to_remote_title
++en	next
++en	save
++en	save_failed
++en	saved
++en	saving
++en	screen_title
++en	section_destination
++en	section_device
++en	section_kiosk
++en	section_kiosk_checklist
++en	section_kiosk_outside
++en	section_local
++en	section_orders
++en	section_stetho
++en	section_ykush
++en	settings
++en	status_back_to_remote
++en	status_home
++en	status_local_locked_sub
++en	status_local_sub
++en	status_remote_sub
++en	status_to_local
++en	status_to_remote
++en	step_destination
++en	step_device
++en	step_kiosk
++en	step_orders
++en	testing
++en	testing_all
++en	testing_audio
++en	testing_back
++en	testing_cameras
++en	testing_clear
++en	testing_console
++en	testing_copied
++en	testing_copy
++en	testing_devices
++en	testing_devices_help
++en	testing_first
++en	testing_help
++en	testing_off
++en	testing_on
++en	testing_pause
++en	testing_preview
++en	testing_resume
++en	testing_start
++en	testing_stop
++en	testing_tele
++en	testing_tele_help
++en	testing_tele_manual
++en	testing_tele_otoscope
++en	testing_tele_server
++en	testing_tele_stetho
++en	testing_tele_stop
++en	testing_tele_token
++en	testing_title
++en	testing_usb
++en	testing_ykush
++en	testing_ykush_help
++en	testing_ykush_read
++en	testing_ykush_save_boot
++en	testing_ykush_save_boot_help
++en	url_preview_empty
++en	usb_permission
++en	usb_request
++en	ykush_shared
++pt	android_settings
++pt	back
++pt	battery
++pt	battery_unavailable
++pt	call_audio_headset
++pt	call_audio_speaker
++pt	check_battery
++pt	check_battery_done
++pt	check_battery_missing
++pt	check_home
++pt	check_home_action
++pt	check_home_done
++pt	check_home_missing
++pt	check_otoscope
++pt	check_otoscope_absent
++pt	check_otoscope_action
++pt	check_otoscope_detail
++pt	check_otoscope_granted
++pt	check_otoscope_missing
++pt	check_permissions
++pt	check_permissions_action
++pt	check_permissions_done
++pt	check_permissions_missing
++pt	check_service
++pt	check_service_done
++pt	check_service_missing
++pt	check_totem
++pt	check_totem_action
++pt	check_totem_detail
++pt	check_totem_needs_url
++pt	config_close
++pt	config_title
++pt	crumb_home
++pt	environment_dev
++pt	environment_prod
++pt	help_call_audio
++pt	help_channel
++pt	help_cluster
++pt	help_destination
++pt	help_device
++pt	help_from_environment
++pt	help_kiosk
++pt	help_kiosk_checklist
++pt	help_kiosk_url
++pt	help_known_values
++pt	help_local
++pt	help_nibp_target
++pt	help_ondoctor
++pt	help_orders
++pt	help_stetho
++pt	help_usb_default
++pt	help_ykush
++pt	hint_api
++pt	hint_channel
++pt	hint_cluster
++pt	hint_headset_name
++pt	hint_kiosk_url
++pt	hint_local_pin
++pt	hint_nibp_target
++pt	hint_pusher
++pt	hint_start
++pt	hint_stetho_input
++pt	hint_stop
++pt	hint_totem
++pt	hint_ykush_otoscope
++pt	hint_ykush_stethoscope
++pt	hint_ykush_thermometer
++pt	home_from_local_action
++pt	home_from_local_body
++pt	home_from_local_title
++pt	kiosk_cancel
++pt	kiosk_enter
++pt	kiosk_home_blocked_title
++pt	kiosk_home_body
++pt	kiosk_home_ok
++pt	kiosk_home_title
++pt	kiosk_missing_url
++pt	kiosk_offline
++pt	kiosk_open_settings
++pt	kiosk_otoscope_waiting
++pt	kiosk_outside_chrome
++pt	kiosk_outside_exit
++pt	kiosk_outside_ondoctor
++pt	kiosk_reload
++pt	kiosk_retry
++pt	label_call_audio
++pt	label_ecg_gain
++pt	label_ecg_mode
++pt	label_environment
++pt	label_hr
++pt	label_nibp
++pt	label_nibp_mode
++pt	label_resp
++pt	label_resp_gain
++pt	label_spo2
++pt	label_temp
++pt	last_update
++pt	last_update_never
++pt	load_failed
++pt	local_camera
++pt	local_camera_denied
++pt	local_camera_failed
++pt	local_camera_frozen
++pt	local_camera_missing
++pt	local_camera_paused
++pt	local_camera_switch
++pt	local_cancel
++pt	local_capture_at
++pt	local_capture_back_live
++pt	local_capture_discard
++pt	local_capture_save
++pt	local_capture_saved
++pt	local_capture_thumb
++pt	local_capture_unsaved
++pt	local_captures_count
++pt	local_captures_empty
++pt	local_ecg
++pt	local_ecg_idle_body
++pt	local_ecg_idle_title
++pt	local_ecg_no_signal
++pt	local_ecg_start
++pt	local_ecg_stop
++pt	local_finish
++pt	local_finish_body
++pt	local_finish_cancel
++pt	local_finish_confirm
++pt	local_finish_title
++pt	local_freeze
++pt	local_freeze_help
++pt	local_frozen_at
++pt	local_hr
++pt	local_hr_source
++pt	local_leads
++pt	local_lock_help
++pt	local_measure
++pt	local_otoscope
++pt	local_otoscope_denied
++pt	local_otoscope_done
++pt	local_otoscope_idle
++pt	local_otoscope_missing
++pt	local_otoscope_off
++pt	local_otoscope_on
++pt	local_otoscope_pick_computer
++pt	local_otoscope_starting
++pt	local_pa
++pt	local_pa_measuring
++pt	local_pa_no_result
++pt	local_phono_label
++pt	local_pulse
++pt	local_recording_pause
++pt	local_recording_play
++pt	local_recording_row
++pt	local_recordings_empty
++pt	local_resp
++pt	local_resume
++pt	local_session_waiting
++pt	local_spo2
++pt	local_stetho
++pt	local_stetho_denied
++pt	local_stetho_filter
++pt	local_stetho_heart
++pt	local_stetho_listen
++pt	local_stetho_lung
++pt	local_stetho_record
++pt	local_stetho_recording
++pt	local_stetho_starting
++pt	local_stetho_stop
++pt	local_stetho_volume
++pt	local_stetho_volume_down
++pt	local_stetho_volume_up
++pt	local_stetho_wide
++pt	local_strip_hr
++pt	local_strip_label
++pt	local_temp
++pt	local_thermo_off
++pt	local_thermo_wait
++pt	local_title
++pt	local_unit_bpm
++pt	local_unit_celsius
++pt	local_unit_mm_mv
++pt	local_unit_mm_s
++pt	local_unit_mmhg
++pt	local_unit_rpm
++pt	local_view_ecg
++pt	main_chip_berry
++pt	main_chip_pusher
++pt	main_chip_thermo
++pt	main_status
++pt	missing_api
++pt	missing_channel
++pt	missing_kiosk_url
++pt	missing_pusher
++pt	missing_scheme
++pt	missing_totem
++pt	mode_cancel
++pt	mode_to_local_action
++pt	mode_to_local_body
++pt	mode_to_local_title
++pt	mode_to_remote_action
++pt	mode_to_remote_body
++pt	mode_to_remote_title
++pt	next
++pt	save
++pt	save_failed
++pt	saved
++pt	saving
++pt	screen_title
++pt	section_destination
++pt	section_device
++pt	section_kiosk
++pt	section_kiosk_checklist
++pt	section_kiosk_outside
++pt	section_local
++pt	section_orders
++pt	section_stetho
++pt	section_ykush
++pt	settings
++pt	status_back_to_remote
++pt	status_home
++pt	status_local_locked_sub
++pt	status_local_sub
++pt	status_remote_sub
++pt	status_to_local
++pt	status_to_remote
++pt	step_destination
++pt	step_device
++pt	step_kiosk
++pt	step_orders
++pt	testing
++pt	testing_all
++pt	testing_audio
++pt	testing_back
++pt	testing_cameras
++pt	testing_clear
++pt	testing_console
++pt	testing_copied
++pt	testing_copy
++pt	testing_devices
++pt	testing_devices_help
++pt	testing_first
++pt	testing_help
++pt	testing_off
++pt	testing_on
++pt	testing_pause
++pt	testing_preview
++pt	testing_resume
++pt	testing_start
++pt	testing_stop
++pt	testing_tele
++pt	testing_tele_help
++pt	testing_tele_manual
++pt	testing_tele_otoscope
++pt	testing_tele_server
++pt	testing_tele_stetho
++pt	testing_tele_stop
++pt	testing_tele_token
++pt	testing_title
++pt	testing_usb
++pt	testing_ykush
++pt	testing_ykush_help
++pt	testing_ykush_read
++pt	testing_ykush_save_boot
++pt	testing_ykush_save_boot_help
++pt	url_preview_empty
++pt	usb_permission
++pt	usb_request
++pt	ykush_shared
+diff --git a/app/src/test/resources/i18n/textos-en-codigo.txt b/app/src/test/resources/i18n/textos-en-codigo.txt
+new file mode 100644
+index 0000000..7ca1177
+--- /dev/null
++++ b/app/src/test/resources/i18n/textos-en-codigo.txt
+@@ -0,0 +1,327 @@
++# Textos escritos en el código (ver HardcodedTextTest). Una línea: archivo<TAB>texto.
++# Regenerar: I18N_REGENERAR=1 ./gradlew testDebugUnitTest --tests '*HardcodedTextTest*'
++
++## PENDIENTE
++audio/AudioPick.kt	Logitech
++audio/CallAudioRouter.kt	Entradas grabando: 
++audio/CallAudioRouter.kt	Entradas grabando: ninguna
++audio/CallAudioRouter.kt	Entradas grabando: no se pudo leer
++audio/CallAudioRouter.kt	Llamada: sale por {} · Android no deja fijarla
++audio/CallAudioRouter.kt	Llamada: sale por {} · {} · dispositivo de comunicación: 
++audio/CallAudioRouter.kt	Nada en el jack: la llamada sale por el parlante
++audio/CallAudioRouter.kt	VOICE_COMMUNICATION (la llamada)
++audio/CallAudioRouter.kt	\nBerry Med no toca el modo (CallAudioRouter.TAKE_CALL_MODE en false)
++audio/CallAudioRouter.kt	auriculares del jack
++audio/CallAudioRouter.kt	el jack de la tablet
++audio/CallAudioRouter.kt	el parlante
++audio/CallAudioRouter.kt	entrada desconocida
++audio/CallAudioRouter.kt	modo comunicación, lo puso Berry Med con el kiosco adelante
++audio/CallAudioRouter.kt	modo comunicación, lo puso otro (Chromium)
++audio/CallAudioRouter.kt	modo normal
++audio/CallAudioRouter.kt	parlante de la tablet
++audio/StethoscopeLink.kt	, sin auriculares
++audio/StethoscopeLink.kt	, suena por {} ({})
++audio/StethoscopeLink.kt	Esa grabación ya no está.
++audio/StethoscopeLink.kt	No aparece el adaptador del estetoscopio (\"{}\").
++audio/StethoscopeLink.kt	No se pudo abrir el adaptador del estetoscopio.
++audio/StethoscopeLink.kt	No se pudo abrir el auricular.
++audio/StethoscopeLink.kt	Primero hay que parar la escucha.
++audio/StethoscopeLink.kt	Sin auriculares: las grabaciones no salen por el parlante de la tablet.
++audio/StethoscopeLink.kt	Sin permiso para el micrófono.
++audio/StethoscopeLink.kt	auricular USB
++audio/StethoscopeLink.kt	jack de la tablet
++config/BerryConfig.kt	URL de la API
++config/BerryConfig.kt	URL de la API que empiece con https://
++config/BerryConfig.kt	USB Audio
++config/BerryConfig.kt	clave de Pusher
++config/BerryConfig.kt	termómetro
++config/BerryConfig.kt	tótem
++config/BerryConfig.kt	un canal público (sin private- ni presence-)
++config/BerryConfig.kt	un puerto distinto del YKUSH3 para cada equipo
++i18n/AppLanguage.kt	English
++i18n/AppLanguage.kt	Español
++i18n/AppLanguage.kt	Português
++net/MetricsPoster.kt	Authorization
++net/MetricsPoster.kt	sin intento
++net/WifiState.kt	<unknown ssid>
++otoscope/CameraXOtoscope.kt	por Camera2
++otoscope/CameraXOtoscopeFrames.kt	Se apagó mientras abría.
++otoscope/CameraXOtoscopeFrames.kt	por Camera2
++otoscope/ExternalCamera.kt	Android lista el otoscopio como cámara pero CameraX no lo ve.
++otoscope/ExternalCamera.kt	No se pudo abrir el otoscopio: {}
++otoscope/ExternalCamera.kt	No se pudo iniciar la cámara: {}
++otoscope/OtoscopeReconnect.kt	dejó de mandar imagen
++otoscope/OtoscopeReconnect.kt	se reconectó (pasa al elegir «Computer» en su pantalla)
++otoscope/UvcHandle.kt	El otoscopio no aparece por USB.
++otoscope/UvcHandle.kt	Falta el permiso USB del otoscopio: tocá «Pedir permiso USB» en Berry Med.
++otoscope/UvcHandle.kt	cadencia a elección de la cámara
++otoscope/UvcOtoscope.kt	No se pudo abrir el otoscopio por UVC: {}
++otoscope/UvcOtoscope.kt	por UVC
++otoscope/UvcOtoscopeFrames.kt	No se pudo abrir el otoscopio por UVC: {}
++otoscope/UvcOtoscopeFrames.kt	Se apagó mientras abría.
++otoscope/UvcOtoscopeFrames.kt	por UVC
++protocol/Pm6750Protocol.kt	rango {}-{} para modo {}; se ignora.
++service/FileLog.kt	yyyy-MM-dd HH:mm:ss.SSS
++service/MonitorService.kt	Abrí el kiosco de Berry Med para habilitar otoscopio y estetoscopio en la teleconsulta.
++service/StatusSnapshot.kt	Hay una consulta en curso. Terminala para cambiar.
++service/TestingSession.kt	Electrodos sueltos
++service/TestingSession.kt	La plaqueta no manda temperatura
++service/TestingSession.kt	Llegan {} muestras/s, se esperan unas 250
++service/TestingSession.kt	No llega la onda de ECG
++service/TestingSession.kt	No llega la onda de SpO₂
++service/TestingSession.kt	No llega la onda de respiración
++service/TestingSession.kt	No llegan los valores de SpO₂
++service/TestingSession.kt	OK, {} muestras/s, señal débil
++service/TestingSession.kt	Plaqueta sin conectar
++service/TestingSession.kt	Probando…
++service/TestingSession.kt	Probando… {} s
++service/TestingSession.kt	Respiración
++service/TestingSession.kt	Sensor de temperatura sin conectar
++service/TestingSession.kt	Sin dedo en el sensor
++service/TestingSession.kt	Temperatura
++service/TotemRuntime.kt	 Falta aceptar el permiso USB: tocá la ruedita y «Pedir permiso USB».
++service/TotemRuntime.kt	 Falta configurar: {}.
++service/TotemRuntime.kt	Abriendo la imagen…
++service/TotemRuntime.kt	El Panel Local está abierto: la presión la maneja el panel.
++service/TotemRuntime.kt	El Panel Local está abierto: la prueba espera a que se cierre.
++service/TotemRuntime.kt	El Panel Local está abierto: no se cambia ningún puerto.
++service/TotemRuntime.kt	El YKUSH3 no encendió el puerto {}.
++service/TotemRuntime.kt	El hub guardó el arranque, el reposo: {}
++service/TotemRuntime.kt	El hub no aceptó el puerto {}. Mirá la consola.
++service/TotemRuntime.kt	El hub no aceptó la orden. Mirá la consola.
++service/TotemRuntime.kt	El hub no contesta. Si recién lo enchufaste, aceptá el permiso USB.
++service/TotemRuntime.kt	El otoscopio no apareció. Prendelo con su botón, tocá Encender y elegí «Computer» en su pantalla.
++service/TotemRuntime.kt	El otoscopio se está encendiendo o apagando: esperá un momento.
++service/TotemRuntime.kt	El panel no está activo.
++service/TotemRuntime.kt	Encendiendo…
++service/TotemRuntime.kt	Error al enviar: {}
++service/TotemRuntime.kt	Esperando que se abra una toma de signos
++service/TotemRuntime.kt	Estado leído
++service/TotemRuntime.kt	Falta aceptar el permiso USB del otoscopio: aceptá el pedido que aparece 
++service/TotemRuntime.kt	Grabación guardada.
++service/TotemRuntime.kt	Grabación muy corta: se descartó.
++service/TotemRuntime.kt	Hay una consulta enviando.
++service/TotemRuntime.kt	Hay una consulta enviando: el Panel Local espera a que termine.
++service/TotemRuntime.kt	Hay una consulta enviando: la prueba espera a que termine.
++service/TotemRuntime.kt	Hay una consulta enviando: no se cambia ningún puerto.
++service/TotemRuntime.kt	Hub YKUSH3 presente. 
++service/TotemRuntime.kt	Hub YKUSH3 sin conectar. 
++service/TotemRuntime.kt	Iniciá la prueba primero.
++service/TotemRuntime.kt	La API respondió {}
++service/TotemRuntime.kt	La plataforma no tiene la toma abierta (404)
++service/TotemRuntime.kt	La red está lenta: se llenó la cola de envío
++service/TotemRuntime.kt	La sesión está detenida.
++service/TotemRuntime.kt	La sesión está enviando.
++service/TotemRuntime.kt	Medición detenida
++service/TotemRuntime.kt	Midiendo…
++service/TotemRuntime.kt	No hay hub YKUSH3 conectado.
++service/TotemRuntime.kt	No se pudo empezar: {}
++service/TotemRuntime.kt	No se pudo encender: {}
++service/TotemRuntime.kt	No se pudo enviar
++service/TotemRuntime.kt	No se pudo enviar: {}
++service/TotemRuntime.kt	No se pudo iniciar: plaqueta sin conectar o ya está midiendo.
++service/TotemRuntime.kt	Para grabar hay que estar escuchando.
++service/TotemRuntime.kt	Prendé el otoscopio y elegí «Computer» en su pantalla.
++service/TotemRuntime.kt	Puerto {} apagado: el termómetro se vuelve a encender solo
++service/TotemRuntime.kt	Puerto {} {}
++service/TotemRuntime.kt	Pusher
++service/TotemRuntime.kt	Reproduciendo la grabación {}.
++service/TotemRuntime.kt	STOP enviado
++service/TotemRuntime.kt	Sin YKUSH3: se intenta directo.
++service/TotemRuntime.kt	Sin YKUSH3: se intenta directo. {}
++service/TotemRuntime.kt	Sin auriculares: nada en el jack de la tablet ni el auricular USB. Sólo se ve la onda.
++service/TotemRuntime.kt	Termómetro conectado, sin mediciones todavía. 
++service/TotemRuntime.kt	Termómetro conectado. 
++service/TotemRuntime.kt	Termómetro sin conectar. 
++service/TotemRuntime.kt	Todavía no se envió
++service/TotemRuntime.kt	Ya está escuchando.
++service/TotemRuntime.kt	el Panel Local está abierto
++service/TotemRuntime.kt	el micrófono
++service/TotemRuntime.kt	el servicio no tiene {} en segundo plano. {}
++service/TotemRuntime.kt	evento stop
++service/TotemRuntime.kt	falta el permiso de {}: abrí Berry Med y aceptalo
++service/TotemRuntime.kt	fin de la toma de signos
++service/TotemRuntime.kt	la cámara
++service/TotemRuntime.kt	la plataforma no tiene la toma abierta
++service/TotemRuntime.kt	o, si no aparece, tocá «Pedir permiso USB» en Berry Med. Después, Encender otra vez.
++service/TotemRuntime.kt	paquete descartado
++service/TotemRuntime.kt	paquetes descartados
++service/TotemRuntime.kt	permisos USB
++service/TotemRuntime.kt	por Camera2
++service/TotemRuntime.kt	por UVC
++service/TotemRuntime.kt	puertos en reposo
++service/TotemRuntime.kt	se abrió el Panel Local
++service/TotemRuntime.kt	{} · se vuelve a encender solo
++service/TotemRuntime.kt	{} · {} {} por cola llena
++service/TotemRuntime.kt	Último dato: hace {} s
++service/TotemRuntime.kt	Último dato: sin datos
++service/TotemRuntime.kt	Último envío correcto
++service/TotemState.kt	Termómetro sin conectar. Hub YKUSH3 sin conectar. La sesión está detenida.
++service/TotemState.kt	Todavía no se envió
++service/TotemState.kt	Último dato: sin datos
++tele/FirstFrame.kt	El otoscopio abrió pero no manda imagen
++tele/FirstFrame.kt	se cortó la espera
++tele/KioskUrls.kt	TeleCredentials(serverUrl={}, token=…)
++tele/LiveKitBackend.kt	El otoscopio no abrió en {} s
++tele/LiveKitBackend.kt	El otoscopio no aparece ni como cámara ni por USB con permiso
++tele/LiveKitBackend.kt	Falta aceptar el permiso USB del otoscopio en la tablet
++tele/LiveKitBackend.kt	LiveKit no aceptó la pista del estetoscopio
++tele/LiveKitBackend.kt	LiveKit no aceptó la pista del otoscopio
++tele/LiveKitBackend.kt	No aparece el adaptador del estetoscopio (\"{}\")
++tele/LiveKitBackend.kt	No hay módulo de audio
++tele/LiveKitBackend.kt	No hay sala
++tele/LiveKitBackend.kt	No se pudo entrar a la sala: {}
++tele/LiveKitBackend.kt	access_token=…
++tele/LiveKitBackend.kt	no se pudo leer
++tele/LiveKitBackend.kt	sin equipo
++tele/TeleStreamer.kt	(sin nombre)
++tele/TeleStreamer.kt	Falló {}
++tele/TeleStreamer.kt	Faltan el servidor o el token
++tele/TeleStreamer.kt	Se cortó la sala: {}
++tele/TeleStreamer.kt	cortar la prueba
++tele/TeleStreamer.kt	el kiosco volvió al inicio
++tele/TeleStreamer.kt	kiosco al inicio
++tele/TeleStreamer.kt	llegó un token nuevo
++tele/TeleStreamer.kt	pasaron {} h en la sala
++tele/TeleStreamer.kt	prueba manual
++tele/TeleStreamer.kt	sala perdida
++tele/TeleStreamer.kt	se abrió la prueba manual de Testing
++tele/TeleStreamer.kt	se apagó el {}
++tele/TeleStreamer.kt	se cortó la prueba de Testing
++tele/TeleStreamer.kt	se enciende el {}
++tele/TeleStreamer.kt	token del kiosco
++tele/TeleStreamer.kt	tope de la sala
++ui/KioskActivity.kt	navigator.language + ' | ' + navigator.languages.join(',') + ' | html lang=' + document.documentElement.lang
++ui/KioskActivity.kt	un origen desconocido
++ui/LocalPanelActivity.kt	El panel
++ui/LocalPanelActivity.kt	No se pudo
++ui/MainActivity.kt	Comunicación con Pusher: OK
++ui/MainActivity.kt	Comunicación con Pusher: sin conexión
++ui/MainActivity.kt	Plaqueta funcional
++ui/MainActivity.kt	Plaqueta sin conectar
++ui/TestingActivity.kt	 · prueba manual
++ui/TestingActivity.kt	 · token visto a las {}
++ui/TestingActivity.kt	Android no ve ningún dispositivo USB
++ui/TestingActivity.kt	Apagando el puerto {}…
++ui/TestingActivity.kt	Apretá el gatillo para medir
++ui/TestingActivity.kt	Conectado · 04D8:F11B
++ui/TestingActivity.kt	Detenida
++ui/TestingActivity.kt	Encendiendo el puerto {}…
++ui/TestingActivity.kt	Falta configurar la URL o el tótem
++ui/TestingActivity.kt	Guardando…
++ui/TestingActivity.kt	Hay una consulta enviando
++ui/TestingActivity.kt	Leyendo…
++ui/TestingActivity.kt	Medir
++ui/TestingActivity.kt	Parar
++ui/TestingActivity.kt	Plaqueta PM6750 sin conectar
++ui/TestingActivity.kt	Plaqueta PM6750 · {} · último dato {} · tramas rotas {}/s
++ui/TestingActivity.kt	Presión
++ui/TestingActivity.kt	Probando · sin envío a la API
++ui/TestingActivity.kt	Probar ECG
++ui/TestingActivity.kt	Probar SpO₂
++ui/TestingActivity.kt	Probar respiración
++ui/TestingActivity.kt	Probar temperatura
++ui/TestingActivity.kt	Puerto {} · {}
++ui/TestingActivity.kt	Respiración
++ui/TestingActivity.kt	SILENCIA la captura (otra app tiene el micrófono)
++ui/TestingActivity.kt	Servicio: {} · cámara {} · micrófono {}\n
++ui/TestingActivity.kt	Sin conectar
++ui/TestingActivity.kt	Sin datos para enviar
++ui/TestingActivity.kt	Termómetro IR
++ui/TestingActivity.kt	Termómetro sin conectar
++ui/TestingActivity.kt	\nÚltimo error: {}
++ui/TestingActivity.kt	en espera
++ui/TestingActivity.kt	en espera (último 0x%02X)
++ui/TestingActivity.kt	estetoscopio · nivel {} %
++ui/TestingActivity.kt	la captura no está silenciada
++ui/TestingActivity.kt	manguito {} mmHg\nestado: 
++ui/TestingActivity.kt	no detectado
++ui/TestingActivity.kt	onda {} muestras/s
++ui/TestingActivity.kt	onda {} muestras/s\ndedo: 
++ui/TestingActivity.kt	otoscopio {} {} · 
++ui/TestingActivity.kt	sin conectar
++ui/TestingActivity.kt	sin datos
++ui/TestingActivity.kt	sin datos de la captura
++ui/TestingActivity.kt	sin leer
++ui/TestingActivity.kt	sin mediciones
++ui/TestingActivity.kt	{} muestras/s × 7 deriv.\nlatidos {}/s · electrodos: 
++ui/TestingActivity.kt	{} · {}\núltima línea: {}
++ui/panel/PanelFormat.kt	dd/MM/yyyy HH:mm
++ui/panel/PanelFormat.kt	hace {} min
++ui/panel/PanelFormat.kt	recién
++ui/panel/PanelUi.kt	Apagado
++ui/panel/PanelUi.kt	Apagando…
++ui/panel/PanelUi.kt	Conectado
++ui/panel/PanelUi.kt	Conectando
++ui/panel/PanelUi.kt	Electrodos sueltos
++ui/panel/PanelUi.kt	En pausa
++ui/panel/PanelUi.kt	En vivo
++ui/panel/PanelUi.kt	En vivo · {}
++ui/panel/PanelUi.kt	En vivo · {} · {} cuadros/s
++ui/panel/PanelUi.kt	Escuchando
++ui/panel/PanelUi.kt	Esperando imagen
++ui/panel/PanelUi.kt	Grabando
++ui/panel/PanelUi.kt	Grabando · {} s
++ui/panel/PanelUi.kt	Inflando…
++ui/panel/PanelUi.kt	Lista
++ui/panel/PanelUi.kt	Midiendo…
++ui/panel/PanelUi.kt	Reproduciendo
++ui/panel/PanelUi.kt	Señal buena
++ui/panel/PanelUi.kt	Señal débil
++ui/panel/PanelUi.kt	Sin imagen
++ui/panel/PanelUi.kt	Sin señal
++usb/BerryLink.kt	(%04X:%04X); queda para el termómetro
++usb/DeviceInventory.kt	 · permiso 
++usb/DeviceInventory.kt	 · {} can.
++usb/DeviceInventory.kt	Android no lista ninguna cámara
++usb/DeviceInventory.kt	Bluetooth
++usb/DeviceInventory.kt	No se pudo listar el audio: {}
++usb/DeviceInventory.kt	No se pudo listar las cámaras: {}
++usb/DeviceInventory.kt	accesorio USB
++usb/DeviceInventory.kt	audio USB
++usb/DeviceInventory.kt	auricular USB
++usb/DeviceInventory.kt	auricular con cable (jack)
++usb/DeviceInventory.kt	auricular interno
++usb/DeviceInventory.kt	auriculares con cable (jack)
++usb/DeviceInventory.kt	cámara {} · {}
++usb/DeviceInventory.kt	mezcla interna
++usb/DeviceInventory.kt	micrófono de la tablet
++usb/DeviceInventory.kt	parlante de la tablet
++usb/DeviceInventory.kt	sin interfaces
++usb/DeviceInventory.kt	sin nombre
++usb/DeviceInventory.kt	telefonía
++usb/KnownDevices.kt	adaptador del estetoscopio
++usb/KnownDevices.kt	auricular Logitech
++usb/KnownDevices.kt	hub YKUSH3
++usb/KnownDevices.kt	plaqueta PM6750
++
++## PERMITIDO
++
++## LAYOUTS
++activity_local_panel.xml	12,5
++activity_local_panel.xml	II
++activity_main.xml	% / lpm
++activity_main.xml	Adulto
++activity_main.xml	Diagnóstico
++activity_main.xml	FC
++activity_main.xml	H390
++activity_main.xml	Monitor
++activity_main.xml	Neonato
++activity_main.xml	Niño
++activity_main.xml	Operación
++activity_main.xml	PA
++activity_main.xml	Resp
++activity_main.xml	SpO₂
++activity_main.xml	Temp
++activity_main.xml	USB Audio
++activity_main.xml	lpm
++activity_main.xml	mmHg
++activity_main.xml	rpm
++activity_main.xml	start-monitoring
++activity_main.xml	stop-monitoring
++activity_main.xml	x0.25
++activity_main.xml	x0.5
++activity_main.xml	x1
++activity_main.xml	x2
++activity_main.xml	°C
++item_ykush_port.xml	sin leer

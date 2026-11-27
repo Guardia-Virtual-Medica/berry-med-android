@@ -1,0 +1,3 @@
+# Entradas de values/strings.xml que todavía no están en cada traducción.
+# Sólo se achica. Regenerar: I18N_REGENERAR=1 ./gradlew testDebugUnitTest --tests '*StringsCatalogTest*'
+

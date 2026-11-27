@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Berry Med</string>
     <string name="screen_title">Configuración del Maletín de atención</string>
     <string name="crumb_home">Inicio</string>
     <string name="last_update">Última actualización de USB-config: %1$s</string>
@@ -13,7 +12,6 @@
     <string name="main_chip_pusher">Pusher</string>
     <string name="main_chip_thermo">Termómetro</string>
     <string name="main_status">Estado</string>
-    <string name="ondoctor">ONDOCTOR365</string>
     <string name="help_ondoctor">USB-config abre la configuración del tótem y Testing prueba los dispositivos. ONDOCTOR365 y el Panel Local se abren desde Inicio: la flecha de arriba vuelve ahí.</string>
     <string name="label_hr">Frecuencia</string>
     <string name="label_spo2">SpO₂ / pulso</string>
