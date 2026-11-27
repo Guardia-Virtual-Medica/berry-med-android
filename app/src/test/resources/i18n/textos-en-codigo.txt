@@ -2,89 +2,22 @@
 # Regenerar: I18N_REGENERAR=1 ./gradlew testDebugUnitTest --tests '*HardcodedTextTest*'
 
 ## PENDIENTE
-audio/CallAudioRouter.kt	 · modo comunicación
-audio/CallAudioRouter.kt	 · modo normal (Android no ve una llamada)
-audio/CallAudioRouter.kt	Entradas grabando: 
-audio/CallAudioRouter.kt	Entradas grabando: ninguna
-audio/CallAudioRouter.kt	Entradas grabando: no se pudo leer
-audio/CallAudioRouter.kt	Llamada: sale por {} · Android no deja fijarla
-audio/CallAudioRouter.kt	Llamada: sale por {} · dispositivo de comunicación: 
-audio/CallAudioRouter.kt	Nada en el jack ni el auricular USB: la llamada sale por el parlante
-audio/CallAudioRouter.kt	VOICE_COMMUNICATION (la llamada)
-audio/CallAudioRouter.kt	el jack de la tablet
-audio/CallAudioRouter.kt	el parlante
-audio/CallAudioRouter.kt	entrada desconocida
-audio/CallAudioRouter.kt	parlante de la tablet
-audio/StethoscopeLink.kt	, sin auriculares
-audio/StethoscopeLink.kt	, suena por {} ({})
-audio/StethoscopeLink.kt	Esa grabación ya no está.
-audio/StethoscopeLink.kt	No aparece el adaptador del estetoscopio (\"{}\").
-audio/StethoscopeLink.kt	No se pudo abrir el adaptador del estetoscopio.
-audio/StethoscopeLink.kt	No se pudo abrir el auricular.
-audio/StethoscopeLink.kt	Primero hay que parar la escucha.
-audio/StethoscopeLink.kt	Sin auriculares: las grabaciones no salen por el parlante de la tablet.
-audio/StethoscopeLink.kt	Sin permiso para el micrófono.
-audio/StethoscopeLink.kt	auricular USB
-audio/StethoscopeLink.kt	jack de la tablet
-net/MetricsPoster.kt	sin intento
-otoscope/CameraXOtoscope.kt	por Camera2
-otoscope/CameraXOtoscopeFrames.kt	Se apagó mientras abría.
-otoscope/CameraXOtoscopeFrames.kt	por Camera2
-otoscope/ExternalCamera.kt	Android lista el otoscopio como cámara pero CameraX no lo ve.
-otoscope/ExternalCamera.kt	No se pudo abrir el otoscopio: {}
-otoscope/ExternalCamera.kt	No se pudo iniciar la cámara: {}
-otoscope/UvcHandle.kt	El otoscopio no aparece por USB.
-otoscope/UvcHandle.kt	Falta el permiso USB del otoscopio: tocá «Pedir permiso USB» en Berry Med.
-otoscope/UvcOtoscope.kt	No se pudo abrir el otoscopio por UVC: {}
-otoscope/UvcOtoscope.kt	por UVC
-otoscope/UvcOtoscopeFrames.kt	No se pudo abrir el otoscopio por UVC: {}
-otoscope/UvcOtoscopeFrames.kt	Se apagó mientras abría.
-otoscope/UvcOtoscopeFrames.kt	por UVC
-tele/FirstFrame.kt	El otoscopio abrió pero no manda imagen
-tele/LiveKitBackend.kt	El otoscopio no abrió en {} s
-tele/LiveKitBackend.kt	El otoscopio no aparece ni como cámara ni por USB con permiso
-tele/LiveKitBackend.kt	Falta aceptar el permiso USB del otoscopio en la tablet
-tele/LiveKitBackend.kt	LiveKit no aceptó la pista del estetoscopio
-tele/LiveKitBackend.kt	LiveKit no aceptó la pista del otoscopio
-tele/LiveKitBackend.kt	No aparece el adaptador del estetoscopio (\"{}\")
-tele/LiveKitBackend.kt	No hay módulo de audio
-tele/LiveKitBackend.kt	No hay sala
-tele/LiveKitBackend.kt	No se pudo entrar a la sala: {}
-tele/TeleStreamer.kt	Falló {}
-tele/TeleStreamer.kt	Faltan el servidor o el token
-tele/TeleStreamer.kt	Se cortó la sala: {}
-tele/TeleStreamer.kt	cortar la prueba
-tele/TeleStreamer.kt	kiosco al inicio
-tele/TeleStreamer.kt	prueba manual
-tele/TeleStreamer.kt	sala perdida
-tele/TeleStreamer.kt	token del kiosco
-tele/TeleStreamer.kt	tope de la sala
-usb/DeviceInventory.kt	 · permiso 
-usb/DeviceInventory.kt	 · {} can.
-usb/DeviceInventory.kt	Android no lista ninguna cámara
-usb/DeviceInventory.kt	Bluetooth
-usb/DeviceInventory.kt	No se pudo listar el audio: {}
-usb/DeviceInventory.kt	No se pudo listar las cámaras: {}
-usb/DeviceInventory.kt	accesorio USB
-usb/DeviceInventory.kt	audio USB
-usb/DeviceInventory.kt	auricular USB
-usb/DeviceInventory.kt	auricular con cable (jack)
-usb/DeviceInventory.kt	auricular interno
-usb/DeviceInventory.kt	auriculares con cable (jack)
-usb/DeviceInventory.kt	cámara {} · {}
-usb/DeviceInventory.kt	mezcla interna
-usb/DeviceInventory.kt	micrófono de la tablet
-usb/DeviceInventory.kt	parlante de la tablet
-usb/DeviceInventory.kt	sin interfaces
-usb/DeviceInventory.kt	sin nombre
-usb/DeviceInventory.kt	telefonía
 
 ## PERMITIDO
 audio/AudioPick.kt	Logitech
+audio/StethoscopeLink.kt	, sin auriculares
+audio/StethoscopeLink.kt	, suena por {} ({})
+audio/StethoscopeLink.kt	auricular USB
+audio/StethoscopeLink.kt	jack de la tablet
 config/BerryConfig.kt	USB Audio
 net/MetricsPoster.kt	Authorization
+net/MetricsPoster.kt	sin intento
 net/WifiState.kt	<unknown ssid>
+otoscope/CameraXOtoscope.kt	por Camera2
+otoscope/CameraXOtoscopeFrames.kt	por Camera2
 otoscope/UvcHandle.kt	cadencia a elección de la cámara
+otoscope/UvcOtoscope.kt	por UVC
+otoscope/UvcOtoscopeFrames.kt	por UVC
 protocol/Pm6750Protocol.kt	rango {}-{} para modo {}; se ignora.
 service/TotemRuntime.kt	Pusher
 service/TotemRuntime.kt	evento stop
@@ -96,13 +29,21 @@ service/TotemRuntime.kt	se abrió el Panel Local
 tele/KioskUrls.kt	TeleCredentials(serverUrl={}, token=…)
 tele/LiveKitBackend.kt	access_token=…
 tele/TeleStreamer.kt	(sin nombre)
+tele/TeleStreamer.kt	cortar la prueba
 tele/TeleStreamer.kt	el kiosco volvió al inicio
+tele/TeleStreamer.kt	kiosco al inicio
 tele/TeleStreamer.kt	llegó un token nuevo
+tele/TeleStreamer.kt	orden estetoscopio
+tele/TeleStreamer.kt	orden otoscopio
 tele/TeleStreamer.kt	pasaron {} h en la sala
+tele/TeleStreamer.kt	prueba manual
+tele/TeleStreamer.kt	sala perdida
 tele/TeleStreamer.kt	se abrió la prueba manual de Testing
 tele/TeleStreamer.kt	se apagó el {}
 tele/TeleStreamer.kt	se cortó la prueba de Testing
 tele/TeleStreamer.kt	se enciende el {}
+tele/TeleStreamer.kt	token del kiosco
+tele/TeleStreamer.kt	tope de la sala
 ui/KioskActivity.kt	un origen desconocido
 usb/BerryLink.kt	(%04X:%04X); queda para el termómetro
 

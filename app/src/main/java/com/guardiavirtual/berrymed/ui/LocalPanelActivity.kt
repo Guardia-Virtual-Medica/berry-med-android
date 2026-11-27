@@ -921,7 +921,7 @@ class LocalPanelActivity : AppCompatActivity() {
         val source = when (path) {
             OtoscopePower.Path.CAMERA2 -> CameraXOtoscope(this, binding.otoscopePreview)
             OtoscopePower.Path.UVC ->
-                UvcOtoscope(this, binding.otoscopeTexture, runtime.otoscopeProbe, runtime.otoscopeExecutor, runtime::log)
+                UvcOtoscope(this, binding.otoscopeTexture, runtime.otoscopeProbe, runtime.otoscopeExecutor, runtime::log, runtime::logText)
         }
         otoscope = source
         val low = OtoscopeFps.LowWatch()
@@ -932,9 +932,9 @@ class LocalPanelActivity : AppCompatActivity() {
                     otoscopeOpened = true
                     setOtoscopeMessage(getString(R.string.local_otoscope_pick_computer))
                 } else {
-                    runtime.log("[OTOSCOPIO] No abrió ${source.label}: $reason")
+                    runtime.log("[OTOSCOPIO] No abrió ${source.logName}: ${runtime.logText(reason)}")
                     otoscopeOff(null)
-                    setOtoscopeMessage(reason)
+                    setOtoscopeMessage(reason.resolve(this))
                 }
                 render(runtime.localSnapshot())
             },
@@ -943,7 +943,7 @@ class LocalPanelActivity : AppCompatActivity() {
                 if (otoscope !== source) return@open
                 otoscopeFps = rate.roundToInt()
                 if (low.rate(rate, System.nanoTime())) {
-                    runtime.log("[OTOSCOPIO] La imagen ${source.label} viene a ${rate.roundToInt()} cuadros/s")
+                    runtime.log("[OTOSCOPIO] La imagen ${source.logName} viene a ${rate.roundToInt()} cuadros/s")
                 }
             },
         )

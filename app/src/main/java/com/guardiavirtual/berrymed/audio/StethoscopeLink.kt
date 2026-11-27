@@ -12,7 +12,10 @@ import android.media.AudioRecord
 import android.media.AudioTrack
 import android.media.MediaRecorder
 import androidx.core.content.ContextCompat
+import com.guardiavirtual.berrymed.R
 import com.guardiavirtual.berrymed.config.BerryConfig
+import com.guardiavirtual.berrymed.i18n.Txt
+import com.guardiavirtual.berrymed.i18n.txt
 import com.guardiavirtual.berrymed.protocol.LiveFeed
 import com.guardiavirtual.berrymed.usb.DeviceInventory
 
@@ -145,21 +148,21 @@ class StethoscopeLink(
      * reproduce: por el parlante de la tablet se acoplaría con el
      * estetoscopio. Eso se ve en [playing].
      */
-    fun start(config: BerryConfig): String? {
+    fun start(config: BerryConfig): Txt? {
         // Una grabación sonando usa el auricular: se corta antes de abrir la escucha.
         stopPlayback()
         return synchronized(lock) { open(config) }
     }
 
     /** Con [lock]. */
-    private fun open(config: BerryConfig): String? {
+    private fun open(config: BerryConfig): Txt? {
         if (running) return null
         val granted = ContextCompat.checkSelfPermission(appContext, Manifest.permission.RECORD_AUDIO) ==
             PackageManager.PERMISSION_GRANTED
-        if (!granted) return "Sin permiso para el micrófono."
+        if (!granted) return txt(R.string.rt_stetho_mic_permission)
         val (input, output, viaJack) = devices(config)
-        if (input == null) return "No aparece el adaptador del estetoscopio (\"${config.stethoInputName}\")."
-        val record = openRecord(input) ?: return "No se pudo abrir el adaptador del estetoscopio."
+        if (input == null) return txt(R.string.rt_stetho_adapter_missing, config.stethoInputName)
+        val record = openRecord(input) ?: return txt(R.string.rt_stetho_adapter_failed)
         val track = output?.let(::openTrack)
         val current = Session()
         session = current
@@ -344,14 +347,14 @@ class StethoscopeLink(
      * runtime antes): si no, las dos irían al mismo auricular. Sin auriculares
      * no suena: por el parlante de la tablet se acopla con el estetoscopio.
      */
-    fun play(number: Int, config: BerryConfig): String? {
+    fun play(number: Int, config: BerryConfig): Txt? {
         stopPlayback()
-        if (running) return "Primero hay que parar la escucha."
-        val recording = synchronized(recordLock) { recordings.find(number) } ?: return "Esa grabación ya no está."
+        if (running) return txt(R.string.rt_stetho_stop_listening_first)
+        val recording = synchronized(recordLock) { recordings.find(number) } ?: return txt(R.string.rt_stetho_recording_gone)
         val found = devices(config)
         val output = found.output
-            ?: return "Sin auriculares: las grabaciones no salen por el parlante de la tablet."
-        val track = openTrack(output) ?: return "No se pudo abrir el auricular."
+            ?: return txt(R.string.rt_stetho_play_no_headphones)
+        val track = openTrack(output) ?: return txt(R.string.rt_stetho_headphones_failed)
         val current = Player()
         synchronized(playLock) {
             player = current

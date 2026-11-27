@@ -11,8 +11,13 @@ import android.os.Handler
 import android.os.Looper
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
+import com.guardiavirtual.berrymed.R
 import com.guardiavirtual.berrymed.config.BerryConfig
 import com.guardiavirtual.berrymed.config.CALL_AUDIO_SPEAKER
+import com.guardiavirtual.berrymed.i18n.Txt
+import com.guardiavirtual.berrymed.i18n.join
+import com.guardiavirtual.berrymed.i18n.raw
+import com.guardiavirtual.berrymed.i18n.txt
 import com.guardiavirtual.berrymed.usb.DeviceInventory
 
 /**
@@ -56,6 +61,8 @@ class CallAudioRouter(
     context: Context,
     private val config: () -> BerryConfig,
     private val log: (String) -> Unit,
+    /** Lo que también se ve en Testing (el dispositivo, el aviso del parlante), en español para el log. */
+    private val logText: (Txt) -> String,
 ) {
     private val audio = context.getSystemService(AudioManager::class.java)
     private val mainExecutor = ContextCompat.getMainExecutor(context)
@@ -84,23 +91,27 @@ class CallAudioRouter(
         }
     }
 
-    /** La salida elegida y el dispositivo actual, para Testing. */
-    fun describe(): String {
+    /** La salida elegida y el dispositivo actual, para Testing: renglones enteros, uno debajo del otro. */
+    fun describe(): Txt {
         val cfg = config()
-        val chosen = if (cfg.callAudioOutput == CALL_AUDIO_SPEAKER) "parlante de la tablet" else "auriculares"
-        if (Build.VERSION.SDK_INT < 31) return "Llamada: sale por $chosen · Android no deja fijarla"
+        val speaker = cfg.callAudioOutput == CALL_AUDIO_SPEAKER
+        if (Build.VERSION.SDK_INT < 31) {
+            return txt(if (speaker) R.string.testing_call_speaker_unfixable else R.string.testing_call_headphones_unfixable)
+        }
         val inCall = audio.mode == AudioManager.MODE_IN_COMMUNICATION
         val current = audio.communicationDevice
         val wanted = pick(cfg)
-        return buildString {
-            append("Llamada: sale por $chosen · dispositivo de comunicación: ")
-            append(current?.let(::label) ?: "ninguno")
-            append(if (inCall) " · modo comunicación" else " · modo normal (Android no ve una llamada)")
-            if (cfg.callAudioOutput != CALL_AUDIO_SPEAKER && wanted?.type == AudioPick.TYPE_BUILTIN_SPEAKER) {
-                append("\n$FALLBACK_LINE")
-            }
-            append("\n${describeRecordings()}")
+        val call = when {
+            speaker && inCall -> R.string.testing_call_speaker_in_call
+            speaker -> R.string.testing_call_speaker_normal
+            inCall -> R.string.testing_call_headphones_in_call
+            else -> R.string.testing_call_headphones_normal
         }
+        val lines = ArrayList<Txt>()
+        lines += txt(call, current?.let(::label) ?: txt(R.string.testing_call_device_none))
+        if (!speaker && wanted?.type == AudioPick.TYPE_BUILTIN_SPEAKER) lines += FALLBACK_LINE
+        lines += describeRecordings()
+        return join(lines, "\n")
     }
 
     /**
@@ -108,29 +119,34 @@ class CallAudioRouter(
      * si está publicando, el estetoscopio de LiveKit. Android sólo informa las
      * grabaciones propias, y las dos son de Berry Med.
      */
-    private fun describeRecordings(): String {
+    private fun describeRecordings(): Txt {
         val recordings = try {
             audio.activeRecordingConfigurations
         } catch (_: Exception) {
-            return "Entradas grabando: no se pudo leer"
+            return txt(R.string.testing_call_recordings_unreadable)
         }
-        if (recordings.isEmpty()) return "Entradas grabando: ninguna"
-        return recordings.joinToString(prefix = "Entradas grabando: ", separator = "; ") { recording ->
+        if (recordings.isEmpty()) return txt(R.string.testing_call_recordings_none)
+        val each = recordings.map { recording ->
             val device = recording.audioDevice?.let { info ->
-                if (AudioPick.isJack(info.type)) "el jack de la tablet"
-                else info.productName?.toString().orEmpty().ifBlank { "tipo ${info.type}" }
-            } ?: "entrada desconocida"
-            "${sourceName(recording.clientAudioSource)} por $device"
+                if (AudioPick.isJack(info.type)) {
+                    txt(R.string.testing_call_input_jack)
+                } else {
+                    info.productName?.toString().orEmpty().ifBlank { null }?.let(::raw)
+                        ?: txt(R.string.testing_call_input_type, info.type)
+                }
+            } ?: txt(R.string.testing_call_input_unknown)
+            txt(R.string.testing_call_recording, sourceName(recording.clientAudioSource), device)
         }
+        return txt(R.string.testing_call_recordings, join(each, "; "))
     }
 
-    private fun sourceName(source: Int): String = when (source) {
-        MediaRecorder.AudioSource.MIC -> "MIC"
-        MediaRecorder.AudioSource.CAMCORDER -> "CAMCORDER"
-        MediaRecorder.AudioSource.VOICE_RECOGNITION -> "VOICE_RECOGNITION"
-        MediaRecorder.AudioSource.VOICE_COMMUNICATION -> "VOICE_COMMUNICATION (la llamada)"
-        MediaRecorder.AudioSource.UNPROCESSED -> "UNPROCESSED"
-        else -> "fuente $source"
+    private fun sourceName(source: Int): Txt = when (source) {
+        MediaRecorder.AudioSource.MIC -> raw("MIC")
+        MediaRecorder.AudioSource.CAMCORDER -> raw("CAMCORDER")
+        MediaRecorder.AudioSource.VOICE_RECOGNITION -> raw("VOICE_RECOGNITION")
+        MediaRecorder.AudioSource.VOICE_COMMUNICATION -> txt(R.string.testing_call_source_voice_communication)
+        MediaRecorder.AudioSource.UNPROCESSED -> raw("UNPROCESSED")
+        else -> txt(R.string.testing_call_source_other, source)
     }
 
     @RequiresApi(31)
@@ -177,7 +193,7 @@ class CallAudioRouter(
             CallReassert.Step.Nothing -> Unit
             is CallReassert.Step.Wait -> handler.postDelayed(recheck, step.nanos / NANOS_PER_MS + 1)
             CallReassert.Step.GiveUp -> log(
-                "[LLAMADA] No queda en ${wanted?.let(::label)} después de ${CallReassert.MAX_TRIES} intentos: se deja de insistir",
+                "[LLAMADA] No queda en ${wanted?.let { logText(label(it)) }} después de ${CallReassert.MAX_TRIES} intentos: se deja de insistir",
             )
             CallReassert.Step.Clear -> {
                 audio.clearCommunicationDevice()
@@ -189,7 +205,7 @@ class CallAudioRouter(
                 if (audio.setCommunicationDevice(device)) {
                     reassert.applied()
                 } else {
-                    log("[LLAMADA] Android no aceptó ${label(device)} como dispositivo de la llamada")
+                    log("[LLAMADA] Android no aceptó ${logText(label(device))} como dispositivo de la llamada")
                 }
                 // Si no quedó, no llega ningún aviso: se mira de nuevo.
                 handler.postDelayed(recheck, CallReassert.MIN_GAP_NANOS / NANOS_PER_MS + 1)
@@ -201,9 +217,9 @@ class CallAudioRouter(
     private fun announce(cfg: BerryConfig, device: AudioDeviceInfo) {
         val fallback = cfg.callAudioOutput != CALL_AUDIO_SPEAKER && device.type == AudioPick.TYPE_BUILTIN_SPEAKER
         val line = if (fallback) {
-            "[LLAMADA] $FALLBACK_LINE"
+            "[LLAMADA] ${logText(FALLBACK_LINE)}"
         } else {
-            "[LLAMADA] La llamada sale por ${label(device)}"
+            "[LLAMADA] La llamada sale por ${logText(label(device))}"
         }
         if (line == announced) return
         announced = line
@@ -211,14 +227,14 @@ class CallAudioRouter(
     }
 
     // Los auriculares del jack suelen venir sin nombre de producto: se dicen por el tipo.
-    private fun label(device: AudioDeviceInfo): String = when {
-        device.type == AudioPick.TYPE_BUILTIN_SPEAKER -> "el parlante"
-        AudioPick.isJack(device.type) -> "el jack de la tablet"
-        else -> device.productName?.toString().orEmpty().ifBlank { "tipo ${device.type}" }
+    private fun label(device: AudioDeviceInfo): Txt = when {
+        device.type == AudioPick.TYPE_BUILTIN_SPEAKER -> txt(R.string.rt_call_device_speaker)
+        AudioPick.isJack(device.type) -> txt(R.string.rt_call_device_jack)
+        else -> device.productName?.toString().orEmpty().ifBlank { null }?.let(::raw) ?: txt(R.string.rt_call_device_type, device.type)
     }
 
     private companion object {
         const val NANOS_PER_MS = 1_000_000L
-        const val FALLBACK_LINE = "Nada en el jack ni el auricular USB: la llamada sale por el parlante"
+        val FALLBACK_LINE: Txt = txt(R.string.rt_call_speaker_fallback)
     }
 }

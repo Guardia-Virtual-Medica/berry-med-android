@@ -8,7 +8,10 @@ import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.MediaRecorder
 import android.os.Build
+import com.guardiavirtual.berrymed.R
 import com.guardiavirtual.berrymed.config.BerryConfig
+import com.guardiavirtual.berrymed.i18n.Txt
+import com.guardiavirtual.berrymed.i18n.txt
 import com.guardiavirtual.berrymed.otoscope.CameraXOtoscopeFrames
 import com.guardiavirtual.berrymed.otoscope.OtoscopeFrames
 import com.guardiavirtual.berrymed.otoscope.OtoscopePower
@@ -74,7 +77,7 @@ class LiveKitBackend(
     /** El adaptador del estetoscopio según la configuración, o null si no está. */
     private val stethoInput: (BerryConfig) -> AudioDeviceInfo?,
     /** null si el instrumento se puede usar; si no, el motivo. Lo decide el runtime. */
-    private val blockedBy: (Instrument) -> String?,
+    private val blockedBy: (Instrument) -> Txt?,
     private val log: (String) -> Unit,
 ) : TeleBackend {
     private val appContext = context.applicationContext
@@ -104,7 +107,7 @@ class LiveKitBackend(
     private var videoTrack: LocalVideoTrack? = null
     private var audioTrack: LocalAudioTrack? = null
     @Volatile private var audioSource = MediaRecorder.AudioSource.MIC
-    @Volatile var videoPath: String? = null
+    @Volatile var videoPath: OtoscopePower.Path? = null
         private set
     @Volatile var videoSize: String? = null
         private set
@@ -113,9 +116,9 @@ class LiveKitBackend(
     private val framesSent = AtomicLong()
     private var fpsMark = Pair(0L, System.nanoTime())
 
-    override fun blocked(instrument: Instrument): String? = blockedBy(instrument)
+    override fun blocked(instrument: Instrument): Txt? = blockedBy(instrument)
 
-    override fun connect(credentials: TeleCredentials): String? {
+    override fun connect(credentials: TeleCredentials): Txt? {
         disconnect()
         closing = false
         val adm = buildAudioModule()
@@ -152,11 +155,11 @@ class LiveKitBackend(
             null
         } catch (error: Throwable) {
             disconnect()
-            "No se pudo entrar a la sala: ${redact(error.message ?: error.javaClass.simpleName, credentials.token)}"
+            txt(R.string.rt_tele_join_failed, redact(error.message ?: error.javaClass.simpleName, credentials.token))
         }
     }
 
-    override fun publish(instrument: Instrument): String? = when (instrument) {
+    override fun publish(instrument: Instrument): Txt? = when (instrument) {
         Instrument.OTOSCOPE -> publishOtoscope()
         Instrument.STETHOSCOPE -> publishStethoscope()
     }
@@ -220,8 +223,8 @@ class LiveKitBackend(
             .createAudioDeviceModule()
     }
 
-    private fun publishOtoscope(): String? {
-        val lk = room ?: return "No hay sala"
+    private fun publishOtoscope(): Txt? {
+        val lk = room ?: return txt(R.string.rt_tele_no_room)
         val cfg = config()
         // Con el kiosco adelante el puerto ya está encendido y powerOn no lo toca.
         powerOn(cfg.ykushOtoscopePort, otoscopePorts, "otoscopio")
@@ -233,17 +236,17 @@ class LiveKitBackend(
                 // usa. Si el puerto lo encendió la teleconsulta, se apaga al cortar.
                 log("[TELE] El otoscopio está enchufado pero sin permiso USB: se vuelve a pedir")
                 probe.askPermissionAgain()
-                return "Falta aceptar el permiso USB del otoscopio en la tablet"
+                return txt(R.string.rt_tele_otoscope_permission)
             }
             powerOff(otoscopePorts, "otoscopio")
-            return "El otoscopio no aparece ni como cámara ni por USB con permiso"
+            return txt(R.string.rt_tele_otoscope_missing)
         }
         val source = when (path) {
             OtoscopePower.Path.CAMERA2 -> CameraXOtoscopeFrames(appContext, log)
             OtoscopePower.Path.UVC -> UvcOtoscopeFrames(appContext, probe, uvcWorker, log)
         }
         frames = source
-        videoPath = source.label
+        videoPath = source.path
         val frameCapturer = VideoFrameCapturer()
         capturer = frameCapturer
         val track = lk.localParticipant.createVideoTrack(
@@ -265,7 +268,7 @@ class LiveKitBackend(
         fpsMark = Pair(0L, System.nanoTime())
         val opened = CountDownLatch(1)
         val firstFrame = FirstFrame()
-        var reason: String? = "El otoscopio no abrió en ${OPEN_TIMEOUT_MS / 1000} s"
+        var reason: Txt? = txt(R.string.rt_tele_otoscope_timeout, OPEN_TIMEOUT_MS / 1000)
         source.start(
             sink = { frame ->
                 if (framesSent.getAndIncrement() == 0L) videoSize = "${frame.rotatedWidth}×${frame.rotatedHeight}"
@@ -284,7 +287,7 @@ class LiveKitBackend(
         }
         // Una pista sin cuadros le llega al médico como video negro: se publica recién con imagen.
         if (!firstFrame.await(FIRST_FRAME_TIMEOUT_MS)) {
-            log("[TELE] El otoscopio ${source.label} abrió pero no mandó ningún cuadro en ${FIRST_FRAME_TIMEOUT_MS / 1000} s: no se publica")
+            log("[TELE] El otoscopio ${source.logName} abrió pero no mandó ningún cuadro en ${FIRST_FRAME_TIMEOUT_MS / 1000} s: no se publica")
             releaseOtoscope()
             return FirstFrame.NO_IMAGE
         }
@@ -308,7 +311,7 @@ class LiveKitBackend(
         }
         if (!published) {
             releaseOtoscope()
-            return "LiveKit no aceptó la pista del otoscopio"
+            return txt(R.string.rt_tele_otoscope_rejected)
         }
         return null
     }
@@ -355,9 +358,9 @@ class LiveKitBackend(
         powerOff(otoscopePorts, "otoscopio")
     }
 
-    private fun publishStethoscope(): String? {
-        val lk = room ?: return "No hay sala"
-        val adm = module ?: return "No hay módulo de audio"
+    private fun publishStethoscope(): Txt? {
+        val lk = room ?: return txt(R.string.rt_tele_no_room)
+        val adm = module ?: return txt(R.string.rt_tele_no_audio_module)
         val cfg = config()
         val powered = powerOn(cfg.ykushStethoscopePort, stethoPorts, "estetoscopio")
         var input = stethoInput(cfg)
@@ -369,7 +372,7 @@ class LiveKitBackend(
         }
         if (input == null) {
             powerOff(stethoPorts, "estetoscopio")
-            return "No aparece el adaptador del estetoscopio (\"${cfg.stethoInputName}\")"
+            return txt(R.string.rt_tele_stetho_missing, cfg.stethoInputName)
         }
         adm.setPreferredInputDevice(input)
         dsp.reset()
@@ -404,7 +407,7 @@ class LiveKitBackend(
         }
         if (!published) {
             releaseStethoscope()
-            return "LiveKit no aceptó la pista del estetoscopio"
+            return txt(R.string.rt_tele_stetho_rejected)
         }
         val sourceName = if (audioSource == MediaRecorder.AudioSource.UNPROCESSED) "UNPROCESSED" else "MIC"
         log("[TELE] Estetoscopio por ${input.productName} ($sourceName, filtro Amplio, $AUDIO_BITRATE bps, sin DTX)")

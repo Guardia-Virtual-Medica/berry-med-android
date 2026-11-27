@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import com.guardiavirtual.berrymed.i18n.Txt
 
 /**
  * Camino Camera2: la tablet lista el otoscopio como cámara externa y se abre
@@ -28,14 +29,14 @@ class CameraXOtoscope(
     private val activity: AppCompatActivity,
     private val previewView: PreviewView,
 ) : OtoscopeSource {
-    override val label = "por Camera2"
+    override val logName = "por Camera2"
     override val path = OtoscopePower.Path.CAMERA2
     private var provider: ProcessCameraProvider? = null
     private val main = Handler(Looper.getMainLooper())
 
     @Volatile private var closed = false
 
-    override fun open(done: (String?) -> Unit, onRate: (Double) -> Unit) {
+    override fun open(done: (Txt?) -> Unit, onRate: (Double) -> Unit) {
         closed = false
         previewView.visibility = View.VISIBLE
         ExternalCamera(activity).bind(

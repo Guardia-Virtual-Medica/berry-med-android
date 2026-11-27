@@ -2,6 +2,7 @@
 package com.guardiavirtual.berrymed.otoscope
 
 import android.graphics.Bitmap
+import com.guardiavirtual.berrymed.i18n.Txt
 import livekit.org.webrtc.VideoFrame
 
 /**
@@ -10,8 +11,8 @@ import livekit.org.webrtc.VideoFrame
  * si no, por UVC directo sobre USB ([UvcOtoscope]). La tarjeta es la misma.
  */
 interface OtoscopeSource {
-    /** Para el log y la teleconsulta: "por Camera2" o "por UVC". */
-    val label: String
+    /** Para el log, siempre en español: "por Camera2" o "por UVC". */
+    val logName: String
 
     /** El camino, como dato: lo que muestra el Panel Local («En vivo · UVC · 29 cuadros/s»). */
     val path: OtoscopePower.Path
@@ -22,7 +23,7 @@ interface OtoscopeSource {
      * pantalla, una vez por segundo mientras hay imagen, con los cuadros por
      * segundo que llegan de verdad (ver [OtoscopeFps.Meter]).
      */
-    fun open(done: (String?) -> Unit, onRate: (Double) -> Unit = {})
+    fun open(done: (Txt?) -> Unit, onRate: (Double) -> Unit = {})
 
     /** Suelta la cámara. [done] llega, en cualquier hilo, cuando ya está suelta: recién ahí se apaga el puerto. */
     fun close(done: () -> Unit = {})
@@ -38,8 +39,11 @@ interface OtoscopeSource {
  * regla ([OtoscopePower]).
  */
 interface OtoscopeFrames {
-    /** "por Camera2" o "por UVC". */
-    val label: String
+    /** Para el log, siempre en español: "por Camera2" o "por UVC". */
+    val logName: String
+
+    /** El camino, como dato: lo que muestra Testing → Teleconsulta («Publica: otoscopio por UVC…»). */
+    val path: OtoscopePower.Path
 
     /**
      * Abre el otoscopio y empieza a mandar cuadros a [sink], desde un hilo de
@@ -47,7 +51,7 @@ interface OtoscopeFrames {
      * guardar le hace `retain()`. [done] llega una vez, en cualquier hilo:
      * null si abrió, o el motivo.
      */
-    fun start(sink: (VideoFrame) -> Unit, done: (String?) -> Unit)
+    fun start(sink: (VideoFrame) -> Unit, done: (Txt?) -> Unit)
 
     /** Suelta el otoscopio. [done] llega, en cualquier hilo, cuando ya está suelto: recién ahí se apaga el puerto. */
     fun stop(done: () -> Unit = {})

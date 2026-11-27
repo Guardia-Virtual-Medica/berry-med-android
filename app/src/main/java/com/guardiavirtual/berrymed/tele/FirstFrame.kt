@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package com.guardiavirtual.berrymed.tele
 
+import com.guardiavirtual.berrymed.R
+import com.guardiavirtual.berrymed.i18n.Txt
+import com.guardiavirtual.berrymed.i18n.txt
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -23,6 +26,6 @@ class FirstFrame {
 
     companion object {
         /** Lo que dice la teleconsulta si la fuente abrió y no llegó ningún cuadro en el plazo. */
-        const val NO_IMAGE = "El otoscopio abrió pero no manda imagen"
+        val NO_IMAGE: Txt = txt(R.string.rt_tele_otoscope_no_image)
     }
 }

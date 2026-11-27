@@ -9,7 +9,11 @@ import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
-import com.guardiavirtual.berrymed.i18n.resolve
+import com.guardiavirtual.berrymed.R
+import com.guardiavirtual.berrymed.i18n.Txt
+import com.guardiavirtual.berrymed.i18n.join
+import com.guardiavirtual.berrymed.i18n.raw
+import com.guardiavirtual.berrymed.i18n.txt
 
 /**
  * Lo que Android ve enchufado, para la pantalla de Testing: los dispositivos
@@ -17,7 +21,9 @@ import com.guardiavirtual.berrymed.i18n.resolve
  * validar el armado del tótem desde Testing: si las placas de audio USB
  * conviven y con qué nombre aparecen, y si el otoscopio aparece como cámara
  * externa.
- * No abre nada: sólo lista.
+ * No abre nada: sólo lista. Cada renglón es un [Txt]: datos separados por
+ * « · », cada uno una entrada entera o un valor que no se traduce (el
+ * identificador USB, el nombre del producto).
  */
 class DeviceInventory(context: Context) {
     private val appContext = context.applicationContext
@@ -26,107 +32,135 @@ class DeviceInventory(context: Context) {
     private val cameras = appContext.getSystemService(Context.CAMERA_SERVICE) as CameraManager
 
     data class Snapshot(
-        val usb: List<String>,
-        val audio: List<String>,
-        val cameras: List<String>,
+        val usb: List<Txt>,
+        val audio: List<Txt>,
+        val cameras: List<Txt>,
         val takenAtNano: Long,
     )
 
     fun snapshot(): Snapshot = Snapshot(usbLines(), audioLines(), cameraLines(), System.nanoTime())
 
-    private fun usbLines(): List<String> =
+    private fun usbLines(): List<Txt> =
         usb.deviceList.values.sortedBy { it.deviceName }.map { device ->
-            // paso 4b: el renglón entero pasa a Txt; por ahora el nombre conocido se resuelve acá.
-            describe(device, usb.hasPermission(device), KnownDevices.name(device.vendorId, device.productId)?.resolve(appContext))
+            describe(device, usb.hasPermission(device), KnownDevices.name(device.vendorId, device.productId))
         }
 
-    private fun audioLines(): List<String> {
+    private fun audioLines(): List<Txt> {
         val devices = try {
             audio.getDevices(AudioManager.GET_DEVICES_ALL).toList()
         } catch (error: Exception) {
-            return listOf("No se pudo listar el audio: $error")
+            return listOf(txt(R.string.testing_inventory_audio_failed, error.toString()))
         }
         return devices
             .sortedWith(compareBy({ !isUsb(it.type) }, { it.type }, { it.id }))
             .map(::describe)
     }
 
-    private fun cameraLines(): List<String> {
+    private fun cameraLines(): List<Txt> {
         return try {
             cameras.cameraIdList.map { id ->
-                val info = cameras.getCameraCharacteristics(id)
-                val facing = when (info.get(CameraCharacteristics.LENS_FACING)) {
-                    CameraCharacteristics.LENS_FACING_FRONT -> "frontal"
-                    CameraCharacteristics.LENS_FACING_BACK -> "trasera"
-                    CameraCharacteristics.LENS_FACING_EXTERNAL -> "externa (USB)"
-                    else -> "?"
-                }
-                "cámara $id · $facing"
-            }.ifEmpty { listOf("Android no lista ninguna cámara") }
+                cameraLine(id, cameras.getCameraCharacteristics(id).get(CameraCharacteristics.LENS_FACING))
+            }.ifEmpty { listOf(txt(R.string.testing_inventory_no_cameras)) }
         } catch (error: Exception) {
-            listOf("No se pudo listar las cámaras: $error")
+            listOf(txt(R.string.testing_inventory_cameras_failed, error.toString()))
         }
     }
 
     companion object {
-        fun describe(device: UsbDevice, permitted: Boolean, known: String?): String {
-            val name = listOfNotNull(device.manufacturerName?.trim(), device.productName?.trim())
-                .filter { it.isNotEmpty() }
-                .joinToString(" ")
-                .ifBlank { "sin nombre" }
-            val classes = (0 until device.interfaceCount)
-                .map { className(device.getInterface(it).interfaceClass) }
-                .distinct()
-                .joinToString(", ")
-                .ifBlank { "sin interfaces" }
-            return buildString {
-                append("%04X:%04X".format(device.vendorId, device.productId))
-                if (known != null) append(" ").append(known)
-                append(" · ").append(name)
-                append(" · ").append(classes)
-                append(" · permiso ").append(if (permitted) "sí" else "no")
-            }
+        private const val SEPARATOR = " · "
+
+        fun describe(device: UsbDevice, permitted: Boolean, known: Txt?): Txt = usbLine(
+            vendorId = device.vendorId,
+            productId = device.productId,
+            known = known,
+            names = listOfNotNull(device.manufacturerName, device.productName),
+            classes = (0 until device.interfaceCount).map { device.getInterface(it).interfaceClass },
+            permitted = permitted,
+        )
+
+        /** «04D8:F11B hub YKUSH3 · Yepkit YKUSH3 · HID · permiso sí». */
+        fun usbLine(vendorId: Int, productId: Int, known: Txt?, names: List<String>, classes: List<Int>, permitted: Boolean): Txt {
+            val id = raw("%04X:%04X".format(vendorId, productId))
+            val name = names.map { it.trim() }.filter { it.isNotEmpty() }.joinToString(" ")
+            val classNames = classes.map(::className).distinct()
+            return join(
+                listOf(
+                    if (known != null) join(listOf(id, known), " ") else id,
+                    if (name.isBlank()) txt(R.string.testing_inventory_no_name) else raw(name),
+                    if (classNames.isEmpty()) txt(R.string.testing_inventory_no_interfaces) else join(classNames, ", "),
+                    txt(if (permitted) R.string.testing_inventory_permission_yes else R.string.testing_inventory_permission_no),
+                ),
+                SEPARATOR,
+            )
         }
 
-        fun className(usbClass: Int): String = when (usbClass) {
-            UsbConstants.USB_CLASS_AUDIO -> "audio"
-            UsbConstants.USB_CLASS_COMM, UsbConstants.USB_CLASS_CDC_DATA -> "serie"
-            UsbConstants.USB_CLASS_HID -> "HID"
-            UsbConstants.USB_CLASS_MASS_STORAGE -> "almacenamiento"
-            UsbConstants.USB_CLASS_HUB -> "hub"
-            UsbConstants.USB_CLASS_VIDEO -> "video"
-            UsbConstants.USB_CLASS_VENDOR_SPEC -> "propietaria"
-            else -> "clase $usbClass"
+        fun className(usbClass: Int): Txt = when (usbClass) {
+            UsbConstants.USB_CLASS_AUDIO -> txt(R.string.device_usb_class_audio)
+            UsbConstants.USB_CLASS_COMM, UsbConstants.USB_CLASS_CDC_DATA -> txt(R.string.device_usb_class_serial)
+            UsbConstants.USB_CLASS_HID -> txt(R.string.device_usb_class_hid)
+            UsbConstants.USB_CLASS_MASS_STORAGE -> txt(R.string.device_usb_class_storage)
+            UsbConstants.USB_CLASS_HUB -> txt(R.string.device_usb_class_hub)
+            UsbConstants.USB_CLASS_VIDEO -> txt(R.string.device_usb_class_video)
+            UsbConstants.USB_CLASS_VENDOR_SPEC -> txt(R.string.device_usb_class_vendor)
+            else -> txt(R.string.device_usb_class_other, usbClass)
         }
 
-        fun describe(device: AudioDeviceInfo): String {
+        fun describe(device: AudioDeviceInfo): Txt = audioLine(
+            type = device.type,
+            name = device.productName.toString(),
+            isSource = device.isSource,
+            isSink = device.isSink,
+            maxRate = device.sampleRates.maxOrNull(),
+            maxChannels = device.channelCounts.maxOrNull(),
+        )
+
+        /** «auricular USB · USB Audio Device · entrada y salida · 48000 Hz · 2 can.». */
+        fun audioLine(type: Int, name: String, isSource: Boolean, isSink: Boolean, maxRate: Int?, maxChannels: Int?): Txt {
             val direction = when {
-                device.isSource && device.isSink -> "entrada y salida"
-                device.isSource -> "entrada"
-                else -> "salida"
+                isSource && isSink -> R.string.testing_inventory_in_out
+                isSource -> R.string.testing_inventory_in
+                else -> R.string.testing_inventory_out
             }
-            val rates = device.sampleRates.takeIf { it.isNotEmpty() }?.let { " · ${it.max()} Hz" }.orEmpty()
-            val channels = device.channelCounts.takeIf { it.isNotEmpty() }?.let { " · ${it.max()} can." }.orEmpty()
-            return "${typeName(device.type)} · ${device.productName.toString().trim().ifBlank { "sin nombre" }} · $direction$rates$channels"
+            return join(
+                listOfNotNull(
+                    typeName(type),
+                    name.trim().ifBlank { null }?.let(::raw) ?: txt(R.string.testing_inventory_no_name),
+                    txt(direction),
+                    maxRate?.let { txt(R.string.testing_inventory_hz, it) },
+                    maxChannels?.let { txt(R.string.testing_inventory_channels, it) },
+                ),
+                SEPARATOR,
+            )
         }
+
+        /** «cámara 1 · trasera»; [facing] es `LENS_FACING` de Camera2, o null si no lo dice. */
+        fun cameraLine(id: String, facing: Int?): Txt = txt(
+            when (facing) {
+                CameraCharacteristics.LENS_FACING_FRONT -> R.string.testing_inventory_camera_front
+                CameraCharacteristics.LENS_FACING_BACK -> R.string.testing_inventory_camera_back
+                CameraCharacteristics.LENS_FACING_EXTERNAL -> R.string.testing_inventory_camera_external
+                else -> R.string.testing_inventory_camera_other
+            },
+            id,
+        )
 
         fun isUsb(type: Int): Boolean =
             type == AudioDeviceInfo.TYPE_USB_DEVICE || type == AudioDeviceInfo.TYPE_USB_HEADSET || type == AudioDeviceInfo.TYPE_USB_ACCESSORY
 
-        fun typeName(type: Int): String = when (type) {
-            AudioDeviceInfo.TYPE_USB_HEADSET -> "auricular USB"
-            AudioDeviceInfo.TYPE_USB_DEVICE -> "audio USB"
-            AudioDeviceInfo.TYPE_USB_ACCESSORY -> "accesorio USB"
-            AudioDeviceInfo.TYPE_BUILTIN_MIC -> "micrófono de la tablet"
-            AudioDeviceInfo.TYPE_BUILTIN_SPEAKER -> "parlante de la tablet"
-            AudioDeviceInfo.TYPE_BUILTIN_EARPIECE -> "auricular interno"
-            AudioDeviceInfo.TYPE_WIRED_HEADSET -> "auricular con cable (jack)"
-            AudioDeviceInfo.TYPE_WIRED_HEADPHONES -> "auriculares con cable (jack)"
-            AudioDeviceInfo.TYPE_BLUETOOTH_A2DP, AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> "Bluetooth"
-            AudioDeviceInfo.TYPE_HDMI -> "HDMI"
-            AudioDeviceInfo.TYPE_TELEPHONY -> "telefonía"
-            AudioDeviceInfo.TYPE_REMOTE_SUBMIX -> "mezcla interna"
-            else -> "tipo $type"
+        fun typeName(type: Int): Txt = when (type) {
+            AudioDeviceInfo.TYPE_USB_HEADSET -> txt(R.string.device_audio_usb_headset)
+            AudioDeviceInfo.TYPE_USB_DEVICE -> txt(R.string.device_audio_usb_device)
+            AudioDeviceInfo.TYPE_USB_ACCESSORY -> txt(R.string.device_audio_usb_accessory)
+            AudioDeviceInfo.TYPE_BUILTIN_MIC -> txt(R.string.device_audio_builtin_mic)
+            AudioDeviceInfo.TYPE_BUILTIN_SPEAKER -> txt(R.string.device_audio_builtin_speaker)
+            AudioDeviceInfo.TYPE_BUILTIN_EARPIECE -> txt(R.string.device_audio_builtin_earpiece)
+            AudioDeviceInfo.TYPE_WIRED_HEADSET -> txt(R.string.device_audio_wired_headset)
+            AudioDeviceInfo.TYPE_WIRED_HEADPHONES -> txt(R.string.device_audio_wired_headphones)
+            AudioDeviceInfo.TYPE_BLUETOOTH_A2DP, AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> txt(R.string.device_audio_bluetooth)
+            AudioDeviceInfo.TYPE_HDMI -> txt(R.string.device_audio_hdmi)
+            AudioDeviceInfo.TYPE_TELEPHONY -> txt(R.string.device_audio_telephony)
+            AudioDeviceInfo.TYPE_REMOTE_SUBMIX -> txt(R.string.device_audio_remote_submix)
+            else -> txt(R.string.device_audio_other, type)
         }
     }
 }

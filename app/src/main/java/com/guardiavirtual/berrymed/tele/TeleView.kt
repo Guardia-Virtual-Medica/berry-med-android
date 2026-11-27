@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package com.guardiavirtual.berrymed.tele
 
+import com.guardiavirtual.berrymed.i18n.Txt
+import com.guardiavirtual.berrymed.otoscope.OtoscopePower
+
 /** Lo que muestra Testing → Teleconsulta (LiveKit). */
 data class TeleView(
     val status: TeleStatus,
@@ -8,8 +11,8 @@ data class TeleView(
     val serviceTypes: String,
     val serviceCamera: Boolean,
     val serviceMicrophone: Boolean,
-    /** "por Camera2" o "por UVC" mientras se publica el otoscopio. */
-    val videoPath: String?,
+    /** Por dónde llega la imagen mientras se publica el otoscopio (Camera2 o UVC); null si no se publica. */
+    val videoPath: OtoscopePower.Path?,
     val videoSize: String?,
     val framesPerSecond: Double,
     /** El nivel del estetoscopio que sale, de 0 a 100. */
@@ -17,5 +20,5 @@ data class TeleView(
     /** Si Android le da silencio a la captura (otra app dueña del micrófono); null si no hay captura. */
     val silenced: Boolean?,
     /** La salida elegida para la videollamada y el dispositivo de comunicación actual. */
-    val callAudio: String,
+    val callAudio: Txt,
 )

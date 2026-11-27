@@ -9,6 +9,9 @@ import android.os.Looper
 import android.view.Surface
 import android.view.TextureView
 import android.view.View
+import com.guardiavirtual.berrymed.R
+import com.guardiavirtual.berrymed.i18n.Txt
+import com.guardiavirtual.berrymed.i18n.txt
 import java.util.concurrent.Executor
 
 /**
@@ -46,8 +49,10 @@ class UvcOtoscope(
     private val probe: OtoscopeProbe,
     private val worker: Executor,
     private val log: (String) -> Unit,
+    /** Un motivo en español, para el log (`TotemRuntime.logText`). */
+    private val logText: (Txt) -> String,
 ) : OtoscopeSource {
-    override val label = "por UVC"
+    override val logName = "por UVC"
     override val path = OtoscopePower.Path.UVC
     private val appContext = context.applicationContext
     private val main = Handler(Looper.getMainLooper())
@@ -70,7 +75,7 @@ class UvcOtoscope(
     /** La vigilancia de la reconexión; null si no está corriendo. Sólo lo toca el hilo de la pantalla. */
     private var watch: Runnable? = null
 
-    override fun open(done: (String?) -> Unit, onRate: (Double) -> Unit) {
+    override fun open(done: (Txt?) -> Unit, onRate: (Double) -> Unit) {
         closed = false
         kept = null
         meter = OtoscopeFps.Meter()
@@ -101,12 +106,12 @@ class UvcOtoscope(
         if (textureView.isAvailable && texture != null) use(texture, done)
     }
 
-    private fun use(texture: SurfaceTexture, done: (String?) -> Unit) {
+    private fun use(texture: SurfaceTexture, done: (Txt?) -> Unit) {
         kept = texture
         start(texture, done)
     }
 
-    private fun start(texture: SurfaceTexture, done: (String?) -> Unit) {
+    private fun start(texture: SurfaceTexture, done: (Txt?) -> Unit) {
         worker.execute {
             val reason = if (closed) {
                 null
@@ -116,7 +121,7 @@ class UvcOtoscope(
                 } catch (error: Throwable) {
                     // Throwable: si la librería nativa no carga es un Error, no una Exception.
                     release()
-                    "No se pudo abrir el otoscopio por UVC: ${error.message ?: error.javaClass.simpleName}"
+                    txt(R.string.rt_otoscope_uvc_failed, error.message ?: error.javaClass.simpleName)
                 }
             }
             main.post {
@@ -155,7 +160,7 @@ class UvcOtoscope(
             log("[OTOSCOPIO] Se reconectó (pasa al elegir «Computer» en su pantalla): se abre de nuevo")
             release()
             try {
-                openCamera(texture)?.let { log("[OTOSCOPIO] $it") }
+                openCamera(texture)?.let { log("[OTOSCOPIO] ${logText(it)}") }
             } catch (error: Throwable) {
                 release()
                 log("[OTOSCOPIO] No se pudo reabrir por UVC: ${error.message ?: error.javaClass.simpleName}")
@@ -163,7 +168,7 @@ class UvcOtoscope(
         }
     }
 
-    private fun openCamera(texture: SurfaceTexture): String? {
+    private fun openCamera(texture: SurfaceTexture): Txt? {
         val opened = when (val result = UvcHandle.open(appContext, probe)) {
             is UvcHandle.Opened.Refused -> return result.reason
             is UvcHandle.Opened.Ok -> result.handle
