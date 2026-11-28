@@ -329,7 +329,7 @@
                 style="@style/TestingList" />
         </LinearLayout>
 
-        <!-- La teleconsulta: lo que Berry Med publica en LiveKit, y una prueba a mano con servidor y token propios. -->
+        <!-- La teleconsulta: lo que ONDOCTOR365 Suitcase publica en LiveKit, y una prueba a mano con servidor y token propios. -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

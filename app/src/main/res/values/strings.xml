@@ -86,7 +86,7 @@
     <string name="testing_clear">Limpiar</string>
     <string name="testing_first">Iniciá la prueba primero.</string>
     <string name="testing_ykush">Hub YKUSH3</string>
-    <string name="testing_ykush_help">Cada puerto lleva un equipo. Apagar un puerto es desenchufar ese equipo para Android; encenderlo, enchufarlo de nuevo. Con una consulta enviando no se cambia nada. Mientras estás en esta pantalla, Berry Med no lleva el hub al reposo: lo que encendés queda encendido hasta que salís, y al salir los puertos vuelven a lo que corresponda. El termómetro queda siempre encendido: si lo apagás, se vuelve a encender solo enseguida.</string>
+    <string name="testing_ykush_help">Cada puerto lleva un equipo. Apagar un puerto es desenchufar ese equipo para Android; encenderlo, enchufarlo de nuevo. Con una consulta enviando no se cambia nada. Mientras estás en esta pantalla, ONDOCTOR365 Suitcase no lleva el hub al reposo: lo que encendés queda encendido hasta que salís, y al salir los puertos vuelven a lo que corresponda. El termómetro queda siempre encendido: si lo apagás, se vuelve a encender solo enseguida.</string>
     <string name="testing_ykush_read">Leer estado</string>
     <string name="testing_ykush_save_boot">Guardar este arranque en el hub</string>
     <string name="testing_ykush_save_boot_help">Guarda en el hub el estado del kiosco (otoscopio, estetoscopio y termómetro encendidos), porque la tablet arranca en el kiosco, para los segundos entre que se prende y arranca el servicio. Queda en la memoria del hub: usarlo sólo al instalar o al cambiar de puerto un equipo.</string>
@@ -97,7 +97,7 @@
     <string name="testing_usb">USB</string>
     <string name="testing_audio">Audio</string>
     <string name="testing_cameras">Cámaras</string>
-    <string name="kiosk_missing_url">Falta la URL del kiosco. Cargala en la configuración de Berry Med (paso Kiosco).</string>
+    <string name="kiosk_missing_url">Falta la URL del kiosco. Cargala en la configuración de ONDOCTOR365 Suitcase (paso Kiosco).</string>
     <string name="kiosk_open_settings">Abrir la configuración</string>
     <string name="kiosk_home_title">¿Volver al inicio?</string>
     <string name="kiosk_home_ok">Entendido</string>
@@ -114,36 +114,36 @@
     <!-- El paso Kiosco del configurador: la URL y la lista de puesta en marcha. -->
     <string name="step_kiosk">Kiosco</string>
     <string name="section_kiosk">Kiosco</string>
-    <string name="help_kiosk">El kiosco de OnDoctor corre dentro de Berry Med, como app de inicio de la tablet. Acá queda su dirección y lo que falta para dejarlo andando.</string>
+    <string name="help_kiosk">El kiosco de OnDoctor corre dentro de ONDOCTOR365 Suitcase, como app de inicio de la tablet. Acá queda su dirección y lo que falta para dejarlo andando.</string>
     <string name="missing_kiosk_url">La URL del kiosco tiene que empezar con https:// (o http://) y tener un dominio. Si no hay kiosco, dejala vacía.</string>
     <string name="label_call_audio">Audio de la videollamada</string>
     <string name="call_audio_headset">Auriculares (jack de la tablet)</string>
     <string name="call_audio_speaker">Parlante de la tablet</string>
     <string name="help_call_audio">Con Auriculares, la llamada y el estetoscopio salen por los auriculares enchufados en el jack de la tablet; un auricular USB, si hubiera uno, queda de respaldo. Con Parlante sólo la llamada va al parlante: el estetoscopio sigue por los auriculares.</string>
     <string name="section_kiosk_checklist">Puesta en marcha</string>
-    <string name="help_kiosk_checklist">Verde, hecho; ámbar, falta; gris, Berry Med no lo puede ver ahora. Se actualiza al volver a esta pantalla.</string>
+    <string name="help_kiosk_checklist">Verde, hecho; ámbar, falta; gris, ONDOCTOR365 Suitcase no lo puede ver ahora. Se actualiza al volver a esta pantalla.</string>
     <string name="check_permissions">Cámara y micrófono</string>
     <string name="check_permissions_done">Permisos dados. Los usan la videollamada del kiosco y la teleconsulta.</string>
     <string name="check_permissions_missing">Falta el permiso de la cámara, del micrófono o de los dos: sin ellos no hay videollamada ni otoscopio y estetoscopio en la teleconsulta.</string>
     <string name="check_permissions_action">Dar permisos</string>
-    <string name="check_home">Berry Med como app de inicio</string>
+    <string name="check_home">ONDOCTOR365 Suitcase como app de inicio</string>
     <string name="check_home_done">Android abre el kiosco al encender la tablet y el botón de inicio vuelve a él.</string>
-    <string name="check_home_missing">El inicio es otra app. Elegí Berry Med; si pregunta, con «Siempre».</string>
+    <string name="check_home_missing">El inicio es otra app. Elegí ONDOCTOR365 Suitcase; si pregunta, con «Siempre».</string>
     <string name="check_home_action">Elegir app de inicio</string>
     <string name="check_service">Servicio con cámara y micrófono para la teleconsulta</string>
     <string name="check_service_done">El servicio puede publicar el otoscopio y el estetoscopio con el kiosco adelante.</string>
     <string name="check_service_missing">Todavía no los tiene. Se suman solos con esta pantalla o el kiosco adelante y los permisos de cámara y micrófono dados.</string>
     <string name="check_battery">Sin optimización de batería</string>
-    <string name="check_battery_done">Android no duerme a Berry Med ni le corta el servicio.</string>
+    <string name="check_battery_done">Android no duerme a ONDOCTOR365 Suitcase ni le corta el servicio.</string>
     <string name="check_battery_missing">Si Android cierra el servicio, sólo puede volver a levantarlo con la app excluida.</string>
     <string name="check_otoscope">Permiso USB del otoscopio</string>
-    <string name="check_otoscope_granted">El otoscopio está enchufado y Berry Med tiene su permiso USB.</string>
+    <string name="check_otoscope_granted">El otoscopio está enchufado y ONDOCTOR365 Suitcase tiene su permiso USB.</string>
     <string name="check_otoscope_missing">El otoscopio está enchufado pero falta su permiso USB.</string>
     <string name="check_otoscope_absent">El otoscopio no está enchufado (su puerto está apagado): no se puede ver si tiene el permiso.</string>
-    <string name="check_otoscope_detail">Con el kiosco adelante su puerto queda encendido, así que alcanza con aceptar el permiso una vez marcando la casilla. El pedido es uno solo, el de Android; si se cerró sin aceptar, «Pedir permiso USB» lo hace aparecer de nuevo. Con el permiso de cámara dado, encendelo en Testing → Hub YKUSH3, aceptá el permiso marcando «Usar de forma predeterminada» y salí de Testing. Berry Med no puede saber si quedó marcada la casilla.</string>
+    <string name="check_otoscope_detail">Con el kiosco adelante su puerto queda encendido, así que alcanza con aceptar el permiso una vez marcando la casilla. El pedido es uno solo, el de Android; si se cerró sin aceptar, «Pedir permiso USB» lo hace aparecer de nuevo. Con el permiso de cámara dado, encendelo en Testing → Hub YKUSH3, aceptá el permiso marcando «Usar de forma predeterminada» y salí de Testing. ONDOCTOR365 Suitcase no puede saber si quedó marcada la casilla.</string>
     <string name="check_otoscope_action">Abrir Testing</string>
     <string name="check_totem">Configurar el tótem en el kiosco</string>
-    <string name="check_totem_detail">La primera vez el kiosco pide el identificador y la contraseña del tótem: Berry Med no usa la sesión de Chrome.</string>
+    <string name="check_totem_detail">La primera vez el kiosco pide el identificador y la contraseña del tótem: ONDOCTOR365 Suitcase no usa la sesión de Chrome.</string>
     <string name="check_totem_needs_url">Para abrirlo, cargá la URL del kiosco y guardá.</string>
     <string name="check_totem_action">Abrir el kiosco</string>
     <string name="section_kiosk_outside">Fuera de la tablet</string>
@@ -151,7 +151,7 @@
     <string name="kiosk_outside_chrome">• Si algo abre Chrome al prender la tablet (modo kiosco, app de administración), hay que sacarlo: Chrome no se usa más para el kiosco.</string>
     <string name="kiosk_outside_exit">• Para volver al inicio desde el kiosco: la casita del panel lateral (o cinco toques arriba a la izquierda).</string>
     <string name="testing_tele">Teleconsulta (LiveKit)</string>
-    <string name="testing_tele_help">Berry Med entra a la sala del encuentro cuando el kiosco muestra el token y publica el otoscopio o el estetoscopio cuando el kiosco los enciende. El token no se muestra: sólo cuándo se vio y cuándo vence para entrar. La prueba manual usa un servidor y un token propios (lk token create); sigue con Testing cerrado hasta Cortar, hasta que se abra el Panel Local o hasta que el kiosco muestre un token.</string>
+    <string name="testing_tele_help">ONDOCTOR365 Suitcase entra a la sala del encuentro cuando el kiosco muestra el token y publica el otoscopio o el estetoscopio cuando el kiosco los enciende. El token no se muestra: sólo cuándo se vio y cuándo vence para entrar. La prueba manual usa un servidor y un token propios (lk token create); sigue con Testing cerrado hasta Cortar, hasta que se abra el Panel Local o hasta que el kiosco muestre un token.</string>
     <string name="testing_tele_manual">Prueba manual</string>
     <string name="testing_tele_server">Servidor (ws:// o wss://)</string>
     <string name="testing_tele_token">Token</string>
@@ -236,7 +236,7 @@
     <string name="local_captures_empty">Todavía no hay capturas</string>
     <string name="local_capture_thumb">Ver la captura de las %1$s</string>
     <string name="local_camera_switch">Cambiar cámara</string>
-    <string name="local_camera_denied">Sin permiso para usar la cámara. Se da en Ajustes, Apps, Berry Med.</string>
+    <string name="local_camera_denied">Sin permiso para usar la cámara. Se da en Ajustes, Apps, ONDOCTOR365 Suitcase.</string>
     <string name="local_camera_missing">Esta tablet no tiene esa cámara.</string>
     <string name="local_camera_failed">No se pudo abrir la cámara.</string>
     <string name="local_camera_paused">En pausa mientras el otoscopio está encendido.</string>
@@ -247,11 +247,11 @@
     <string name="local_otoscope_starting">Encendiendo…</string>
     <string name="local_otoscope_pick_computer">Prendé el otoscopio y elegí «Computer» en su pantalla.</string>
     <string name="local_otoscope_done">Otoscopio apagado</string>
-    <string name="local_otoscope_denied">El otoscopio necesita el permiso de la cámara. Se da en Ajustes, Apps, Berry Med.</string>
+    <string name="local_otoscope_denied">El otoscopio necesita el permiso de la cámara. Se da en Ajustes, Apps, ONDOCTOR365 Suitcase.</string>
     <string name="local_stetho_listen">Escuchar</string>
     <string name="local_stetho_stop">Parar</string>
     <string name="local_stetho_starting">Encendiendo…</string>
-    <string name="local_stetho_denied">Sin permiso para el micrófono. Se da en Ajustes, Apps, Berry Med.</string>
+    <string name="local_stetho_denied">Sin permiso para el micrófono. Se da en Ajustes, Apps, ONDOCTOR365 Suitcase.</string>
     <string name="local_stetho_filter">Filtro</string>
     <string name="local_stetho_heart">Corazón</string>
     <string name="local_stetho_lung">Pulmón</string>
@@ -561,14 +561,14 @@
     <string name="testing_verdict_temp_ok">OK, %1$s °C</string>
 
     <!-- La notificación del servicio, que está siempre en la barra de Android. -->
-    <string name="notif_channel">Tótem Berry</string>
+    <string name="notif_channel">Tótem ONDOCTOR365</string>
     <string name="notif_waiting_board">Esperando la plaqueta</string>
     <string name="notif_usb_permission_missing">Falta el permiso USB</string>
     <string name="notif_local_open">Panel Local abierto</string>
     <string name="notif_sending">Plaqueta conectada, enviando mediciones</string>
     <string name="notif_stopped">Plaqueta conectada, sesión detenida</string>
     <!-- Segunda línea de la notificación mientras el servicio no tiene cámara y micrófono para la teleconsulta. -->
-    <string name="notif_tele_hint">Abrí el kiosco de Berry Med para habilitar otoscopio y estetoscopio en la teleconsulta.</string>
+    <string name="notif_tele_hint">Abrí el kiosco de ONDOCTOR365 Suitcase para habilitar otoscopio y estetoscopio en la teleconsulta.</string>
 
     <!-- Configuración: el estado de la pantalla principal. %1$.1f son segundos con un decimal. -->
     <string name="rt_last_data_none">Último dato: sin datos</string>
@@ -648,15 +648,15 @@
     <string name="rt_otoscope_waiting_camera">Esperando la cámara…</string>
     <string name="rt_otoscope_no_hub_waiting">Sin YKUSH3: se intenta directo. Esperando la cámara…</string>
     <string name="rt_otoscope_opening">Abriendo la imagen…</string>
-    <string name="rt_otoscope_permission">Falta aceptar el permiso USB del otoscopio: aceptá el pedido que aparece o, si no aparece, tocá «Pedir permiso USB» en Berry Med. Después, Encender otra vez.</string>
+    <string name="rt_otoscope_permission">Falta aceptar el permiso USB del otoscopio: aceptá el pedido que aparece o, si no aparece, tocá «Pedir permiso USB» en ONDOCTOR365 Suitcase. Después, Encender otra vez.</string>
     <string name="rt_otoscope_missing">El otoscopio no aparece como cámara.</string>
 
     <!-- Por qué la teleconsulta no puede usar un instrumento (Testing → Teleconsulta). Empiezan en minúscula: van después de otra frase. -->
     <string name="rt_tele_local_open">el Panel Local está abierto</string>
-    <string name="rt_tele_camera_permission">falta el permiso de la cámara: abrí Berry Med y aceptalo</string>
-    <string name="rt_tele_microphone_permission">falta el permiso del micrófono: abrí Berry Med y aceptalo</string>
-    <string name="rt_tele_camera_type">el servicio no tiene la cámara en segundo plano. Abrí el kiosco de Berry Med para habilitar otoscopio y estetoscopio en la teleconsulta.</string>
-    <string name="rt_tele_microphone_type">el servicio no tiene el micrófono en segundo plano. Abrí el kiosco de Berry Med para habilitar otoscopio y estetoscopio en la teleconsulta.</string>
+    <string name="rt_tele_camera_permission">falta el permiso de la cámara: abrí ONDOCTOR365 Suitcase y aceptalo</string>
+    <string name="rt_tele_microphone_permission">falta el permiso del micrófono: abrí ONDOCTOR365 Suitcase y aceptalo</string>
+    <string name="rt_tele_camera_type">el servicio no tiene la cámara en segundo plano. Abrí el kiosco de ONDOCTOR365 Suitcase para habilitar otoscopio y estetoscopio en la teleconsulta.</string>
+    <string name="rt_tele_microphone_type">el servicio no tiene el micrófono en segundo plano. Abrí el kiosco de ONDOCTOR365 Suitcase para habilitar otoscopio y estetoscopio en la teleconsulta.</string>
 
     <!-- Testing → Hub YKUSH3: las respuestas a Leer estado, Encender, Apagar y Guardar este arranque. %1$d es el número de puerto (no una cantidad: no son plurals). -->
     <string name="rt_hub_none">No hay hub YKUSH3 conectado.</string>
@@ -695,7 +695,7 @@
 
     <!-- Panel Local y teleconsulta: por qué no abre el otoscopio. %1$s es el error tal como llega. -->
     <string name="rt_otoscope_uvc_missing">El otoscopio no aparece por USB.</string>
-    <string name="rt_otoscope_uvc_permission">Falta el permiso USB del otoscopio: tocá «Pedir permiso USB» en Berry Med.</string>
+    <string name="rt_otoscope_uvc_permission">Falta el permiso USB del otoscopio: tocá «Pedir permiso USB» en ONDOCTOR365 Suitcase.</string>
     <string name="rt_otoscope_uvc_failed">No se pudo abrir el otoscopio por UVC: %1$s</string>
     <string name="rt_otoscope_camera_start_failed">No se pudo iniciar la cámara: %1$s</string>
     <string name="rt_otoscope_camerax_missing">Android lista el otoscopio como cámara pero CameraX no lo ve.</string>
@@ -759,7 +759,7 @@
     <string name="rt_call_device_jack">el jack de la tablet</string>
     <string name="rt_call_device_type">tipo %1$d</string>
     <string name="rt_call_speaker_fallback">Nada en el jack ni el auricular USB: la llamada sale por el parlante</string>
-    <!-- Qué graba Berry Med y desde qué entrada. %1$s de testing_call_recordings son los renglones testing_call_recording separados por «; »; en testing_call_recording, %1$s es la fuente de Android (MIC, CAMCORDER…) y %2$s la entrada. -->
+    <!-- Qué graba ONDOCTOR365 Suitcase y desde qué entrada. %1$s de testing_call_recordings son los renglones testing_call_recording separados por «; »; en testing_call_recording, %1$s es la fuente de Android (MIC, CAMCORDER…) y %2$s la entrada. -->
     <string name="testing_call_recordings_unreadable">Entradas grabando: no se pudo leer</string>
     <string name="testing_call_recordings_none">Entradas grabando: ninguna</string>
     <string name="testing_call_recordings">Entradas grabando: %1$s</string>

@@ -770,7 +770,7 @@
 
                             <!--
                                 El paso Kiosco: la URL y lo que hace falta para que el kiosco
-                                corra dentro de Berry Med. El estado de cada ítem se recalcula
+                                corra dentro de ONDOCTOR365 Suitcase. El estado de cada ítem se recalcula
                                 al volver a la pantalla y al mostrar el paso.
                             -->
                             <LinearLayout

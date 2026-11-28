@@ -1,7 +1,7 @@
-# Glosario de idiomas de Berry Med
+# Glosario de idiomas de ONDOCTOR365 Suitcase
 
 Las traducciones al inglés y al portugués las redactó un modelo (plan 19, paso 5, 27 de noviembre de 2026).
-**Los términos clínicos los tiene que aprobar una persona** (un médico que use la app en ese idioma) antes de usar Berry Med con pacientes en inglés o en portugués.
+**Los términos clínicos los tiene que aprobar una persona** (un médico que use la app en ese idioma) antes de usar ONDOCTOR365 Suitcase con pacientes en inglés o en portugués.
 
 Inglés de Estados Unidos; portugués de Brasil, de «você». La clave es la entrada de `app/src/main/res/values*/strings.xml` donde aparece el término (hay más entradas con el mismo término; esta es la de referencia). **A confirmar** marca una elección entre dos opciones razonables.
 
@@ -11,6 +11,7 @@ Una sola traducción para cada uno, la misma en toda la app.
 
 | Español | Inglés | Portugués | Clave | Nota |
 |---|---|---|---|---|
+| ONDOCTOR365 Suitcase (el nombre de la app) | ONDOCTOR365 Suitcase | ONDOCTOR365 Suitcase | `app_name` | No se traduce, ni se le cambia el orden: va igual en los tres idiomas, también dentro de las frases («de ONDOCTOR365 Suitcase», «do ONDOCTOR365 Suitcase»). Desde la 1.5.1; antes, Berry Med. |
 | Maletín de atención | Care kit | Maleta de atendimento | `home_title` | A confirmar: en inglés también podría ser «Care case» o «Medical kit». |
 | tótem | totem | totem | `hint_totem` | A confirmar en inglés: es el nombre del puesto en OnDoctor (su `external_id`); «totem» no es habitual en Estados Unidos, pero se mantiene para que el técnico lo encuentre igual en la plataforma. |
 | kiosco | kiosk | quiosque | `step_kiosk` | |
@@ -31,7 +32,7 @@ Una sola traducción para cada uno, la misma en toda la app.
 | Falló … (tareas de la teleconsulta) | … failed | Falha … | `rt_tele_failed_*` | Nombres internos de tarea pasados a algo que un técnico entienda: «Otoscope order failed», «Falha na ordem do otoscópio». |
 | por UVC / por Camera2 | via UVC / via Camera2 | via UVC / via Camera2 | `testing_tele_path_uvc` | Entra en «Publishing: otoscope via UVC 800×800 · 30.0 fps». |
 
-No se traducen: ONDOCTOR365, OnDoctor, Berry Med, YKUSH3, PM6750, LiveKit, Pusher, Testing, USB-config, CameraX, Camera2, UVC, Chrome, los nombres de los idiomas del selector (Español, English, Português) y las unidades (mmHg, °C, mm/s, mm/mV, SpO₂).
+No se traducen: ONDOCTOR365 Suitcase, ONDOCTOR365, OnDoctor, YKUSH3, PM6750, LiveKit, Pusher, Testing, USB-config, CameraX, Camera2, UVC, Chrome, los nombres de los idiomas del selector (Español, English, Português) y las unidades (mmHg, °C, mm/s, mm/mV, SpO₂).
 
 ## Términos clínicos y abreviaturas
 

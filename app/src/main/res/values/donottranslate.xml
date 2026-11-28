@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Lo que no se traduce: nombres propios, marcas y unidades. Es igual en todos los idiomas. -->
 <resources>
-    <string name="app_name" translatable="false">Berry Med</string>
+    <string name="app_name" translatable="false">ONDOCTOR365 Suitcase</string>
     <string name="ondoctor" translatable="false">ONDOCTOR365</string>
 
     <!-- Unidades y nombres de parámetros. -->
